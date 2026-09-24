@@ -3,32 +3,118 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WebGIS de Estudos e Infraestrutura | ANTAQ</title>
+  <title>WebGIS Corporativo | ANTAQ - GEE</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Reset Geral */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body, html, #mapa {
       width: 100%;
       height: 100%;
-      background-color: #0f172a;
+      background-color: #0b132b;
       font-family: 'Segoe UI', -apple-system, Roboto, sans-serif;
       overflow: hidden;
     }
 
     /* -------------------------------------------------------------
-       1. ESTILIZAÇÃO CARTOGRÁFICA DE RÓTULOS (CONTRASTE SATÉLITE)
+       1. BARRA SUPERIOR INSTITUCIONAL (IDENTIDADE ANTAQ)
+       ------------------------------------------------------------- */
+    .header-antaq {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 52px;
+      background: #0a2540;
+      border-bottom: 2px solid #005a9c;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .header-titulo {
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-titulo span {
+      color: #38bdf8;
+      font-weight: 400;
+      font-size: 11px;
+    }
+
+    .header-acoes {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Badge do Ambiente de Homologação */
+    .badge-homologacao {
+      background: #f59e0b;
+      color: #111827;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Botão Azul de Atualização Dinâmica */
+    .btn-atualizar {
+      background: #0284c7;
+      color: #ffffff;
+      border: 1px solid #38bdf8;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-atualizar:hover {
+      background: #0369a1;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+    }
+
+    .btn-atualizar:disabled {
+      background: #475569;
+      border-color: #64748b;
+      cursor: not-allowed;
+      opacity: 0.8;
+    }
+
+    /* -------------------------------------------------------------
+       2. CONTROLE DE RÓTULOS (HALO ESCURO PROFISSIONAL)
        ------------------------------------------------------------- */
     .rotulo-uf {
       background: transparent !important;
       border: none !important;
       box-shadow: none !important;
-      font-size: 13px !important;
+      font-size: 12px !important;
       font-weight: 700 !important;
-      color: #ffffff !important;
-      letter-spacing: 2px !important;
+      color: #f8fafc !important;
+      letter-spacing: 1.5px !important;
       text-transform: uppercase !important;
       pointer-events: none !important;
       text-shadow:
@@ -39,25 +125,14 @@
          0px  0px 4px #000000;
     }
 
-    .rotulo-via {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      font-size: 10px !important;
-      font-weight: 600 !important;
-      color: #38bdf8 !important;
-      pointer-events: none !important;
-      text-shadow: -1px -1px 2px #000, 1px 1px 2px #000;
-    }
-
     /* -------------------------------------------------------------
-       2. DESIGN INSTITUCIONAL DE POPUP (PADRÃO GEE/ANTAQ)
+       3. POPUP EXECUTIVO (INTELIGÊNCIA PORTUÁRIA ANTAQ)
        ------------------------------------------------------------- */
     .leaflet-popup-content-wrapper {
       padding: 0;
       border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     }
     .leaflet-popup-content { margin: 0 !important; min-width: 270px; }
     
@@ -104,47 +179,71 @@
       justify-content: space-between;
     }
 
-    /* Barra Superior Institucional */
-    .brand-header {
+    /* Notificação flutuante de sucesso */
+    #notificacao {
       position: absolute;
-      top: 16px;
-      left: 60px;
-      z-index: 1000;
-      background: rgba(10, 37, 64, 0.92);
-      backdrop-filter: blur(8px);
+      bottom: 20px;
+      right: 20px;
+      background: #10b981;
+      color: #ffffff;
       padding: 10px 18px;
       border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #ffffff;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      font-size: 12px;
+      font-weight: 600;
+      z-index: 2000;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      display: none;
+      animation: fadeInOut 3s forwards;
     }
-    .brand-title { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
-    .brand-subtitle { font-size: 10px; color: #94a3b8; }
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateY(10px); }
+      15% { opacity: 1; transform: translateY(0); }
+      85% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(10px); }
+    }
   </style>
 </head>
 <body>
 
-  <div class="brand-header">
-    <div class="brand-title">WEBGIS DE ESTUDOS SETORIAIS E INFRAESTRUTURA</div>
-    <div class="brand-subtitle">Agência Nacional de Transportes Aquaviários &mdash; GEE / SEPH</div>
-  </div>
+  <!-- Barra Superior -->
+  <header class="header-antaq">
+    <div class="header-titulo">
+      AGÊNCIA NACIONAL DE TRANSPORTES AQUAVIÁRIOS &mdash; ANTAQ
+      <span>| GEE &bull; Estudos Setoriais</span>
+    </div>
+    <div class="header-acoes">
+      <div class="badge-homologacao">Ambiente de Homologação</div>
+      <button id="btn-atualizar" class="btn-atualizar" onclick="recarregarCamadasWebGIS()">
+        🔄 Atualizar Camadas
+      </button>
+    </div>
+  </header>
 
-  <div id="mapa"></div>
+  <!-- Notificação Flutuante -->
+  <div id="notificacao">✓ Camadas sincronizadas com sucesso!</div>
+
+  <!-- Mapa -->
+  <div id="mapa" style="margin-top: 52px; height: calc(100% - 52px);"></div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    // 1. Inicialização do Mapa
+    // ========================================================
+    // 1. INICIALIZAÇÃO DO MAPA
+    // ========================================================
     const mapa = L.map('mapa', {
-      center: [-14.0, -52.0],
+      center: [-13.5, -51.5],
       zoom: 4,
       zoomControl: true
     });
     mapa.zoomControl.setPosition('topright');
 
-    // 2. Basemaps Oficiais Livres de Chaves e APIs
-    // Imagem Orbital Esri
+    // ========================================================
+    // 2. CAMADAS BASE (SEM CHAVES DE API E SEM MARCAS D'ÁGUA)
+    // ========================================================
+    
+    // Satélite Esri
     const sateliteEsri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Imagens Orbitais &copy; Esri',
       maxZoom: 18
@@ -156,7 +255,7 @@
       pane: 'overlayPane'
     }).addTo(mapa);
 
-    // Mapa Técnico Escuro (Esri Dark Gray - Gratuito e sem marca d'água)
+    // Mapa Técnico Escuro (Esri Dark Gray Oficial - Gratuito)
     const mapaEscuroEsri = L.layerGroup([
       L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Dark Canvas &copy; Esri'
@@ -166,22 +265,27 @@
       })
     ]);
 
-    // 3. Montagem dos Controles de Camada
-    const baseMaps = {
+    // Montagem do controle lateral
+    const baseLayers = {
       "Imagem de Satélite": sateliteEsri,
       "Mapa Técnico Escuro (Esri)": mapaEscuroEsri
     };
-    const overlays = {
-      "Nomes de Cidades / Fronteiras": rotulosReferencia
+    const overlayLayers = {
+      "Nomes de Cidades / Limites": rotulosReferencia
     };
-    const layerControl = L.control.layers(baseMaps, overlays, { collapsed: false, position: 'topright' }).addTo(mapa);
+    const controleCamadas = L.control.layers(baseLayers, overlayLayers, {
+      collapsed: false,
+      position: 'topright'
+    }).addTo(mapa);
 
-    // 4. Mecanismo de Estilização por Tipo de Camada
-    function obterOpcoesEstilo(idCamada) {
-      switch(idCamada) {
+    // ========================================================
+    // 3. MOTOR DE ESTILOS CARTOGRÁFICOS
+    // ========================================================
+    function obterEstiloCamada(id) {
+      switch(id) {
         case 'instalacoes_portuarias':
           return {
-            pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
+            pointToLayer: (f, latlng) => L.circleMarker(latlng, {
               radius: 6,
               fillColor: '#10b981',
               color: '#ffffff',
@@ -197,19 +301,13 @@
               const carga = p.perfil_carga || p.PERFIL_CARGA || 'Geral';
 
               layer.bindPopup(`
-                <div class="popup-header">
-                  <span>${nome}</span>
-                  <span class="popup-badge">OUTORGA</span>
-                </div>
+                <div class="popup-header"><span>${nome}</span><span class="popup-badge">OUTORGA</span></div>
                 <div class="popup-body">
                   <div class="popup-row"><span class="popup-lbl">Tipo:</span><span class="popup-val">${tipo}</span></div>
-                  <div class="popup-row"><span class="popup-lbl">Localização:</span><span class="popup-val">${mun} / ${uf}</span></div>
+                  <div class="popup-row"><span class="popup-lbl">Município/UF:</span><span class="popup-val">${mun} / ${uf}</span></div>
                   <div class="popup-row"><span class="popup-lbl">Perfil de Carga:</span><span class="popup-val">${carga}</span></div>
                 </div>
-                <div class="popup-footer">
-                  <span>Regulação: <b>ANTAQ</b></span>
-                  <span>GEE / Estudos</span>
-                </div>
+                <div class="popup-footer"><span>Regulação: <b>ANTAQ</b></span><span>GEE / Estudos</span></div>
               `);
             }
           };
@@ -219,7 +317,7 @@
             style: { color: '#00e5ff', weight: 2.5, opacity: 0.85 },
             onEachFeature: (f, layer) => {
               const rio = f.properties.rio || f.properties.NOME_RIO || f.properties.nome || 'Via Navegada';
-              layer.bindTooltip(rio, { sticky: true });
+              layer.bindTooltip(`Rio: ${rio}`, { sticky: true });
             }
           };
 
@@ -227,14 +325,14 @@
           return {
             style: { color: '#f59e0b', weight: 2, dashArray: '5, 5', opacity: 0.9 },
             onEachFeature: (f, layer) => {
-              const linha = f.properties.linha || f.properties.NOME || 'Linha de Travessia';
+              const linha = f.properties.linha || f.properties.NOME || 'Travessia';
               layer.bindTooltip(linha, { sticky: true });
             }
           };
 
         case 'embarcacoes':
           return {
-            pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
+            pointToLayer: (f, latlng) => L.circleMarker(latlng, {
               radius: 4,
               fillColor: '#38bdf8',
               color: '#0369a1',
@@ -245,7 +343,7 @@
 
         case 'uf':
           return {
-            style: { color: '#60a5fa', weight: 1.2, fillOpacity: 0.0 },
+            style: { color: '#60a5fa', weight: 1.2, fillOpacity: 0 },
             onEachFeature: (f, layer) => {
               const sigla = f.properties.SIGLA_UF || f.properties.sigla || f.properties.UF || f.properties.nome;
               if (sigla) {
@@ -265,44 +363,87 @@
           };
 
         default:
-          return { style: { color: '#94a3b8', weight: 1 } };
+          return { style: { color: '#94a3b8', weight: 1.5 } };
       }
     }
 
-    // 5. Leitura Dinâmica do Manifesto de Camadas
-    const cacheBuster = new Date().getTime();
-    fetch(`dados/manifesto_camadas.json?_t=${cacheBuster}`)
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(manifesto => {
-        const camadas = manifesto.camadas || [];
+    // ========================================================
+    // 4. GERENCIADOR DE CAMADAS ANTI-DUPLICAÇÃO (CamadaManager)
+    // ========================================================
+    const CamadaManager = {
+      camadas: {},
 
-        camadas.forEach(camadaCfg => {
-          const opcoes = obterOpcoesEstilo(camadaCfg.id);
+      carregarCamada: function(cfg, timestamp) {
+        const urlComCacheBuster = `${cfg.arquivo}?_t=${timestamp}`;
+        const opcoes = obterEstiloCamada(cfg.id);
 
-          fetch(`${camadaCfg.arquivo}?_t=${cacheBuster}`)
-            .then(res => res.json())
-            .then(geojsonData => {
-              const camadaGeoJson = L.geoJSON(geojsonData, opcoes);
+        return fetch(urlComCacheBuster)
+          .then(res => {
+            if (!res.ok) throw new Error(`Status ${res.status}`);
+            return res.json();
+          })
+          .then(geojsonData => {
+            // SE A CAMADA JÁ EXISTE: apenas substitui os dados (NÃO DUPLICA)
+            if (this.camadas[cfg.id]) {
+              this.camadas[cfg.id].clearLayers();
+              this.camadas[cfg.id].addData(geojsonData);
+              console.log(`[ATUALIZADA] Camada '${cfg.nome}' sincronizada.`);
+            } else {
+              // SE É A PRIMEIRA VEZ: cria a instância e anexa ao menu lateral
+              const camadaL = L.geoJSON(geojsonData, opcoes);
+              this.camadas[cfg.id] = camadaL;
 
-              if (camadaCfg.ativa) {
-                camadaGeoJson.addTo(mapa);
+              if (cfg.ativa !== false) {
+                camadaL.addTo(mapa);
               }
+              controleCamadas.addOverlay(camadaL, cfg.nome);
+              console.log(`[CRIADA] Camada '${cfg.nome}' adicionada.`);
+            }
+          })
+          .catch(err => {
+            console.warn(`[IGNORADA] Camada ${cfg.id} não pôde ser carregada:`, err.message);
+          });
+      }
+    };
 
-              // Insere a camada no controle lateral
-              layerControl.addOverlay(camadaGeoJson, camadaCfg.nome);
-              console.log(`[OK] Camada carregada: ${camadaCfg.nome}`);
-            })
-            .catch(err => {
-              console.warn(`[FALHA] Não foi possível carregar ${camadaCfg.arquivo}:`, err);
-            });
+    // ========================================================
+    // 5. CARREGAMENTO E SINCRONIZAÇÃO (BOTÃO ATUALIZAR)
+    // ========================================================
+    function recarregarCamadasWebGIS() {
+      const btn = document.getElementById('btn-atualizar');
+      btn.innerHTML = "⌛ Atualizando...";
+      btn.disabled = true;
+
+      const timestamp = new Date().getTime();
+
+      // Relê o manifesto oficial de camadas
+      fetch(`dados/manifesto_camadas.json?_t=${timestamp}`)
+        .then(res => res.json())
+        .then(manifesto => {
+          const promessas = (manifesto.camadas || []).map(cfg => {
+            return CamadaManager.carregarCamada(cfg, timestamp);
+          });
+
+          Promise.all(promessas).then(() => {
+            btn.innerHTML = "🔄 Atualizar Camadas";
+            btn.disabled = false;
+            
+            // Exibe notificação de sucesso
+            const toast = document.getElementById('notificacao');
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+          });
+        })
+        .catch(err => {
+          console.error("Erro ao ler manifesto:", err);
+          btn.innerHTML = "🔄 Atualizar Camadas";
+          btn.disabled = false;
         });
-      })
-      .catch(err => {
-        console.error("[ERRO CRÍTICO] Erro ao carregar o manifesto_camadas.json:", err);
-      });
+    }
+
+    // Carregamento inicial ao abrir a página
+    recarregarCamadasWebGIS();
+
   </script>
 </body>
 </html>
