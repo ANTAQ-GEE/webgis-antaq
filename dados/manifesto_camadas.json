@@ -1,18 +1,19 @@
 {
-  "versao": "1.0",
+  "versao": "2.0",
+  "projeto": "WebGIS de Estudos e Infraestrutura Aquaviária - ANTAQ",
+  "categorias": [
+    "INFRAESTRUTURA AQUAVIÁRIA (ANTAQ)",
+    "LIMITES TERRITORIAIS",
+    "RESTRIÇÕES SOCIOAMBIENTAIS",
+    "INTERMODALIDADE E CORREDORES"
+  ],
   "camadas": [
     {
-      "id": "embarcacoes",
-      "nome": "Tráfego de Embarcações / AIS",
-      "categoria": "INFRAESTRUTURA AQUAVIÁRIA (ANTAQ)",
-      "arquivo": "dados/embarcacoes.geojson",
-      "ativa": true
-    },
-    {
       "id": "instalacoes_portuarias",
-      "nome": "Instalações Portuárias",
+      "nome": "Instalações Portuárias (TUPs, Públicos e IP4)",
       "categoria": "INFRAESTRUTURA AQUAVIÁRIA (ANTAQ)",
       "arquivo": "dados/instalacoes_portuarias.geojson",
+      "tipo_geometria": "Point",
       "ativa": true
     },
     {
@@ -20,20 +21,23 @@
       "nome": "Vias Economicamente Navegadas",
       "categoria": "INFRAESTRUTURA AQUAVIÁRIA (ANTAQ)",
       "arquivo": "dados/vias_economicamente_navegadas.geojson",
+      "tipo_geometria": "LineString",
       "ativa": true
     },
     {
       "id": "linhas_travessias",
-      "nome": "Linhas de Travessias",
+      "nome": "Linhas de Travessias Autorizadas",
       "categoria": "INFRAESTRUTURA AQUAVIÁRIA (ANTAQ)",
       "arquivo": "dados/linhas_travessias.geojson",
+      "tipo_geometria": "LineString",
       "ativa": true
     },
     {
-      "id": "regioes",
-      "nome": "Regiões do Brasil",
-      "categoria": "LIMITES TERRITORIAIS",
-      "arquivo": "dados/regioes.geojson",
+      "id": "embarcacoes",
+      "nome": "Tráfego de Embarcações / AIS",
+      "categoria": "INFRAESTRUTURA AQUAVIÁRIA (ANTAQ)",
+      "arquivo": "dados/embarcacoes.geojson",
+      "tipo_geometria": "Point",
       "ativa": true
     },
     {
@@ -41,13 +45,23 @@
       "nome": "Unidades da Federação (IBGE)",
       "categoria": "LIMITES TERRITORIAIS",
       "arquivo": "dados/uf.geojson",
+      "tipo_geometria": "Polygon",
+      "ativa": true
+    },
+    {
+      "id": "regioes",
+      "nome": "Regiões do Brasil",
+      "categoria": "LIMITES TERRITORIAIS",
+      "arquivo": "dados/regioes.geojson",
+      "tipo_geometria": "Polygon",
       "ativa": true
     },
     {
       "id": "pais",
-      "nome": "Limite do País",
+      "nome": "Limite Nacional",
       "categoria": "LIMITES TERRITORIAIS",
       "arquivo": "dados/pais.geojson",
+      "tipo_geometria": "Polygon",
       "ativa": false
     },
     {
@@ -55,6 +69,7 @@
       "nome": "Poligonais Portuárias / TIS",
       "categoria": "RESTRIÇÕES SOCIOAMBIENTAIS",
       "arquivo": "dados/tis_poligonais.geojson",
+      "tipo_geometria": "Polygon",
       "ativa": true
     },
     {
@@ -62,6 +77,7 @@
       "nome": "Estados da Amazônia Legal",
       "categoria": "RESTRIÇÕES SOCIOAMBIENTAIS",
       "arquivo": "dados/estados_amazonia_legal.geojson",
+      "tipo_geometria": "Polygon",
       "ativa": true
     }
   ]
