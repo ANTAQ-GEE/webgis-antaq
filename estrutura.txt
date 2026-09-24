@@ -1,0 +1,18 @@
+webgis_antaq/
+│
+├── .github/
+│   └── workflows/
+│       └── atualizar_camadas.yml    # Robô de atualização na nuvem
+│
+├── dados/                           # Onde ficarão os GeoJSONs
+│   ├── ufs_brasil.geojson
+│   ├── terras_indigenas.geojson
+│   └── manifesto_camadas.json
+│
+├── estilos/
+│   └── estilos_antaq.json           # Paleta oficial e convenções
+│
+├── index.html                       # Aplicação WebGIS
+├── pipeline_atualizacao.py          # Script ETL compatível com Windows e Linux
+├── requirements.txt                 # Dependências do Python
+└── .gitignore                       # Arquivos ignorados pelo Git

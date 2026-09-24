@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANTAQ - Sistema de Geointeligência Regulatória</title>
+    
+    <!-- Framework Cartográfico Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        :root {
+            --gov-blue-dark: #0C326F;
+            --gov-blue-vivid: #1351B4;
+            --gov-blue-hover: #071D41;
+            --gov-gold: #FFB100;
+            --gov-green: #2E7D32;
+            --gov-gray-bg: #F8F9FA;
+            --gov-border: #DCDFE3;
+            --text-primary: #1E293B;
+            --text-secondary: #475569;
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden; color: var(--text-primary); background-color: #e2e8f0;
+        }
+
+        #map { height: 100vh; width: 100%; z-index: 1; }
+
+        /* 1. CABEÇALHO INSTITUCIONAL GOV.BR / ANTAQ */
+        .gov-header {
+            position: absolute; top: 0; left: 0; right: 0; height: 44px; z-index: 1000;
+            background: var(--gov-blue-dark); color: #ffffff;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 16px; font-size: 13px; font-weight: 700; letter-spacing: 0.4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25); border-bottom: 2px solid var(--gov-blue-vivid);
+        }
+        .header-title { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+        .header-actions { display: flex; align-items: center; gap: 10px; }
+        
+        .btn-header {
+            border: none; padding: 6px 12px; border-radius: 4px;
+            font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .btn-homolog { background: var(--gov-gold); color: #000000; }
+        .btn-homolog:hover { background: #e09b00; }
+        .btn-refresh { background: var(--gov-blue-vivid); color: #ffffff; }
+        .btn-refresh:hover { background: #0f3e8a; }
+
+        .leaflet-top { top: 52px !important; }
+
+        /* 2. PAINEL LATERAL DE CAMADAS E NAVEGAÇÃO */
+        .sidebar-control {
+            position: absolute; top: 56px; right: 14px; z-index: 1000;
+            background: #ffffff; width: 340px; max-height: calc(100vh - 84px);
+            border-radius: 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.22);
+            display: flex; flex-direction: column; overflow: hidden; font-size: 12px;
+            border: 1px solid var(--gov-border);
+        }
+        .sidebar-header {
+            background: var(--gov-blue-dark); color: #ffffff; padding: 10px 14px;
+            font-weight: 700; font-size: 12px; letter-spacing: 0.5px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .sidebar-content { padding: 10px 14px; overflow-y: auto; }
+        
+        .group-title {
+            font-weight: 700; color: var(--gov-blue-dark); text-transform: uppercase;
+            font-size: 10px; margin: 12px 0 6px 0; letter-spacing: 0.6px;
+            border-bottom: 1.5px solid var(--gov-border); padding-bottom: 4px;
+        }
+
+        .layer-container { border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; margin-bottom: 4px; }
+        .layer-header-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; }
+        .layer-left { display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer; font-size: 11.5px; font-weight: 500; }
+        .btn-expand { background: none; border: none; color: #64748b; font-size: 11px; cursor: pointer; padding: 2px 4px; }
+
+        .items-dropdown { display: none; background: #f8fafc; border-radius: 4px; padding: 6px 8px; margin-top: 4px; border: 1px solid #e2e8f0; }
+        .search-box {
+            width: 100%; box-sizing: border-box; padding: 5px 8px; font-size: 11px;
+            border: 1px solid #cbd5e1; border-radius: 4px; margin-bottom: 6px;
+        }
+        .items-list { max-height: 160px; overflow-y: auto; }
+        .subitem-row {
+            padding: 4px 6px; border-radius: 3px; cursor: pointer; font-size: 11px; color: #334155;
+            display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .subitem-row:hover { background: #e2e8f0; color: var(--gov-blue-dark); font-weight: 600; }
+
+        /* Chave Seletora (Switch) */
+        .switch { position: relative; display: inline-block; width: 32px; height: 18px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .2s; border-radius: 18px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .2s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--gov-blue-vivid); }
+        input:checked + .slider:before { transform: translateX(14px); }
+
+        /* Upload de Camadas Temporárias */
+        .upload-box {
+            border: 2px dashed var(--gov-blue-vivid); background: #f0f7ff;
+            border-radius: 6px; padding: 10px; text-align: center; margin-top: 10px; cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .upload-box:hover { background: #e0efff; }
+        .upload-box p { margin: 0; font-size: 11.5px; color: var(--gov-blue-dark); font-weight: 700; }
+        .upload-box span { font-size: 10px; color: #64748b; }
+        #fileInput { display: none; }
+
+        /* 3. ESTÚDIO DE HOMOLOGAÇÃO (MODO AVANÇADO) */
+        .homolog-panel {
+            display: none; position: absolute; top: 56px; left: 14px; z-index: 1100;
+            background: #ffffff; width: 350px; border-radius: 6px; box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+            font-size: 12px; overflow: hidden; border: 2px solid var(--gov-gold);
+        }
+        .homolog-header {
+            background: #1e293b; color: var(--gov-gold); padding: 10px 14px;
+            font-weight: 700; display: flex; justify-content: space-between; align-items: center;
+        }
+        .homolog-body { padding: 12px 16px; max-height: calc(100vh - 150px); overflow-y: auto; }
+        .form-section { margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
+        .form-section h6 { margin: 0 0 8px 0; color: var(--gov-blue-dark); font-size: 11px; text-transform: uppercase; font-weight: 700; }
+        .form-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .form-row input[type="color"] { border: none; width: 28px; height: 26px; border-radius: 4px; cursor: pointer; }
+        .form-row select { padding: 3px 6px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 11.5px; }
+        .form-row input[type="range"] { width: 100px; }
+        .homolog-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-save-cfg { flex: 1; background: var(--gov-green); color: #fff; border: none; padding: 7px; border-radius: 4px; font-weight: 700; cursor: pointer; }
+        .btn-export-cfg { flex: 1; background: var(--gov-blue-dark); color: #fff; border: none; padding: 7px; border-radius: 4px; font-weight: 700; cursor: pointer; }
+
+        /* 4. CARTOES POPUP REGULATÓRIOS */
+        .popup-card { padding: 2px; font-size: 12px; line-height: 1.5; min-width: 270px; }
+        .popup-card .header-box {
+            background: var(--gov-blue-dark); color: #ffffff; padding: 8px 10px;
+            border-radius: 4px 4px 0 0; margin: -2px -2px 8px -2px;
+        }
+        .popup-card .header-box h4 { margin: 0; font-size: 12.5px; font-weight: 700; }
+        .popup-card .header-box span { font-size: 10.5px; opacity: 0.9; }
+        .popup-card table { width: 100%; border-collapse: collapse; }
+        .popup-card tr:nth-child(even) { background-color: #f8fafc; }
+        .popup-card td { padding: 4px 6px; border-bottom: 1px solid #f1f5f9; }
+        .popup-card td.lbl { font-weight: 700; color: #475569; width: 35%; font-size: 11px; }
+
+        /* 5. LEGENDA OFICIAL (IHO / ANTAQ) */
+        .legend-box {
+            background: #ffffff; padding: 10px 14px; border-radius: 6px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.18); font-size: 11.5px; line-height: 1.6;
+            min-width: 230px; border-left: 4px solid var(--gov-blue-dark);
+        }
+        .legend-box h5 { margin: 0 0 6px 0; font-size: 11px; color: var(--gov-blue-dark); text-transform: uppercase; font-weight: 700; }
+        .legend-item { display: flex; align-items: center; margin-bottom: 4px; }
+        .legend-line { width: 22px; height: 4px; margin-right: 8px; display: inline-block; border-radius: 2px; }
+        .legend-poly { width: 16px; height: 12px; margin-right: 8px; display: inline-block; border-radius: 2px; }
+        .legend-icon-container { width: 18px; height: 18px; margin-right: 8px; display: inline-flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+    <!-- CABEÇALHO PADRONIZADO (SEM AUTARQUIA ESPECIAL) -->
+    <div class="gov-header">
+        <div class="header-title">
+            <span>AGÊNCIA NACIONAL DE TRANSPORTES AQUAVIÁRIOS — ANTAQ</span>
+        </div>
+        <div class="header-actions">
+            <button class="btn-header btn-homolog" onclick="togglePainelHomolog()">⚙️ Estúdio de Homologação</button>
+            <button class="btn-header btn-refresh" onclick="location.reload()">🔄 Atualizar</button>
+        </div>
+    </div>
+
+    <!-- ÁREA CARTOGRÁFICA -->
+    <div id="map"></div>
+
+    <!-- PAINEL DE HOMOLOGAÇÃO (ESTÚDIO DE ESTILOS) -->
+    <div id="homologPanel" class="homolog-panel">
+        <div class="homolog-header">
+            <span>HOMOLOGAÇÃO DE CONVENÇÕES CARTOGRÁFICAS</span>
+            <span style="cursor:pointer;" onclick="togglePainelHomolog()">✕</span>
+        </div>
+        <div class="homolog-body">
+            <div class="form-section">
+                <h6>1. Instalações Portuárias (Pontos)</h6>
+                <div class="form-row">
+                    <label>Formato do Marcador:</label>
+                    <select id="cfg_formato_ponto" onchange="aplicarEstilosEmTela()">
+                        <option value="ancora" selected>Âncora Náutica Oficial</option>
+                        <option value="pin">Pin Clássico de Mapa</option>
+                        <option value="circulo">Círculo com Alvo</option>
+                        <option value="diamante">Diamante / Losango</option>
+                        <option value="quadrado">Quadrado / Berço</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Tamanho do Ícone:</label>
+                    <input type="range" id="cfg_tamanho_ponto" min="14" max="32" value="20" oninput="aplicarEstilosEmTela()">
+                </div>
+                <div class="form-row">
+                    <label>Cor TUP (Privado):</label>
+                    <input type="color" id="cfg_cor_tup" value="#168821" onchange="aplicarEstilosEmTela()">
+                </div>
+                <div class="form-row">
+                    <label>Cor Porto Público:</label>
+                    <input type="color" id="cfg_cor_porto" value="#0C326F" onchange="aplicarEstilosEmTela()">
+                </div>
+                <div class="form-row">
+                    <label>Cor ETC (Transbordo):</label>
+                    <input type="color" id="cfg_cor_etc" value="#00796B" onchange="aplicarEstilosEmTela()">
+                </div>
+                <div class="form-row">
+                    <label>Cor IP4 (Pequeno Porte):</label>
+                    <input type="color" id="cfg_cor_ip4" value="#D32727" onchange="aplicarEstilosEmTela()">
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h6>2. Infraestrutura Hidroviária (Linhas)</h6>
+                <div class="form-row">
+                    <label>Traçado VEN:</label>
+                    <select id="cfg_traco_ven" onchange="aplicarEstilosEmTela()">
+                        <option value="solida" selected>Contínua Sólida</option>
+                        <option value="tracejada">Tracejada Larga</option>
+                        <option value="pontilhada">Pontilhada</option>
+                        <option value="traco_ponto">Traço-Ponto</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Espessura VEN:</label>
+                    <input type="range" id="cfg_peso_ven" min="1.5" max="6.0" step="0.5" value="3.5" oninput="aplicarEstilosEmTela()">
+                </div>
+                <div class="form-row">
+                    <label>Cor VEN:</label>
+                    <input type="color" id="cfg_cor_ven" value="#0277BD" onchange="aplicarEstilosEmTela()">
+                </div>
+                <div class="form-row">
+                    <label>Traçado Travessias:</label>
+                    <select id="cfg_traco_travessia" onchange="aplicarEstilosEmTela()">
+                        <option value="tracejada" selected>Tracejada (Ferry)</option>
+                        <option value="solida">Contínua Sólida</option>
+                        <option value="pontilhada">Pontilhada</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Espessura Travessia:</label>
+                    <input type="range" id="cfg_peso_travessia" min="1.5" max="6.0" step="0.5" value="3.0" oninput="aplicarEstilosEmTela()">
+                </div>
+                <div class="form-row">
+                    <label>Cor Travessia:</label>
+                    <input type="color" id="cfg_cor_travessia" value="#C2185B" onchange="aplicarEstilosEmTela()">
+                </div>
+            </div>
+
+            <div class="homolog-actions">
+                <button class="btn-save-cfg" onclick="salvarEstilosNavegador()">💾 Salvar Estilos</button>
+                <button class="btn-export-cfg" onclick="baixarConfiguracaoJson()">📥 Baixar JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL LATERAL DE CAMADAS -->
+    <div class="sidebar-control">
+        <div class="sidebar-header">
+            <span>PAINEL DE CAMADAS</span>
+            <span style="font-size: 10px; opacity: 0.85;">WebGIS Desacoplado</span>
+        </div>
+        <div class="sidebar-content">
+            <div class="group-title">Mapas de Base</div>
+            <div class="layer-item">
+                <label><input type="radio" name="basemap" value="claro" checked onchange="trocarBasemap(this.value)"> Cartográfico Neutro</label>
+            </div>
+            <div class="layer-item">
+                <label><input type="radio" name="basemap" value="satelite" onchange="trocarBasemap(this.value)"> Imagem de Satélite</label>
+            </div>
+
+            <div class="group-title">Infraestrutura Aquaviária (ANTAQ)</div>
+            <div id="camadasInfraList"></div>
+
+            <div class="group-title">Limites Territoriais</div>
+            <div id="camadasLimitesList"></div>
+
+            <div class="group-title">Restrições Socioambientais</div>
+            <div id="camadasAmbientaisList"></div>
+
+            <div class="group-title">Análise Temporária</div>
+            <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+                <p>＋ Adicionar Camada</p>
+                <span>Shapefile (.ZIP), GeoJSON ou KML</span>
+                <input type="file" id="fileInput" accept=".zip,.geojson,.json,.kml" onchange="carregarArquivoLocal(event)">
+            </div>
+            <div id="camadasTemporariasList"></div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/togeojson@0.16.0/togeojson.js"></script>
+    <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
+
+    <script>
+        // Higienização contra Mojibake
+        function desmojibakeJS(s) {
+            if (!s || typeof s !== 'string') return s;
+            try { return decodeURIComponent(escape(s)); } catch(e) { return s; }
+        }
+
+        var map = L.map('map', { zoomControl: true }).setView([-14.235, -51.925], 4);
+        L.control.scale({ metric: true, imperial: false, position: 'bottomright' }).addTo(map);
+
+        map.createPane('pane_limites');     map.getPane('pane_limites').style.zIndex = 400;
+        map.createPane('pane_ambiental');   map.getPane('pane_ambiental').style.zIndex = 420;
+        map.createPane('pane_linhas');      map.getPane('pane_linhas').style.zIndex = 450;
+        map.createPane('pane_pontos');      map.getPane('pane_pontos').style.zIndex = 500;
+
+        var baseClara = L.layerGroup([
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Tiles &copy; Esri &mdash; IBGE' }),
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 })
+        ]).addTo(map);
+
+        var baseSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18, attribution: 'Tiles &copy; Esri' });
+
+        function trocarBasemap(tipo) {
+            if (tipo === 'satelite') {
+                map.removeLayer(baseClara); map.addLayer(baseSatelite);
+            } else {
+                map.removeLayer(baseSatelite); map.addLayer(baseClara);
+            }
+        }
+
+        function formatarCNPJ(v) {
+            if (!v) return "";
+            var s = ("" + v).replace(/\D/g, "");
+            if (s.length === 14) return s.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+            return v;
+        }
+
+        function bindPopupInstitucional(feat, layer, nomeCamada) {
+            var p = feat.properties || {};
+            var titulo = desmojibakeJS(p.companhia || p.Nome || p.nome || p.terrai_nom || p.Instalacao || p.Rio || p.TRECHO || p.NM_UF || nomeCamada);
+            var terminalCod = p.cdterminal || p.cdi_tuaria || "";
+            var cnpjFormatado = formatarCNPJ(p.cnpj);
+            var endereco = desmojibakeJS(p.endereco || "");
+            var fonte = p.fonte || (p.terrai_nom ? "FUNAI" : p.NM_UF ? "IBGE" : "ANTAQ");
+
+            var html = "<div class='popup-card'>" +
+                "<div class='header-box'>" +
+                    "<h4>" + titulo + "</h4>" +
+                    (terminalCod ? "<span>Código ANTAQ: " + terminalCod + "</span>" : "") +
+                "</div>" +
+                "<table>" +
+                    (p.etnia_nome ? "<tr><td class='lbl'>Etnia:</td><td>" + desmojibakeJS(p.etnia_nome) + "</td></tr>" : "") +
+                    (p.fase_ti ? "<tr><td class='lbl'>Fase TI:</td><td>" + desmojibakeJS(p.fase_ti) + "</td></tr>" : "") +
+                    (p.companhia ? "<tr><td class='lbl'>Autorizada:</td><td>" + desmojibakeJS(p.companhia) + "</td></tr>" : "") +
+                    (cnpjFormatado ? "<tr><td class='lbl'>CNPJ:</td><td>" + cnpjFormatado + "</td></tr>" : "") +
+                    (endereco ? "<tr><td class='lbl'>Endereço:</td><td>" + endereco + "</td></tr>" : "") +
+                    (p.Rio ? "<tr><td class='lbl'>Rio:</td><td>" + desmojibakeJS(p.Rio) + "</td></tr>" : "") +
+                    (p.TRECHO ? "<tr><td class='lbl'>Trecho:</td><td>" + desmojibakeJS(p.TRECHO) + "</td></tr>" : "") +
+                    "<tr><td class='lbl'>Custódia:</td><td>" + fonte + "</td></tr>" +
+                "</table></div>";
+            layer.bindPopup(html, { maxWidth: 360 });
+        }
+
+        function gerarSvgPorFormato(formato, tamInterno) {
+            if (formato === "pin") {
+                return '<svg viewBox="0 0 24 24" width="' + tamInterno + '" height="' + tamInterno + '"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>';
+            } else if (formato === "circulo") {
+                return '<svg viewBox="0 0 24 24" width="' + tamInterno + '" height="' + tamInterno + '"><circle cx="12" cy="12" r="8" fill="none" stroke="white" stroke-width="2.5"/><circle cx="12" cy="12" r="4" fill="white"/></svg>';
+            } else if (formato === "diamante") {
+                return '<svg viewBox="0 0 24 24" width="' + tamInterno + '" height="' + tamInterno + '"><path d="M12 2L2 12l10 10 10-10L12 2z"/></svg>';
+            } else if (formato === "quadrado") {
+                return '<svg viewBox="0 0 24 24" width="' + tamInterno + '" height="' + tamInterno + '"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>';
+            }
+            return '<svg viewBox="0 0 24 24" width="' + tamInterno + '" height="' + tamInterno + '"><path d="M12 2a3 3 0 0 0-3 3c0 1.3.8 2.4 2 2.8V9H9a1 1 0 0 0 0 2h2v7.1A7 7 0 0 1 5 12a1 1 0 0 0-2 0 9 9 0 0 0 8 8.9V22a1 1 0 0 0 2 0v-1.1A9 9 0 0 0 21 12a1 1 0 0 0-2 0 7 7 0 0 1-6 6.1V11h2a1 1 0 0 0 0-2h-2V7.8c1.2-.4 2-1.5 2-2.8a3 3 0 0 0-3-3zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>';
+        }
+
+        function criarMarcadorPonto(cor, formato, tamTotal) {
+            var raioBorda = (formato === "quadrado") ? "4px" : (formato === "diamante") ? "2px" : "50%";
+            var tamSvg = Math.round(tamTotal * 0.55);
+            var svgHtml = gerarSvgPorFormato(formato, tamSvg);
+            var meio = Math.round(tamTotal / 2);
+
+            return L.divIcon({
+                className: 'custom-div-icon',
+                html: '<div class="symbol-badge" style="background-color:' + cor + '; width:' + tamTotal + 'px; height:' + tamTotal + 'px; border-radius:' + raioBorda + ';">' + svgHtml + '</div>',
+                iconSize: L.point(tamTotal, tamTotal),
+                iconAnchor: L.point(meio, meio),
+                popupAnchor: L.point(0, -meio)
+            });
+        }
+
+        function obterDashArray(tipoTraco) {
+            if (tipoTraco === "tracejada") return "8, 6";
+            if (tipoTraco === "pontilhada") return "3, 4";
+            if (tipoTraco === "traco_ponto") return "12, 4, 3, 4";
+            return null;
+        }
+
+        // Variáveis de Estado
+        var camadasMap = {};
+        var subfeicoesMap = {};
+        var dadosGeoCache = {};
+        var catalogoManifesto = [];
+
+        var estilosPadrao = {
+            formatoPonto: "ancora", tamanhoPonto: 20,
+            corTUP: "#168821", corPorto: "#0C326F", corETC: "#00796B", corIP4: "#D32727",
+            tracoVEN: "solida", pesoVEN: 3.5, corVEN: "#0277BD",
+            tracoTrav: "tracejada", pesoTrav: 3.0, corTrav: "#C2185B"
+        };
+
+        function carregarEstilosAtivos() {
+            var salvo = localStorage.getItem("antaq_estilos_homologacao");
+            if (salvo) {
+                try { return JSON.parse(salvo); } catch(e) {}
+            }
+            return estilosPadrao;
+        }
+
+        var estilosAtivos = carregarEstilosAtivos();
+
+        // 1. CARREGAMENTO DO MANIFESTO E CAMADAS
+        fetch('./dados/manifesto_camadas.json')
+            .then(res => res.json())
+            .then(manifesto => {
+                catalogoManifesto = manifesto;
+                manifesto.forEach(item => {
+                    carregarCamadaDoDisco(item);
+                });
+            })
+            .catch(err => {
+                console.warn("Aviso: manifesto_camadas.json não encontrado. Carregando UFs direto.");
+                carregarCamadaDoDisco({ id: "ufs_brasil", nome: "Unidades da Federação (IBGE)", categoria: "limites", arquivo: "ufs_brasil.geojson" });
+            });
+
+        function carregarCamadaDoDisco(item) {
+            fetch('./dados/' + item.arquivo)
+                .then(res => res.json())
+                .then(geoData => {
+                    dadosGeoCache[item.id] = geoData;
+                    renderizarCamadaIndividual(item, geoData);
+                    adicionarAoMenu(item, geoData.features ? geoData.features.length : 0);
+                })
+                .catch(err => console.error("Falha ao carregar " + item.arquivo, err));
+        }
+
+        function renderizarCamadaIndividual(item, geoData) {
+            if (camadasMap[item.id]) {
+                map.removeLayer(camadasMap[item.id]);
+            }
+
+            subfeicoesMap[item.id] = [];
+            var layerObj;
+            var cfg = estilosAtivos;
+
+            if (item.categoria === "limites") {
+                layerObj = L.geoJSON(geoData, {
+                    pane: 'pane_limites',
+                    style: { color: "#546E7A", weight: 1.5, dashArray: "5, 5", opacity: 0.85, fillOpacity: 0.05, fillColor: "#90A4AE" },
+                    onEachFeature: function(feat, layer) {
+                        bindPopupInstitucional(feat, layer, item.nome);
+                        subfeicoesMap[item.id].push(layer);
+                    }
+                });
+            } else if (item.categoria === "ambiental") {
+                layerObj = L.geoJSON(geoData, {
+                    pane: 'pane_ambiental',
+                    style: { color: "#B71C1C", weight: 1.5, opacity: 0.9, fillColor: "#EF5350", fillOpacity: 0.30 },
+                    onEachFeature: function(feat, layer) {
+                        bindPopupInstitucional(feat, layer, item.nome);
+                        subfeicoesMap[item.id].push(layer);
+                    }
+                });
+            } else if (item.categoria === "aquaviaria") {
+                var isPonto = geoData.features && geoData.features[0] && geoData.features[0].geometry.type.indexOf("Point") !== -1;
+
+                if (isPonto) {
+                    layerObj = L.geoJSON(geoData, {
+                        pane: 'pane_pontos',
+                        pointToLayer: function(feat, latlng) {
+                            var p = feat.properties || {};
+                            var comp = (p.companhia || "").toLowerCase();
+                            var tipo = (p.Tipo || p.tipo || "").toLowerCase();
+                            var cor = cfg.corTUP;
+
+                            if (tipo.indexOf("porto") !== -1 || comp.indexOf("docas") !== -1 || comp.indexOf("porto") !== -1) cor = cfg.corPorto;
+                            else if (tipo.indexOf("etc") !== -1 || comp.indexOf("transbordo") !== -1) cor = cfg.corETC;
+                            else if (tipo.indexOf("ip4") !== -1 || comp.indexOf("pequeno") !== -1) cor = cfg.corIP4;
+
+                            return L.marker(latlng, { icon: criarMarcadorPonto(cor, cfg.formatoPonto, cfg.tamanhoPonto) });
+                        },
+                        onEachFeature: function(feat, layer) {
+                            bindPopupInstitucional(feat, layer, item.nome);
+                            subfeicoesMap[item.id].push(layer);
+                        }
+                    });
+                } else {
+                    var corLinha = cfg.corVEN;
+                    var peso = cfg.pesoVEN;
+                    var dash = obterDashArray(cfg.tracoVEN);
+
+                    if (item.nome.toLowerCase().indexOf("travessia") !== -1) {
+                        corLinha = cfg.corTrav;
+                        peso = cfg.pesoTrav;
+                        dash = obterDashArray(cfg.tracoTrav);
+                    }
+
+                    layerObj = L.geoJSON(geoData, {
+                        pane: 'pane_linhas',
+                        style: { color: corLinha, weight: peso, dashArray: dash, opacity: 0.9 },
+                        onEachFeature: function(feat, layer) {
+                            bindPopupInstitucional(feat, layer, item.nome);
+                            subfeicoesMap[item.id].push(layer);
+                        }
+                    });
+                }
+            }
+
+            camadasMap[item.id] = layerObj;
+            layerObj.addTo(map);
+            atualizarLegenda();
+        }
+
+        function adicionarAoMenu(item, qtd) {
+            var targetId = "camadasInfraList";
+            if (item.categoria === "limites") targetId = "camadasLimitesList";
+            else if (item.categoria === "ambiental") targetId = "camadasAmbientaisList";
+
+            var target = document.getElementById(targetId);
+            if (!target) return;
+
+            var d = document.createElement("div");
+            d.className = "layer-container";
+            d.innerHTML = 
+                '<div class="layer-header-row">' +
+                    '<div class="layer-left">' +
+                        '<button class="btn-expand" onclick="toggleDropdown(\'' + item.id + '\')">▼</button>' +
+                        '<span onclick="toggleDropdown(\'' + item.id + '\')">' + item.nome + ' (' + qtd + ')</span>' +
+                    '</div>' +
+                    '<label class="switch">' +
+                        '<input type="checkbox" checked onchange="toggleCamada(\'' + item.id + '\', this.checked)">' +
+                        '<span class="slider"></span>' +
+                    '</label>' +
+                '</div>' +
+                '<div class="items-dropdown" id="dropdown_' + item.id + '">' +
+                    '<input type="text" class="search-box" placeholder="Filtrar nesta camada..." oninput="filtrarSubitens(this.value, \'' + item.id + '\')">' +
+                    '<div class="items-list" id="list_' + item.id + '"></div>' +
+                '</div>';
+
+            target.appendChild(d);
+
+            // Popula lista pesquisável
+            var listDiv = d.querySelector("#list_" + item.id);
+            var features = dadosGeoCache[item.id] ? dadosGeoCache[item.id].features : [];
+            features.forEach(function(f, idx) {
+                var p = f.properties || {};
+                var tit = desmojibakeJS(p.companhia || p.Nome || p.nome || p.terrai_nom || p.Instalacao || p.Rio || p.TRECHO || p.NM_UF || ("Item " + (idx+1)));
+                var row = document.createElement("div");
+                row.className = "subitem-row";
+                row.dataset.nome = tit.toLowerCase();
+                row.innerHTML = "<span>📍</span> <span title='" + tit + "'>" + tit + "</span>";
+                row.onclick = function() { focarFeicao(item.id, idx); };
+                listDiv.appendChild(row);
+            });
+        }
+
+        function toggleDropdown(id) {
+            var el = document.getElementById("dropdown_" + id);
+            if (el) el.style.display = el.style.display === "block" ? "none" : "block";
+        }
+
+        function filtrarSubitens(termo, id) {
+            var t = termo.toLowerCase().trim();
+            var list = document.getElementById("list_" + id);
+            if (!list) return;
+            var rows = list.getElementsByClassName("subitem-row");
+            for (var i = 0; i < rows.length; i++) {
+                var txt = rows[i].dataset.nome || "";
+                rows[i].style.display = txt.indexOf(t) !== -1 ? "flex" : "none";
+            }
+        }
+
+        function focarFeicao(layerId, idx) {
+            var subLista = subfeicoesMap[layerId];
+            if (!subLista || !subLista[idx]) return;
+            var targetLayer = subLista[idx];
+
+            if (targetLayer.getLatLng) {
+                map.flyTo(targetLayer.getLatLng(), 15, { duration: 1.2 });
+                targetLayer.openPopup();
+            } else if (targetLayer.getBounds) {
+                map.flyToBounds(targetLayer.getBounds(), { padding: [50, 50], maxZoom: 15, duration: 1.2 });
+                targetLayer.openPopup();
+            }
+        }
+
+        function toggleCamada(id, ativa) {
+            if (camadasMap[id]) {
+                if (ativa) map.addLayer(camadasMap[id]);
+                else map.removeLayer(camadasMap[id]);
+            }
+        }
+
+        // 2. FUNÇÕES DO ESTÚDIO DE HOMOLOGAÇÃO
+        function togglePainelHomolog() {
+            var p = document.getElementById("homologPanel");
+            p.style.display = (p.style.display === "block") ? "none" : "block";
+        }
+
+        function aplicarEstilosEmTela() {
+            estilosAtivos = {
+                formatoPonto: document.getElementById("cfg_formato_ponto").value,
+                tamanhoPonto: parseInt(document.getElementById("cfg_tamanho_ponto").value),
+                corTUP: document.getElementById("cfg_cor_tup").value,
+                corPorto: document.getElementById("cfg_cor_porto").value,
+                corETC: document.getElementById("cfg_cor_etc").value,
+                corIP4: document.getElementById("cfg_cor_ip4").value,
+                tracoVEN: document.getElementById("cfg_traco_ven").value,
+                pesoVEN: parseFloat(document.getElementById("cfg_peso_ven").value),
+                corVEN: document.getElementById("cfg_cor_ven").value,
+                tracoTrav: document.getElementById("cfg_traco_travessia").value,
+                pesoTrav: parseFloat(document.getElementById("cfg_peso_travessia").value),
+                corTrav: document.getElementById("cfg_cor_travessia").value
+            };
+
+            // Re-renderiza todas as camadas com o novo estilo
+            catalogoManifesto.forEach(item => {
+                if (dadosGeoCache[item.id]) {
+                    renderizarCamadaIndividual(item, dadosGeoCache[item.id]);
+                }
+            });
+        }
+
+        function salvarEstilosNavegador() {
+            localStorage.setItem("antaq_estilos_homologacao", JSON.stringify(estilosAtivos));
+            alert("✓ Sucesso!\nEstilos homologados gravados localmente no navegador.");
+        }
+
+        function baixarConfiguracaoJson() {
+            var blob = new Blob([JSON.stringify(estilosAtivos, null, 2)], { type: "application/json" });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url;
+            a.download = "estilos_antaq.json";
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 3. LEGENDA OFICIAL
+        var legendaControl = L.control({ position: 'bottomleft' });
+        var legendaDiv = L.DomUtil.create('div', 'legend-box');
+        legendaControl.onAdd = function() { return legendaDiv; };
+        legendaControl.addTo(map);
+
+        function atualizarLegenda() {
+            var cfg = estilosAtivos;
+            var svgMini = gerarSvgPorFormato(cfg.formatoPonto, 12);
+
+            legendaDiv.innerHTML = '<h5>Convenções Oficiais</h5>' +
+                '<div class="legend-item"><span class="legend-line" style="border-top:2px dashed #546E7A; height:0; background:transparent;"></span> Limite Estadual (IBGE)</div>' +
+                '<div class="legend-item"><span class="legend-poly" style="background:#EF5350; border:1px solid #B71C1C;"></span> Terras Indígenas (FUNAI)</div>' +
+                '<div class="legend-item"><span class="legend-line" style="background:' + cfg.corVEN + '; height:' + cfg.pesoVEN + 'px;"></span> Vias Navegadas (VEN)</div>' +
+                '<div class="legend-item"><span class="legend-line" style="border-top:' + cfg.pesoTrav + 'px dashed ' + cfg.corTrav + '; height:0; background:transparent;"></span> Linhas de Travessia</div>' +
+                '<div class="legend-item"><span class="legend-icon-container" style="background:' + cfg.corTUP + '; border-radius:50%;">' + svgMini + '</span> Terminal Privado (TUP)</div>' +
+                '<div class="legend-item"><span class="legend-icon-container" style="background:' + cfg.corPorto + '; border-radius:50%;">' + svgMini + '</span> Porto Público / Org.</div>' +
+                '<div class="legend-item"><span class="legend-icon-container" style="background:' + cfg.corETC + '; border-radius:50%;">' + svgMini + '</span> Estação Transbordo (ETC)</div>' +
+                '<div class="legend-item"><span class="legend-icon-container" style="background:' + cfg.corIP4 + '; border-radius:50%;">' + svgMini + '</span> Pequeno Porte (IP4)</div>';
+        }
+
+        // 4. UPLOAD TEMPORÁRIO (ANÁLISE RÁPIDA)
+        function carregarArquivoLocal(evt) {
+            var file = evt.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+
+            if (file.name.endsWith('.geojson') || file.name.endsWith('.json')) {
+                reader.onload = function(e) {
+                    var geo = JSON.parse(e.target.result);
+                    var l = L.geoJSON(geo).addTo(map);
+                    map.fitBounds(l.getBounds());
+                    alert("Camada carregada com sucesso: " + file.name);
+                };
+                reader.readAsText(file);
+            } else if (file.name.endsWith('.zip')) {
+                reader.onload = function(e) {
+                    shp(e.target.result).then(function(geo) {
+                        var l = L.geoJSON(geo).addTo(map);
+                        map.fitBounds(l.getBounds());
+                        alert("Shapefile ZIP carregado com sucesso!");
+                    });
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+    </script>
+</body>
+</html>
