@@ -14,7 +14,6 @@
   <style>
     :root {
       --antaq-azul-escuro: #0a2540;
-      --antaq-azul-destaque: #005a9c;
       --antaq-azul-claro: #0284c7;
       --gov-amarelo: #f59e0b;
       --gov-verde: #10b981;
@@ -34,7 +33,7 @@
     }
 
     /* -------------------------------------------------------------
-       1. CABEÇALHO GOVERNAMENTAL (PADRÃO ANTAQ)
+       1. CABEÇALHO GOVERNAMENTAL
        ------------------------------------------------------------- */
     .top-header {
       position: absolute;
@@ -46,30 +45,15 @@
       align-items: center;
       justify-content: space-between;
       padding: 0 16px;
-      z-index: 1000;
+      z-index: 2000;
       color: #ffffff;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-    .brand-area {
-      display: flex;
-      flex-direction: column;
-    }
-    .brand-title {
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-    }
-    .brand-sub {
-      font-size: 10px;
-      color: #38bdf8;
-    }
-    .actions-area {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .brand-title { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
+    .brand-sub { font-size: 10px; color: #38bdf8; }
+    .actions-area { display: flex; align-items: center; gap: 10px; }
 
-    /* Botão Interativo do Ambiente de Homologação */
+    /* Botão e Menu de Homologação */
     .btn-homologacao {
       background: var(--gov-amarelo);
       color: #000;
@@ -83,9 +67,33 @@
       align-items: center;
       gap: 6px;
       text-transform: uppercase;
-      transition: 0.2s;
     }
     .btn-homologacao:hover { background: #d97706; }
+
+    .dropdown-homologacao {
+      display: none;
+      position: fixed;
+      top: 56px;
+      right: 140px;
+      background: #ffffff;
+      width: 320px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+      border-radius: 8px;
+      z-index: 99999; /* Sobreposição máxima */
+      border: 1px solid var(--borda);
+      overflow: hidden;
+    }
+    .dropdown-homologacao.aberto { display: block; }
+    .drop-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+      color: var(--texto-escuro);
+      transition: background 0.2s;
+    }
+    .drop-item:hover { background: #f8fafc; }
+    .drop-item.ativo { background: #e0f2fe; border-left: 4px solid var(--antaq-azul-claro); font-weight: 600; }
+    .drop-item small { display: block; font-size: 10px; color: var(--texto-claro); margin-top: 2px; }
 
     /* Botão Atualizar */
     .btn-atualizar {
@@ -100,20 +108,18 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      transition: 0.2s;
     }
-    .btn-atualizar:hover { background: #0369a1; }
     .girando { animation: spin 1s infinite linear; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
     /* -------------------------------------------------------------
-       2. PAINEL DE CAMADAS LATERAL INSTITUCIONAL
+       2. PAINEL DE CAMADAS LATERAL COM ESTILIZADOR EMBUTIDO
        ------------------------------------------------------------- */
     .painel-lateral {
       position: absolute;
       top: 64px;
       right: 16px;
-      width: 330px;
+      width: 350px;
       max-height: calc(100% - 80px);
       background: #ffffff;
       border-radius: 8px;
@@ -134,18 +140,9 @@
       align-items: center;
       border-bottom: 2px solid var(--antaq-azul-claro);
     }
-    .painel-header h2 { font-size: 12px; font-weight: 700; }
-    .painel-header span { font-size: 10px; color: #38bdf8; }
+    .painel-corpo { overflow-y: auto; padding-bottom: 8px; }
 
-    .painel-corpo {
-      overflow-y: auto;
-      padding-bottom: 8px;
-    }
-
-    /* Seções e Acordeons */
-    .secao {
-      border-bottom: 1px solid var(--borda);
-    }
+    .secao { border-bottom: 1px solid var(--borda); }
     .secao-titulo {
       background: #f8fafc;
       padding: 9px 12px;
@@ -156,122 +153,100 @@
       justify-content: space-between;
       align-items: center;
       cursor: pointer;
-      user-select: none;
     }
     .secao-titulo:hover { background: #f1f5f9; }
     .secao-conteudo { padding: 6px 12px; display: flex; flex-direction: column; gap: 4px; }
     .secao-conteudo.fechado { display: none; }
 
-    /* Itens de Camada e Legenda */
+    /* Linha de Camada */
     .item-camada {
+      display: flex;
+      flex-direction: column;
+      padding: 4px 0;
+      border-bottom: 1px dashed #f1f5f9;
+    }
+    .item-camada-principal {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 4px 0;
-      font-size: 11px;
-      color: var(--texto-escuro);
     }
     .camada-info {
       display: flex;
       align-items: center;
       gap: 6px;
-      max-width: 240px;
+      max-width: 230px;
+      font-size: 11px;
+      color: var(--texto-escuro);
     }
     .legenda-cor {
-      width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+      width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; cursor: pointer;
+      box-shadow: 0 0 2px rgba(0,0,0,0.4);
     }
     .badge-contador { font-size: 10px; color: #64748b; font-weight: 600; }
     .badge-erro { font-size: 10px; color: var(--gov-vermelho); font-weight: 700; margin-left: 4px; }
 
-    /* Switch CSS */
-    .switch {
-      position: relative; display: inline-block; width: 32px; height: 18px; flex-shrink: 0;
+    /* Ações de Estilo por Camada */
+    .camada-acoes { display: flex; align-items: center; gap: 6px; }
+    .btn-ferramenta-estilo {
+      background: transparent; border: none; cursor: pointer; font-size: 12px; opacity: 0.7;
     }
+    .btn-ferramenta-estilo:hover { opacity: 1; }
+
+    /* Gaveta de Ajuste de Estilo */
+    .gaveta-estilo {
+      display: none;
+      background: #f8fafc;
+      padding: 8px 10px;
+      border-radius: 6px;
+      margin-top: 6px;
+      border: 1px solid var(--borda);
+      font-size: 10px;
+    }
+    .gaveta-estilo.aberta { display: block; }
+    .linha-ajuste {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    .linha-ajuste label { font-weight: 600; color: var(--texto-claro); }
+    .linha-ajuste input[type="range"] { width: 110px; }
+
+    /* Seletor de Presets Globais */
+    .seletor-presets {
+      width: 100%;
+      padding: 5px 8px;
+      border: 1px solid var(--borda);
+      border-radius: 4px;
+      font-size: 11px;
+      background: #ffffff;
+      color: var(--texto-escuro);
+      margin-top: 4px;
+    }
+
+    /* Switch */
+    .switch { position: relative; display: inline-block; width: 30px; height: 16px; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
       position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #cbd5e1; transition: .2s; border-radius: 18px;
+      background-color: #cbd5e1; transition: .2s; border-radius: 16px;
     }
     .slider:before {
-      position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
+      position: absolute; content: ""; height: 10px; width: 10px; left: 3px; bottom: 3px;
       background-color: white; transition: .2s; border-radius: 50%;
     }
     input:checked + .slider { background-color: var(--antaq-azul-claro); }
     input:checked + .slider:before { transform: translateX(14px); }
 
-    /* Botão de Análise Temporária */
+    /* Upload */
     .btn-upload {
-      margin: 8px 12px 12px 12px;
-      padding: 10px;
-      border: 2px dashed #94a3b8;
-      border-radius: 6px;
-      background: #f8fafc;
-      text-align: center;
-      cursor: pointer;
-      transition: 0.2s;
+      margin: 8px 12px; padding: 10px; border: 2px dashed #94a3b8; border-radius: 6px;
+      background: #f8fafc; text-align: center; cursor: pointer;
     }
-    .btn-upload:hover { background: #e0f2fe; border-color: var(--antaq-azul-claro); }
     .btn-upload strong { font-size: 11px; display: block; color: var(--texto-escuro); }
     .btn-upload span { font-size: 10px; color: var(--texto-claro); }
 
-    /* -------------------------------------------------------------
-       3. MODAL DE AMBIENTE INSTITUCIONAL
-       ------------------------------------------------------------- */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
-      backdrop-filter: blur(3px);
-      z-index: 5000;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-card {
-      background: #ffffff;
-      width: 420px;
-      border-radius: 8px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-      overflow: hidden;
-    }
-    .modal-header {
-      background: var(--antaq-azul-escuro);
-      color: #fff;
-      padding: 12px 18px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 13px;
-      font-weight: 700;
-    }
-    .modal-body {
-      padding: 16px 18px;
-      font-size: 12px;
-      color: var(--texto-escuro);
-      line-height: 1.5;
-    }
-    .modal-opcao {
-      border: 2px solid var(--borda);
-      border-radius: 6px;
-      padding: 10px;
-      margin-top: 10px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .modal-opcao:hover { border-color: var(--antaq-azul-claro); background: #f0f9ff; }
-    .modal-opcao.selecionada { border-color: var(--antaq-azul-claro); background: #e0f2fe; font-weight: 600; }
-    .modal-footer {
-      padding: 10px 18px;
-      background: #f8fafc;
-      border-top: 1px solid var(--borda);
-      display: flex;
-      justify-content: flex-end;
-    }
-    .btn-fechar {
-      background: #64748b; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; font-size: 11px; cursor: pointer;
-    }
-
-    /* Rótulos e Popups com Halo Escuro */
+    /* Rótulos e Popups */
     .rotulo-uf {
       background: transparent !important; border: none !important; box-shadow: none !important;
       font-size: 12px !important; font-weight: 700 !important; color: #fff !important;
@@ -286,28 +261,26 @@
     .pop-linha { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f1f5f9; }
     .pop-lbl { font-weight: 600; color: var(--texto-claro); }
     .pop-val { font-weight: 700; color: var(--texto-escuro); }
-    .pop-rodape { background: #f8fafc; padding: 6px 14px; font-size: 10px; color: #64748b; border-top: 1px solid var(--borda); display: flex; justify-content: space-between; }
 
-    /* Notificação Toast */
     #toast {
       position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
       background: rgba(15, 23, 42, 0.95); color: #ffffff; padding: 9px 18px;
-      border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 4000;
+      border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 50000;
       display: none; box-shadow: 0 6px 20px rgba(0,0,0,0.4); border-left: 4px solid var(--gov-verde);
     }
   </style>
 </head>
 <body>
 
-  <!-- 1. CABEÇALHO GOVERNAMENTAL -->
+  <!-- 1. BARRA SUPERIOR -->
   <header class="top-header">
     <div class="brand-area">
       <div class="brand-title">AGÊNCIA NACIONAL DE TRANSPORTES AQUAVIÁRIOS &bull; ANTAQ</div>
       <div class="brand-sub">SISTEMA WEBGIS DE ESTUDOS SETORIAIS E INFRAESTRUTURA &mdash; GEE</div>
     </div>
     <div class="actions-area">
-      <button class="btn-homologacao" onclick="abrirModalAmbiente()">
-        <span id="txt-ambiente">Ambiente de Homologação</span> ⚙️
+      <button class="btn-homologacao" onclick="toggleDropdownHomologacao(event)">
+        <span id="txt-ambiente">Homologação (Estudos)</span> &#9662;
       </button>
       <button class="btn-atualizar" id="btn-sync" onclick="atualizarTodasCamadas()">
         <span id="ico-sync">🔄</span> Atualizar
@@ -315,187 +288,92 @@
     </div>
   </header>
 
-  <!-- Notificação Flutuante -->
-  <div id="toast"></div>
+  <!-- 2. DROPDOWN DO AMBIENTE (POSICIONAMENTO BLINDADO) -->
+  <div class="dropdown-homologacao" id="drop-ambiente">
+    <div class="drop-item ativo" onclick="selecionarAmbiente('homologacao')">
+      <strong>Ambiente de Homologação (Estudos GEE)</strong>
+      <small>Lê os arquivos da pasta local <code>dados/</code> onde você insere os novos cruzamentos do QGIS.</small>
+    </div>
+    <div class="drop-item" onclick="selecionarAmbiente('producao')">
+      <strong>Ambiente de Produção (Oficial ANTAQ)</strong>
+      <small>Conexão com os servidores e geoserviços oficiais consolidados da ANTAQ e INDE.</small>
+    </div>
+  </div>
 
-  <!-- Contêiner do Mapa Leaflet -->
+  <div id="toast"></div>
   <div id="mapa" style="margin-top: 52px; height: calc(100% - 52px);"></div>
 
-  <!-- 2. PAINEL DE CAMADAS LATERAL INSTITUCIONAL (NATIVO E BLINDADO) -->
+  <!-- 3. PAINEL DE CAMADAS LATERAL -->
   <aside class="painel-lateral">
     <div class="painel-header">
       <h2>PAINEL DE CAMADAS</h2>
-      <span>WebGIS Desacoplado</span>
+      <span>WebGIS v2.0</span>
     </div>
 
     <div class="painel-corpo">
       
-      <!-- Seção: Mapas de Base -->
+      <!-- Presets Globais de Estilização -->
+      <div class="secao">
+        <div class="secao-titulo" onclick="alternarSecao(this)">
+          <span>Paleta Cartográfica Global</span>
+          <span>&#9662;</span>
+        </div>
+        <div class="secao-conteudo">
+          <select class="seletor-presets" onchange="aplicarPresetGlobal(this.value)">
+            <option value="padrao_antaq">🌐 Padrão Institucional ANTAQ</option>
+            <option value="neon_satellite">🚀 Neon Satellite (NASA High-Contrast)</option>
+            <option value="classica">🗺️ Cartografia Clássica (IBGE / USGS)</option>
+            <option value="acessibilidade">👁️ Acessibilidade Universal (Viridis)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Mapas de Base -->
       <div class="secao">
         <div class="secao-titulo" onclick="alternarSecao(this)">
           <span>Mapas de Base</span>
           <span>&#9662;</span>
         </div>
         <div class="secao-conteudo">
-          <label class="item-camada">
-            <span class="camada-info">Imagem de Satélite (Esri)</span>
+          <label style="display:flex; justify-content:space-between; font-size:11px; padding:3px 0;">
+            <span>Imagem de Satélite (Esri)</span>
             <input type="radio" name="basemap" value="satelite" checked onchange="trocarBasemap(this.value)">
           </label>
-          <label class="item-camada">
-            <span class="camada-info">Mapa Técnico Escuro (Esri Dark)</span>
+          <label style="display:flex; justify-content:space-between; font-size:11px; padding:3px 0;">
+            <span>Mapa Técnico Escuro (Esri Dark)</span>
             <input type="radio" name="basemap" value="escuro" onchange="trocarBasemap(this.value)">
           </label>
         </div>
       </div>
 
-      <!-- Seção: Infraestrutura Aquaviária -->
+      <!-- Infraestrutura Aquaviária -->
       <div class="secao">
         <div class="secao-titulo" onclick="alternarSecao(this)">
           <span>Infraestrutura Aquaviária (ANTAQ)</span>
           <span>&#9662;</span>
         </div>
-        <div class="secao-conteudo">
-          <!-- Portos -->
-          <div class="item-camada">
-            <div class="camada-info">
-              <span class="legenda-cor" style="background:#10b981;"></span>
-              <span>Instalações Portuárias</span>
-              <span class="badge-contador" id="cnt-instalacoes_portuarias"></span>
-              <span class="badge-erro" id="err-instalacoes_portuarias"></span>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="chk-instalacoes_portuarias" checked onchange="toggleCamada('instalacoes_portuarias', this.checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <!-- Vias Navegadas -->
-          <div class="item-camada">
-            <div class="camada-info">
-              <span class="legenda-cor" style="background:#00e5ff;"></span>
-              <span>Vias Navegadas</span>
-              <span class="badge-contador" id="cnt-vias_navegadas"></span>
-              <span class="badge-erro" id="err-vias_navegadas"></span>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="chk-vias_navegadas" checked onchange="toggleCamada('vias_navegadas', this.checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <!-- Travessias -->
-          <div class="item-camada">
-            <div class="camada-info">
-              <span class="legenda-cor" style="background:#f59e0b;"></span>
-              <span>Linhas de Travessias</span>
-              <span class="badge-contador" id="cnt-linhas_travessias"></span>
-              <span class="badge-erro" id="err-linhas_travessias"></span>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="chk-linhas_travessias" checked onchange="toggleCamada('linhas_travessias', this.checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <!-- Embarcações AIS -->
-          <div class="item-camada">
-            <div class="camada-info">
-              <span class="legenda-cor" style="background:#38bdf8;"></span>
-              <span>Tráfego de Embarcações / AIS</span>
-              <span class="badge-contador" id="cnt-embarcacoes"></span>
-              <span class="badge-erro" id="err-embarcacoes"></span>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="chk-embarcacoes" checked onchange="toggleCamada('embarcacoes', this.checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
-        </div>
+        <div class="secao-conteudo" id="grupo-infra"></div>
       </div>
 
-      <!-- Seção: Limites Territoriais -->
+      <!-- Limites Territoriais -->
       <div class="secao">
         <div class="secao-titulo" onclick="alternarSecao(this)">
           <span>Limites Territoriais</span>
           <span>&#9662;</span>
         </div>
-        <div class="secao-conteudo">
-          <!-- UF -->
-          <div class="item-camada">
-            <div class="camada-info">
-              <span class="legenda-cor" style="background:#60a5fa;"></span>
-              <span>Unidades da Federação (IBGE)</span>
-              <span class="badge-contador" id="cnt-uf"></span>
-              <span class="badge-erro" id="err-uf"></span>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="chk-uf" checked onchange="toggleCamada('uf', this.checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <!-- Regiões -->
-          <div class="item-camada">
-            <div class="camada-info">
-              <span class="legenda-cor" style="background:#818cf8;"></span>
-              <span>Regiões do Brasil</span>
-              <span class="badge-contador" id="cnt-regioes"></span>
-              <span class="badge-erro" id="err-regioes"></span>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="chk-regioes" checked onchange="toggleCamada('regioes', this.checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <!-- País -->
-          <div class="item-camada">
-            <div class="camada-info">
-              <span class="legenda-cor" style="background:#cbd5e1;"></span>
-              <span>Limite Nacional</span>
-              <span class="badge-contador" id="cnt-pais"></span>
-              <span class="badge-erro" id="err-pais"></span>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="chk-pais" onchange="toggleCamada('pais', this.checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
-        </div>
+        <div class="secao-conteudo" id="grupo-limites"></div>
       </div>
 
-      <!-- Seção: Restrições Socioambientais -->
+      <!-- Restrições Socioambientais -->
       <div class="secao">
         <div class="secao-titulo" onclick="alternarSecao(this)">
           <span>Restrições Socioambientais</span>
           <span>&#9662;</span>
         </div>
-        <div class="secao-conteudo">
-          <!-- Poligonais TIS -->
-          <div class="item-camada">
-            <div class="camada-info">
-              <span class="legenda-cor" style="background:#ef4444;"></span>
-              <span>Poligonais Portuárias / TIS</span>
-              <span class="badge-contador" id="cnt-tis_poligonais"></span>
-              <span class="badge-erro" id="err-tis_poligonais"></span>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="chk-tis_poligonais" checked onchange="toggleCamada('tis_poligonais', this.checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <!-- Amazônia Legal -->
-          <div class="item-camada">
-            <div class="camada-info">
-              <span class="legenda-cor" style="background:#059669;"></span>
-              <span>Estados da Amazônia Legal</span>
-              <span class="badge-contador" id="cnt-estados_amazonia_legal"></span>
-              <span class="badge-erro" id="err-estados_amazonia_legal"></span>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="chk-estados_amazonia_legal" checked onchange="toggleCamada('estados_amazonia_legal', this.checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
-        </div>
+        <div class="secao-conteudo" id="grupo-restricoes"></div>
       </div>
 
-      <!-- Seção: Análise Temporária (Upload) -->
+      <!-- Análise Temporária -->
       <div class="secao">
         <div class="secao-titulo" onclick="alternarSecao(this)">
           <span>Análise Temporária</span>
@@ -514,72 +392,49 @@
     </div>
   </aside>
 
-  <!-- 3. MODAL INSTITUCIONAL: AMBIENTE DE TRABALHO -->
-  <div class="modal-overlay" id="modal-ambiente">
-    <div class="modal-card">
-      <div class="modal-header">
-        <span>Controle de Ambiente de Trabalho &bull; ANTAQ</span>
-        <span style="cursor:pointer;" onclick="fecharModalAmbiente()">&times;</span>
-      </div>
-      <div class="modal-body">
-        <p>Selecione o ambiente para orientar a origem das camadas geográficas:</p>
-        <div class="modal-opcao selecionada" id="opt-homolog" onclick="definirAmbiente('homologacao')">
-          <strong>Ambiente de Homologação (Estudos GEE)</strong><br>
-          <span style="font-size:11px; color:#64748b;">Consome arquivos locais da pasta <code>dados/</code> gerados pelo QGIS para testes de novos cruzamentos e análises.</span>
-        </div>
-        <div class="modal-opcao" id="opt-prod" onclick="definirAmbiente('producao')">
-          <strong>Ambiente de Produção (Oficial ANTAQ)</strong><br>
-          <span style="font-size:11px; color:#64748b;">Consome as bases corporativas homologadas da ANTAQ e da INDE via webservices oficiais.</span>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-fechar" onclick="fecharModalAmbiente()">Concluir</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
     // =========================================================
-    // 4. CONFIGURAÇÃO OFICIAL DAS CAMADAS (MAPA DE FONTES)
+    // 4. CONFIGURAÇÃO BASE DAS CAMADAS E PALETAS GLOBAIS
     // =========================================================
-    const FONTES_CAMADAS = [
-      { id: "instalacoes_portuarias", arquivo: "dados/instalacoes_portuarias.geojson", cor: "#10b981" },
-      { id: "vias_navegadas", arquivo: "dados/vias_economicamente_navegadas.geojson", cor: "#00e5ff" },
-      { id: "linhas_travessias", arquivo: "dados/linhas_travessias.geojson", cor: "#f59e0b" },
-      { id: "embarcacoes", arquivo: "dados/embarcacoes.geojson", cor: "#38bdf8" },
-      { id: "uf", arquivo: "dados/uf.geojson", cor: "#60a5fa" },
-      { id: "regioes", arquivo: "dados/regioes.geojson", cor: "#818cf8" },
-      { id: "pais", arquivo: "dados/pais.geojson", cor: "#cbd5e1" },
-      { id: "tis_poligonais", arquivo: "dados/tis_poligonais.geojson", cor: "#ef4444" },
-      { id: "estados_amazonia_legal", arquivo: "dados/estados_amazonia_legal.geojson", cor: "#059669" }
-    ];
+    const CONFIG_CAMADAS = {
+      instalacoes_portuarias: { nome: "Instalações Portuárias", grupo: "infra", arquivos: ["dados/instalacoes_portuarias.geojson"], cor: "#10b981", opacidade: 0.95, peso: 6, ativa: true },
+      vias_navegadas: { 
+        nome: "Vias Economicamente Navegadas", 
+        grupo: "infra", 
+        arquivos: ["dados/vias_economicamente_navegadas.geojson", "dados/Vias_Economicamente_Navegadas.geojson"], 
+        cor: "#00e5ff", opacidade: 0.9, peso: 2.5, ativa: true 
+      },
+      linhas_travessias: { nome: "Linhas de Travessias", grupo: "infra", arquivos: ["dados/linhas_travessias.geojson"], cor: "#f59e0b", opacidade: 0.9, peso: 2, ativa: true },
+      embarcacoes: { nome: "Tráfego de Embarcações / AIS", grupo: "infra", arquivos: ["dados/embarcacoes.geojson"], cor: "#38bdf8", opacidade: 0.8, peso: 4, ativa: true },
+      uf: { nome: "Unidades da Federação (IBGE)", grupo: "limites", arquivos: ["dados/uf.geojson"], cor: "#60a5fa", opacidade: 0.8, peso: 1.2, ativa: true },
+      regioes: { nome: "Regiões do Brasil", grupo: "limites", arquivos: ["dados/regioes.geojson"], cor: "#818cf8", opacidade: 0.7, peso: 1.5, ativa: true },
+      pais: { nome: "Limite Nacional", grupo: "limites", arquivos: ["dados/pais.geojson"], cor: "#cbd5e1", opacidade: 0.5, peso: 2, ativa: false },
+      tis_poligonais: { nome: "Poligonais Portuárias / TIS", grupo: "restricoes", arquivos: ["dados/tis_poligonais.geojson"], cor: "#ef4444", opacidade: 0.25, peso: 1.5, ativa: true },
+      estados_amazonia_legal: { nome: "Estados da Amazônia Legal", grupo: "restricoes", arquivos: ["dados/estados_amazonia_legal.geojson"], cor: "#059669", opacidade: 0.1, peso: 2, ativa: true }
+    };
+
+    const PRESETS = {
+      padrao_antaq: { vias_navegadas: "#00e5ff", instalacoes_portuarias: "#10b981", linhas_travessias: "#f59e0b", tis_poligonais: "#ef4444" },
+      neon_satellite: { vias_navegadas: "#39ff14", instalacoes_portuarias: "#ff007f", linhas_travessias: "#ffff00", tis_poligonais: "#ff073a" },
+      classica: { vias_navegadas: "#0284c7", instalacoes_portuarias: "#b45309", linhas_travessias: "#64748b", tis_poligonais: "#991b1b" },
+      acessibilidade: { vias_navegadas: "#21918c", instalacoes_portuarias: "#fde725", linhas_travessias: "#5ec962", tis_poligonais: "#440154" }
+    };
 
     const CAMADAS_MAPA = {};
 
     // =========================================================
-    // 5. INICIALIZAÇÃO DO MAPA E BASEMAPS (SEM APIS / GRATUITO)
+    // 5. INICIALIZAÇÃO DO MAPA
     // =========================================================
     const mapa = L.map('mapa', {
-      center: [-14.0, -52.0],
-      zoom: 4,
-      zoomControl: false
+      center: [-14.0, -52.0], zoom: 4, zoomControl: false
     });
     L.control.zoom({ position: 'bottomleft' }).addTo(mapa);
 
-    // Satélite Esri
-    const sateliteEsri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Esri Satellite', maxZoom: 18
-    }).addTo(mapa);
-
-    // Rótulos transparentes com nomes de capitais, cidades e divisas (Esri Reference)
-    const rotulosReferencia = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Esri Labels', pane: 'overlayPane'
-    }).addTo(mapa);
-
-    // Mapa Escuro Esri Dark Gray (100% gratuito e sem marca d'água)
+    const sateliteEsri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 }).addTo(mapa);
+    const rotulosReferencia = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { pane: 'overlayPane' }).addTo(mapa);
     const mapaEscuroEsri = L.layerGroup([
       L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'),
       L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}')
@@ -598,124 +453,218 @@
     }
 
     // =========================================================
-    // 6. ESTILOS E POPUPS EXECUTIVOS DA ANTAQ
+    // 6. CONSTRUÇÃO DO PAINEL LATERAL COM ESTILIZADOR DINÂMICO
     // =========================================================
-    function obterEstilo(id, cor) {
+    function construirPainel() {
+      for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
+        const grupoEl = document.getElementById(`grupo-${cfg.grupo}`);
+        if (!grupoEl) continue;
+
+        const container = document.createElement('div');
+        container.className = 'item-camada';
+        container.innerHTML = `
+          <div class="item-camada-principal">
+            <div class="camada-info">
+              <span class="legenda-cor" id="cor-box-${id}" style="background:${cfg.cor};" onclick="toggleGavetaEstilo('${id}')"></span>
+              <span>${cfg.nome}</span>
+              <span class="badge-contador" id="cnt-${id}"></span>
+              <span class="badge-erro" id="err-${id}"></span>
+            </div>
+            <div class="camada-acoes">
+              <button class="btn-ferramenta-estilo" title="Ajustar Estilo" onclick="toggleGavetaEstilo('${id}')">🎨</button>
+              <button class="btn-ferramenta-estilo" title="Centralizar Camada" onclick="zoomNaCamada('${id}')">🔍</button>
+              <label class="switch">
+                <input type="checkbox" id="chk-${id}" ${cfg.ativa ? 'checked' : ''} onchange="toggleCamada('${id}', this.checked)">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+          <!-- Gaveta de Estilo Individual -->
+          <div class="gaveta-estilo" id="gaveta-${id}">
+            <div class="linha-ajuste">
+              <label>Cor Principal:</label>
+              <input type="color" value="${cfg.cor}" id="picker-${id}" onchange="atualizarEstiloCamada('${id}', 'cor', this.value)">
+            </div>
+            <div class="linha-ajuste">
+              <label>Opacidade:</label>
+              <input type="range" min="0.05" max="1" step="0.05" value="${cfg.opacidade}" oninput="atualizarEstiloCamada('${id}', 'opacidade', parseFloat(this.value))">
+            </div>
+            <div class="linha-ajuste">
+              <label>Espessura / Tamanho:</label>
+              <input type="range" min="1" max="10" step="0.5" value="${cfg.peso}" oninput="atualizarEstiloCamada('${id}', 'peso', parseFloat(this.value))">
+            </div>
+          </div>
+        `;
+        grupoEl.appendChild(container);
+      }
+    }
+
+    function toggleGavetaEstilo(id) {
+      document.getElementById(`gaveta-${id}`).classList.toggle('aberta');
+    }
+
+    function zoomNaCamada(id) {
+      if (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) {
+        mapa.fitBounds(CAMADAS_MAPA[id].getBounds());
+      } else {
+        exibirToast("Ative a camada para aproximar.");
+      }
+    }
+
+    // =========================================================
+    // 7. MOTOR DE ESTILIZAÇÃO E ATUALIZAÇÃO EM TEMPO REAL
+    // =========================================================
+    function obterEstiloLeaflet(id) {
+      const cfg = CONFIG_CAMADAS[id];
       return {
         pointToLayer: (f, latlng) => {
-          if (id === 'instalacoes_portuarias') {
-            const ehTup = (f.properties.tipo || f.properties.TIPO || '').toUpperCase().includes('TUP');
-            return L.circleMarker(latlng, {
-              radius: 6,
-              fillColor: ehTup ? '#10b981' : '#0284c7',
-              color: '#ffffff',
-              weight: 1.5,
-              fillOpacity: 0.95
-            });
-          }
-          return L.circleMarker(latlng, { radius: 4, fillColor: cor, color: '#0369a1', weight: 1, fillOpacity: 0.8 });
+          return L.circleMarker(latlng, {
+            radius: cfg.peso,
+            fillColor: cfg.cor,
+            color: '#ffffff',
+            weight: 1.5,
+            fillOpacity: cfg.opacidade
+          });
         },
         style: (f) => {
-          if (id === 'vias_navegadas') return { color: '#00e5ff', weight: 2.5, opacity: 0.9 };
-          if (id === 'linhas_travessias') return { color: '#f59e0b', weight: 2, dashArray: '5,5', opacity: 0.9 };
-          if (id === 'tis_poligonais') return { color: '#ef4444', weight: 1.5, fillColor: '#ef4444', fillOpacity: 0.25 };
-          if (id === 'uf') return { color: '#60a5fa', weight: 1.2, fillOpacity: 0.0 };
-          return { color: cor, weight: 1.5, fillColor: cor, fillOpacity: 0.1 };
+          return {
+            color: cfg.cor,
+            weight: cfg.peso,
+            fillColor: cfg.cor,
+            fillOpacity: cfg.opacidade,
+            dashArray: id === 'linhas_travessias' ? '5,5' : null
+          };
         },
         onEachFeature: (f, layer) => {
           const p = f.properties || {};
-
-          // Popup Institucional Executivo (sem Custódia ANTAQ)
           if (id === 'instalacoes_portuarias') {
-            const nome = p.nome || p.NOME_INSTALACAO || p.NOME || 'Terminal Aquaviário';
-            const tipo = p.tipo || p.TIPO_INSTALACAO || 'Terminal Portuário';
+            const nome = p.nome || p.NOME_INSTALACAO || 'Terminal Portuário';
+            const tipo = p.tipo || p.TIPO_INSTALACAO || 'Porto / TUP';
             const mun = p.municipio || p.MUNICIPIO || '-';
             const uf = p.uf || p.UF || '-';
-            const carga = p.perfil_carga || p.PERFIL_CARGA || 'Geral';
-
             layer.bindPopup(`
-              <div class="pop-topo"><span>${nome}</span></div>
+              <div class="pop-topo">${nome}</div>
               <div class="pop-corpo">
                 <div class="pop-linha"><span class="pop-lbl">Tipo:</span><span class="pop-val">${tipo}</span></div>
-                <div class="pop-linha"><span class="pop-lbl">Município/UF:</span><span class="pop-val">${mun}/${uf}</span></div>
-                <div class="pop-linha"><span class="pop-lbl">Perfil de Carga:</span><span class="pop-val">${carga}</span></div>
-              </div>
-              <div class="pop-rodape">
-                <span>Regulação: <b>ANTAQ</b></span>
-                <span>GEE &bull; Estudos</span>
+                <div class="pop-linha"><span class="pop-lbl">Local:</span><span class="pop-val">${mun}/${uf}</span></div>
+                <div class="pop-linha"><span class="pop-lbl">Regulação:</span><span class="pop-val">ANTAQ</span></div>
               </div>
             `);
           }
-
-          // Rótulo permanente de UF com Halo escuro
           if (id === 'uf') {
             const sigla = p.SIGLA_UF || p.sigla || p.UF || p.nome;
             if (sigla) layer.bindTooltip(sigla, { permanent: true, direction: 'center', className: 'rotulo-uf' });
+          }
+          if (id === 'vias_navegadas') {
+            const rio = p.rio || p.NOME_RIO || p.nome || 'Trecho Hidroviário';
+            layer.bindTooltip(`Rio: ${rio}`, { sticky: true });
           }
         }
       };
     }
 
+    function atualizarEstiloCamada(id, propriedade, valor) {
+      CONFIG_CAMADAS[id][propriedade] = valor;
+      if (propriedade === 'cor') {
+        document.getElementById(`cor-box-${id}`).style.backgroundColor = valor;
+        document.getElementById(`picker-${id}`).value = valor;
+      }
+
+      if (CAMADAS_MAPA[id]) {
+        const cfg = CONFIG_CAMADAS[id];
+        CAMADAS_MAPA[id].eachLayer(l => {
+          if (l.setStyle) {
+            l.setStyle({ color: cfg.cor, weight: cfg.peso, fillColor: cfg.cor, fillOpacity: cfg.opacidade });
+          }
+          if (l.setRadius) {
+            l.setRadius(cfg.peso);
+            l.setStyle({ fillColor: cfg.cor, fillOpacity: cfg.opacidade });
+          }
+        });
+      }
+    }
+
+    function aplicarPresetGlobal(chavePreset) {
+      const preset = PRESETS[chavePreset];
+      if (!preset) return;
+      for (const [id, cor] of Object.entries(preset)) {
+        if (CONFIG_CAMADAS[id]) {
+          atualizarEstiloCamada(id, 'cor', cor);
+        }
+      }
+      exibirToast(`✓ Paleta global alterada: ${chavePreset.toUpperCase()}`);
+    }
+
     // =========================================================
-    // 7. FUNÇÃO DE ATUALIZAÇÃO BLINDADA (BOTÃO ATUALIZAR)
+    // 8. CARREGAMENTO ROBUSTO COM DUPLA CHECAGEM (CORREÇÃO VIAS)
     // =========================================================
-    function atualizarTodasCamadas() {
-      const btn = document.getElementById('btn-sync');
-      const ico = document.getElementById('ico-sync');
+    function carregarFonteComFallback(id, urls, timestamp) {
+      const cntEl = document.getElementById(`cnt-${id}`);
+      const errEl = document.getElementById(`err-${id}`);
+      const chkEl = document.getElementById(`chk-${id}`);
 
-      btn.disabled = true;
-      ico.classList.add('girando');
+      const tentarUrl = (idx) => {
+        if (idx >= urls.length) {
+          console.warn(`[FALHA] Nenhuma URL válida para: ${id}`);
+          if (errEl) errEl.innerText = '⚠️ ausente';
+          return;
+        }
 
-      const timestamp = new Date().getTime();
-      let carregadas = 0;
-
-      const promessas = FONTES_CAMADAS.map(cfg => {
-        const url = `${cfg.arquivo}?_t=${timestamp}`;
-        const cntEl = document.getElementById(`cnt-${cfg.id}`);
-        const errEl = document.getElementById(`err-${cfg.id}`);
-        const chkEl = document.getElementById(`chk-${cfg.id}`);
-
-        return fetch(url)
+        fetch(`${urls[idx]}?_t=${timestamp}`)
           .then(res => {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             return res.json();
           })
           .then(dados => {
-            const opcoes = obterEstilo(cfg.id, cfg.cor);
+            // Valida integridade do GeoJSON
+            if (!dados || !dados.features) throw new Error("GeoJSON corrompido ou vazio");
 
-            // Se já existe: substitui sem duplicar
-            if (CAMADAS_MAPA[cfg.id]) {
-              CAMADAS_MAPA[cfg.id].clearLayers();
-              CAMADAS_MAPA[cfg.id].addData(dados);
+            const opcoes = obterEstiloLeaflet(id);
+
+            if (CAMADAS_MAPA[id]) {
+              CAMADAS_MAPA[id].clearLayers();
+              CAMADAS_MAPA[id].addData(dados);
             } else {
-              CAMADAS_MAPA[cfg.id] = L.geoJSON(dados, opcoes);
+              CAMADAS_MAPA[id] = L.geoJSON(dados, opcoes);
               if (chkEl && chkEl.checked) {
-                CAMADAS_MAPA[cfg.id].addTo(mapa);
+                CAMADAS_MAPA[id].addTo(mapa);
               }
             }
 
-            const count = dados.features ? dados.features.length : 0;
-            if (cntEl) cntEl.innerText = `(${count})`;
+            if (cntEl) cntEl.innerText = `(${dados.features.length})`;
             if (errEl) errEl.innerText = '';
-            carregadas++;
+            console.log(`[SUCESSO] Camada ${id} carregada de ${urls[idx]}`);
           })
           .catch(err => {
-            console.warn(`[AVISO] Falha ao carregar ${cfg.arquivo}:`, err.message);
-            if (errEl) errEl.innerText = '⚠️ ausente';
+            console.warn(`Tentativa falhou para ${urls[idx]}:`, err.message);
+            tentarUrl(idx + 1); // Tenta o próximo nome da lista
           });
-      });
+      };
 
-      Promise.allSettled(promessas).then(() => {
+      tentarUrl(0);
+    }
+
+    function atualizarTodasCamadas() {
+      const btn = document.getElementById('btn-sync');
+      const ico = document.getElementById('ico-sync');
+      btn.disabled = true;
+      ico.classList.add('girando');
+
+      const ts = new Date().getTime();
+
+      for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
+        carregarFonteComFallback(id, cfg.arquivos, ts);
+      }
+
+      setTimeout(() => {
         btn.disabled = false;
         ico.classList.remove('girando');
-        const hora = new Date().toLocaleTimeString('pt-BR');
-        exibirToast(`✓ Sincronização concluída às ${hora} (${carregadas} camadas carregadas)`);
-      });
+        exibirToast(`✓ Sincronização concluída às ${new Date().toLocaleTimeString('pt-BR')}`);
+      }, 1200);
     }
 
     function toggleCamada(id, ligar) {
       if (!CAMADAS_MAPA[id]) {
-        // Se a camada ainda não foi carregada em memória, tenta carregar imediatamente
         atualizarTodasCamadas();
         return;
       }
@@ -727,41 +676,41 @@
     }
 
     function alternarSecao(el) {
-      const conteudo = el.nextElementSibling;
-      conteudo.classList.toggle('fechado');
+      el.nextElementSibling.classList.toggle('fechado');
     }
 
     // =========================================================
-    // 8. INTERAÇÃO DO AMBIENTE DE HOMOLOGAÇÃO
+    // 9. CONTROLE DO AMBIENTE DE HOMOLOGAÇÃO
     // =========================================================
-    function abrirModalAmbiente() {
-      document.getElementById('modal-ambiente').style.display = 'flex';
+    function toggleDropdownHomologacao(e) {
+      e.stopPropagation();
+      document.getElementById('drop-ambiente').classList.toggle('aberto');
     }
-    function fecharModalAmbiente() {
-      document.getElementById('modal-ambiente').style.display = 'none';
-    }
-    function definirAmbiente(tipo) {
+
+    function selecionarAmbiente(tipo) {
       const txt = document.getElementById('txt-ambiente');
-      const optH = document.getElementById('opt-homolog');
-      const optP = document.getElementById('opt-prod');
+      const items = document.querySelectorAll('.drop-item');
+      items.forEach(i => i.classList.remove('ativo'));
 
       if (tipo === 'homologacao') {
-        txt.innerText = 'Ambiente de Homologação';
-        optH.classList.add('selecionada');
-        optP.classList.remove('selecionada');
-        exibirToast('Ambiente: Homologação (Arquivos locais da pasta dados/)');
+        txt.innerText = 'Homologação (Estudos)';
+        items[0].classList.add('ativo');
+        exibirToast('Ambiente: Homologação (Bases locais dados/)');
       } else {
-        txt.innerText = 'Ambiente de Produção';
-        optP.classList.add('selecionada');
-        optH.classList.remove('selecionada');
-        exibirToast('Ambiente: Produção (Bases homologadas oficiais ANTAQ)');
+        txt.innerText = 'Produção (Oficial)';
+        items.classList.add('ativo');
+        exibirToast('Ambiente: Produção (Bases homologadas oficiais)');
       }
-      fecharModalAmbiente();
+      document.getElementById('drop-ambiente').classList.remove('aberto');
       atualizarTodasCamadas();
     }
 
+    window.addEventListener('click', () => {
+      document.getElementById('drop-ambiente').classList.remove('aberto');
+    });
+
     // =========================================================
-    // 9. ANÁLISE TEMPORÁRIA: UPLOAD LOCAL (SHP ZIP / GEOJSON)
+    // 10. ANÁLISE TEMPORÁRIA: SHAPEFILE (.ZIP) E GEOJSON
     // =========================================================
     function processarArquivoLocal(input) {
       const file = input.files[0];
@@ -770,18 +719,15 @@
       const reader = new FileReader();
       if (file.name.toLowerCase().endsWith('.zip')) {
         reader.onload = function(e) {
-          shp(e.target.result).then(function(geojson) {
-            plotarTemporaria(file.name, geojson);
-          });
+          shp(e.target.result).then(geojson => plotarTemporaria(file.name, geojson));
         };
         reader.readAsArrayBuffer(file);
       } else {
         reader.onload = function(e) {
           try {
-            const geojson = JSON.parse(e.target.result);
-            plotarTemporaria(file.name, geojson);
+            plotarTemporaria(file.name, JSON.parse(e.target.result));
           } catch(err) {
-            alert('Arquivo GeoJSON inválido.');
+            alert('Arquivo GeoJSON/KML inválido.');
           }
         };
         reader.readAsText(file);
@@ -790,12 +736,10 @@
 
     function plotarTemporaria(nome, geojson) {
       const camada = L.geoJSON(geojson, {
-        style: { color: '#ec4899', weight: 2, fillOpacity: 0.3 },
+        style: { color: '#ec4899', weight: 2.5, fillOpacity: 0.3 },
         onEachFeature: (f, l) => {
-          let h = `<div class="pop-topo">Análise Temporária: ${nome}</div><div class="pop-corpo">`;
-          for (let k in f.properties) {
-            h += `<div class="pop-linha"><span class="pop-lbl">${k}:</span><span class="pop-val">${f.properties[k]}</span></div>`;
-          }
+          let h = `<div class="pop-topo">Análise: ${nome}</div><div class="pop-corpo">`;
+          for (let k in f.properties) h += `<div class="pop-linha"><span class="pop-lbl">${k}:</span><span class="pop-val">${f.properties[k]}</span></div>`;
           h += '</div>';
           l.bindPopup(h);
         }
@@ -805,14 +749,14 @@
 
       const lista = document.getElementById('lista-temporarias');
       const item = document.createElement('div');
-      item.className = 'item-camada';
+      item.className = 'item-camada-principal';
+      item.style.padding = '4px 0';
       item.innerHTML = `
-        <span class="camada-info"><span class="legenda-cor" style="background:#ec4899;"></span>${nome}</span>
+        <span style="font-size:11px;">📌 ${nome} (${geojson.features ? geojson.features.length : 0})</span>
         <button style="border:none; background:transparent; color:#ef4444; font-weight:bold; cursor:pointer;" onclick="mapa.removeLayer(this._l); this.parentElement.remove();">✕</button>
       `;
       item.querySelector('button')._l = camada;
       lista.appendChild(item);
-
       exibirToast(`✓ Camada temporária carregada: ${nome}`);
     }
 
@@ -823,7 +767,8 @@
       setTimeout(() => { t.style.display = 'none'; }, 3500);
     }
 
-    // Inicialização direta imediata
+    // Inicialização
+    construirPainel();
     atualizarTodasCamadas();
   </script>
 </body>
