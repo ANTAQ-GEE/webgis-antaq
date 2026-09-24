@@ -1,4 +1,11 @@
 {
+  "id": "portos_impacto_ambiental",
+  "nome": "Portos em Área de Restrição Ambiental",
+  "categoria": "RESTRIÇÕES SOCIOAMBIENTAIS",
+  "arquivo": "dados/portos_impacto_ambiental.geojson",
+  "ativa": true
+}
+{
   "versao": "2.0",
   "projeto": "WebGIS de Estudos e Infraestrutura Aquaviária - ANTAQ",
   "categorias": [
