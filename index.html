@@ -201,7 +201,7 @@
     .grid-atributos td { padding: 5px 10px; border-bottom: 1px solid #f1f5f9; }
 
 
-    /* Legenda Cartográfica Posicionada no Canto Inferior Esquerdo */
+    /* Legenda Cartográfica no Canto Inferior Esquerdo */
     .caixa-legenda {
       position: absolute; bottom: 20px; left: 16px; width: 275px;
       background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(8px);
@@ -438,7 +438,6 @@
       repararTexto: function(str) {
         if (str === null || str === undefined) return '';
         let s = String(str);
-        // 1. Corrige mojibake de UTF-8 decodificado como ISO-8859-1 / Windows-1252
         s = s.replace(/Ã§/g, 'ç').replace(/Ã‡/g, 'Ç')
              .replace(/Ã£/g, 'ã').replace(/Ãƒ/g, 'Ã')
              .replace(/Ã¡/g, 'á').replace(/Ã/g, 'Á')
@@ -450,7 +449,6 @@
              .replace(/Ã´/g, 'ô').replace(/Ã/g, 'Ô')
              .replace(/Ãº/g, 'ú').replace(/Ã/g, 'Ú');
 
-        // 2. Dicionário de Nomes Próprios Geográficos Brasileiros (Toponímia Hidroviária e Municípios)
         const nomesProprios = [
           [/\bApu[\uFFFD\?]+/gi, 'Apuí'],
           [/\bPiau[\uFFFD\?]+/gi, 'Piauí'],
@@ -478,11 +476,8 @@
           [/\bMacei[\uFFFD\?]+/gi, 'Maceió'],
           [/\bChu[\uFFFD\?]+/gi, 'Chuí']
         ];
-        for (const [re, val] of nomesProprios) {
-          s = s.replace(re, val);
-        }
+        for (const [re, val] of nomesProprios) s = s.replace(re, val);
 
-        // 3. Vocabulário Institucional e Regulatório do Setor Aquaviário
         s = s.replace(/instala[\uFFFD\?çã]*o/gi, 'instalação')
              .replace(/p[\uFFFD\?ú]*blic[oa]/gi, (m) => m.toLowerCase().endsWith('a') ? 'pública' : 'público')
              .replace(/esta[\uFFFD\?çã]*o/gi, 'estação')
@@ -501,7 +496,6 @@
              .replace(/baliza[\uFFFD\?çã]*o/gi, 'balizamento')
              .replace(/gest[\uFFFD\?ã]*o/gi, 'gestão');
 
-        // 4. Heurísticas finais para resíduos de \uFFFD
         s = s.replace(/([a-zA-Z]+)[\uFFFD\?]+o\b/g, '$1ão')
              .replace(/([a-zA-Z]+)[\uFFFD\?]+a\b/g, '$1á')
              .replace(/([a-zA-Z]+)u[\uFFFD\?]+\b/g, '$1uí')
@@ -531,23 +525,18 @@
           props.descricao || props.DESCRICAO || ''
         );
         const limpo = Security.repararTexto(raw).toUpperCase();
-        // 1. Porto Organizado estrito (Lei 12.815/2013)
         if (limpo.includes('ORGANIZADO') || limpo.includes('AUTORIDADE PORTUÁRIA') || limpo.includes('AUTORIDADE PORTUARIA') || limpo.includes('DOCAS')) {
           return this.tipos.ORGANIZADO;
         }
-        // 2. Terminal de Uso Privado (TUP)
         if (limpo.includes('TERMINAL DE USO PRIVADO') || limpo.includes('TUP') || limpo.includes('USO PRIVADO')) {
           return this.tipos.TUP;
         }
-        // 3. Porto Público / Instalação Pública (registros legados não enquadrados como porto organizado)
         if (limpo.includes('PÚBLICO') || limpo.includes('PUBLICO') || limpo.includes('PORTUÁRIA PÚBLICA') || limpo.includes('INTERNACIONAL')) {
           return this.tipos.PUBLICO;
         }
-        // 4. IP4 (Pequeno Porte)
         if (limpo.includes('IP4') || limpo.includes('PEQUENO PORTE')) {
           return this.tipos.IP4;
         }
-        // 5. ETC (Transbordo)
         if (limpo.includes('TRANSBORDO') || limpo.includes('ETC')) {
           return this.tipos.ETC;
         }
@@ -555,67 +544,77 @@
       }
     };
 
+
     /**
-     * MÓDULO 4: RENDERIZADOR DE POPUPS COM AUDITORIA E HIGIENIZAÇÃO
+     * MÓDULO 2: CONFIGURAÇÕES E REGISTROS DE AUDITORIA
+     */
+    const CONFIG_CAMADAS = {
+      instalacoes_portuarias: { nome: "Instalações Portuárias", grupo: "infra", arquivos: ["dados/instalacoes_portuarias.geojson"], cor: "#10b981", opacidade: 0.95, peso: 6, tipoGeo: "ponto", ativa: true, camposVisiveis: [] },
+      vias_navegadas: { nome: "Vias Economicamente Navegadas", grupo: "infra", arquivos: ["dados/vias_economicamente_navegadas.geojson"], cor: "#00e5ff", opacidade: 0.9, peso: 2.8, tipoGeo: "linha", ativa: true, camposVisiveis: [] },
+      linhas_travessias: { nome: "Linhas de Travessias", grupo: "infra", arquivos: ["dados/linhas_travessias.geojson"], cor: "#f59e0b", opacidade: 0.9, peso: 2, tipoGeo: "linha_tracejada", ativa: true, camposVisiveis: [] },
+      embarcacoes: { nome: "Tráfego de Embarcações / AIS", grupo: "infra", arquivos: ["dados/embarcacoes.geojson"], cor: "#38bdf8", opacidade: 0.8, peso: 4, tipoGeo: "ponto", ativa: true, camposVisiveis: [] },
+      uf: { nome: "Unidades da Federação (IBGE)", grupo: "limites", arquivos: ["dados/uf.geojson"], cor: "#60a5fa", opacidade: 0.8, peso: 1.2, tipoGeo: "poligono_linha", ativa: true, camposVisiveis: [] },
+      regioes: { nome: "Regiões do Brasil", grupo: "limites", arquivos: ["dados/regioes.geojson"], cor: "#818cf8", opacidade: 0.7, peso: 1.5, tipoGeo: "poligono_linha", ativa: true, camposVisiveis: [] },
+      pais: { nome: "Limite Nacional", grupo: "limites", arquivos: ["dados/pais.geojson"], cor: "#cbd5e1", opacidade: 0.5, peso: 2, tipoGeo: "poligono_linha", ativa: false, camposVisiveis: [] },
+      tis_poligonais: { nome: "Terras Indígenas (FUNAI)", grupo: "restricoes", arquivos: ["dados/tis_poligonais.geojson"], cor: "#ef4444", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: [] },
+      estados_amazonia_legal: { nome: "Estados da Amazônia Legal", grupo: "restricoes", arquivos: ["dados/estados_amazonia_legal.geojson"], cor: "#059669", opacidade: 0.1, peso: 2, tipoGeo: "poligono_tracejado", ativa: true, camposVisiveis: [] }
+    };
+
+
+    const CAMADAS_MAPA = {};
+    const DADOS_GEOJSON_BRUTOS = {};
+
+
+    // Inicialização do Mapa
+    const mapa = L.map('mapa', { center: [-14.0, -52.0], zoom: 4, zoomControl: false });
+    L.control.zoom({ position: 'bottomright' }).addTo(mapa);
+
+
+    /**
+     * MÓDULO 3: GERENCIADOR DE BASEMAPS
+     */
+    const BasemapManager = {
+      satelite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 }).addTo(mapa),
+      rotulos: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { pane: 'overlayPane' }).addTo(mapa),
+      escuro: L.layerGroup([
+        L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'),
+        L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}')
+      ]),
+      trocar: function(tipo) {
+        if (tipo === 'satelite') {
+          mapa.removeLayer(this.escuro); this.satelite.addTo(mapa); this.rotulos.addTo(mapa);
+        } else {
+          mapa.removeLayer(this.satelite); mapa.removeLayer(this.rotulos); this.escuro.addTo(mapa);
+        }
+      }
+    };
+
+
+    /**
+     * MÓDULO 4: RENDERIZADOR DE POPUPS COM AUDITORIA
      */
     const PopupRenderer = {
       gerar: function(id, properties) {
         const p = properties || {};
-        const cfg = CONFIG_CAMADAS[id] || {};
-        const rawTitulo = p.nome || p.NOME_INSTALACAO || p.NOME_RIO || p.nom_vessia || p.nome_travessia || p.SIGLA_UF || 'Ativo Aquaviário';
-        const titulo = Security.escapeHTML(Security.repararTexto(rawTitulo));
+        const cfg = CONFIG_CAMADAS[id];
+        const titulo = Security.escapeHTML(p.nome || p.NOME_INSTALACAO || p.NOME_RIO || p.SIGLA_UF || 'Ativo Aquaviário');
 
-        let subtipoBadge = '';
-        if (id === 'instalacoes_portuarias') {
-          const cat = PortClassification.classificar(p);
-          subtipoBadge = `<div style="background:${cat.cor}; color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:3px; display:inline-block; margin-top:4px;">${cat.nome}</div>`;
-        }
-
-        const dicionarioRotulos = {
-          'nom_vessia': 'Nome da Travessia',
-          'nome_travessia': 'Nome da Travessia',
-          'nome_rio': 'Rio / Trecho',
-          'rio': 'Rio / Hidrovia',
-          'mun_origem': 'Município de Origem',
-          'mun_destino': 'Município de Destino',
-          'pai_origem': 'País de Origem',
-          'pai_destino': 'País de Destino',
-          'uf_origem': 'UF Origem',
-          'uf_destino': 'UF Destino',
-          'tipo_travessia': 'Tipo de Travessia',
-          'tp_travessia': 'Tipo de Travessia',
-          'extensao_km': 'Extensão (km)',
-          'extensao': 'Extensão',
-          'bacia': 'Bacia Hidrográfica',
-          'subbacia': 'Sub-bacia Hidrográfica',
-          'nome_instalacao': 'Nome da Instalação',
-          'tipo_instalacao': 'Tipo de Outorga',
-          'sigla_uf': 'UF',
-          'municipio': 'Município',
-          'fase_ti': 'Fase da Terra Indígena',
-          'etnia_nome': 'Etnia Indígena',
-          'modalidade': 'Modalidade Operacional'
-        };
 
         let linhas = '';
         for (const [chave, valor] of Object.entries(p)) {
-          const kLower = chave.toLowerCase();
-          // Omite códigos internos e técnicos de banco de dados
-          if (['geom', 'geometry', 'id', 'gid', 'objectid', 'idseq', 'id_seq'].includes(kLower)) continue;
-          if (/^(idseq|idm_|idl_|id_|gid|objectid|cdbigrama|cd_|cod_|shape_)/i.test(chave)) continue;
-          if (cfg.camposVisiveis && cfg.camposVisiveis.length > 0 && !cfg.camposVisiveis.includes(chave)) continue;
+          if (['geom', 'geometry', 'id', 'gid', 'objectid'].includes(chave.toLowerCase())) continue;
+          if (cfg.camposVisiveis.length > 0 && !cfg.camposVisiveis.includes(chave)) continue;
+
 
           if (Security.ehValido(valor)) {
-            const rotuloOriginal = dicionarioRotulos[kLower] || chave.replace(/_/g, ' ');
-            const rotuloLimpo = Security.escapeHTML(Security.repararTexto(rotuloOriginal));
-            const valorLimpo = Security.escapeHTML(Security.repararTexto(valor));
-            linhas += `<div class="pop-linha"><span class="pop-lbl">${rotuloLimpo}:</span><span class="pop-val">${valorLimpo}</span></div>`;
+            linhas += `<div class="pop-linha"><span class="pop-lbl">${Security.escapeHTML(chave)}:</span><span class="pop-val">${Security.escapeHTML(valor)}</span></div>`;
           }
         }
 
+
         const dataAuditoria = new Date().toLocaleDateString('pt-BR');
         return `
-          <div class="pop-topo">${titulo}${subtipoBadge}</div>
+          <div class="pop-topo">${titulo}</div>
           <div class="pop-corpo">${linhas || '<p style="color:#64748b;">Nenhum atributo ativo.</p>'}</div>
           <div class="pop-rodape-auditoria">
             <span>Fonte: ANTAQ/GEE</span>
@@ -625,8 +624,9 @@
       }
     };
 
+
     /**
-     * MÓDULO 5: ESTILIZADOR DINÂMICO E PALETAS CARTOGRÁFICAS
+     * MÓDULO 5: ESTILIZADOR DINÂMICO
      */
     const Styler = {
       presets: {
@@ -777,7 +777,7 @@
     };
 
     /**
-     * MÓDULO 6: FILTROS DINÂMICOS CONTEXTUAIS E GERENCIADOR DE DADOS
+     * MÓDULO 5.1: GERENCIADOR DE FILTROS DINÂMICOS CONTEXTUAIS E SINCRONIZADOS
      */
     const FilterManager = {
       configFiltros: {
@@ -852,7 +852,6 @@
           });
           selSub.value = "TODOS";
         }
-        // Ativa a camada no mapa se estiver desligada
         if (CONFIG_CAMADAS[idCamada]) {
           const chk = document.getElementById(`chk-${idCamada}`);
           if (chk && !chk.checked) {
@@ -867,7 +866,7 @@
         this.aplicarFiltro(idCamada, valor);
       },
       aplicarFiltro: function(idCamada, valor) {
-        // CASO 1: INSTALAÇÕES PORTUÁRIAS (Subcamadas Reais e Sincronização de Checkboxes)
+        // CASO 1: INSTALAÇÕES PORTUÁRIAS
         if (idCamada === 'instalacoes_portuarias' && window.SUBGRUPOS_PORTOS) {
           let visiveis = 0;
           const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
@@ -876,7 +875,6 @@
           for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
             const chkSub = document.getElementById(`chk-sub-${tKey}`);
             const deveLigar = (valor === 'TODOS' || tKey === valor);
-
             if (chkSub) chkSub.checked = deveLigar;
 
             if (deveLigar) {
@@ -888,13 +886,11 @@
             }
           }
 
-          // Atualiza contador mestre de instalações portuárias
           const cntEl = document.getElementById('cnt-instalacoes_portuarias');
           if (cntEl) {
             cntEl.innerText = (valor === 'TODOS' || visiveis === total) ? `(${total})` : `(${visiveis}/${total})`;
           }
 
-          // Dá zoom imediato nos ativos visíveis
           if (latlngsVisiveis.length > 0) {
             const b = L.latLngBounds(latlngsVisiveis);
             mapa.fitBounds(b, { padding: [50, 50], maxZoom: 12, animate: true, duration: 1.0 });
@@ -906,7 +902,7 @@
           return;
         }
 
-        // CASO 2: DEMAIS CAMADAS (Vias Navegadas, Travessias, TIs, UFs)
+        // CASO 2: DEMAIS CAMADAS
         const camada = CAMADAS_MAPA[idCamada];
         const g = DADOS_GEOJSON_BRUTOS[idCamada];
         if (!camada || !g) return;
@@ -976,7 +972,6 @@
           cntEl.innerText = (valor === 'TODOS' || visiveis === total) ? `(${total})` : `(${visiveis}/${total})`;
         }
 
-        // Zoom automático nos ativos visíveis do filtro
         if (latlngsVisiveis.length > 0) {
           const b = L.latLngBounds(latlngsVisiveis);
           mapa.fitBounds(b, { padding: [50, 50], maxZoom: 12, animate: true, duration: 1.0 });
@@ -985,7 +980,7 @@
         UI.toast(`Filtro [${CONFIG_CAMADAS[idCamada]?.nome}]: ${visiveis} ativos visíveis.`);
       }
     };
-
+    
     const DataManager = {
       atualizarTodasCamadas: function() {
         const btn = document.getElementById('btn-sync');
@@ -1005,7 +1000,6 @@
             })
             .then(dados => {
               if (!dados.features) throw new Error("Sem feições válidas");
-              // Higienização de todos os atributos na ingestão
               dados.features.forEach(f => {
                 if (f.properties) {
                   for (const [k, v] of Object.entries(f.properties)) {
@@ -1076,9 +1070,6 @@
       }
     };
 
-    /**
-     * MÓDULO 7: BUSCA OTIMIZADA COM ZOOM REAL NO ATIVO
-     */
     const SearchEngine = {
       debounceTimer: null,
       onInput: function(val) {
@@ -1088,16 +1079,24 @@
       filtrar: function(termo) {
         const listaEl = document.getElementById('resultados-busca');
         if (!termo || termo.trim().length < 2) { listaEl.style.display = 'none'; return; }
+
+
         const idCamada = document.getElementById('sel-camada-busca').value;
         const geojson = DADOS_GEOJSON_BRUTOS[idCamada];
         if (!geojson || !geojson.features) return;
+
+
         const t = termo.toLowerCase();
         const matches = [];
+
+
         geojson.features.forEach(f => {
           const p = f.properties || {};
-          const nome = String(p.nome || p.NOME_INSTALACAO || p.NOME_RIO || p.nom_vessia || p.nome_travessia || p.SIGLA_UF || p.MUNICIPIO || '');
+          const nome = String(p.nome || p.NOME_INSTALACAO || p.NOME_RIO || p.SIGLA_UF || p.MUNICIPIO || '');
           if (nome.toLowerCase().includes(t)) matches.push({ nome: nome, feature: f });
         });
+
+
         listaEl.innerHTML = '';
         if (matches.length === 0) {
           listaEl.innerHTML = '<div class="item-resultado">Nenhum ativo localizado.</div>';
@@ -1118,16 +1117,22 @@
       },
       aproximar: function(feature) {
         if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
+
+
         window.CAMADA_DESTAQUE = L.geoJSON(feature, {
           style: { color: '#f59e0b', weight: 6, fillOpacity: 0.5 },
           pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 12, fillColor: '#f59e0b', color: '#fff', weight: 3, fillOpacity: 1 })
         }).addTo(mapa);
+
+
         const bounds = window.CAMADA_DESTAQUE.getBounds();
         if (bounds.getNorthEast().equals(bounds.getSouthWest())) {
           mapa.flyTo(bounds.getCenter(), 14, { animate: true, duration: 1.2 });
         } else {
           mapa.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
         }
+
+
         window.CAMADA_DESTAQUE.bindPopup(PopupRenderer.gerar('instalacoes_portuarias', feature.properties)).openPopup();
       },
       executar: function() {
@@ -1183,6 +1188,7 @@
       }
     };
 
+
     /**
      * MÓDULO 8: GERENCIADOR DO AMBIENTE
      */
@@ -1194,6 +1200,8 @@
         const itemH = document.getElementById('item-env-homolog');
         const itemP = document.getElementById('item-env-prod');
         const lbl = document.getElementById('label-status-estilo');
+
+
         if (tipo === 'homologacao') {
           txt.innerText = 'Homologação (Estudos)';
           itemH.classList.add('ativo'); itemP.classList.remove('ativo');
@@ -1208,6 +1216,7 @@
         document.getElementById('drop-ambiente').classList.remove('aberto');
       }
     };
+
 
     /**
      * MÓDULO 9: INTERFACE (UI)
@@ -1235,99 +1244,62 @@
       }
     };
 
+
     /**
-     * MÓDULO 10: ANALYTICS COM CHART.JS (NORMALIZADO E AUDITADO)
+     * MÓDULO 10: ANALYTICS COM CHART.JS
      */
     const Analytics = {
       chartTipo: null,
       chartUf: null,
-      extrairUF: function(p) {
-        if (!p) return 'Outros';
-        const listaUFs = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
-        const campos = [p.SIGLA_UF, p.sigla_uf, p.sg_uf, p.SG_UF, p.UF, p.uf, p.estado, p.ESTADO, p.Estado, p.cd_uf, p.CD_UF];
-        for (const c of campos) {
-          if (c && typeof c === 'string') {
-            const v = c.trim().toUpperCase();
-            if (listaUFs.includes(v)) return v;
-          }
-        }
-        for (const [k, v] of Object.entries(p)) {
-          if (typeof v === 'string') {
-            const limpo = v.trim().toUpperCase();
-            if (limpo.length === 2 && listaUFs.includes(limpo)) return limpo;
-          }
-        }
-        const nome = String(p.nome || p.NOME_INSTALACAO || p.MUNICIPIO || '');
-        const match = nome.match(/[/\- ]([A-Z]{2})$/);
-        if (match && listaUFs.includes(match[1])) return match[1];
-        return 'Outros';
-      },
       gerar: function() {
         const portos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
         if (!portos || !portos.features) return;
 
-        const contagemTipos = {
-          'Porto Organizado (Lei 12.815)': 0,
-          'Porto Público (Cadastro Legado)': 0,
-          'Terminal de Uso Privado (TUP)': 0,
-          'Pequeno Porte (IP4)': 0,
-          'Estação de Transbordo (ETC)': 0,
-          'Demais Registros e Apoio': 0
-        };
+
+        const tipos = {};
         const ufs = {};
+
+
         portos.features.forEach(f => {
           const p = f.properties || {};
-          const cat = PortClassification.classificar(p);
-          if (contagemTipos[cat.nome] !== undefined) contagemTipos[cat.nome]++;
-          else contagemTipos['Demais Registros e Apoio']++;
+          let t = String(p.tipo || p.TIPO_INSTALACAO || 'Outros').trim();
+          if (t.toUpperCase().includes('TUP')) t = 'TUP (Privado)';
+          else if (t.toUpperCase().includes('ORGANIZADO') || t.toUpperCase().includes('PÚBLICO')) t = 'Porto Público';
+          else if (t.toUpperCase().includes('IP4') || t.toUpperCase().includes('PEQUENO')) t = 'IP4 (Pequeno Porte)';
+          tipos[t] = (tipos[t] || 0) + 1;
 
-          const uf = this.extrairUF(p);
+
+          const uf = String(p.uf || p.UF || 'Outros').trim().toUpperCase();
           if (uf && uf !== 'NONE') ufs[uf] = (ufs[uf] || 0) + 1;
         });
 
-        const labelsTipo = Object.keys(contagemTipos);
-        const dataTipo = Object.values(contagemTipos);
-        const coresTipo = ['#0284c7', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6', '#64748b'];
 
         const ctxTipo = document.getElementById('grafico-portos-tipo').getContext('2d');
         if (this.chartTipo) this.chartTipo.destroy();
         this.chartTipo = new Chart(ctxTipo, {
           type: 'doughnut',
           data: {
-            labels: labelsTipo,
-            datasets: [{ data: dataTipo, backgroundColor: coresTipo, borderWidth: 1.5, borderColor: '#ffffff' }]
+            labels: Object.keys(tipos),
+            datasets: [{ data: Object.values(tipos), backgroundColor: ['#10b981', '#0284c7', '#f59e0b', '#64748b'] }]
           },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { position: 'bottom', labels: { boxWidth: 11, font: { size: 10, weight: '600' }, padding: 7 } }
-            }
-          }
+          options: { responsive: true, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } }
         });
 
-        let paresUF = Object.entries(ufs).filter(([uf]) => uf !== 'Outros' && uf !== 'OUTROS');
-        if (paresUF.length === 0) paresUF = Object.entries(ufs);
-        const ordenadas = paresUF.sort((a, b) => b[1] - a[1]).slice(0, 8);
 
+        const ordenadas = Object.entries(ufs).sort((a,b) => b - a).slice(0, 8);
         const ctxUf = document.getElementById('grafico-portos-uf').getContext('2d');
         if (this.chartUf) this.chartUf.destroy();
         this.chartUf = new Chart(ctxUf, {
           type: 'bar',
           data: {
             labels: ordenadas.map(i => i[0]),
-            datasets: [{ label: 'Instalações', data: ordenadas.map(i => i[1]), backgroundColor: '#0284c7', borderRadius: 4 }]
+            datasets: [{ data: ordenadas.map(i => i[1]), backgroundColor: '#0284c7', borderRadius: 4 }]
           },
-          options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: {
-              y: { beginAtZero: true, ticks: { font: { size: 10 } } },
-              x: { ticks: { font: { size: 11, weight: '700' } } }
-            }
-          }
+          options: { responsive: true, plugins: { legend: { display: false } } }
         });
       }
     };
+
 
     function construirPainelLateral() {
       for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
@@ -1516,4 +1488,3 @@
   </script>
 </body>
 </html>
-
