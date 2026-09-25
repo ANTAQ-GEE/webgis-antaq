@@ -1153,7 +1153,6 @@
 
 
     /**
-    /**
      * MÓDULO 10: ANALYTICS COM CHART.JS (DISTRIBUIÇÃO POR UF AUDITADA)
      */
     const Analytics = {
@@ -1163,8 +1162,6 @@
         const LISTA_UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
         const MAPA_NOMES = {
           'ACRE': 'AC', 'ALAGOAS': 'AL', 'AMAPA': 'AP', 'AMAPÁ': 'AP', 'AMAZONAS': 'AM', 'BAHIA': 'BA', 'CEARA': 'CE', 'CEARÁ': 'CE',
-
-
           'DISTRITO FEDERAL': 'DF', 'ESPIRITO SANTO': 'ES', 'ESPÍRITO SANTO': 'ES', 'GOIAS': 'GO', 'GOIÁS': 'GO', 'MARANHAO': 'MA', 'MARANHÃO': 'MA',
           'MATO GROSSO': 'MT', 'MATO GROSSO DO SUL': 'MS', 'MINAS GERAIS': 'MG', 'PARA': 'PA', 'PARÁ': 'PA', 'PARAIBA': 'PB', 'PARAÍBA': 'PB',
           'PARANA': 'PR', 'PARANÁ': 'PR', 'PERNAMBUCO': 'PE', 'PIAUI': 'PI', 'PIAUÍ': 'PI', 'RIO DE JANEIRO': 'RJ', 'RIO GRANDE DO NORTE': 'RN',
@@ -1172,8 +1169,6 @@
           'SERGIPE': 'SE', 'TOCANTINS': 'TO'
         };
         const IBGE_UF = {
-
-
           '11': 'RO', '12': 'AC', '13': 'AM', '14': 'RR', '15': 'PA', '16': 'AP', '17': 'TO',
           '21': 'MA', '22': 'PI', '23': 'CE', '24': 'RN', '25': 'PB', '26': 'PE', '27': 'AL', '28': 'SE', '29': 'BA',
           '31': 'MG', '32': 'ES', '33': 'RJ', '35': 'SP',
@@ -1311,13 +1306,8 @@
         });
       }
     };
-          type: 'doughnut',
-          data: {
-            labels: Object.keys(tipos),
-            datasets: [{ data: Object.values(tipos), backgroundColor: ['#10b981', '#0284c7', '#f59e0b', '#64748b'] }]
-          },
-          options: { responsive: true, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } }
-        });
+        const portos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
+        if (!portos || !portos.features) return;
 
 
     function construirPainelLateral() {
