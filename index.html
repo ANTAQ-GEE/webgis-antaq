@@ -867,74 +867,115 @@
      * MÓDULO 6.1: GERENCIADOR DE FILTROS DINÂMICOS CONTEXTUAIS
      * Atualiza automaticamente o segundo seletor de acordo com a camada ativa selecionada.
      */
+    /**
+     * MÓDULO 6.1: GERENCIADOR DE FILTROS DINÂMICOS CONTEXTUAIS E SINCRONIZADOS
+     */
     const FilterManager = {
       configFiltros: {
         instalacoes_portuarias: {
           placeholder: "Buscar instalação portuária por nome ou UF...",
-          opcoes: [
-            { valor: "TODOS", rotulo: "⚓ Todas as Instalações" },
-            { valor: "ORGANIZADO", rotulo: "🔷 Portos Organizados (Lei 12.815)" },
-            { valor: "PUBLICO", rotulo: "🔹 Portos Públicos (Legado)" },
-            { valor: "TUP", rotulo: "🟢 Terminais Privados (TUP)" },
-            { valor: "IP4", rotulo: "🟡 Pequeno Porte (IP4)" },
-            { valor: "ETC", rotulo: "🟣 Transbordo (ETC)" },
-            { valor: "OUTROS", rotulo: "⚪ Demais Registros e Apoio" }
-          ]
+          obterOpcoes: function() {
+            return [
+              { valor: "TODOS", rotulo: "⚓ Todas as Instalações" },
+              { valor: "ORGANIZADO", rotulo: "🔷 Portos Organizados (Lei 12.815)" },
+              { valor: "PUBLICO", rotulo: "🔹 Portos Públicos (Legado)" },
+              { valor: "TUP", rotulo: "🟢 Terminais Privados (TUP)" },
+              { valor: "IP4", rotulo: "🟡 Pequeno Porte (IP4)" },
+              { valor: "ETC", rotulo: "🟣 Transbordo (ETC)" },
+              { valor: "OUTROS", rotulo: "⚪ Demais Registros e Apoio" }
+            ];
+          }
         },
         vias_navegadas: {
-          placeholder: "Buscar via navegada, rio ou bacia...",
-          opcoes: [
-            { valor: "TODOS", rotulo: "🌊 Todas as Vias Navegadas" },
-            { valor: "AMAZONICA", rotulo: "🏞️ Bacia Amazônica / Solimões" },
-            { valor: "TAPAJOS_MADEIRA", rotulo: "🚢 Rios Madeira e Tapajós" },
-            { valor: "PARANA_TIETE", rotulo: "🚤 Hidrovia Paraná-Tietê" },
-            { valor: "PARAGUAI", rotulo: "🚢 Hidrovia do Paraguai" },
-            { valor: "TOCANTINS", rotulo: "🌊 Tocantins - Araguaia" },
-            { valor: "SAO_FRANCISCO", rotulo: "⚓ Hidrovia do São Francisco" },
-            { valor: "SUL_SUDESTE", rotulo: "⛵ Hidrovias do Sul / Litoral" }
-          ]
+          placeholder: "Buscar hidrovia, rio ou bacia...",
+          obterOpcoes: function() {
+            const g = DADOS_GEOJSON_BRUTOS['vias_navegadas'];
+            if (!g || !g.features) {
+              return [{ valor: "TODOS", rotulo: "🌊 Todas as Vias Navegadas" }];
+            }
+            // Agrupamento inteligente por principais corredores e rios da ANTAQ
+            const contagens = {
+              "AMAZONAS_SOLIMOES": { rotulo: "🏞️ Rio Amazonas / Solimões", padrao: /AMAZONAS|SOLIM[ÕO]ES|NEGRO/i, count: 0 },
+              "TAPAJOS_MADEIRA": { rotulo: "🚢 Rios Madeira e Tapajós", padrao: /MADEIRA|TAPAJ[ÓO]S|TELES PIRES|JURUENA/i, count: 0 },
+              "PARANA_TIETE": { rotulo: "🚤 Hidrovia Paraná-Tietê", padrao: /PARAN[ÁA]|TIET[ÊE]|PARANA[ÍI]BA|GRANDE/i, count: 0 },
+              "PARAGUAI": { rotulo: "🚢 Hidrovia do Paraguai", padrao: /PARAGUAI|CUIAB[ÁA]|CORUMB[ÁA]/i, count: 0 },
+              "TOCANTINS_ARAGUAIA": { rotulo: "🌊 Tocantins - Araguaia", padrao: /TOCANTINS|ARAGUAIA|MARANH[ÃA]O/i.test, count: 0 },
+              "SAO_FRANCISCO": { rotulo: "⚓ Rio São Francisco e Afluentes", padrao: /S[ÃA\?]*O?\s*FRANCISCO|VELHAS|SOBRADINHO|PIRAPORA|PETROLINA|JUAZEIRO/i, count: 0 },
+              "SUL_SUDESTE": { rotulo: "⛵ Hidrovias do Sul / Litoral", padrao: /SUL|GUA[ÍI]BA|JACU[ÍI]|TAQUARI|LAGUNA|PATOS|PELOTAS|RIO GRANDE|ITAJA[ÍI]|RIBEIRA/i, count: 0 },
+              "DEMAIS_TRECHOS": { rotulo: "🌊 Demais Rios e Trechos", padrao: /./, count: 0 }
+            };
+
+            g.features.forEach(f => {
+              const texto = Security.repararTexto(Object.values(f.properties || {}).join(' ')).toUpperCase();
+              let matched = false;
+              for (const [k, obj] of Object.entries(contagens)) {
+                if (k === 'DEMAIS_TRECHOS') continue;
+                const matches = (typeof obj.padrao === 'function') ? obj.padrao(texto) : obj.padrao.test(texto);
+                if (matches) { obj.count++; matched = true; break; }
+              }
+              if (!matched) contagens.DEMAIS_TRECHOS.count++;
+            });
+
+            const opcoes = [{ valor: "TODOS", rotulo: `🌊 Todas as Vias (${g.features.length})` }];
+            for (const [k, obj] of Object.entries(contagens)) {
+              if (obj.count > 0) {
+                opcoes.push({ valor: k, rotulo: `${obj.rotulo} (${obj.count})` });
+              }
+            }
+            return opcoes;
+          }
         },
         linhas_travessias: {
           placeholder: "Buscar travessia por município ou rio...",
-          opcoes: [
-            { valor: "TODOS", rotulo: "⛴️ Todas as Travessias" },
-            { valor: "AMAZONAS", rotulo: "🌴 Travessias na Amazônia / Norte" },
-            { valor: "SUDESTE_SUL", rotulo: "🏙️ Travessias Sul e Sudeste" },
-            { valor: "NORDESTE_CO", rotulo: "☀️ Travessias Nordeste e C. Oeste" }
-          ]
+          obterOpcoes: function() {
+            const g = DADOS_GEOJSON_BRUTOS['linhas_travessias'];
+            const total = g?.features?.length || 93;
+            return [
+              { valor: "TODOS", rotulo: `⛴️ Todas as Travessias (${total})` },
+              { valor: "AMAZONAS", rotulo: "🌴 Região Norte / Amazônica" },
+              { valor: "SUDESTE_SUL", rotulo: "🏙️ Regiões Sul e Sudeste" },
+              { valor: "NORDESTE_CO", rotulo: "☀️ Nordeste e Centro-Oeste" }
+            ];
+          }
         },
         tis_poligonais: {
           placeholder: "Buscar terra indígena ou etnia...",
-          opcoes: [
-            { valor: "TODOS", rotulo: "🏹 Todas as Terras Indígenas" },
-            { valor: "HOMOLOGADA", rotulo: "📜 Homologadas / Regularizadas" },
-            { valor: "DECLARADA", rotulo: "📋 Declaradas" },
-            { valor: "DELIMITADA", rotulo: "📍 Delimitadas / Em Estudo" },
-            { valor: "AMAZONIA", rotulo: "🌲 Amazônia Legal" }
-          ]
+          obterOpcoes: function() {
+            const g = DADOS_GEOJSON_BRUTOS['tis_poligonais'];
+            const total = g?.features?.length || 0;
+            return [
+              { valor: "TODOS", rotulo: `🏹 Todas as Terras Indígenas (${total})` },
+              { valor: "HOMOLOGADA", rotulo: "📜 Homologadas / Regularizadas" },
+              { valor: "DECLARADA", rotulo: "📋 Declaradas" },
+              { valor: "DELIMITADA", rotulo: "📍 Delimitadas / Em Estudo" },
+              { valor: "AMAZONIA", rotulo: "🌲 Amazônia Legal" }
+            ];
+          }
         },
         uf: {
           placeholder: "Buscar estado por sigla ou nome...",
-          opcoes: [
-            { valor: "TODOS", rotulo: "🗺️ Todos os Estados (27 UFs)" },
-            { valor: "NORTE", rotulo: "🌲 Região Norte" },
-            { valor: "NORDESTE", rotulo: "☀️ Região Nordeste" },
-            { valor: "CENTRO_OESTE", rotulo: "🌾 Região Centro-Oeste" },
-            { valor: "SUDESTE", rotulo: "🏭 Região Sudeste" },
-            { valor: "SUL", rotulo: "❄️ Região Sul" }
-          ]
+          obterOpcoes: function() {
+            return [
+              { valor: "TODOS", rotulo: "🗺️ Todos os Estados (27 UFs)" },
+              { valor: "NORTE", rotulo: "🌲 Região Norte (7 UFs)" },
+              { valor: "NORDESTE", rotulo: "☀️ Região Nordeste (9 UFs)" },
+              { valor: "CENTRO_OESTE", rotulo: "🌾 Região Centro-Oeste (4 UFs)" },
+              { valor: "SUDESTE", rotulo: "🏭 Região Sudeste (4 UFs)" },
+              { valor: "SUL", rotulo: "❄️ Região Sul (3 UFs)" }
+            ];
+          }
         }
       },
       aoMudarCamada: function(idCamada) {
         const cfg = this.configFiltros[idCamada] || this.configFiltros.instalacoes_portuarias;
         const selSub = document.getElementById('filtro-subtipo-dinamico');
         const inputBusca = document.getElementById('input-busca');
-
         if (inputBusca) inputBusca.placeholder = cfg.placeholder;
 
         if (selSub) {
           selSub.innerHTML = '';
-          cfg.opcoes.forEach(opt => {
+          const listaOpcoes = cfg.obterOpcoes();
+          listaOpcoes.forEach(opt => {
             const el = document.createElement('option');
             el.value = opt.valor;
             el.innerText = opt.rotulo;
@@ -943,11 +984,13 @@
           selSub.value = "TODOS";
         }
 
-        // Garante que a camada selecionada fique ativa no mapa
-        if (CONFIG_CAMADAS[idCamada] && !CONFIG_CAMADAS[idCamada].ativa) {
+        // Garante que a camada esteja visível
+        if (CONFIG_CAMADAS[idCamada]) {
           const chk = document.getElementById(`chk-${idCamada}`);
-          if (chk) chk.checked = true;
-          toggleCamada(idCamada, true);
+          if (chk && !chk.checked) {
+            chk.checked = true;
+            toggleCamada(idCamada, true);
+          }
         }
 
         this.aplicarFiltro(idCamada, "TODOS");
@@ -957,45 +1000,82 @@
         this.aplicarFiltro(idCamada, valor);
       },
       aplicarFiltro: function(idCamada, valor) {
-        const camada = CAMADAS_MAPA[idCamada];
-        if (!camada) return;
+        // CASO 1: INSTALAÇÕES PORTUÁRIAS (Subcamadas ANTAQ e Sincronização de Checkboxes)
+        if (idCamada === 'instalacoes_portuarias') {
+          const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
+          let visiveis = 0;
+          const latlngsVisiveis = [];
 
+          if (window.SUBGRUPOS_PORTOS) {
+            for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
+              const chkSub = document.getElementById(`chk-sub-${tKey}`);
+              const deveLigar = (valor === 'TODOS' || tKey === valor);
+
+              if (chkSub) chkSub.checked = deveLigar;
+
+              if (deveLigar) {
+                if (!mapa.hasLayer(fg)) fg.addTo(mapa);
+                visiveis += fg.getLayers().length;
+                fg.eachLayer(m => { if (m.getLatLng) latlngsVisiveis.push(m.getLatLng()); });
+              } else {
+                if (mapa.hasLayer(fg)) mapa.removeLayer(fg);
+              }
+            }
+          }
+
+          const cntEl = document.getElementById('cnt-instalacoes_portuarias');
+          if (cntEl) {
+            cntEl.innerText = (valor === 'TODOS' || visiveis === total) ? `(${total})` : `(${visiveis}/${total})`;
+          }
+
+          if (latlngsVisiveis.length > 0) {
+            const b = L.latLngBounds(latlngsVisiveis);
+            mapa.fitBounds(b, { padding: [50, 50], maxZoom: 12, animate: true, duration: 1.0 });
+          }
+
+          Styler.atualizarLegenda();
+          const selCamadaAtiva = document.getElementById("sel-camada-busca")?.value || "instalacoes_portuarias";
+          FilterManager.aoMudarCamada(selCamadaAtiva);
+          const nomeFiltro = valor === 'TODOS' ? 'Todas as Instalações' : (PortClassification.tipos[valor]?.nome || valor);
+          UI.toast(`Filtro [Portos]: ${nomeFiltro} (${visiveis} ativos visíveis).`);
+          return;
+        }
+
+        // CASO 2: DEMAIS CAMADAS (Vias Navegadas, Travessias, TIs, UFs)
+        const camada = CAMADAS_MAPA[idCamada];
+        const g = DADOS_GEOJSON_BRUTOS[idCamada];
+        if (!camada || !g) return;
+
+        const total = g.features.length;
         let visiveis = 0;
-        let total = 0;
+        const latlngsVisiveis = [];
 
         camada.eachLayer(layer => {
           const f = layer.feature;
           if (!f) return;
-          total++;
           const p = f.properties || {};
-
+          const todoTexto = Security.repararTexto(Object.values(p).join(' ')).toUpperCase();
           let deveExibir = (valor === 'TODOS');
 
           if (!deveExibir) {
-            if (idCamada === 'instalacoes_portuarias') {
-              const cat = PortClassification.classificar(p);
-              deveExibir = (cat.id === valor);
-            } else if (idCamada === 'vias_navegadas') {
-              const texto = (p.nome || p.nome_rio || p.rio || p.bacia || p.hidrovia || '').toUpperCase();
-              if (valor === 'AMAZONICA') deveExibir = /AMAZONAS|SOLIM[ÕO]ES|NEGRO|JAPUR|PURUS/i.test(texto);
-              else if (valor === 'TAPAJOS_MADEIRA') deveExibir = /MADEIRA|TAPAJ[ÓO]S|TELES PIRES|JURUENA/i.test(texto);
-              else if (valor === 'PARANA_TIETE') deveExibir = /PARAN[ÁA]|TIET[ÊE]|PARANA[ÍI]BA|GRANDE/i.test(texto);
-              else if (valor === 'PARAGUAI') deveExibir = /PARAGUAI|CUIAB[ÁA]|TAQUARI/i.test(texto);
-              else if (valor === 'TOCANTINS') deveExibir = /TOCANTINS|ARAGUAIA|MARANH[ÃA]O/i.test(texto);
-              else if (valor === 'SAO_FRANCISCO') deveExibir = /S[ÃA]O FRANCISCO|VELHAS|GRANDE/i.test(texto);
-              else if (valor === 'SUL_SUDESTE') deveExibir = /JACU[ÍI]|TAQUARI|GUA[ÍI]BA|RIBEIRA|ITAJA/i.test(texto);
+            if (idCamada === 'vias_navegadas') {
+              if (valor === 'AMAZONAS_SOLIMOES') deveExibir = /AMAZONAS|SOLIM[ÕO]ES|NEGRO/i.test(todoTexto);
+              else if (valor === 'TAPAJOS_MADEIRA') deveExibir = /MADEIRA|TAPAJ[ÓO]S|TELES PIRES|JURUENA/i.test(todoTexto);
+              else if (valor === 'PARANA_TIETE') deveExibir = /PARAN[ÁA]|TIET[ÊE]|PARANA[ÍI]BA|GRANDE/i.test(todoTexto);
+              else if (valor === 'PARAGUAI') deveExibir = /PARAGUAI|CUIAB[ÁA]|CORUMB[ÁA]/i.test(todoTexto);
+              else if (valor === 'TOCANTINS_ARAGUAIA') deveExibir = /TOCANTINS|ARAGUAIA|MARANH[ÃA]O/i.test(todoTexto);
+              else if (valor === 'SAO_FRANCISCO') deveExibir = /S[ÃA\?]*O?\s*FRANCISCO|VELHAS|SOBRADINHO|PIRAPORA|PETROLINA|JUAZEIRO/i.test(todoTexto);
+              else if (valor === 'SUL_SUDESTE') deveExibir = /SUL|GUA[ÍI]BA|JACU[ÍI]|TAQUARI|LAGUNA|PATOS|PELOTAS|RIO GRANDE|ITAJA[ÍI]|RIBEIRA/i.test(todoTexto);
+              else if (valor === 'DEMAIS_TRECHOS') deveExibir = true;
             } else if (idCamada === 'linhas_travessias') {
-              const texto = (p.nom_vessia || p.nome_rio || p.mun_origem || p.tipo_travessia || '').toUpperCase();
-              if (valor === 'AMAZONAS') deveExibir = /AM|PA|AP|RO|AC|RR|AMAZONAS|SUCUNDURI|TAPAJ/i.test(texto);
-              else if (valor === 'SUDESTE_SUL') deveExibir = /SP|RJ|PR|SC|RS|MG|ES|SANTOS|PARANAGU/i.test(texto);
-              else if (valor === 'NORDESTE_CO') deveExibir = /BA|MA|CE|PI|RN|PB|PE|AL|SE|MT|MS|GO|DF/i.test(texto);
+              if (valor === 'AMAZONAS') deveExibir = /AM|PA|AP|RO|AC|RR|AMAZONAS|SUCUNDURI|TAPAJ[ÓO]S|SOLIM[ÕO]ES|NEGRO/i.test(todoTexto);
+              else if (valor === 'SUDESTE_SUL') deveExibir = /SP|RJ|PR|SC|RS|MG|ES|SANTOS|PARANAGU[ÁA]|GUA[ÍI]BA|ITAJA[ÍI]/i.test(todoTexto);
+              else if (valor === 'NORDESTE_CO') deveExibir = /BA|MA|CE|PI|RN|PB|PE|AL|SE|MT|MS|GO|DF|TOCANTINS/i.test(todoTexto);
             } else if (idCamada === 'tis_poligonais') {
-              const fase = (p.fase_ti || p.status || p.fase || '').toUpperCase();
-              const uf = (p.uf || p.sigla_uf || '').toUpperCase();
-              if (valor === 'HOMOLOGADA') deveExibir = /HOMOLOG|REGULAR/i.test(fase);
-              else if (valor === 'DECLARADA') deveExibir = /DECLAR/i.test(fase);
-              else if (valor === 'DELIMITADA') deveExibir = /DELIMIT|ESTUDO/i.test(fase);
-              else if (valor === 'AMAZONIA') deveExibir = /AM|PA|AC|RO|RR|AP|MT|TO|MA/.test(uf);
+              if (valor === 'HOMOLOGADA') deveExibir = /HOMOLOG|REGULAR/i.test(todoTexto);
+              else if (valor === 'DECLARADA') deveExibir = /DECLAR/i.test(todoTexto);
+              else if (valor === 'DELIMITADA') deveExibir = /DELIMIT|ESTUDO/i.test(todoTexto);
+              else if (valor === 'AMAZONIA') deveExibir = /AM|PA|AC|RO|RR|AP|MT|TO|MA/.test(todoTexto);
             } else if (idCamada === 'uf') {
               const sigla = (p.SIGLA_UF || p.sigla || p.UF || '').toUpperCase();
               const regNorte = ['AC','AP','AM','PA','RO','RR','TO'];
@@ -1016,6 +1096,11 @@
             layer.setStyle({ opacity: 1, fillOpacity: opac });
             if (layer.getElement()) layer.getElement().style.display = '';
             visiveis++;
+            if (layer.getLatLng) latlngsVisiveis.push(layer.getLatLng());
+            else if (layer.getBounds) {
+              latlngsVisiveis.push(layer.getBounds().getNorthEast());
+              latlngsVisiveis.push(layer.getBounds().getSouthWest());
+            }
           } else {
             layer.setStyle({ opacity: 0, fillOpacity: 0 });
             if (layer.getElement()) layer.getElement().style.display = 'none';
@@ -1024,25 +1109,12 @@
 
         const cntEl = document.getElementById(`cnt-${idCamada}`);
         if (cntEl) {
-          cntEl.innerText = valor === 'TODOS' ? `(${total})` : `(${visiveis}/${total})`;
+          cntEl.innerText = (valor === 'TODOS' || visiveis === total) ? `(${total})` : `(${visiveis}/${total})`;
         }
 
-        // Dá zoom automático nos ativos filtrados
-        if (visiveis > 0) {
-          const latlngsVisiveis = [];
-          camada.eachLayer(l => {
-            if (l.getElement() && l.getElement().style.display !== 'none') {
-              if (l.getLatLng) latlngsVisiveis.push(l.getLatLng());
-              else if (l.getBounds) {
-                latlngsVisiveis.push(l.getBounds().getNorthEast());
-                latlngsVisiveis.push(l.getBounds().getSouthWest());
-              }
-            }
-          });
-          if (latlngsVisiveis.length > 0) {
-            const grupoBounds = L.latLngBounds(latlngsVisiveis);
-            mapa.fitBounds(grupoBounds, { padding: [50, 50], maxZoom: 13, animate: true, duration: 1.0 });
-          }
+        if (latlngsVisiveis.length > 0) {
+          const b = L.latLngBounds(latlngsVisiveis);
+          mapa.fitBounds(b, { padding: [50, 50], maxZoom: 12, animate: true, duration: 1.0 });
         }
 
         UI.toast(`Filtro [${CONFIG_CAMADAS[idCamada]?.nome}]: ${visiveis} ativos visíveis.`);
@@ -1116,50 +1188,12 @@
               const opcoes = Styler.obterOpcoes(id);
 
 
-              if (id === 'instalacoes_portuarias') {
-                // Separa as instalações nos 6 subgrupos regulatórios ANTAQ
-                if (!window.SUBGRUPOS_PORTOS) window.SUBGRUPOS_PORTOS = {};
-                for (const tKey of Object.keys(PortClassification.tipos)) {
-                  if (window.SUBGRUPOS_PORTOS[tKey]) mapa.removeLayer(window.SUBGRUPOS_PORTOS[tKey]);
-                  window.SUBGRUPOS_PORTOS[tKey] = L.featureGroup();
-                }
-
-                dados.features.forEach(f => {
-                  const cat = PortClassification.classificar(f.properties);
-                  const lat = f.geometry.coordinates[1];
-                  const lng = f.geometry.coordinates[0];
-                  if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-                    const m = L.circleMarker([lat, lng], {
-                      radius: cat.raio,
-                      fillColor: cat.cor,
-                      color: '#ffffff',
-                      weight: cat.peso,
-                      fillOpacity: CONFIG_CAMADAS.instalacoes_portuarias.opacidade
-                    });
-                    m.feature = f;
-                    m.bindPopup(PopupRenderer.gerar('instalacoes_portuarias', f.properties));
-                    if (window.SUBGRUPOS_PORTOS[cat.id]) {
-                      window.SUBGRUPOS_PORTOS[cat.id].addLayer(m);
-                    }
-                  }
-                });
-
-                // Adiciona todos os subgrupos ao mapa
-                CAMADAS_MAPA[id] = L.featureGroup();
-                for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
-                  CAMADAS_MAPA[id].addLayer(fg);
-                  const cntBadge = document.getElementById(`subcnt-${tKey}`);
-                  if (cntBadge) cntBadge.innerText = `(${fg.getLayers().length})`;
-                }
-                if (chkEl && chkEl.checked) CAMADAS_MAPA[id].addTo(mapa);
-              } else {
               if (CAMADAS_MAPA[id]) {
                 CAMADAS_MAPA[id].clearLayers();
                 CAMADAS_MAPA[id].addData(dados);
               } else {
                 CAMADAS_MAPA[id] = L.geoJSON(dados, opcoes);
                 if (chkEl && chkEl.checked) CAMADAS_MAPA[id].addTo(mapa);
-              }
               }
 
 
@@ -1175,6 +1209,8 @@
         Promise.allSettled(promessas).then(() => {
           btn.disabled = false; ico.classList.remove('girando');
           Styler.atualizarLegenda();
+          const selCamadaAtiva = document.getElementById("sel-camada-busca")?.value || "instalacoes_portuarias";
+          FilterManager.aoMudarCamada(selCamadaAtiva);
           UI.toast(`✓ Bases sincronizadas às ${new Date().toLocaleTimeString('pt-BR')}`);
         });
       }
@@ -1250,63 +1286,8 @@
         window.CAMADA_DESTAQUE.bindPopup(PopupRenderer.gerar('instalacoes_portuarias', feature.properties)).openPopup();
       },
       executar: function() {
-        const v = (document.getElementById('input-busca').value || '').trim();
-        if (!v) {
-          UI.toast("Digite o nome ou código de um ativo para aproximar.");
-          return;
-        }
-        const idCamada = document.getElementById('sel-camada-busca').value;
-        const geojson = DADOS_GEOJSON_BRUTOS[idCamada];
-        if (!geojson || !geojson.features) {
-          UI.toast("Aguarde o carregamento dos dados da camada.");
-          return;
-        }
-        const termo = v.toLowerCase();
-        let matchExato = null;
-        let primeiroMatch = null;
-
-        for (const f of geojson.features) {
-          const p = f.properties || {};
-          const nome = String(p.nome || p.NOME_INSTALACAO || p.NOME_RIO || p.nom_vessia || p.nome_travessia || p.SIGLA_UF || p.MUNICIPIO || '');
-          if (nome.toLowerCase() === termo) {
-            matchExato = f;
-            break;
-          }
-          if (!primeiroMatch && nome.toLowerCase().includes(termo)) {
-            primeiroMatch = f;
-          }
-        }
-
-        const alvo = matchExato || primeiroMatch;
-        if (alvo) {
-          document.getElementById('resultados-busca').style.display = 'none';
-          this.aproximar(alvo);
-          const p = alvo.properties || {};
-          const nomeAlvo = p.nome || p.NOME_INSTALACAO || p.nom_vessia || 'Ativo';
-          UI.toast(`📍 Zoom realizado em: ${nomeAlvo}`);
-        } else {
-          // Tenta busca em todas as camadas caso não ache na atual
-          let achouOutro = null;
-          for (const [idOutro, g] of Object.entries(DADOS_GEOJSON_BRUTOS)) {
-            if (g && g.features) {
-              for (const f of g.features) {
-                const p = f.properties || {};
-                const n = String(p.nome || p.NOME_INSTALACAO || p.nom_vessia || '');
-                if (n.toLowerCase().includes(termo)) { achouOutro = { feature: f, camada: idOutro }; break; }
-              }
-            }
-            if (achouOutro) break;
-          }
-          if (achouOutro) {
-            document.getElementById('sel-camada-busca').value = achouOutro.camada;
-            FilterManager.aoMudarCamada(achouOutro.camada);
-            document.getElementById('resultados-busca').style.display = 'none';
-            this.aproximar(achouOutro.feature);
-            UI.toast(`📍 Ativo localizado na camada [${CONFIG_CAMADAS[achouOutro.camada]?.nome}].`);
-          } else {
-            UI.toast(`Nenhum ativo localizado para "${v}".`);
-          }
-        }
+        const v = document.getElementById('input-busca').value;
+        if (v) this.filtrar(v);
       }
     };
 
@@ -1510,70 +1491,16 @@
         let subpaletaHTML = '';
         if (id === 'instalacoes_portuarias') {
           subpaletaHTML = `
-            <div style="margin-top:6px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; font-size:10px; display:flex; flex-direction:column; gap:5px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
-                <span style="font-weight:700; color:#0a2540;">Subcamadas de Outorga (ANTAQ):</span>
-                <span style="font-size:9px; color:#0284c7; cursor:pointer;" onclick="toggleTodasSubcamadasPortos(true)">Todas</span>
-              </div>
-
-              <!-- Subcamada 1: Porto Organizado -->
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:2px 0;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <span class="simbolo-ponto" style="background:#0284c7; width:11px; height:11px;"></span>
-                  <span>Porto Organizado (Lei 12.815)</span>
-                  <span class="badge-contador" id="subcnt-ORGANIZADO"></span>
-                </div>
-                <input type="checkbox" id="chk-sub-ORGANIZADO" checked onchange="toggleSubcamadaPorto('ORGANIZADO', this.checked)">
-              </div>
-
-              <!-- Subcamada 2: Porto Público -->
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:2px 0;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <span class="simbolo-ponto" style="background:#06b6d4; width:10px; height:10px;"></span>
-                  <span>Porto Público (Cadastro Legado)</span>
-                  <span class="badge-contador" id="subcnt-PUBLICO"></span>
-                </div>
-                <input type="checkbox" id="chk-sub-PUBLICO" checked onchange="toggleSubcamadaPorto('PUBLICO', this.checked)">
-              </div>
-
-              <!-- Subcamada 3: TUP -->
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:2px 0;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <span class="simbolo-ponto" style="background:#10b981; width:10px; height:10px;"></span>
-                  <span>Terminal de Uso Privado (TUP)</span>
-                  <span class="badge-contador" id="subcnt-TUP"></span>
-                </div>
-                <input type="checkbox" id="chk-sub-TUP" checked onchange="toggleSubcamadaPorto('TUP', this.checked)">
-              </div>
-
-              <!-- Subcamada 4: IP4 -->
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:2px 0;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <span class="simbolo-ponto" style="background:#f59e0b; width:9px; height:9px;"></span>
-                  <span>Pequeno Porte (IP4)</span>
-                  <span class="badge-contador" id="subcnt-IP4"></span>
-                </div>
-                <input type="checkbox" id="chk-sub-IP4" checked onchange="toggleSubcamadaPorto('IP4', this.checked)">
-              </div>
-
-              <!-- Subcamada 5: ETC -->
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:2px 0;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <span class="simbolo-ponto" style="background:#8b5cf6; width:9px; height:9px;"></span>
-                  <span>Estação de Transbordo (ETC)</span>
-                  <span class="badge-contador" id="subcnt-ETC"></span>
-                </div>
-                <input type="checkbox" id="chk-sub-ETC" checked onchange="toggleSubcamadaPorto('ETC', this.checked)">
-              </div>
-
-              <!-- Subcamada 6: Demais Registros -->
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:2px 0;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <span class="simbolo-ponto" style="background:#64748b; width:8px; height:8px;"></span>
-                  <span>Demais Registros e Apoio</span>
-                  <span class="badge-contador" id="subcnt-OUTROS"></span>
-                </div>
-                <input type="checkbox" id="chk-sub-OUTROS" checked onchange="toggleSubcamadaPorto('OUTROS', this.checked)">
+            <div style="margin-top:6px; padding:6px 8px; background:#f1f5f9; border-radius:4px; font-size:10px; display:flex; flex-direction:column; gap:4px;">
+              <span style="font-weight:700; color:#0f172a; margin-bottom:2px;">Subdivisão das Instalações no Mapa:</span>
+              <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                <button onclick="FilterManager.aplicarFiltro.bind(FilterManager, 'instalacoes_portuarias')('TODOS')" style="padding:2px 5px; font-size:9px; border:1px solid #cbd5e1; border-radius:3px; background:#fff; cursor:pointer; font-weight:600;">Todos</button>
+                <button onclick="FilterManager.aplicarFiltro.bind(FilterManager, 'instalacoes_portuarias')('ORGANIZADO')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#0284c7; color:#fff; cursor:pointer; font-weight:600;">Organizado</button>
+                <button onclick="FilterManager.aplicarFiltro.bind(FilterManager, 'instalacoes_portuarias')('PUBLICO')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#06b6d4; color:#fff; cursor:pointer; font-weight:600;">Público</button>
+                <button onclick="FilterManager.aplicarFiltro.bind(FilterManager, 'instalacoes_portuarias')('TUP')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#10b981; color:#fff; cursor:pointer; font-weight:600;">TUP</button>
+                <button onclick="FilterManager.aplicarFiltro.bind(FilterManager, 'instalacoes_portuarias')('IP4')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#f59e0b; color:#000; cursor:pointer; font-weight:600;">IP4</button>
+                <button onclick="FilterManager.aplicarFiltro.bind(FilterManager, 'instalacoes_portuarias')('ETC')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#8b5cf6; color:#fff; cursor:pointer; font-weight:600;">ETC</button>
+                <button onclick="FilterManager.aplicarFiltro.bind(FilterManager, 'instalacoes_portuarias')('OUTROS')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#64748b; color:#fff; cursor:pointer; font-weight:600;">Outros</button>
               </div>
             </div>
           `;
@@ -1624,29 +1551,12 @@
     }
 
 
-    function toggleSubcamadaPorto(subtipo, ligar) {
-      if (!window.SUBGRUPOS_PORTOS || !window.SUBGRUPOS_PORTOS[subtipo]) return;
-      const fg = window.SUBGRUPOS_PORTOS[subtipo];
-      if (ligar) {
-        if (!mapa.hasLayer(fg)) fg.addTo(mapa);
-      } else {
-        if (mapa.hasLayer(fg)) mapa.removeLayer(fg);
-      }
-      Styler.atualizarLegenda();
-    }
-
-    function toggleTodasSubcamadasPortos(ligar) {
-      for (const tKey of Object.keys(PortClassification.tipos)) {
-        const chk = document.getElementById(`chk-sub-${tKey}`);
-        if (chk) chk.checked = ligar;
-        toggleSubcamadaPorto(tKey, ligar);
-      }
-    }
-
     function toggleCamada(id, ligar) {
       if (!CAMADAS_MAPA[id]) { DataManager.atualizarTodasCamadas(); return; }
       if (ligar) CAMADAS_MAPA[id].addTo(mapa); else mapa.removeLayer(CAMADAS_MAPA[id]);
       Styler.atualizarLegenda();
+          const selCamadaAtiva = document.getElementById("sel-camada-busca")?.value || "instalacoes_portuarias";
+          FilterManager.aoMudarCamada(selCamadaAtiva);
     }
 
 
@@ -1688,6 +1598,122 @@
     construirPainelLateral();
     FilterManager.aoMudarCamada("instalacoes_portuarias");
     Styler.atualizarLegenda();
+          const selCamadaAtiva = document.getElementById("sel-camada-busca")?.value || "instalacoes_portuarias";
+          FilterManager.aoMudarCamada(selCamadaAtiva);
+    DataManager.atualizarTodasCamadas();
+  </script>
+</body>
+</html    function toggleSubcamadaPorto(subtipo, ligar) {
+      if (!window.SUBGRUPOS_PORTOS || !window.SUBGRUPOS_PORTOS[subtipo]) return;
+      const fg = window.SUBGRUPOS_PORTOS[subtipo];
+      if (ligar) {
+        if (!mapa.hasLayer(fg)) fg.addTo(mapa);
+      } else {
+        if (mapa.hasLayer(fg)) mapa.removeLayer(fg);
+      }
+
+      // Calcula quantos estão ativos no total
+      let ativos = 0;
+      let ligadosChaves = [];
+      const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
+
+      for (const [tKey, subFg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
+        const chk = document.getElementById(`chk-sub-${tKey}`);
+        if (chk && chk.checked) {
+          ativos += subFg.getLayers().length;
+          ligadosChaves.push(tKey);
+        }
+      }
+
+      const cntEl = document.getElementById('cnt-instalacoes_portuarias');
+      if (cntEl) {
+        cntEl.innerText = ativos === total ? `(${total})` : `(${ativos}/${total})`;
+      }
+
+      // Sincroniza o seletor do cabeçalho
+      const sel = document.getElementById('filtro-subtipo-dinamico');
+      const selCamada = document.getElementById('sel-camada-busca');
+      if (sel && selCamada && selCamada.value === 'instalacoes_portuarias') {
+        if (ligadosChaves.length === 1) sel.value = ligadosChaves[0];
+        else if (ligadosChaves.length === Object.keys(PortClassification.tipos).length) sel.value = 'TODOS';
+      }
+
+      Styler.atualizarLegenda();
+          const selCamadaAtiva = document.getElementById("sel-camada-busca")?.value || "instalacoes_portuarias";
+          FilterManager.aoMudarCamada(selCamadaAtiva);
+    }
+
+    function toggleTodasSubcamadasPortos(ligar) {
+      for (const tKey of Object.keys(PortClassification.tipos)) {
+        const chk = document.getElementById(`chk-sub-${tKey}`);
+        if (chk) chk.checked = ligar;
+        if (window.SUBGRUPOS_PORTOS && window.SUBGRUPOS_PORTOS[tKey]) {
+          const fg = window.SUBGRUPOS_PORTOS[tKey];
+          if (ligar) { if (!mapa.hasLayer(fg)) fg.addTo(mapa); }
+          else { if (mapa.hasLayer(fg)) mapa.removeLayer(fg); }
+        }
+      }
+      const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
+      const cntEl = document.getElementById('cnt-instalacoes_portuarias');
+      if (cntEl) cntEl.innerText = ligar ? `(${total})` : `(0/${total})`;
+
+      const sel = document.getElementById('filtro-subtipo-dinamico');
+      if (sel) sel.value = ligar ? 'TODOS' : '';
+
+      Styler.atualizarLegenda();
+          const selCamadaAtiva = document.getElementById("sel-camada-busca")?.value || "instalacoes_portuarias";
+          FilterManager.aoMudarCamada(selCamadaAtiva);
+    }
+
+    function toggleCamada(id, ligar) {
+      if (!CAMADAS_MAPA[id]) { DataManager.atualizarTodasCamadas(); return; }
+      if (ligar) CAMADAS_MAPA[id].addTo(mapa); else mapa.removeLayer(CAMADAS_MAPA[id]);
+      Styler.atualizarLegenda();
+          const selCamadaAtiva = document.getElementById("sel-camada-busca")?.value || "instalacoes_portuarias";
+          FilterManager.aoMudarCamada(selCamadaAtiva);
+    }
+
+
+    function zoomCamada(id) {
+      if (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) mapa.fitBounds(CAMADAS_MAPA[id].getBounds());
+      else UI.toast("Ative a camada para aproximar.");
+    }
+
+
+    function abrirTabela(id) {
+      const g = DADOS_GEOJSON_BRUTOS[id];
+      if (!g || !g.features) return;
+      document.getElementById('titulo-tabela-camada').innerText = `Tabela: ${CONFIG_CAMADAS[id].nome} (${g.features.length} itens)`;
+      document.getElementById('painel-tabela').classList.add('aberto');
+      const thead = document.getElementById('thead-atributos');
+      const tbody = document.getElementById('tbody-atributos');
+      thead.innerHTML = ''; tbody.innerHTML = '';
+      const cols = Object.keys(g.features[0].properties || {}).filter(c => !['geom', 'geometry', 'id'].includes(c.toLowerCase())).slice(0, 5);
+      let th = '<tr><th style="width:70px; text-align:center;">Zoom</th>';
+      cols.forEach(c => th += `<th>${Security.escapeHTML(c)}</th>`);
+      thead.innerHTML = th + '</tr>';
+
+
+      g.features.slice(0, 60).forEach(f => {
+        let tr = `<tr><td style="text-align:center;"><button style="background:#0284c7; color:#fff; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" onclick='SearchEngine.aproximar(${JSON.stringify(f)})'>📍</button></td>`;
+        cols.forEach(c => tr += `<td>${Security.escapeHTML(f.properties[c])}</td>`);
+        tbody.innerHTML += tr + '</tr>';
+      });
+    }
+
+
+    window.addEventListener('click', (e) => {
+      if (!e.target.closest('#drop-ambiente')) document.getElementById('drop-ambiente').classList.remove('aberto');
+      if (!e.target.closest('.barra-busca-atributos')) document.getElementById('resultados-busca').style.display = 'none';
+    });
+
+
+    // Inicialização
+    construirPainelLateral();
+    FilterManager.aoMudarCamada("instalacoes_portuarias");
+    Styler.atualizarLegenda();
+          const selCamadaAtiva = document.getElementById("sel-camada-busca")?.value || "instalacoes_portuarias";
+          FilterManager.aoMudarCamada(selCamadaAtiva);
     DataManager.atualizarTodasCamadas();
   </script>
 </body>
