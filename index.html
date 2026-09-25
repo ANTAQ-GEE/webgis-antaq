@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WebGIS de Estudos e Infraestrutura | ANTAQ</title>
+  <title>WebGIS Corporativo | ANTAQ</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-  <!-- Biblioteca para leitura de Shapefiles (.zip) e KML no navegador -->
+  <!-- Bibliotecas Externas: Chart.js (Dashboard) e shpjs (Shapefile ZIP) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
 
   <style>
@@ -25,181 +26,84 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body, html, #mapa {
-      width: 100%;
-      height: 100%;
+      width: 100%; height: 100%;
       font-family: 'Segoe UI', -apple-system, Roboto, sans-serif;
       overflow: hidden;
       background-color: #0b132b;
     }
 
-    /* -------------------------------------------------------------
-       1. CABEÇALHO INSTITUCIONAL
-       ------------------------------------------------------------- */
+    /* Cabeçalho Institucional */
     .top-header {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 52px;
-      background: var(--antaq-azul-escuro);
-      border-bottom: 3px solid #0284c7;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      z-index: 2000;
-      color: #ffffff;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      position: absolute; top: 0; left: 0; right: 0; height: 52px;
+      background: var(--antaq-azul-escuro); border-bottom: 3px solid #0284c7;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; z-index: 2000; color: #fff;
     }
     .brand-title { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
     .brand-sub { font-size: 10px; color: #38bdf8; }
     .actions-area { display: flex; align-items: center; gap: 10px; }
 
     .btn-homologacao {
-      background: var(--gov-amarelo);
-      color: #000;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      text-transform: uppercase;
+      background: var(--gov-amarelo); color: #000; border: none; padding: 6px 12px;
+      border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase;
     }
-    .btn-homologacao:hover { background: #d97706; }
-
-    .dropdown-homologacao {
-      display: none;
-      position: fixed;
-      top: 58px;
-      right: 140px;
-      background: #ffffff;
-      width: 320px;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-      border-radius: 8px;
-      z-index: 99999;
-      border: 1px solid var(--borda);
-      overflow: hidden;
+    .btn-graficos {
+      background: #4f46e5; color: #fff; border: 1px solid #818cf8; padding: 6px 12px;
+      border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;
     }
-    .dropdown-homologacao.aberto { display: block; }
-    .drop-item {
-      padding: 12px 16px;
-      cursor: pointer;
-      border-bottom: 1px solid #f1f5f9;
-      color: var(--texto-escuro);
-    }
-    .drop-item:hover { background: #f8fafc; }
-    .drop-item.ativo { background: #e0f2fe; border-left: 4px solid var(--antaq-azul-claro); font-weight: 600; }
-    .drop-item small { display: block; font-size: 10px; color: var(--texto-claro); margin-top: 2px; }
-
     .btn-atualizar {
-      background: var(--antaq-azul-claro);
-      color: #fff;
-      border: 1px solid #38bdf8;
-      padding: 6px 14px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      background: var(--antaq-azul-claro); color: #fff; border: 1px solid #38bdf8;
+      padding: 6px 14px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;
     }
     .girando { animation: spin 1s infinite linear; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    /* -------------------------------------------------------------
-       2. BARRA DE BUSCA E INSPEÇÃO DE ATRIBUTOS
-       ------------------------------------------------------------- */
+    /* Dropdown Homologação */
+    .dropdown-homologacao {
+      display: none; position: fixed; top: 58px; right: 140px; background: #fff;
+      width: 320px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); border-radius: 8px;
+      z-index: 99999; border: 1px solid var(--borda); overflow: hidden;
+    }
+    .dropdown-homologacao.aberto { display: block; }
+    .drop-item { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f1f5f9; color: var(--texto-escuro); }
+    .drop-item:hover { background: #f8fafc; }
+    .drop-item.ativo { background: #e0f2fe; border-left: 4px solid var(--antaq-azul-claro); font-weight: 600; }
+    .drop-item small { display: block; font-size: 10px; color: var(--texto-claro); margin-top: 2px; }
+
+    /* Barra de Busca de Atributos */
     .barra-busca-atributos {
-      position: absolute;
-      top: 64px;
-      left: 60px;
-      z-index: 1500;
-      background: rgba(10, 37, 64, 0.95);
-      backdrop-filter: blur(6px);
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-      color: #ffffff;
+      position: absolute; top: 64px; left: 60px; z-index: 1500;
+      background: rgba(10, 37, 64, 0.95); backdrop-filter: blur(6px);
+      padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2);
+      display: flex; align-items: center; gap: 8px; color: #fff;
     }
     .select-camada-busca, .input-busca-atributo {
-      padding: 6px 10px;
-      font-size: 11px;
-      border-radius: 4px;
-      border: 1px solid var(--borda);
-      background: #ffffff;
-      color: var(--texto-escuro);
-      outline: none;
+      padding: 6px 10px; font-size: 11px; border-radius: 4px; border: 1px solid var(--borda);
     }
-    .select-camada-busca { width: 170px; font-weight: 600; }
+    .select-camada-busca { width: 180px; font-weight: 600; }
     .input-busca-atributo { width: 220px; }
     .btn-exec-busca {
-      background: var(--antaq-azul-claro);
-      border: none;
-      color: #fff;
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
+      background: var(--antaq-azul-claro); border: none; color: #fff; padding: 6px 12px;
+      border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;
     }
-    .btn-exec-busca:hover { background: #0369a1; }
-
     .resultados-busca {
-      display: none;
-      position: absolute;
-      top: 44px;
-      left: 185px;
-      width: 250px;
-      max-height: 200px;
-      overflow-y: auto;
-      background: #ffffff;
-      border-radius: 4px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      z-index: 2000;
-      border: 1px solid var(--borda);
+      display: none; position: absolute; top: 44px; left: 195px; width: 280px; max-height: 220px;
+      overflow-y: auto; background: #fff; border-radius: 4px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      z-index: 2500; border: 1px solid var(--borda);
     }
-    .item-resultado {
-      padding: 6px 10px;
-      font-size: 11px;
-      color: var(--texto-escuro);
-      cursor: pointer;
-      border-bottom: 1px solid #f1f5f9;
-    }
+    .item-resultado { padding: 7px 10px; font-size: 11px; color: var(--texto-escuro); cursor: pointer; }
     .item-resultado:hover { background: #e0f2fe; color: var(--antaq-azul-claro); font-weight: 600; }
 
-    /* -------------------------------------------------------------
-       3. PAINEL DE CAMADAS LATERAL
-       ------------------------------------------------------------- */
+    /* Painel Lateral de Camadas */
     .painel-lateral {
-      position: absolute;
-      top: 64px;
-      right: 16px;
-      width: 350px;
-      max-height: calc(100% - 80px);
-      background: #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid var(--borda);
+      position: absolute; top: 64px; right: 16px; width: 350px; max-height: calc(100% - 80px);
+      background: #ffffff; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+      z-index: 1000; display: flex; flex-direction: column; border: 1px solid var(--borda);
     }
     .painel-header {
-      background: var(--antaq-azul-escuro);
-      color: #fff;
-      padding: 10px 14px;
-      border-top-left-radius: 7px;
-      border-top-right-radius: 7px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      background: var(--antaq-azul-escuro); color: #fff; padding: 10px 14px;
+      border-top-left-radius: 7px; border-top-right-radius: 7px;
+      display: flex; justify-content: space-between; align-items: center;
       border-bottom: 2px solid var(--antaq-azul-claro);
     }
     .painel-header h2 { font-size: 12px; font-weight: 700; }
@@ -209,72 +113,30 @@
 
     .secao { border-bottom: 1px solid var(--borda); }
     .secao-titulo {
-      background: #f8fafc;
-      padding: 9px 12px;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--texto-claro);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
+      background: #f8fafc; padding: 9px 12px; font-size: 11px; font-weight: 700;
+      color: var(--texto-claro); display: flex; justify-content: space-between; cursor: pointer;
     }
     .secao-titulo:hover { background: #f1f5f9; }
     .secao-conteudo { padding: 6px 12px; display: flex; flex-direction: column; gap: 4px; }
     .secao-conteudo.fechado { display: none; }
 
-    .item-camada {
-      display: flex;
-      flex-direction: column;
-      padding: 4px 0;
-      border-bottom: 1px dashed #f1f5f9;
-    }
-    .item-camada-principal {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .camada-info {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      max-width: 230px;
-      font-size: 11px;
-      color: var(--texto-escuro);
-    }
-    .legenda-cor {
-      width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
-      box-shadow: 0 0 2px rgba(0,0,0,0.4);
-    }
-    .badge-contador { font-size: 10px; color: #64748b; font-weight: 600; }
-    .badge-erro { font-size: 10px; color: var(--gov-vermelho); font-weight: 700; margin-left: 4px; }
+    .item-camada { display: flex; flex-direction: column; padding: 4px 0; border-bottom: 1px dashed #f1f5f9; }
+    .item-camada-principal { display: flex; align-items: center; justify-content: space-between; }
+    .camada-info { display: flex; align-items: center; gap: 6px; font-size: 11px; max-width: 210px; }
+    .legenda-cor { width: 12px; height: 12px; border-radius: 3px; cursor: pointer; }
 
-    .camada-acoes { display: flex; align-items: center; gap: 6px; }
-    .btn-ferramenta-estilo {
-      background: transparent; border: none; cursor: pointer; font-size: 12px; opacity: 0.8;
-    }
-    .btn-ferramenta-estilo:hover { opacity: 1; transform: scale(1.1); }
-    .btn-ferramenta-estilo.desabilitado { opacity: 0.3; cursor: not-allowed; }
+    .camada-acoes { display: flex; align-items: center; gap: 5px; }
+    .btn-acao-icone { background: transparent; border: none; cursor: pointer; font-size: 12px; padding: 2px; }
+    .btn-acao-icone:hover { background: #e2e8f0; border-radius: 3px; }
 
-    .gaveta-estilo {
-      display: none;
-      background: #f8fafc;
-      padding: 8px 10px;
-      border-radius: 6px;
-      margin-top: 6px;
-      border: 1px solid var(--borda);
-      font-size: 10px;
+    .gaveta-painel {
+      display: none; background: #f8fafc; padding: 8px 10px; border-radius: 6px;
+      margin-top: 6px; border: 1px solid var(--borda); font-size: 10px;
     }
-    .gaveta-estilo.aberta { display: block; }
-    .linha-ajuste {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 5px;
-    }
-    .linha-ajuste label { font-weight: 600; color: var(--texto-claro); }
-    .linha-ajuste input[type="range"] { width: 110px; }
+    .gaveta-painel.aberta { display: block; }
+    .linha-ajuste { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
 
+    /* Switch */
     .switch { position: relative; display: inline-block; width: 30px; height: 16px; flex-shrink: 0; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
@@ -288,84 +150,56 @@
     input:checked + .slider { background-color: var(--antaq-azul-claro); }
     input:checked + .slider:before { transform: translateX(14px); }
 
-    .btn-upload {
-      margin: 8px 12px; padding: 10px; border: 2px dashed #94a3b8; border-radius: 6px;
-      background: #f8fafc; text-align: center; cursor: pointer;
+    /* Painel de Gráficos */
+    .painel-graficos {
+      display: none; position: absolute; top: 64px; left: 60px; width: 480px;
+      max-height: calc(100% - 90px); background: #ffffff; border-radius: 8px;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.4); z-index: 1600; border: 1px solid var(--borda);
+      flex-direction: column; overflow: hidden;
     }
-    .btn-upload strong { font-size: 11px; display: block; color: var(--texto-escuro); }
-    .btn-upload span { font-size: 10px; color: var(--texto-claro); }
+    .painel-graficos.aberto { display: flex; }
+    .graficos-header {
+      background: #0a2540; color: #fff; padding: 10px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 12px; font-weight: 700; border-bottom: 2px solid #4f46e5;
+    }
+    .graficos-corpo { overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+    .card-grafico { background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid var(--borda); }
+    .card-grafico h4 { font-size: 11px; margin-bottom: 6px; color: var(--texto-escuro); }
 
-    /* -------------------------------------------------------------
-       4. LEGENDA CARTOGRÁFICA DINÂMICA E FLUTUANTE
-       ------------------------------------------------------------- */
+    /* Tabela de Atributos */
+    .painel-tabela-atributos {
+      display: none; position: absolute; bottom: 0; left: 0; right: 380px; height: 260px;
+      background: #ffffff; border-top: 3px solid var(--antaq-azul-claro);
+      box-shadow: 0 -8px 25px rgba(0,0,0,0.3); z-index: 1800; flex-direction: column;
+    }
+    .painel-tabela-atributos.aberto { display: flex; }
+    .tabela-header {
+      background: var(--antaq-azul-escuro); color: #fff; padding: 8px 16px;
+      display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700;
+    }
+    .tabela-corpo-scroll { flex: 1; overflow-y: auto; }
+    .grid-atributos { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; }
+    .grid-atributos th { position: sticky; top: 0; background: #e2e8f0; padding: 6px 10px; font-weight: 700; }
+    .grid-atributos td { padding: 5px 10px; border-bottom: 1px solid #f1f5f9; }
+
+    /* Legenda */
     .caixa-legenda {
-      position: absolute;
-      bottom: 24px;
-      right: 380px; /* À esquerda do painel de camadas */
-      width: 260px;
-      background: rgba(255, 255, 255, 0.96);
-      backdrop-filter: blur(8px);
-      border-radius: 8px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-      border: 1px solid var(--borda);
-      z-index: 1200;
-      overflow: hidden;
-      font-size: 11px;
+      position: absolute; bottom: 20px; right: 380px; width: 250px;
+      background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(8px);
+      border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); border: 1px solid var(--borda);
+      z-index: 1200; overflow: hidden; font-size: 11px;
     }
     .legenda-topo {
-      background: var(--antaq-azul-escuro);
-      color: #ffffff;
-      padding: 7px 12px;
-      font-size: 11px;
-      font-weight: 700;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
+      background: var(--antaq-azul-escuro); color: #ffffff; padding: 7px 12px;
+      font-size: 11px; font-weight: 700; display: flex; justify-content: space-between; cursor: pointer;
     }
-    .legenda-conteudo {
-      max-height: 280px;
-      overflow-y: auto;
-      padding: 8px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .legenda-conteudo.minimizada { display: none; }
-    
-    .legenda-linha {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--texto-escuro);
-    }
-    .simbolo-linha {
-      width: 18px;
-      height: 3px;
-      border-radius: 2px;
-      flex-shrink: 0;
-    }
-    .simbolo-linha-tracejada {
-      width: 18px;
-      height: 0px;
-      border-top: 2px dashed #f59e0b;
-      flex-shrink: 0;
-    }
-    .simbolo-ponto {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      border: 1.5px solid #ffffff;
-    }
-    .simbolo-poligono {
-      width: 14px;
-      height: 10px;
-      border-radius: 2px;
-      flex-shrink: 0;
-    }
+    .legenda-conteudo { max-height: 240px; overflow-y: auto; padding: 8px 12px; display: flex; flex-direction: column; gap: 5px; }
+    .simbolo-linha { width: 18px; height: 3px; border-radius: 2px; }
+    .simbolo-ponto { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #fff; }
+    .simbolo-poligono { width: 14px; height: 10px; border-radius: 2px; }
 
-    /* Rótulos e Popups */
+    /* Popups e Halo */
     .rotulo-uf {
       background: transparent !important; border: none !important; box-shadow: none !important;
       font-size: 12px !important; font-weight: 700 !important; color: #fff !important;
@@ -376,10 +210,14 @@
     .leaflet-popup-content-wrapper { border-radius: 8px; overflow: hidden; padding: 0; }
     .leaflet-popup-content { margin: 0 !important; min-width: 260px; }
     .pop-topo { background: var(--antaq-azul-escuro); color: #fff; padding: 10px 14px; font-size: 12px; font-weight: 700; border-bottom: 2px solid #38bdf8; }
-    .pop-corpo { padding: 10px 14px; font-size: 11px; color: var(--texto-escuro); }
+    .pop-corpo { padding: 10px 14px; font-size: 11px; max-height: 220px; overflow-y: auto; }
     .pop-linha { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f1f5f9; }
     .pop-lbl { font-weight: 600; color: var(--texto-claro); }
     .pop-val { font-weight: 700; color: var(--texto-escuro); }
+    .pop-rodape-auditoria {
+      background: #f8fafc; padding: 5px 14px; font-size: 9px; color: #64748b;
+      border-top: 1px solid var(--borda); display: flex; justify-content: space-between;
+    }
 
     #toast {
       position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -395,13 +233,14 @@
   <header class="top-header">
     <div class="brand-area">
       <div class="brand-title">AGÊNCIA NACIONAL DE TRANSPORTES AQUAVIÁRIOS &bull; ANTAQ</div>
-      <div class="brand-sub">SISTEMA WEBGIS DE ESTUDOS SETORIAIS E INFRAESTRUTURA &mdash; GEE</div>
+      <div class="brand-sub">STUDIO DE HOMOLOGAÇÃO E AUDITORIA SETORIAL &mdash; GEE</div>
     </div>
     <div class="actions-area">
-      <button class="btn-homologacao" onclick="toggleDropdownHomologacao(event)">
+      <button class="btn-graficos" onclick="UI.toggleGraficos()">📊 Cruzamentos & Gráficos</button>
+      <button class="btn-homologacao" onclick="UI.toggleMenuAmbiente(event)">
         <span id="txt-ambiente">Homologação (Estudos)</span> &#9662;
       </button>
-      <button class="btn-atualizar" id="btn-sync" onclick="atualizarTodasCamadas()">
+      <button class="btn-atualizar" id="btn-sync" onclick="DataManager.atualizarTodasCamadas()">
         <span id="ico-sync">🔄</span> Atualizar
       </button>
     </div>
@@ -409,62 +248,91 @@
 
   <!-- DROPDOWN DE AMBIENTE -->
   <div class="dropdown-homologacao" id="drop-ambiente">
-    <div class="drop-item ativo" id="item-env-homolog" onclick="selecionarAmbiente('homologacao')">
+    <div class="drop-item ativo" id="item-env-homolog" onclick="AmbienteManager.definir('homologacao')">
       <strong>Ambiente de Homologação (Estudos GEE)</strong>
-      <small>Edição de estilos habilitada &bull; Consome dados de trabalho da pasta <code>dados/</code>.</small>
+      <small>Edição de estilos e filtros habilitados &bull; Pasta local <code>dados/</code>.</small>
     </div>
-    <div class="drop-item" id="item-env-prod" onclick="selecionarAmbiente('producao')">
+    <div class="drop-item" id="item-env-prod" onclick="AmbienteManager.definir('producao')">
       <strong>Ambiente de Produção (Oficial ANTAQ)</strong>
-      <small>🔒 Estilos travados no padrão oficial regulatório &bull; Bases consolidadas.</small>
+      <small>🔒 Estilos e campos travados no padrão homologado &bull; Bases oficiais.</small>
     </div>
   </div>
 
-  <!-- BARRA DE BUSCA E ZOOM POR ATRIBUTO -->
+  <!-- BARRA DE BUSCA -->
   <div class="barra-busca-atributos">
-    <select class="select-camada-busca" id="sel-camada-busca" onchange="atualizarListaPesquisa()">
+    <select class="select-camada-busca" id="sel-camada-busca">
       <option value="instalacoes_portuarias">Instalações Portuárias</option>
       <option value="vias_navegadas">Vias Navegadas</option>
+      <option value="tis_poligonais">Poligonais Portuárias / TIS</option>
       <option value="linhas_travessias">Linhas de Travessias</option>
       <option value="uf">Estados (UF)</option>
     </select>
     <div style="position:relative;">
-      <input type="text" class="input-busca-atributo" id="input-busca" placeholder="Buscar ativo ou rio..." oninput="filtrarOpcoesBusca(this.value)">
+      <input type="text" class="input-busca-atributo" id="input-busca" placeholder="Buscar por nome ou código..." oninput="SearchEngine.onInput(this.value)">
       <div class="resultados-busca" id="resultados-busca"></div>
     </div>
-    <button class="btn-exec-busca" onclick="executarBuscaAtributo()">Zoom no Ativo</button>
+    <button class="btn-exec-busca" onclick="SearchEngine.executar()">Zoom no Ativo</button>
   </div>
 
   <div id="toast"></div>
   <div id="mapa" style="margin-top: 52px; height: calc(100% - 52px);"></div>
 
-  <!-- LEGENDA CARTOGRÁFICA FLUTUANTE E DINÂMICA -->
+  <!-- PAINEL DE GRÁFICOS -->
+  <div class="painel-graficos" id="painel-graficos">
+    <div class="graficos-header">
+      <span>Painel Analítico de Cruzamentos Setoriais</span>
+      <span style="cursor:pointer;" onclick="UI.toggleGraficos()">&times;</span>
+    </div>
+    <div class="graficos-corpo">
+      <div class="card-grafico">
+        <h4>1. Instalações Portuárias por Tipo de Outorga (TUP vs Público)</h4>
+        <canvas id="grafico-portos-tipo" height="150"></canvas>
+      </div>
+      <div class="card-grafico">
+        <h4>2. Distribuição Territorial das Instalações por UF (Top 8)</h4>
+        <canvas id="grafico-portos-uf" height="160"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEGENDA DINÂMICA -->
   <div class="caixa-legenda">
     <div class="legenda-topo" onclick="document.getElementById('corpo-legenda').classList.toggle('minimizada')">
       <span>LEGENDA CARTOGRÁFICA</span>
       <span>▼</span>
     </div>
-    <div class="legenda-conteudo" id="corpo-legenda">
-      <!-- Gerado e atualizado dinamicamente pelo JavaScript -->
+    <div class="legenda-conteudo" id="corpo-legenda"></div>
+  </div>
+
+  <!-- TABELA DE ATRIBUTOS -->
+  <div class="painel-tabela-atributos" id="painel-tabela">
+    <div class="tabela-header">
+      <span id="titulo-tabela-camada">Tabela de Atributos</span>
+      <span style="cursor:pointer;" onclick="UI.fecharTabela()">&times; Fechar</span>
+    </div>
+    <div class="tabela-corpo-scroll">
+      <table class="grid-atributos">
+        <thead id="thead-atributos"></thead>
+        <tbody id="tbody-atributos"></tbody>
+      </table>
     </div>
   </div>
 
-  <!-- PAINEL DE CAMADAS LATERAL -->
+  <!-- PAINEL LATERAL DE CAMADAS -->
   <aside class="painel-lateral">
     <div class="painel-header">
       <h2>PAINEL DE CAMADAS</h2>
-      <span id="label-status-estilo">Estilo Editável (Homologação)</span>
+      <span id="label-status-estilo">Homologação Ativa</span>
     </div>
 
     <div class="painel-corpo">
-      
-      <!-- Presets Globais -->
       <div class="secao" id="secao-paletas-globais">
-        <div class="secao-titulo" onclick="alternarSecao(this)">
+        <div class="secao-titulo" onclick="UI.alternarSecao(this)">
           <span>Paleta Cartográfica Global</span>
           <span>&#9662;</span>
         </div>
         <div class="secao-conteudo">
-          <select id="select-presets-globais" style="width:100%; padding:5px; font-size:11px;" onchange="aplicarPresetGlobal(this.value)">
+          <select style="width:100%; padding:5px; font-size:11px;" onchange="Styler.aplicarPresetGlobal(this.value)">
             <option value="padrao_antaq">🌐 Padrão Institucional ANTAQ (Oficial)</option>
             <option value="neon_satellite">🚀 Neon Satellite (NASA High-Contrast)</option>
             <option value="classica">🗺️ Cartografia Clássica (IBGE / USGS)</option>
@@ -473,67 +341,34 @@
         </div>
       </div>
 
-      <!-- Mapas de Base -->
       <div class="secao">
-        <div class="secao-titulo" onclick="alternarSecao(this)">
-          <span>Mapas de Base</span>
-          <span>&#9662;</span>
-        </div>
+        <div class="secao-titulo" onclick="UI.alternarSecao(this)"><span>Mapas de Base</span><span>&#9662;</span></div>
         <div class="secao-conteudo">
           <label style="display:flex; justify-content:space-between; font-size:11px; padding:3px 0;">
             <span>Imagem de Satélite (Esri)</span>
-            <input type="radio" name="basemap" value="satelite" checked onchange="trocarBasemap(this.value)">
+            <input type="radio" name="basemap" value="satelite" checked onchange="BasemapManager.trocar(this.value)">
           </label>
           <label style="display:flex; justify-content:space-between; font-size:11px; padding:3px 0;">
             <span>Mapa Técnico Escuro (Esri Dark)</span>
-            <input type="radio" name="basemap" value="escuro" onchange="trocarBasemap(this.value)">
+            <input type="radio" name="basemap" value="escuro" onchange="BasemapManager.trocar(this.value)">
           </label>
         </div>
       </div>
 
-      <!-- Infraestrutura Aquaviária -->
       <div class="secao">
-        <div class="secao-titulo" onclick="alternarSecao(this)">
-          <span>Infraestrutura Aquaviária (ANTAQ)</span>
-          <span>&#9662;</span>
-        </div>
+        <div class="secao-titulo" onclick="UI.alternarSecao(this)"><span>Infraestrutura Aquaviária</span><span>&#9662;</span></div>
         <div class="secao-conteudo" id="grupo-infra"></div>
       </div>
 
-      <!-- Limites Territoriais -->
       <div class="secao">
-        <div class="secao-titulo" onclick="alternarSecao(this)">
-          <span>Limites Territoriais</span>
-          <span>&#9662;</span>
-        </div>
+        <div class="secao-titulo" onclick="UI.alternarSecao(this)"><span>Limites Territoriais</span><span>&#9662;</span></div>
         <div class="secao-conteudo" id="grupo-limites"></div>
       </div>
 
-      <!-- Restrições Socioambientais -->
       <div class="secao">
-        <div class="secao-titulo" onclick="alternarSecao(this)">
-          <span>Restrições Socioambientais</span>
-          <span>&#9662;</span>
-        </div>
+        <div class="secao-titulo" onclick="UI.alternarSecao(this)"><span>Restrições Socioambientais</span><span>&#9662;</span></div>
         <div class="secao-conteudo" id="grupo-restricoes"></div>
       </div>
-
-      <!-- Análise Temporária -->
-      <div class="secao">
-        <div class="secao-titulo" onclick="alternarSecao(this)">
-          <span>Análise Temporária</span>
-          <span>&#9662;</span>
-        </div>
-        <div class="secao-conteudo">
-          <div class="btn-upload" onclick="document.getElementById('file-upload').click()">
-            <strong>+ Adicionar Camada</strong>
-            <span>Shapefile (.ZIP), GeoJSON ou KML</span>
-          </div>
-          <input type="file" id="file-upload" style="display:none;" accept=".zip,.geojson,.json,.kml" onchange="processarArquivoLocal(this)">
-          <div id="lista-temporarias"></div>
-        </div>
-      </div>
-
     </div>
   </aside>
 
@@ -541,498 +376,444 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    // =========================================================
-    // CONFIGURAÇÕES BASE (ESTILOS OFICIAIS ANTAQ)
-    // =========================================================
-    let AMBIENTE_ATUAL = 'homologacao';
-
-    const ESTILOS_PADRAO_BASE = {
-      instalacoes_portuarias: { cor: "#10b981", opacidade: 0.95, peso: 6, tipoGeo: "ponto" },
-      vias_navegadas: { cor: "#00e5ff", opacidade: 0.9, peso: 2.8, tipoGeo: "linha" },
-      linhas_travessias: { cor: "#f59e0b", opacidade: 0.9, peso: 2, tipoGeo: "linha_tracejada" },
-      embarcacoes: { cor: "#38bdf8", opacidade: 0.8, peso: 4, tipoGeo: "ponto" },
-      uf: { cor: "#60a5fa", opacidade: 0.8, peso: 1.2, tipoGeo: "poligono_linha" },
-      regioes: { cor: "#818cf8", opacidade: 0.7, peso: 1.5, tipoGeo: "poligono_linha" },
-      pais: { cor: "#cbd5e1", opacidade: 0.5, peso: 2, tipoGeo: "poligono_linha" },
-      tis_poligonais: { cor: "#ef4444", opacidade: 0.25, peso: 1.5, tipoGeo: "poligono" },
-      estados_amazonia_legal: { cor: "#059669", opacidade: 0.1, peso: 2, tipoGeo: "poligono_tracejado" }
-    };
-
-    const CONFIG_CAMADAS = {
-      instalacoes_portuarias: { nome: "Instalações Portuárias", grupo: "infra", arquivos: ["dados/instalacoes_portuarias.geojson"], ...ESTILOS_PADRAO_BASE.instalacoes_portuarias, ativa: true },
-      vias_navegadas: { 
-        nome: "Vias Economicamente Navegadas", 
-        grupo: "infra", 
-        arquivos: ["dados/vias_economicamente_navegadas.geojson", "dados/Vias_Economicamente_Navegadas.geojson"], 
-        ...ESTILOS_PADRAO_BASE.vias_navegadas, ativa: true 
+    /**
+     * MÓDULO 1: SEGURANÇA E HIGIENIZAÇÃO DE DADOS (OWASP / CGU)
+     */
+    const Security = {
+      escapeHTML: function(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
       },
-      linhas_travessias: { nome: "Linhas de Travessias", grupo: "infra", arquivos: ["dados/linhas_travessias.geojson"], ...ESTILOS_PADRAO_BASE.linhas_travessias, ativa: true },
-      embarcacoes: { nome: "Tráfego de Embarcações / AIS", grupo: "infra", arquivos: ["dados/embarcacoes.geojson"], ...ESTILOS_PADRAO_BASE.embarcacoes, ativa: true },
-      uf: { nome: "Unidades da Federação (IBGE)", grupo: "limites", arquivos: ["dados/uf.geojson"], ...ESTILOS_PADRAO_BASE.uf, ativa: true },
-      regioes: { nome: "Regiões do Brasil", grupo: "limites", arquivos: ["dados/regioes.geojson"], ...ESTILOS_PADRAO_BASE.regioes, ativa: true },
-      pais: { nome: "Limite Nacional", grupo: "limites", arquivos: ["dados/pais.geojson"], ...ESTILOS_PADRAO_BASE.pais, ativa: false },
-      tis_poligonais: { nome: "Poligonais Portuárias / TIS", grupo: "restricoes", arquivos: ["dados/tis_poligonais.geojson"], ...ESTILOS_PADRAO_BASE.tis_poligonais, ativa: true },
-      estados_amazonia_legal: { nome: "Estados da Amazônia Legal", grupo: "restricoes", arquivos: ["dados/estados_amazonia_legal.geojson"], ...ESTILOS_PADRAO_BASE.estados_amazonia_legal, ativa: true }
+      ehValido: function(v) {
+        if (v === null || v === undefined) return false;
+        const s = String(v).trim().toLowerCase();
+        return !(s === '' || s === 'none' || s === 'nan' || s === 'null' || s === '-');
+      }
     };
 
-    const PRESETS = {
-      padrao_antaq: { ...ESTILOS_PADRAO_BASE },
-      neon_satellite: { vias_navegadas: "#39ff14", instalacoes_portuarias: "#ff007f", linhas_travessias: "#ffff00", tis_poligonais: "#ff073a" },
-      classica: { vias_navegadas: "#0284c7", instalacoes_portuarias: "#b45309", linhas_travessias: "#64748b", tis_poligonais: "#991b1b" },
-      acessibilidade: { vias_navegadas: "#21918c", instalacoes_portuarias: "#fde725", linhas_travessias: "#5ec962", tis_poligonais: "#440154" }
+    /**
+     * MÓDULO 2: CONFIGURAÇÕES E REGISTROS DE AUDITORIA
+     */
+    const CONFIG_CAMADAS = {
+      instalacoes_portuarias: { nome: "Instalações Portuárias", grupo: "infra", arquivos: ["dados/instalacoes_portuarias.geojson"], cor: "#10b981", opacidade: 0.95, peso: 6, tipoGeo: "ponto", ativa: true, camposVisiveis: [] },
+      vias_navegadas: { nome: "Vias Economicamente Navegadas", grupo: "infra", arquivos: ["dados/vias_economicamente_navegadas.geojson"], cor: "#00e5ff", opacidade: 0.9, peso: 2.8, tipoGeo: "linha", ativa: true, camposVisiveis: [] },
+      linhas_travessias: { nome: "Linhas de Travessias", grupo: "infra", arquivos: ["dados/linhas_travessias.geojson"], cor: "#f59e0b", opacidade: 0.9, peso: 2, tipoGeo: "linha_tracejada", ativa: true, camposVisiveis: [] },
+      embarcacoes: { nome: "Tráfego de Embarcações / AIS", grupo: "infra", arquivos: ["dados/embarcacoes.geojson"], cor: "#38bdf8", opacidade: 0.8, peso: 4, tipoGeo: "ponto", ativa: true, camposVisiveis: [] },
+      uf: { nome: "Unidades da Federação (IBGE)", grupo: "limites", arquivos: ["dados/uf.geojson"], cor: "#60a5fa", opacidade: 0.8, peso: 1.2, tipoGeo: "poligono_linha", ativa: true, camposVisiveis: [] },
+      regioes: { nome: "Regiões do Brasil", grupo: "limites", arquivos: ["dados/regioes.geojson"], cor: "#818cf8", opacidade: 0.7, peso: 1.5, tipoGeo: "poligono_linha", ativa: true, camposVisiveis: [] },
+      pais: { nome: "Limite Nacional", grupo: "limites", arquivos: ["dados/pais.geojson"], cor: "#cbd5e1", opacidade: 0.5, peso: 2, tipoGeo: "poligono_linha", ativa: false, camposVisiveis: [] },
+      tis_poligonais: { nome: "Poligonais Portuárias / TIS", grupo: "restricoes", arquivos: ["dados/tis_poligonais.geojson"], cor: "#ef4444", opacidade: 0.25, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: [] },
+      estados_amazonia_legal: { nome: "Estados da Amazônia Legal", grupo: "restricoes", arquivos: ["dados/estados_amazonia_legal.geojson"], cor: "#059669", opacidade: 0.1, peso: 2, tipoGeo: "poligono_tracejado", ativa: true, camposVisiveis: [] }
     };
 
     const CAMADAS_MAPA = {};
     const DADOS_GEOJSON_BRUTOS = {};
 
-    // =========================================================
-    // INICIALIZAÇÃO DO MAPA
-    // =========================================================
+    // Inicialização do Mapa
     const mapa = L.map('mapa', { center: [-14.0, -52.0], zoom: 4, zoomControl: false });
     L.control.zoom({ position: 'bottomleft' }).addTo(mapa);
 
-    const sateliteEsri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 }).addTo(mapa);
-    const rotulosReferencia = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { pane: 'overlayPane' }).addTo(mapa);
-    const mapaEscuroEsri = L.layerGroup([
-      L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'),
-      L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}')
-    ]);
-
-    function trocarBasemap(tipo) {
-      if (tipo === 'satelite') {
-        mapa.removeLayer(mapaEscuroEsri);
-        sateliteEsri.addTo(mapa);
-        rotulosReferencia.addTo(mapa);
-      } else {
-        mapa.removeLayer(sateliteEsri);
-        mapa.removeLayer(rotulosReferencia);
-        mapaEscuroEsri.addTo(mapa);
+    /**
+     * MÓDULO 3: GERENCIADOR DE BASEMAPS
+     */
+    const BasemapManager = {
+      satelite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 }).addTo(mapa),
+      rotulos: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { pane: 'overlayPane' }).addTo(mapa),
+      escuro: L.layerGroup([
+        L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'),
+        L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}')
+      ]),
+      trocar: function(tipo) {
+        if (tipo === 'satelite') {
+          mapa.removeLayer(this.escuro); this.satelite.addTo(mapa); this.rotulos.addTo(mapa);
+        } else {
+          mapa.removeLayer(this.satelite); mapa.removeLayer(this.rotulos); this.escuro.addTo(mapa);
+        }
       }
-    }
+    };
 
-    // =========================================================
-    // PAINEL LATERAL
-    // =========================================================
-    function construirPainel() {
+    /**
+     * MÓDULO 4: RENDERIZADOR DE POPUPS COM AUDITORIA
+     */
+    const PopupRenderer = {
+      gerar: function(id, properties) {
+        const p = properties || {};
+        const cfg = CONFIG_CAMADAS[id];
+        const titulo = Security.escapeHTML(p.nome || p.NOME_INSTALACAO || p.NOME_RIO || p.SIGLA_UF || 'Ativo Aquaviário');
+
+        let linhas = '';
+        for (const [chave, valor] of Object.entries(p)) {
+          if (['geom', 'geometry', 'id', 'gid', 'objectid'].includes(chave.toLowerCase())) continue;
+          if (cfg.camposVisiveis.length > 0 && !cfg.camposVisiveis.includes(chave)) continue;
+
+          if (Security.ehValido(valor)) {
+            linhas += `<div class="pop-linha"><span class="pop-lbl">${Security.escapeHTML(chave)}:</span><span class="pop-val">${Security.escapeHTML(valor)}</span></div>`;
+          }
+        }
+
+        const dataAuditoria = new Date().toLocaleDateString('pt-BR');
+        return `
+          <div class="pop-topo">${titulo}</div>
+          <div class="pop-corpo">${linhas || '<p style="color:#64748b;">Nenhum atributo ativo.</p>'}</div>
+          <div class="pop-rodape-auditoria">
+            <span>Fonte: ANTAQ/GEE</span>
+            <span>Verificado: ${dataAuditoria}</span>
+          </div>
+        `;
+      }
+    };
+
+    /**
+     * MÓDULO 5: ESTILIZADOR DINÂMICO
+     */
+    const Styler = {
+      obterOpcoes: function(id) {
+        const cfg = CONFIG_CAMADAS[id];
+        return {
+          pointToLayer: (f, latlng) => {
+            let c = cfg.cor;
+            if (id === 'instalacoes_portuarias') {
+              const t = String(f.properties.tipo || f.properties.TIPO || '').toUpperCase();
+              if (t.includes('TUP')) c = '#10b981';
+              else if (t.includes('PÚBLICO') || t.includes('ORGANIZADO')) c = '#0284c7';
+              else if (t.includes('IP4') || t.includes('PEQUENO')) c = '#f59e0b';
+            }
+            return L.circleMarker(latlng, { radius: cfg.peso, fillColor: c, color: '#ffffff', weight: 1.5, fillOpacity: cfg.opacidade });
+          },
+          style: () => ({
+            color: cfg.cor, weight: cfg.peso, fillColor: cfg.cor, fillOpacity: cfg.opacidade,
+            dashArray: id === 'linhas_travessias' ? '6,6' : (id === 'estados_amazonia_legal' ? '8,4' : null)
+          }),
+          onEachFeature: (f, layer) => {
+            layer.bindPopup(PopupRenderer.gerar(id, f.properties));
+            if (id === 'uf') {
+              const sigla = Security.escapeHTML(f.properties.SIGLA_UF || f.properties.sigla || f.properties.UF || f.properties.nome);
+              if (sigla) layer.bindTooltip(sigla, { permanent: true, direction: 'center', className: 'rotulo-uf' });
+            }
+          }
+        };
+      },
+      atualizar: function(id, prop, valor) {
+        if (AmbienteManager.atual === 'producao') return;
+        CONFIG_CAMADAS[id][prop] = valor;
+        if (CAMADAS_MAPA[id]) {
+          CAMADAS_MAPA[id].eachLayer(l => {
+            if (l.setStyle) l.setStyle({ color: CONFIG_CAMADAS[id].cor, weight: CONFIG_CAMADAS[id].peso, fillOpacity: CONFIG_CAMADAS[id].opacidade });
+          });
+        }
+        this.atualizarLegenda();
+      },
+      atualizarLegenda: function() {
+        const corpo = document.getElementById('corpo-legenda');
+        corpo.innerHTML = '';
+        for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
+          if (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) {
+            const l = document.createElement('div');
+            l.style.display = 'flex'; l.style.alignItems = 'center'; l.style.gap = '8px';
+            if (id === 'instalacoes_portuarias') {
+              l.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                  <span style="font-weight:700;">Instalações Portuárias:</span>
+                  <div style="display:flex; align-items:center; gap:5px;"><span class="simbolo-ponto" style="background:#10b981;"></span> TUP</div>
+                  <div style="display:flex; align-items:center; gap:5px;"><span class="simbolo-ponto" style="background:#0284c7;"></span> Porto Público</div>
+                  <div style="display:flex; align-items:center; gap:5px;"><span class="simbolo-ponto" style="background:#f59e0b;"></span> IP4 / Transbordo</div>
+                </div>
+              `;
+            } else if (cfg.tipoGeo === 'linha') {
+              l.innerHTML = `<span class="simbolo-linha" style="background:${cfg.cor};"></span> <span>${cfg.nome}</span>`;
+            } else if (cfg.tipoGeo === 'ponto') {
+              l.innerHTML = `<span class="simbolo-ponto" style="background:${cfg.cor};"></span> <span>${cfg.nome}</span>`;
+            } else {
+              l.innerHTML = `<span class="simbolo-poligono" style="background:${cfg.cor}; opacity:${cfg.opacidade};"></span> <span>${cfg.nome}</span>`;
+            }
+            corpo.appendChild(l);
+          }
+        }
+      }
+    };
+
+    /**
+     * MÓDULO 6: CARREGADOR DE DADOS
+     */
+    const DataManager = {
+      atualizarTodasCamadas: function() {
+        const btn = document.getElementById('btn-sync');
+        const ico = document.getElementById('ico-sync');
+        btn.disabled = true; ico.classList.add('girando');
+
+        const ts = new Date().getTime();
+        const promessas = Object.entries(CONFIG_CAMADAS).map(([id, cfg]) => {
+          const cntEl = document.getElementById(`cnt-${id}`);
+          const errEl = document.getElementById(`err-${id}`);
+          const chkEl = document.getElementById(`chk-${id}`);
+
+          return fetch(`${cfg.arquivos[0]}?_t=${ts}`)
+            .then(res => {
+              if (!res.ok) throw new Error(`Status ${res.status}`);
+              return res.json();
+            })
+            .then(dados => {
+              if (!dados.features) throw new Error("Sem feições válidas");
+              DADOS_GEOJSON_BRUTOS[id] = dados;
+              const opcoes = Styler.obterOpcoes(id);
+
+              if (CAMADAS_MAPA[id]) {
+                CAMADAS_MAPA[id].clearLayers();
+                CAMADAS_MAPA[id].addData(dados);
+              } else {
+                CAMADAS_MAPA[id] = L.geoJSON(dados, opcoes);
+                if (chkEl && chkEl.checked) CAMADAS_MAPA[id].addTo(mapa);
+              }
+
+              if (cntEl) cntEl.innerText = `(${dados.features.length})`;
+              if (errEl) errEl.innerText = '';
+            })
+            .catch(() => {
+              if (errEl) errEl.innerText = '⚠️ ausente';
+            });
+        });
+
+        Promise.allSettled(promessas).then(() => {
+          btn.disabled = false; ico.classList.remove('girando');
+          Styler.atualizarLegenda();
+          UI.toast(`✓ Bases sincronizadas às ${new Date().toLocaleTimeString('pt-BR')}`);
+        });
+      }
+    };
+
+    /**
+     * MÓDULO 7: BUSCA OTIMIZADA COM DEBOUNCE
+     */
+    const SearchEngine = {
+      debounceTimer: null,
+      onInput: function(val) {
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = setTimeout(() => this.filtrar(val), 250);
+      },
+      filtrar: function(termo) {
+        const listaEl = document.getElementById('resultados-busca');
+        if (!termo || termo.trim().length < 2) { listaEl.style.display = 'none'; return; }
+
+        const idCamada = document.getElementById('sel-camada-busca').value;
+        const geojson = DADOS_GEOJSON_BRUTOS[idCamada];
+        if (!geojson || !geojson.features) return;
+
+        const t = termo.toLowerCase();
+        const matches = [];
+
+        geojson.features.forEach(f => {
+          const p = f.properties || {};
+          const nome = String(p.nome || p.NOME_INSTALACAO || p.NOME_RIO || p.SIGLA_UF || p.MUNICIPIO || '');
+          if (nome.toLowerCase().includes(t)) matches.push({ nome: nome, feature: f });
+        });
+
+        listaEl.innerHTML = '';
+        if (matches.length === 0) {
+          listaEl.innerHTML = '<div class="item-resultado">Nenhum ativo localizado.</div>';
+        } else {
+          matches.slice(0, 8).forEach(m => {
+            const d = document.createElement('div');
+            d.className = 'item-resultado';
+            d.innerText = m.nome;
+            d.onclick = () => {
+              document.getElementById('input-busca').value = m.nome;
+              listaEl.style.display = 'none';
+              this.aproximar(m.feature);
+            };
+            listaEl.appendChild(d);
+          });
+        }
+        listaEl.style.display = 'block';
+      },
+      aproximar: function(feature) {
+        if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
+
+        window.CAMADA_DESTAQUE = L.geoJSON(feature, {
+          style: { color: '#f59e0b', weight: 6, fillOpacity: 0.5 },
+          pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 12, fillColor: '#f59e0b', color: '#fff', weight: 3, fillOpacity: 1 })
+        }).addTo(mapa);
+
+        const bounds = window.CAMADA_DESTAQUE.getBounds();
+        if (bounds.getNorthEast().equals(bounds.getSouthWest())) {
+          mapa.flyTo(bounds.getCenter(), 14, { animate: true, duration: 1.2 });
+        } else {
+          mapa.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
+        }
+
+        window.CAMADA_DESTAQUE.bindPopup(PopupRenderer.gerar('instalacoes_portuarias', feature.properties)).openPopup();
+      },
+      executar: function() {
+        const v = document.getElementById('input-busca').value;
+        if (v) this.filtrar(v);
+      }
+    };
+
+    /**
+     * MÓDULO 8: GERENCIADOR DO AMBIENTE
+     */
+    const AmbienteManager = {
+      atual: 'homologacao',
+      definir: function(tipo) {
+        this.atual = tipo;
+        const txt = document.getElementById('txt-ambiente');
+        const itemH = document.getElementById('item-env-homolog');
+        const itemP = document.getElementById('item-env-prod');
+        const lbl = document.getElementById('label-status-estilo');
+
+        if (tipo === 'homologacao') {
+          txt.innerText = 'Homologação (Estudos)';
+          itemH.classList.add('ativo'); itemP.classList.remove('ativo');
+          lbl.innerText = 'Homologação Ativa (Edição Livre)';
+          UI.toast("Ambiente: Homologação &bull; Customização liberada.");
+        } else {
+          txt.innerText = 'Produção (Oficial)';
+          itemP.classList.add('ativo'); itemH.classList.remove('ativo');
+          lbl.innerText = '🔒 Padrão Regulatório Travado';
+          UI.toast("Ambiente: Produção &bull; Estilos travados no padrão homologado.");
+        }
+        document.getElementById('drop-ambiente').classList.remove('aberto');
+      }
+    };
+
+    /**
+     * MÓDULO 9: INTERFACE (UI)
+     */
+    const UI = {
+      toast: function(msg) {
+        const t = document.getElementById('toast');
+        t.innerHTML = msg; t.style.display = 'block';
+        setTimeout(() => { t.style.display = 'none'; }, 3500);
+      },
+      toggleMenuAmbiente: function(e) {
+        e.stopPropagation();
+        document.getElementById('drop-ambiente').classList.toggle('aberto');
+      },
+      toggleGraficos: function() {
+        const p = document.getElementById('painel-graficos');
+        p.classList.toggle('aberto');
+        if (p.classList.contains('aberto')) Analytics.gerar();
+      },
+      alternarSecao: function(el) {
+        el.nextElementSibling.classList.toggle('fechado');
+      },
+      fecharTabela: function() {
+        document.getElementById('painel-tabela').classList.remove('aberto');
+      }
+    };
+
+    /**
+     * MÓDULO 10: ANALYTICS COM CHART.JS
+     */
+    const Analytics = {
+      chartTipo: null,
+      chartUf: null,
+      gerar: function() {
+        const portos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
+        if (!portos || !portos.features) return;
+
+        const tipos = {};
+        const ufs = {};
+
+        portos.features.forEach(f => {
+          const p = f.properties || {};
+          let t = String(p.tipo || p.TIPO_INSTALACAO || 'Outros').trim();
+          if (t.toUpperCase().includes('TUP')) t = 'TUP (Privado)';
+          else if (t.toUpperCase().includes('ORGANIZADO') || t.toUpperCase().includes('PÚBLICO')) t = 'Porto Público';
+          else if (t.toUpperCase().includes('IP4') || t.toUpperCase().includes('PEQUENO')) t = 'IP4 (Pequeno Porte)';
+          tipos[t] = (tipos[t] || 0) + 1;
+
+          const uf = String(p.uf || p.UF || 'Outros').trim().toUpperCase();
+          if (uf && uf !== 'NONE') ufs[uf] = (ufs[uf] || 0) + 1;
+        });
+
+        const ctxTipo = document.getElementById('grafico-portos-tipo').getContext('2d');
+        if (this.chartTipo) this.chartTipo.destroy();
+        this.chartTipo = new Chart(ctxTipo, {
+          type: 'doughnut',
+          data: {
+            labels: Object.keys(tipos),
+            datasets: [{ data: Object.values(tipos), backgroundColor: ['#10b981', '#0284c7', '#f59e0b', '#64748b'] }]
+          },
+          options: { responsive: true, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } }
+        });
+
+        const ordenadas = Object.entries(ufs).sort((a,b) => b - a).slice(0, 8);
+        const ctxUf = document.getElementById('grafico-portos-uf').getContext('2d');
+        if (this.chartUf) this.chartUf.destroy();
+        this.chartUf = new Chart(ctxUf, {
+          type: 'bar',
+          data: {
+            labels: ordenadas.map(i => i[0]),
+            datasets: [{ data: ordenadas.map(i => i[1]), backgroundColor: '#0284c7', borderRadius: 4 }]
+          },
+          options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+      }
+    };
+
+    function construirPainelLateral() {
       for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
-        const grupoEl = document.getElementById(`grupo-${cfg.grupo}`);
-        if (!grupoEl) continue;
+        const grupo = document.getElementById(`grupo-${cfg.grupo}`);
+        if (!grupo) continue;
 
-        const container = document.createElement('div');
-        container.className = 'item-camada';
-        container.innerHTML = `
+        const item = document.createElement('div');
+        item.className = 'item-camada';
+        item.innerHTML = `
           <div class="item-camada-principal">
             <div class="camada-info">
-              <span class="legenda-cor" id="cor-box-${id}" style="background:${cfg.cor};" onclick="toggleGavetaEstilo('${id}')"></span>
+              <span class="legenda-cor" style="background:${cfg.cor};" onclick="Styler.atualizar('${id}', 'cor', this.style.backgroundColor)"></span>
               <span>${cfg.nome}</span>
               <span class="badge-contador" id="cnt-${id}"></span>
               <span class="badge-erro" id="err-${id}"></span>
             </div>
             <div class="camada-acoes">
-              <button class="btn-ferramenta-estilo btn-estilo-toggle" id="btn-estilo-${id}" title="Ajustar Estilo" onclick="toggleGavetaEstilo('${id}')">🎨</button>
-              <button class="btn-ferramenta-estilo" title="Centralizar Camada" onclick="zoomNaCamada('${id}')">🔍</button>
+              <button class="btn-acao-icone" title="Tabela de Atributos" onclick="abrirTabela('${id}')">📋</button>
+              <button class="btn-acao-icone" title="Centralizar" onclick="zoomCamada('${id}')">🔍</button>
               <label class="switch">
                 <input type="checkbox" id="chk-${id}" ${cfg.ativa ? 'checked' : ''} onchange="toggleCamada('${id}', this.checked)">
                 <span class="slider"></span>
               </label>
             </div>
           </div>
-          <div class="gaveta-estilo" id="gaveta-${id}">
-            <div class="linha-ajuste">
-              <label>Cor Principal:</label>
-              <input type="color" value="${cfg.cor}" id="picker-${id}" onchange="atualizarEstiloCamada('${id}', 'cor', this.value)">
-            </div>
-            <div class="linha-ajuste">
-              <label>Opacidade:</label>
-              <input type="range" min="0.05" max="1" step="0.05" value="${cfg.opacidade}" oninput="atualizarEstiloCamada('${id}', 'opacidade', parseFloat(this.value))">
-            </div>
-            <div class="linha-ajuste">
-              <label>Espessura / Tamanho:</label>
-              <input type="range" min="1" max="10" step="0.5" value="${cfg.peso}" oninput="atualizarEstiloCamada('${id}', 'peso', parseFloat(this.value))">
-            </div>
-          </div>
         `;
-        grupoEl.appendChild(container);
+        grupo.appendChild(item);
       }
-    }
-
-    function toggleGavetaEstilo(id) {
-      if (AMBIENTE_ATUAL === 'producao') {
-        exibirToast("🔒 Estilos travados no padrão oficial durante o modo de Produção.");
-        return;
-      }
-      document.getElementById(`gaveta-${id}`).classList.toggle('aberta');
-    }
-
-    function zoomNaCamada(id) {
-      if (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) {
-        mapa.fitBounds(CAMADAS_MAPA[id].getBounds());
-      } else {
-        exibirToast("Ative a camada para aproximar.");
-      }
-    }
-
-    // =========================================================
-    // ATUALIZAÇÃO DA LEGENDA DINÂMICA REATIVA
-    // =========================================================
-    function atualizarLegendaDinamica() {
-      const corpo = document.getElementById('corpo-legenda');
-      corpo.innerHTML = '';
-
-      let camadasAtivasCount = 0;
-
-      for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
-        // Só exibe na legenda se a camada estiver ligada no mapa
-        if (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) {
-          camadasAtivasCount++;
-          const linha = document.createElement('div');
-          linha.className = 'legenda-linha';
-
-          let simboloHtml = '';
-
-          // 1. Instalações Portuárias traz legenda detalhada por tipo de terminal
-          if (id === 'instalacoes_portuarias') {
-            simboloHtml = `
-              <div style="display:flex; flex-direction:column; gap:3px; margin-bottom:4px; width:100%;">
-                <div style="font-weight:700; margin-bottom:2px;">Instalações Portuárias:</div>
-                <div style="display:flex; align-items:center; gap:6px; margin-left:6px;">
-                  <span class="simbolo-ponto" style="background:#10b981;"></span> <span>Terminal de Uso Privado (TUP)</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:6px; margin-left:6px;">
-                  <span class="simbolo-ponto" style="background:#0284c7;"></span> <span>Porto Organizado / Público</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:6px; margin-left:6px;">
-                  <span class="simbolo-ponto" style="background:#f59e0b;"></span> <span>IP4 / Estação de Transbordo</span>
-                </div>
-              </div>
-            `;
-            linha.innerHTML = simboloHtml;
-          } 
-          // 2. Linhas de Hidrovias e Vias
-          else if (cfg.tipoGeo === 'linha') {
-            simboloHtml = `<span class="simbolo-linha" style="background:${cfg.cor}; height:${Math.min(cfg.peso, 5)}px;"></span> <span>${cfg.nome}</span>`;
-            linha.innerHTML = simboloHtml;
-          } 
-          // 3. Linhas Tracejadas (Travessias)
-          else if (cfg.tipoGeo === 'linha_tracejada') {
-            simboloHtml = `<span class="simbolo-linha-tracejada" style="border-color:${cfg.cor};"></span> <span>${cfg.nome}</span>`;
-            linha.innerHTML = simboloHtml;
-          } 
-          // 4. Pontos (Embarcações AIS)
-          else if (cfg.tipoGeo === 'ponto') {
-            simboloHtml = `<span class="simbolo-ponto" style="background:${cfg.cor};"></span> <span>${cfg.nome}</span>`;
-            linha.innerHTML = simboloHtml;
-          } 
-          // 5. Polígonos (TIS e Limites)
-          else {
-            simboloHtml = `<span class="simbolo-poligono" style="background:${cfg.cor}; border:1px solid ${cfg.cor}; opacity:${Math.max(cfg.opacidade, 0.4)};"></span> <span>${cfg.nome}</span>`;
-            linha.innerHTML = simboloHtml;
-          }
-
-          corpo.appendChild(linha);
-        }
-      }
-
-      if (camadasAtivasCount === 0) {
-        corpo.innerHTML = '<span style="color:#64748b; font-style:italic;">Nenhuma camada ativa.</span>';
-      }
-    }
-
-    // =========================================================
-    // ESTILOS LEAFLET E REAPLICAÇÃO
-    // =========================================================
-    function obterEstiloLeaflet(id) {
-      const cfg = CONFIG_CAMADAS[id];
-      return {
-        pointToLayer: (f, latlng) => {
-          let corPonto = cfg.cor;
-          if (id === 'instalacoes_portuarias') {
-            const tipo = (f.properties.tipo || f.properties.TIPO || '').toUpperCase();
-            if (tipo.includes('TUP')) corPonto = '#10b981';
-            else if (tipo.includes('PÚBLICO') || tipo.includes('ORGANIZADO')) corPonto = '#0284c7';
-            else if (tipo.includes('IP4') || tipo.includes('PEQUENO')) corPonto = '#f59e0b';
-          }
-          return L.circleMarker(latlng, {
-            radius: cfg.peso, fillColor: corPonto, color: '#ffffff', weight: 1.5, fillOpacity: cfg.opacidade
-          });
-        },
-        style: (f) => ({
-          color: cfg.cor, weight: cfg.peso, fillColor: cfg.cor, fillOpacity: cfg.opacidade,
-          dashArray: id === 'linhas_travessias' ? '6,6' : (id === 'estados_amazonia_legal' ? '8,4' : null)
-        }),
-        onEachFeature: (f, layer) => {
-          const p = f.properties || {};
-          let titulo = p.nome || p.NOME_INSTALACAO || p.NOME_RIO || p.SIGLA_UF || 'Ativo Aquaviário';
-
-          let linhasHtml = '';
-          for (let k in p) {
-            if (['geom', 'geometry', 'id'].includes(k.toLowerCase())) continue;
-            linhasHtml += `<div class="pop-linha"><span class="pop-lbl">${k}:</span><span class="pop-val">${p[k]}</span></div>`;
-          }
-
-          layer.bindPopup(`
-            <div class="pop-topo">${titulo}</div>
-            <div class="pop-corpo">${linhasHtml}</div>
-          `);
-
-          if (id === 'uf') {
-            const sigla = p.SIGLA_UF || p.sigla || p.UF || p.nome;
-            if (sigla) layer.bindTooltip(sigla, { permanent: true, direction: 'center', className: 'rotulo-uf' });
-          }
-        }
-      };
-    }
-
-    function atualizarEstiloCamada(id, prop, valor) {
-      if (AMBIENTE_ATUAL === 'producao') return;
-      CONFIG_CAMADAS[id][prop] = valor;
-      if (prop === 'cor') {
-        document.getElementById(`cor-box-${id}`).style.backgroundColor = valor;
-        document.getElementById(`picker-${id}`).value = valor;
-      }
-      reaplicarEstilosNasCamadas();
-      atualizarLegendaDinamica(); // Legenda atualiza na hora
-    }
-
-    function reaplicarEstilosNasCamadas() {
-      for (const [id, camadaLeaflet] of Object.entries(CAMADAS_MAPA)) {
-        const cfg = CONFIG_CAMADAS[id];
-        camadaLeaflet.eachLayer(l => {
-          if (l.setStyle) l.setStyle({ color: cfg.cor, weight: cfg.peso, fillColor: cfg.cor, fillOpacity: cfg.opacidade });
-          if (l.setRadius) { l.setRadius(cfg.peso); l.setStyle({ fillColor: cfg.cor, fillOpacity: cfg.opacidade }); }
-        });
-      }
-    }
-
-    function aplicarPresetGlobal(chave) {
-      if (AMBIENTE_ATUAL === 'producao') return;
-      const preset = PRESETS[chave];
-      if (!preset) return;
-      for (const [id, p] of Object.entries(preset)) {
-        if (CONFIG_CAMADAS[id]) {
-          const cor = typeof p === 'string' ? p : p.cor;
-          CONFIG_CAMADAS[id].cor = cor;
-          document.getElementById(`cor-box-${id}`).style.backgroundColor = cor;
-          document.getElementById(`picker-${id}`).value = cor;
-        }
-      }
-      reaplicarEstilosNasCamadas();
-      atualizarLegendaDinamica();
-      exibirToast(`✓ Paleta global aplicada: ${chave.toUpperCase()}`);
-    }
-
-    // =========================================================
-    // CARREGAMENTO E ATUALIZAÇÃO BLINDADA
-    // =========================================================
-    function carregarFonteComFallback(id, urls, timestamp) {
-      const cntEl = document.getElementById(`cnt-${id}`);
-      const errEl = document.getElementById(`err-${id}`);
-      const chkEl = document.getElementById(`chk-${id}`);
-
-      const tentarUrl = (idx) => {
-        if (idx >= urls.length) {
-          if (errEl) errEl.innerText = '⚠️ ausente (404)';
-          atualizarLegendaDinamica();
-          return;
-        }
-
-        fetch(`${urls[idx]}?_t=${timestamp}`)
-          .then(async res => {
-            if (!res.ok) throw new Error(`HTTP_${res.status}`);
-            const texto = await res.text();
-            if (!texto || texto.trim().length === 0) throw new Error("0_BYTES");
-            return JSON.parse(texto);
-          })
-          .then(dados => {
-            if (!dados.features) throw new Error("SEM_FEICOES");
-
-            DADOS_GEOJSON_BRUTOS[id] = dados;
-            const opcoes = obterEstiloLeaflet(id);
-
-            if (CAMADAS_MAPA[id]) {
-              CAMADAS_MAPA[id].clearLayers();
-              CAMADAS_MAPA[id].addData(dados);
-            } else {
-              CAMADAS_MAPA[id] = L.geoJSON(dados, opcoes);
-              if (chkEl && chkEl.checked) {
-                CAMADAS_MAPA[id].addTo(mapa);
-              }
-            }
-
-            if (cntEl) cntEl.innerText = `(${dados.features.length})`;
-            if (errEl) errEl.innerText = '';
-            atualizarLegendaDinamica();
-          })
-          .catch(err => {
-            tentarUrl(idx + 1);
-          });
-      };
-
-      tentarUrl(0);
-    }
-
-    function atualizarTodasCamadas() {
-      const btn = document.getElementById('btn-sync');
-      const ico = document.getElementById('ico-sync');
-      btn.disabled = true;
-      ico.classList.add('girando');
-
-      const ts = new Date().getTime();
-      for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
-        carregarFonteComFallback(id, cfg.arquivos, ts);
-      }
-
-      setTimeout(() => {
-        btn.disabled = false;
-        ico.classList.remove('girando');
-        atualizarLegendaDinamica();
-        exibirToast(`✓ Sincronização concluída às ${new Date().toLocaleTimeString('pt-BR')}`);
-      }, 1200);
     }
 
     function toggleCamada(id, ligar) {
-      if (!CAMADAS_MAPA[id]) { atualizarTodasCamadas(); return; }
-      if (ligar) { CAMADAS_MAPA[id].addTo(mapa); } else { mapa.removeLayer(CAMADAS_MAPA[id]); }
-      atualizarLegendaDinamica(); // Legenda reage imediatamente ao switch
+      if (!CAMADAS_MAPA[id]) { DataManager.atualizarTodasCamadas(); return; }
+      if (ligar) CAMADAS_MAPA[id].addTo(mapa); else mapa.removeLayer(CAMADAS_MAPA[id]);
+      Styler.atualizarLegenda();
     }
 
-    function alternarSecao(el) { el.nextElementSibling.classList.toggle('fechado'); }
+    function zoomCamada(id) {
+      if (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) mapa.fitBounds(CAMADAS_MAPA[id].getBounds());
+      else UI.toast("Ative a camada para aproximar.");
+    }
 
-    // =========================================================
-    // BUSCA POR ATRIBUTO E ZOOM NA FEIÇÃO
-    // =========================================================
-    let DESTAQUE_MAPA = null;
+    function abrirTabela(id) {
+      const g = DADOS_GEOJSON_BRUTOS[id];
+      if (!g || !g.features) return;
+      document.getElementById('titulo-tabela-camada').innerText = `Tabela: ${CONFIG_CAMADAS[id].nome} (${g.features.length} itens)`;
+      document.getElementById('painel-tabela').classList.add('aberto');
+      const thead = document.getElementById('thead-atributos');
+      const tbody = document.getElementById('tbody-atributos');
+      thead.innerHTML = ''; tbody.innerHTML = '';
+      const cols = Object.keys(g.features[0].properties || {}).filter(c => !['geom', 'geometry', 'id'].includes(c.toLowerCase())).slice(0, 5);
+      let th = '<tr><th style="width:70px; text-align:center;">Zoom</th>';
+      cols.forEach(c => th += `<th>${Security.escapeHTML(c)}</th>`);
+      thead.innerHTML = th + '</tr>';
 
-    function filtrarOpcoesBusca(termo) {
-      const listaEl = document.getElementById('resultados-busca');
-      if (!termo || termo.trim().length < 2) {
-        listaEl.style.display = 'none';
-        return;
-      }
-
-      const idCamada = document.getElementById('sel-camada-busca').value;
-      const geojson = DADOS_GEOJSON_BRUTOS[idCamada];
-
-      if (!geojson || !geojson.features) {
-        listaEl.innerHTML = '<div class="item-resultado">Camada não carregada.</div>';
-        listaEl.style.display = 'block';
-        return;
-      }
-
-      const termoBusca = termo.toLowerCase();
-      const correspondencias = [];
-
-      geojson.features.forEach((f, idx) => {
-        const p = f.properties || {};
-        const nomeFeicao = String(p.nome || p.NOME_INSTALACAO || p.NOME_RIO || p.SIGLA_UF || p.MUNICIPIO || '');
-        if (nomeFeicao.toLowerCase().includes(termoBusca)) {
-          correspondencias.push({ nome: nomeFeicao, featureIndex: idx, feature: f });
-        }
+      g.features.slice(0, 60).forEach(f => {
+        let tr = `<tr><td style="text-align:center;"><button style="background:#0284c7; color:#fff; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" onclick='SearchEngine.aproximar(${JSON.stringify(f)})'>📍</button></td>`;
+        cols.forEach(c => tr += `<td>${Security.escapeHTML(f.properties[c])}</td>`);
+        tbody.innerHTML += tr + '</tr>';
       });
-
-      listaEl.innerHTML = '';
-      if (correspondencias.length === 0) {
-        listaEl.innerHTML = '<div class="item-resultado">Nenhum ativo encontrado.</div>';
-      } else {
-        correspondencias.slice(0, 8).forEach(item => {
-          const div = document.createElement('div');
-          div.className = 'item-resultado';
-          div.innerText = item.nome;
-          div.onclick = () => {
-            document.getElementById('input-busca').value = item.nome;
-            listaEl.style.display = 'none';
-            aproximarFeicaoEspecifica(item.feature);
-          };
-          listaEl.appendChild(div);
-        });
-      }
-      listaEl.style.display = 'block';
-    }
-
-    function aproximarFeicaoEspecifica(feature) {
-      if (DESTAQUE_MAPA) mapa.removeLayer(DESTAQUE_MAPA);
-
-      DESTAQUE_MAPA = L.geoJSON(feature, {
-        style: { color: '#f59e0b', weight: 5, fillOpacity: 0.5 },
-        pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 10, fillColor: '#f59e0b', color: '#fff', weight: 2, fillOpacity: 1 })
-      }).addTo(mapa);
-
-      mapa.fitBounds(DESTAQUE_MAPA.getBounds(), { maxZoom: 14 });
-
-      const p = feature.properties || {};
-      let h = `<div class="pop-topo">Ativo Selecionado</div><div class="pop-corpo">`;
-      for (let k in p) {
-        if (!['geom', 'geometry', 'id'].includes(k.toLowerCase())) h += `<div class="pop-linha"><span class="pop-lbl">${k}:</span><span class="pop-val">${p[k]}</span></div>`;
-      }
-      h += '</div>';
-      DESTAQUE_MAPA.bindPopup(h).openPopup();
-    }
-
-    function executarBuscaAtributo() {
-      const v = document.getElementById('input-busca').value;
-      if (v) filtrarOpcoesBusca(v);
-    }
-
-    // =========================================================
-    // CONTROLE DO AMBIENTE (HOMOLOGAÇÃO / PRODUÇÃO)
-    // =========================================================
-    function toggleDropdownHomologacao(e) {
-      e.stopPropagation();
-      document.getElementById('drop-ambiente').classList.toggle('aberto');
-    }
-
-    function selecionarAmbiente(tipo) {
-      AMBIENTE_ATUAL = tipo;
-      const txt = document.getElementById('txt-ambiente');
-      const itemH = document.getElementById('item-env-homolog');
-      const itemP = document.getElementById('item-env-prod');
-
-      if (tipo === 'homologacao') {
-        txt.innerText = 'Homologação (Estudos)';
-        itemH.classList.add('ativo');
-        itemP.classList.remove('ativo');
-        alternarPermissaoEstilo(true);
-        exibirToast("Ambiente: Homologação &bull; Edição de estilos liberada.");
-      } else {
-        txt.innerText = 'Produção (Oficial)';
-        itemP.classList.add('ativo');
-        itemH.classList.remove('ativo');
-        alternarPermissaoEstilo(false);
-        exibirToast("Ambiente: Produção &bull; 🔒 Estilos travados no Padrão Oficial ANTAQ.");
-      }
-
-      document.getElementById('drop-ambiente').classList.remove('aberto');
-    }
-
-    function alternarPermissaoEstilo(habilitar) {
-      const secaoPresets = document.getElementById('secao-paletas-globais');
-      const labelStatus = document.getElementById('label-status-estilo');
-
-      secaoPresets.style.display = habilitar ? 'block' : 'none';
-      labelStatus.innerText = habilitar ? 'Estilo Editável (Homologação)' : '🔒 Padrão Oficial (Produção)';
-
-      document.querySelectorAll('.btn-estilo-toggle').forEach(btn => {
-        if (habilitar) btn.classList.remove('desabilitado');
-        else btn.classList.add('desabilitado');
-      });
-
-      if (!habilitar) {
-        restaurarEstiloPadraoOficial();
-      }
-    }
-
-    function restaurarEstiloPadraoOficial() {
-      for (const [id, est] of Object.entries(ESTILOS_PADRAO_BASE)) {
-        if (CONFIG_CAMADAS[id]) {
-          CONFIG_CAMADAS[id].cor = est.cor;
-          CONFIG_CAMADAS[id].opacidade = est.opacidade;
-          CONFIG_CAMADAS[id].peso = est.peso;
-          document.getElementById(`cor-box-${id}`).style.backgroundColor = est.cor;
-          document.getElementById(`picker-${id}`).value = est.cor;
-        }
-      }
-      reaplicarEstilosNasCamadas();
-      atualizarLegendaDinamica();
     }
 
     window.addEventListener('click', (e) => {
@@ -1040,64 +821,10 @@
       if (!e.target.closest('.barra-busca-atributos')) document.getElementById('resultados-busca').style.display = 'none';
     });
 
-    // =========================================================
-    // ANÁLISE TEMPORÁRIA (SHP.ZIP / GEOJSON)
-    // =========================================================
-    function processarArquivoLocal(input) {
-      const file = input.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      if (file.name.toLowerCase().endsWith('.zip')) {
-        reader.onload = function(e) {
-          shp(e.target.result).then(geojson => plotarTemporaria(file.name, geojson));
-        };
-        reader.readAsArrayBuffer(file);
-      } else {
-        reader.onload = function(e) {
-          try { plotarTemporaria(file.name, JSON.parse(e.target.result)); } catch(err) { alert('Arquivo inválido.'); }
-        };
-        reader.readAsText(file);
-      }
-    }
-
-    function plotarTemporaria(nome, geojson) {
-      const camada = L.geoJSON(geojson, {
-        style: { color: '#ec4899', weight: 2.5, fillOpacity: 0.3 },
-        onEachFeature: (f, l) => {
-          let h = `<div class="pop-topo">Análise: ${nome}</div><div class="pop-corpo">`;
-          for (let k in f.properties) h += `<div class="pop-linha"><span class="pop-lbl">${k}:</span><span class="pop-val">${f.properties[k]}</span></div>`;
-          h += '</div>';
-          l.bindPopup(h);
-        }
-      }).addTo(mapa);
-
-      mapa.fitBounds(camada.getBounds());
-
-      const lista = document.getElementById('lista-temporarias');
-      const item = document.createElement('div');
-      item.className = 'item-camada-principal';
-      item.style.padding = '4px 0';
-      item.innerHTML = `
-        <span style="font-size:11px;">📌 ${nome} (${geojson.features ? geojson.features.length : 0})</span>
-        <button style="border:none; background:transparent; color:#ef4444; font-weight:bold; cursor:pointer;" onclick="mapa.removeLayer(this._l); this.parentElement.remove();">✕</button>
-      `;
-      item.querySelector('button')._l = camada;
-      lista.appendChild(item);
-      exibirToast(`✓ Camada temporária carregada: ${nome}`);
-    }
-
-    function exibirToast(msg) {
-      const t = document.getElementById('toast');
-      t.innerHTML = msg;
-      t.style.display = 'block';
-      setTimeout(() => { t.style.display = 'none'; }, 3500);
-    }
-
     // Inicialização
-    construirPainel();
-    alternarPermissaoEstilo(true);
-    atualizarTodasCamadas();
+    construirPainelLateral();
+    DataManager.atualizarTodasCamadas();
   </script>
 </body>
 </html>
+
