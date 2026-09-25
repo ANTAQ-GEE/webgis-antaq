@@ -215,9 +215,10 @@
     }
     .legenda-conteudo { max-height: 240px; overflow-y: auto; padding: 8px 12px; display: flex; flex-direction: column; gap: 5px; }
     .legenda-conteudo.minimizada { display: none; }
-    .simbolo-linha { width: 18px; height: 3px; border-radius: 2px; }
-    .simbolo-ponto { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #fff; }
-    .simbolo-poligono { width: 14px; height: 10px; border-radius: 2px; }
+    .simbolo-linha { display: inline-block; width: 18px; height: 4px; border-radius: 2px; flex-shrink: 0; vertical-align: middle; }
+    .simbolo-ponto { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid #ffffff; box-shadow: 0 0 3px rgba(0,0,0,0.5); flex-shrink: 0; vertical-align: middle; }
+    .simbolo-poligono { display: inline-block; width: 14px; height: 10px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.25); flex-shrink: 0; vertical-align: middle; }
+    .item-legenda-linha { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #1e293b; padding: 2px 0; }
 
 
     /* Popups e Halo */
@@ -283,28 +284,22 @@
   </div>
 
 
-  <!-- BARRA DE BUSCA -->
+  <!-- BARRA DE BUSCA E FILTROS DINÂMICOS CONTEXTUAIS -->
   <div class="barra-busca-atributos">
-    <select class="select-camada-busca" id="sel-camada-busca">
-      <option value="instalacoes_portuarias">Instalações Portuárias</option>
-      <option value="vias_navegadas">Vias Navegadas</option>
-      <option value="tis_poligonais">Terras Indígenas (FUNAI)</option>
-      <option value="linhas_travessias">Linhas de Travessias</option>
-      <option value="uf">Estados (UF)</option>
+    <select class="select-camada-busca" id="sel-camada-busca" onchange="FilterManager.aoMudarCamada(this.value)">
+      <option value="instalacoes_portuarias">⚓ Instalações Portuárias</option>
+      <option value="vias_navegadas">🌊 Vias Navegadas</option>
+      <option value="linhas_travessias">⛴️ Linhas de Travessias</option>
+      <option value="tis_poligonais">🏹 Terras Indígenas (FUNAI)</option>
+      <option value="uf">🗺️ Estados (UF)</option>
     </select>
     <div style="position:relative;">
-      <input type="text" class="input-busca-atributo" id="input-busca" placeholder="Buscar por nome ou código..." oninput="SearchEngine.onInput(this.value)">
+      <input type="text" class="input-busca-atributo" id="input-busca" placeholder="Buscar instalação portuária por nome ou UF..." oninput="SearchEngine.onInput(this.value)">
       <div class="resultados-busca" id="resultados-busca"></div>
     </div>
     <button class="btn-exec-busca" onclick="SearchEngine.executar()">Zoom no Ativo</button>
-    <select class="select-camada-busca" id="filtro-subtipo-portos" onchange="DataManager.filtrarSubtipoPortos(this.value)" style="width: 175px; background: #0a2540; color: #fff; border: 1px solid #0284c7; cursor: pointer;" title="Subdivisão das Instalações no Mapa">
-      <option value="TODOS">⚓ Todas Instalações</option>
-      <option value="ORGANIZADO">🔷 Portos Organizados</option>
-      <option value="PUBLICO">🔹 Portos Públicos (Legado)</option>
-      <option value="TUP">🟢 Terminais Privados (TUP)</option>
-      <option value="IP4">🟡 Pequeno Porte (IP4)</option>
-      <option value="ETC">🟣 Transbordo (ETC)</option>
-      <option value="OUTROS">⚪ Demais Registros</option>
+    <select class="select-camada-busca" id="filtro-subtipo-dinamico" onchange="FilterManager.aoMudarSubfiltro(this.value)" style="min-width: 180px; max-width: 220px; background: #0a2540; color: #fff; border: 1px solid #0284c7; cursor: pointer;" title="Filtro Específico da Camada Selecionada">
+      <!-- Opções geradas dinamicamente via FilterManager -->
     </select>
   </div>
 
@@ -443,7 +438,7 @@
       repararTexto: function(str) {
         if (str === null || str === undefined) return '';
         let s = String(str);
-        // Corrige mojibake de UTF-8 decodificado como ISO-8859-1 / Windows-1252
+        // 1. Corrige mojibake de UTF-8 decodificado como ISO-8859-1 / Windows-1252
         s = s.replace(/Ã§/g, 'ç').replace(/Ã‡/g, 'Ç')
              .replace(/Ã£/g, 'ã').replace(/Ãƒ/g, 'Ã')
              .replace(/Ã¡/g, 'á').replace(/Ã/g, 'Á')
@@ -455,14 +450,49 @@
              .replace(/Ã´/g, 'ô').replace(/Ã/g, 'Ô')
              .replace(/Ãº/g, 'ú').replace(/Ã/g, 'Ú');
 
-        // Corrige perdas por \uFFFD (diamante preto de substituição) em termos aquaviários
+        // 2. Dicionário de Nomes Próprios Geográficos Brasileiros (Toponímia Hidroviária e Municípios)
+        const nomesProprios = [
+          [/\bApu[\uFFFD\?]+/gi, 'Apuí'],
+          [/\bPiau[\uFFFD\?]+/gi, 'Piauí'],
+          [/\bItagua[\uFFFD\?]+/gi, 'Itaguaí'],
+          [/\bJundia[\uFFFD\?]+/gi, 'Jundiaí'],
+          [/\bUbu[\uFFFD\?]+/gi, 'Ubuí'],
+          [/\bParanagu[\uFFFD\?]+/gi, 'Paranaguá'],
+          [/\bTapaj[\uFFFD\?]+s/gi, 'Tapajós'],
+          [/\bSolim[\uFFFD\?]+es/gi, 'Solimões'],
+          [/\bMaranh[\uFFFD\?]+o/gi, 'Maranhão'],
+          [/\bRond[\uFFFD\?]+nia/gi, 'Rondônia'],
+          [/\bAmap[\uFFFD\?]+/gi, 'Amapá'],
+          [/\bCear[\uFFFD\?]+/gi, 'Ceará'],
+          [/\bPar[\uFFFD\?]+\b/gi, 'Pará'],
+          [/\bGoi[\uFFFD\?]+s/gi, 'Goiás'],
+          [/\bTiet[\uFFFD\?]+/gi, 'Tietê'],
+          [/\bIgua[\uFFFD\?]+u/gi, 'Iguaçu'],
+          [/\bGua[\uFFFD\?]+ba/gi, 'Guaíba'],
+          [/\bJacu[\uFFFD\?]+/gi, 'Jacuí'],
+          [/\bTaquar[\uFFFD\?]+/gi, 'Taquari'],
+          [/\bS[\uFFFD\?]+o\b/gi, 'São'],
+          [/\bJo[\uFFFD\?]+o\b/gi, 'João'],
+          [/\bBel[\uFFFD\?]+m\b/gi, 'Belém'],
+          [/\bSantar[\uFFFD\?]+m\b/gi, 'Santarém'],
+          [/\bMacei[\uFFFD\?]+/gi, 'Maceió'],
+          [/\bChu[\uFFFD\?]+/gi, 'Chuí']
+        ];
+        for (const [re, val] of nomesProprios) {
+          s = s.replace(re, val);
+        }
+
+        // 3. Vocabulário Institucional e Regulatório do Setor Aquaviário
         s = s.replace(/instala[\uFFFD\?çã]*o/gi, 'instalação')
              .replace(/p[\uFFFD\?ú]*blic[oa]/gi, (m) => m.toLowerCase().endsWith('a') ? 'pública' : 'público')
              .replace(/esta[\uFFFD\?çã]*o/gi, 'estação')
-             .replace(/mar[\uFFFD\?í]*tima/gi, 'marítima')
+             .replace(/mar[\uFFFD\?í]*tim[oa]/gi, (m) => m.toLowerCase().endsWith('a') ? 'marítima' : 'marítimo')
              .replace(/transfer[\uFFFD\?ê]*ncia/gi, 'transferência')
              .replace(/tempor[\uFFFD\?á]*ria/gi, 'temporária')
              .replace(/portu[\uFFFD\?á]*ri[oa]/gi, (m) => m.toLowerCase().endsWith('a') ? 'portuária' : 'portuário')
+             .replace(/munic[\uFFFD\?í]*pi[oa]/gi, 'município')
+             .replace(/diretri[\uFFFD\?z]+/gi, 'diretriz')
+             .replace(/extens[\uFFFD\?ã]*o/gi, 'extensão')
              .replace(/at[\uFFFD\?é]+/gi, 'até')
              .replace(/amaz[\uFFFD\?ô]*ni[ca]/gi, 'amazônica')
              .replace(/regi[\uFFFD\?ã]*o/gi, 'região')
@@ -471,7 +501,13 @@
              .replace(/baliza[\uFFFD\?çã]*o/gi, 'balizamento')
              .replace(/gest[\uFFFD\?ã]*o/gi, 'gestão');
 
-        return s.replace(/\uFFFD/g, '').trim();
+        // 4. Heurísticas finais para resíduos de \uFFFD
+        s = s.replace(/([a-zA-Z]+)[\uFFFD\?]+o\b/g, '$1ão')
+             .replace(/([a-zA-Z]+)[\uFFFD\?]+a\b/g, '$1á')
+             .replace(/([a-zA-Z]+)u[\uFFFD\?]+\b/g, '$1uí')
+             .replace(/\uFFFD/g, '');
+
+        return s.trim();
       }
     };
 
@@ -572,25 +608,61 @@
     const PopupRenderer = {
       gerar: function(id, properties) {
         const p = properties || {};
-        const cfg = CONFIG_CAMADAS[id];
-        const titulo = Security.escapeHTML(p.nome || p.NOME_INSTALACAO || p.NOME_RIO || p.SIGLA_UF || 'Ativo Aquaviário');
+        const cfg = CONFIG_CAMADAS[id] || {};
+        const rawTitulo = p.nome || p.NOME_INSTALACAO || p.NOME_RIO || p.nom_vessia || p.nome_travessia || p.SIGLA_UF || 'Ativo Aquaviário';
+        const titulo = Security.escapeHTML(Security.repararTexto(rawTitulo));
 
+        let subtipoBadge = '';
+        if (id === 'instalacoes_portuarias') {
+          const cat = PortClassification.classificar(p);
+          subtipoBadge = `<div style="background:${cat.cor}; color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:3px; display:inline-block; margin-top:4px;">${cat.nome}</div>`;
+        }
+
+        const dicionarioRotulos = {
+          'nom_vessia': 'Nome da Travessia',
+          'nome_travessia': 'Nome da Travessia',
+          'nome_rio': 'Rio / Trecho',
+          'rio': 'Rio / Hidrovia',
+          'mun_origem': 'Município de Origem',
+          'mun_destino': 'Município de Destino',
+          'pai_origem': 'País de Origem',
+          'pai_destino': 'País de Destino',
+          'uf_origem': 'UF Origem',
+          'uf_destino': 'UF Destino',
+          'tipo_travessia': 'Tipo de Travessia',
+          'tp_travessia': 'Tipo de Travessia',
+          'extensao_km': 'Extensão (km)',
+          'extensao': 'Extensão',
+          'bacia': 'Bacia Hidrográfica',
+          'subbacia': 'Sub-bacia Hidrográfica',
+          'nome_instalacao': 'Nome da Instalação',
+          'tipo_instalacao': 'Tipo de Outorga',
+          'sigla_uf': 'UF',
+          'municipio': 'Município',
+          'fase_ti': 'Fase da Terra Indígena',
+          'etnia_nome': 'Etnia Indígena',
+          'modalidade': 'Modalidade Operacional'
+        };
 
         let linhas = '';
         for (const [chave, valor] of Object.entries(p)) {
-          if (['geom', 'geometry', 'id', 'gid', 'objectid'].includes(chave.toLowerCase())) continue;
-          if (cfg.camposVisiveis.length > 0 && !cfg.camposVisiveis.includes(chave)) continue;
-
+          const kLower = chave.toLowerCase();
+          // Omite códigos internos e técnicos de banco de dados
+          if (['geom', 'geometry', 'id', 'gid', 'objectid', 'idseq', 'id_seq'].includes(kLower)) continue;
+          if (/^(idseq|idm_|idl_|id_|gid|objectid|cdbigrama|cd_|cod_|shape_)/i.test(chave)) continue;
+          if (cfg.camposVisiveis && cfg.camposVisiveis.length > 0 && !cfg.camposVisiveis.includes(chave)) continue;
 
           if (Security.ehValido(valor)) {
-            linhas += `<div class="pop-linha"><span class="pop-lbl">${Security.escapeHTML(chave)}:</span><span class="pop-val">${Security.escapeHTML(valor)}</span></div>`;
+            const rotuloOriginal = dicionarioRotulos[kLower] || chave.replace(/_/g, ' ');
+            const rotuloLimpo = Security.escapeHTML(Security.repararTexto(rotuloOriginal));
+            const valorLimpo = Security.escapeHTML(Security.repararTexto(valor));
+            linhas += `<div class="pop-linha"><span class="pop-lbl">${rotuloLimpo}:</span><span class="pop-val">${valorLimpo}</span></div>`;
           }
         }
 
-
         const dataAuditoria = new Date().toLocaleDateString('pt-BR');
         return `
-          <div class="pop-topo">${titulo}</div>
+          <div class="pop-topo">${titulo}${subtipoBadge}</div>
           <div class="pop-corpo">${linhas || '<p style="color:#64748b;">Nenhum atributo ativo.</p>'}</div>
           <div class="pop-rodape-auditoria">
             <span>Fonte: ANTAQ/GEE</span>
@@ -600,8 +672,7 @@
       }
     };
 
-
-        /**
+    /**
      * MÓDULO 5: ESTILIZADOR DINÂMICO E PALETAS CARTOGRÁFICAS
      */
     const Styler = {
@@ -721,31 +792,69 @@
         const corpo = document.getElementById('corpo-legenda');
         if (!corpo) return;
         corpo.innerHTML = '';
+
         for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
-          if (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) {
-            const l = document.createElement('div');
-            l.style.display = 'flex'; l.style.alignItems = 'center'; l.style.gap = '8px';
-            if (id === 'instalacoes_portuarias') {
-              l.innerHTML = `
-                <div style="display:flex; flex-direction:column; gap:3px; width:100%;">
-                  <span style="font-weight:700; margin-bottom:2px;">Instalações Portuárias (Subdivisão):</span>
-                  <div style="display:flex; align-items:center; gap:6px;"><span class="simbolo-ponto" style="background:#0284c7; width:12px; height:12px;"></span> <span>Porto Organizado (Lei 12.815)</span></div>
-                  <div style="display:flex; align-items:center; gap:6px;"><span class="simbolo-ponto" style="background:#06b6d4; width:10px; height:10px;"></span> <span>Porto Público (Cadastro Legado)</span></div>
-                  <div style="display:flex; align-items:center; gap:6px;"><span class="simbolo-ponto" style="background:#10b981; width:10px; height:10px;"></span> <span>Terminal de Uso Privado (TUP)</span></div>
-                  <div style="display:flex; align-items:center; gap:6px;"><span class="simbolo-ponto" style="background:#f59e0b; width:9px; height:9px;"></span> <span>Pequeno Porte (IP4)</span></div>
-                  <div style="display:flex; align-items:center; gap:6px;"><span class="simbolo-ponto" style="background:#8b5cf6; width:9px; height:9px;"></span> <span>Transbordo (ETC)</span></div>
-                  <div style="display:flex; align-items:center; gap:6px;"><span class="simbolo-ponto" style="background:#64748b; width:8px; height:8px;"></span> <span>Demais Registros e Apoio</span></div>
+          // Exibe se a camada estiver ativa no mapa ou configurada como ativa
+          const estaAtiva = (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) || (!CAMADAS_MAPA[id] && cfg.ativa);
+          if (!estaAtiva) continue;
+
+          const l = document.createElement('div');
+          l.style.marginBottom = '6px';
+          l.style.width = '100%';
+
+          if (id === 'instalacoes_portuarias') {
+            l.innerHTML = `
+              <div style="display:flex; flex-direction:column; gap:4px; width:100%; border-bottom:1px dashed #cbd5e1; padding-bottom:6px;">
+                <span style="font-weight:700; color:#0f172a; font-size:11px;">Instalações Portuárias:</span>
+                <div class="item-legenda-linha">
+                  <span class="simbolo-ponto" style="background:#0284c7; width:12px; height:12px;"></span>
+                  <span>Porto Organizado (Lei 12.815)</span>
                 </div>
-              `;
-            } else if (cfg.tipoGeo === 'linha' || cfg.tipoGeo === 'linha_tracejada') {
-              l.innerHTML = `<span class="simbolo-linha" style="background:${cfg.cor};"></span> <span>${cfg.nome}</span>`;
-            } else if (cfg.tipoGeo === 'ponto') {
-              l.innerHTML = `<span class="simbolo-ponto" style="background:${cfg.cor};"></span> <span>${cfg.nome}</span>`;
-            } else {
-              l.innerHTML = `<span class="simbolo-poligono" style="background:${cfg.cor}; opacity:${cfg.opacidade};"></span> <span>${cfg.nome}</span>`;
-            }
-            corpo.appendChild(l);
+                <div class="item-legenda-linha">
+                  <span class="simbolo-ponto" style="background:#06b6d4; width:11px; height:11px;"></span>
+                  <span>Porto Público (Cadastro Legado)</span>
+                </div>
+                <div class="item-legenda-linha">
+                  <span class="simbolo-ponto" style="background:#10b981; width:11px; height:11px;"></span>
+                  <span>Terminal de Uso Privado (TUP)</span>
+                </div>
+                <div class="item-legenda-linha">
+                  <span class="simbolo-ponto" style="background:#f59e0b; width:10px; height:10px;"></span>
+                  <span>Pequeno Porte (IP4)</span>
+                </div>
+                <div class="item-legenda-linha">
+                  <span class="simbolo-ponto" style="background:#8b5cf6; width:10px; height:10px;"></span>
+                  <span>Estação de Transbordo (ETC)</span>
+                </div>
+                <div class="item-legenda-linha">
+                  <span class="simbolo-ponto" style="background:#64748b; width:9px; height:9px;"></span>
+                  <span>Demais Registros e Apoio</span>
+                </div>
+              </div>
+            `;
+          } else if (cfg.tipoGeo === 'linha' || cfg.tipoGeo === 'linha_tracejada') {
+            l.innerHTML = `
+              <div class="item-legenda-linha">
+                <span class="simbolo-linha" style="background:${cfg.cor};"></span>
+                <span>${cfg.nome}</span>
+              </div>
+            `;
+          } else if (cfg.tipoGeo === 'ponto') {
+            l.innerHTML = `
+              <div class="item-legenda-linha">
+                <span class="simbolo-ponto" style="background:${cfg.cor};"></span>
+                <span>${cfg.nome}</span>
+              </div>
+            `;
+          } else {
+            l.innerHTML = `
+              <div class="item-legenda-linha">
+                <span class="simbolo-poligono" style="background:${cfg.cor}; opacity:${cfg.opacidade};"></span>
+                <span>${cfg.nome}</span>
+              </div>
+            `;
           }
+          corpo.appendChild(l);
         }
       }
     };
@@ -754,6 +863,174 @@
     /**
      * MÓDULO 6: CARREGADOR DE DADOS
      */
+    /**
+     * MÓDULO 6.1: GERENCIADOR DE FILTROS DINÂMICOS CONTEXTUAIS
+     * Atualiza automaticamente o segundo seletor de acordo com a camada ativa selecionada.
+     */
+    const FilterManager = {
+      configFiltros: {
+        instalacoes_portuarias: {
+          placeholder: "Buscar instalação portuária por nome ou UF...",
+          opcoes: [
+            { valor: "TODOS", rotulo: "⚓ Todas as Instalações" },
+            { valor: "ORGANIZADO", rotulo: "🔷 Portos Organizados (Lei 12.815)" },
+            { valor: "PUBLICO", rotulo: "🔹 Portos Públicos (Legado)" },
+            { valor: "TUP", rotulo: "🟢 Terminais Privados (TUP)" },
+            { valor: "IP4", rotulo: "🟡 Pequeno Porte (IP4)" },
+            { valor: "ETC", rotulo: "🟣 Transbordo (ETC)" },
+            { valor: "OUTROS", rotulo: "⚪ Demais Registros e Apoio" }
+          ]
+        },
+        vias_navegadas: {
+          placeholder: "Buscar via navegada, rio ou bacia...",
+          opcoes: [
+            { valor: "TODOS", rotulo: "🌊 Todas as Vias Navegadas" },
+            { valor: "AMAZONICA", rotulo: "🏞️ Bacia Amazônica / Solimões" },
+            { valor: "TAPAJOS_MADEIRA", rotulo: "🚢 Rios Madeira e Tapajós" },
+            { valor: "PARANA_TIETE", rotulo: "🚤 Hidrovia Paraná-Tietê" },
+            { valor: "PARAGUAI", rotulo: "🚢 Hidrovia do Paraguai" },
+            { valor: "TOCANTINS", rotulo: "🌊 Tocantins - Araguaia" },
+            { valor: "SAO_FRANCISCO", rotulo: "⚓ Hidrovia do São Francisco" },
+            { valor: "SUL_SUDESTE", rotulo: "⛵ Hidrovias do Sul / Litoral" }
+          ]
+        },
+        linhas_travessias: {
+          placeholder: "Buscar travessia por município ou rio...",
+          opcoes: [
+            { valor: "TODOS", rotulo: "⛴️ Todas as Travessias" },
+            { valor: "AMAZONAS", rotulo: "🌴 Travessias na Amazônia / Norte" },
+            { valor: "SUDESTE_SUL", rotulo: "🏙️ Travessias Sul e Sudeste" },
+            { valor: "NORDESTE_CO", rotulo: "☀️ Travessias Nordeste e C. Oeste" }
+          ]
+        },
+        tis_poligonais: {
+          placeholder: "Buscar terra indígena ou etnia...",
+          opcoes: [
+            { valor: "TODOS", rotulo: "🏹 Todas as Terras Indígenas" },
+            { valor: "HOMOLOGADA", rotulo: "📜 Homologadas / Regularizadas" },
+            { valor: "DECLARADA", rotulo: "📋 Declaradas" },
+            { valor: "DELIMITADA", rotulo: "📍 Delimitadas / Em Estudo" },
+            { valor: "AMAZONIA", rotulo: "🌲 Amazônia Legal" }
+          ]
+        },
+        uf: {
+          placeholder: "Buscar estado por sigla ou nome...",
+          opcoes: [
+            { valor: "TODOS", rotulo: "🗺️ Todos os Estados (27 UFs)" },
+            { valor: "NORTE", rotulo: "🌲 Região Norte" },
+            { valor: "NORDESTE", rotulo: "☀️ Região Nordeste" },
+            { valor: "CENTRO_OESTE", rotulo: "🌾 Região Centro-Oeste" },
+            { valor: "SUDESTE", rotulo: "🏭 Região Sudeste" },
+            { valor: "SUL", rotulo: "❄️ Região Sul" }
+          ]
+        }
+      },
+      aoMudarCamada: function(idCamada) {
+        const cfg = this.configFiltros[idCamada] || this.configFiltros.instalacoes_portuarias;
+        const selSub = document.getElementById('filtro-subtipo-dinamico');
+        const inputBusca = document.getElementById('input-busca');
+
+        if (inputBusca) inputBusca.placeholder = cfg.placeholder;
+
+        if (selSub) {
+          selSub.innerHTML = '';
+          cfg.opcoes.forEach(opt => {
+            const el = document.createElement('option');
+            el.value = opt.valor;
+            el.innerText = opt.rotulo;
+            selSub.appendChild(el);
+          });
+          selSub.value = "TODOS";
+        }
+
+        // Garante que a camada selecionada fique ativa no mapa
+        if (CONFIG_CAMADAS[idCamada] && !CONFIG_CAMADAS[idCamada].ativa) {
+          const chk = document.getElementById(`chk-${idCamada}`);
+          if (chk) chk.checked = true;
+          toggleCamada(idCamada, true);
+        }
+
+        this.aplicarFiltro(idCamada, "TODOS");
+      },
+      aoMudarSubfiltro: function(valor) {
+        const idCamada = document.getElementById('sel-camada-busca').value;
+        this.aplicarFiltro(idCamada, valor);
+      },
+      aplicarFiltro: function(idCamada, valor) {
+        const camada = CAMADAS_MAPA[idCamada];
+        if (!camada) return;
+
+        let visiveis = 0;
+        let total = 0;
+
+        camada.eachLayer(layer => {
+          const f = layer.feature;
+          if (!f) return;
+          total++;
+          const p = f.properties || {};
+
+          let deveExibir = (valor === 'TODOS');
+
+          if (!deveExibir) {
+            if (idCamada === 'instalacoes_portuarias') {
+              const cat = PortClassification.classificar(p);
+              deveExibir = (cat.id === valor);
+            } else if (idCamada === 'vias_navegadas') {
+              const texto = (p.nome || p.nome_rio || p.rio || p.bacia || p.hidrovia || '').toUpperCase();
+              if (valor === 'AMAZONICA') deveExibir = /AMAZONAS|SOLIM[ÕO]ES|NEGRO|JAPUR|PURUS/i.test(texto);
+              else if (valor === 'TAPAJOS_MADEIRA') deveExibir = /MADEIRA|TAPAJ[ÓO]S|TELES PIRES|JURUENA/i.test(texto);
+              else if (valor === 'PARANA_TIETE') deveExibir = /PARAN[ÁA]|TIET[ÊE]|PARANA[ÍI]BA|GRANDE/i.test(texto);
+              else if (valor === 'PARAGUAI') deveExibir = /PARAGUAI|CUIAB[ÁA]|TAQUARI/i.test(texto);
+              else if (valor === 'TOCANTINS') deveExibir = /TOCANTINS|ARAGUAIA|MARANH[ÃA]O/i.test(texto);
+              else if (valor === 'SAO_FRANCISCO') deveExibir = /S[ÃA]O FRANCISCO|VELHAS|GRANDE/i.test(texto);
+              else if (valor === 'SUL_SUDESTE') deveExibir = /JACU[ÍI]|TAQUARI|GUA[ÍI]BA|RIBEIRA|ITAJA/i.test(texto);
+            } else if (idCamada === 'linhas_travessias') {
+              const texto = (p.nom_vessia || p.nome_rio || p.mun_origem || p.tipo_travessia || '').toUpperCase();
+              if (valor === 'AMAZONAS') deveExibir = /AM|PA|AP|RO|AC|RR|AMAZONAS|SUCUNDURI|TAPAJ/i.test(texto);
+              else if (valor === 'SUDESTE_SUL') deveExibir = /SP|RJ|PR|SC|RS|MG|ES|SANTOS|PARANAGU/i.test(texto);
+              else if (valor === 'NORDESTE_CO') deveExibir = /BA|MA|CE|PI|RN|PB|PE|AL|SE|MT|MS|GO|DF/i.test(texto);
+            } else if (idCamada === 'tis_poligonais') {
+              const fase = (p.fase_ti || p.status || p.fase || '').toUpperCase();
+              const uf = (p.uf || p.sigla_uf || '').toUpperCase();
+              if (valor === 'HOMOLOGADA') deveExibir = /HOMOLOG|REGULAR/i.test(fase);
+              else if (valor === 'DECLARADA') deveExibir = /DECLAR/i.test(fase);
+              else if (valor === 'DELIMITADA') deveExibir = /DELIMIT|ESTUDO/i.test(fase);
+              else if (valor === 'AMAZONIA') deveExibir = /AM|PA|AC|RO|RR|AP|MT|TO|MA/.test(uf);
+            } else if (idCamada === 'uf') {
+              const sigla = (p.SIGLA_UF || p.sigla || p.UF || '').toUpperCase();
+              const regNorte = ['AC','AP','AM','PA','RO','RR','TO'];
+              const regNordeste = ['AL','BA','CE','MA','PB','PE','PI','RN','SE'];
+              const regCO = ['DF','GO','MT','MS'];
+              const regSudeste = ['ES','MG','RJ','SP'];
+              const regSul = ['PR','RS','SC'];
+              if (valor === 'NORTE') deveExibir = regNorte.includes(sigla);
+              else if (valor === 'NORDESTE') deveExibir = regNordeste.includes(sigla);
+              else if (valor === 'CENTRO_OESTE') deveExibir = regCO.includes(sigla);
+              else if (valor === 'SUDESTE') deveExibir = regSudeste.includes(sigla);
+              else if (valor === 'SUL') deveExibir = regSul.includes(sigla);
+            }
+          }
+
+          if (deveExibir) {
+            const opac = CONFIG_CAMADAS[idCamada]?.opacidade || 0.8;
+            layer.setStyle({ opacity: 1, fillOpacity: opac });
+            if (layer.getElement()) layer.getElement().style.display = '';
+            visiveis++;
+          } else {
+            layer.setStyle({ opacity: 0, fillOpacity: 0 });
+            if (layer.getElement()) layer.getElement().style.display = 'none';
+          }
+        });
+
+        const cntEl = document.getElementById(`cnt-${idCamada}`);
+        if (cntEl) {
+          cntEl.innerText = valor === 'TODOS' ? `(${total})` : `(${visiveis}/${total})`;
+        }
+
+        UI.toast(`Filtro [${CONFIG_CAMADAS[idCamada]?.nome}]: ${visiveis} ativos visíveis.`);
+      }
+    };
+
     const DataManager = {
       filtroSubtipoAtual: 'TODOS',
       filtrarSubtipoPortos: function(tipo) {
@@ -809,6 +1086,14 @@
             })
             .then(dados => {
               if (!dados.features) throw new Error("Sem feições válidas");
+              // Higienização e reparo de encoding (mojibake) em todos os atributos na ingestão
+              dados.features.forEach(f => {
+                if (f.properties) {
+                  for (const [k, v] of Object.entries(f.properties)) {
+                    if (typeof v === 'string') f.properties[k] = Security.repararTexto(v);
+                  }
+                }
+              });
               DADOS_GEOJSON_BRUTOS[id] = dados;
               const opcoes = Styler.obterOpcoes(id);
 
@@ -1117,13 +1402,13 @@
             <div style="margin-top:6px; padding:6px 8px; background:#f1f5f9; border-radius:4px; font-size:10px; display:flex; flex-direction:column; gap:4px;">
               <span style="font-weight:700; color:#0f172a; margin-bottom:2px;">Subdivisão das Instalações no Mapa:</span>
               <div style="display:flex; flex-wrap:wrap; gap:4px;">
-                <button onclick="DataManager.filtrarSubtipoPortos('TODOS')" style="padding:2px 5px; font-size:9px; border:1px solid #cbd5e1; border-radius:3px; background:#fff; cursor:pointer; font-weight:600;">Todos</button>
-                <button onclick="DataManager.filtrarSubtipoPortos('ORGANIZADO')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#0284c7; color:#fff; cursor:pointer; font-weight:600;">Organizado</button>
-                <button onclick="DataManager.filtrarSubtipoPortos('PUBLICO')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#06b6d4; color:#fff; cursor:pointer; font-weight:600;">Público</button>
-                <button onclick="DataManager.filtrarSubtipoPortos('TUP')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#10b981; color:#fff; cursor:pointer; font-weight:600;">TUP</button>
-                <button onclick="DataManager.filtrarSubtipoPortos('IP4')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#f59e0b; color:#000; cursor:pointer; font-weight:600;">IP4</button>
-                <button onclick="DataManager.filtrarSubtipoPortos('ETC')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#8b5cf6; color:#fff; cursor:pointer; font-weight:600;">ETC</button>
-                <button onclick="DataManager.filtrarSubtipoPortos('OUTROS')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#64748b; color:#fff; cursor:pointer; font-weight:600;">Outros</button>
+                <button onclick="FilterManager.aplicarFiltro.bind(FilterManager, 'instalacoes_portuarias')('TODOS')" style="padding:2px 5px; font-size:9px; border:1px solid #cbd5e1; border-radius:3px; background:#fff; cursor:pointer; font-weight:600;">Todos</button>
+                <button onclick="FilterManager.aplicarFiltro.bind(FilterManager, 'instalacoes_portuarias')('ORGANIZADO')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#0284c7; color:#fff; cursor:pointer; font-weight:600;">Organizado</button>
+                <button onclick="FilterManager.aplicarFiltro.bind(FilterManager, 'instalacoes_portuarias')('PUBLICO')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#06b6d4; color:#fff; cursor:pointer; font-weight:600;">Público</button>
+                <button onclick="FilterManager.aplicarFiltro.bind(FilterManager, 'instalacoes_portuarias')('TUP')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#10b981; color:#fff; cursor:pointer; font-weight:600;">TUP</button>
+                <button onclick="FilterManager.aplicarFiltro.bind(FilterManager, 'instalacoes_portuarias')('IP4')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#f59e0b; color:#000; cursor:pointer; font-weight:600;">IP4</button>
+                <button onclick="FilterManager.aplicarFiltro.bind(FilterManager, 'instalacoes_portuarias')('ETC')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#8b5cf6; color:#fff; cursor:pointer; font-weight:600;">ETC</button>
+                <button onclick="FilterManager.aplicarFiltro.bind(FilterManager, 'instalacoes_portuarias')('OUTROS')" style="padding:2px 5px; font-size:9px; border:none; border-radius:3px; background:#64748b; color:#fff; cursor:pointer; font-weight:600;">Outros</button>
               </div>
             </div>
           `;
@@ -1217,6 +1502,8 @@
 
     // Inicialização
     construirPainelLateral();
+    FilterManager.aoMudarCamada("instalacoes_portuarias");
+    Styler.atualizarLegenda();
     DataManager.atualizarTodasCamadas();
   </script>
 </body>
