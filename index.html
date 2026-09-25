@@ -299,7 +299,7 @@
   <header class="top-header">
     <div class="brand-area">
       <div class="brand-title">AGÊNCIA NACIONAL DE TRANSPORTES AQUAVIÁRIOS &bull; ANTAQ</div>
-      <div class="brand-sub">STUDIO DE HOMOLOGAÇÃO E AUDITORIA SETORIAL &mdash; GEE</div>
+      <div class="brand-sub">SUPERINTENDÊNCIA DE ESTUDOS E PROJETOS AQUAVIÁRIOS &mdash; GERÊNCIA ESPECIAL DE ESTUDOS</div>
     </div>
     <div class="actions-area">
       <button class="btn-graficos" onclick="UI.toggleGraficos()">📊 Cruzamentos & Gráficos</button>
@@ -726,33 +726,45 @@
         padrao_antaq: {
           nome: "Padrão Institucional ANTAQ (Oficial)",
           cores: {
-            instalacoes_portuarias: "#10b981", vias_navegadas: "#00e5ff", linhas_travessias: "#f59e0b",
+            instalacoes_portuarias: "#0284c7", vias_navegadas: "#00e5ff", linhas_travessias: "#f59e0b",
             embarcacoes: "#38bdf8", uf: "#60a5fa", regioes: "#818cf8", pais: "#cbd5e1",
             tis_poligonais: "#ef4444", estados_amazonia_legal: "#059669"
+          },
+          coresPortos: {
+            ORGANIZADO: "#0284c7", PUBLICO: "#06b6d4", TUP: "#10b981", IP4: "#f59e0b", ETC: "#8b5cf6", OUTROS: "#64748b"
           }
         },
         neon_satellite: {
           nome: "Neon Satellite (NASA High-Contrast)",
           cores: {
-            instalacoes_portuarias: "#00ffcc", vias_navegadas: "#00ffff", linhas_travessias: "#ff00ff",
+            instalacoes_portuarias: "#00f0ff", vias_navegadas: "#00ffff", linhas_travessias: "#ff00ff",
             embarcacoes: "#ffff00", uf: "#38bdf8", regioes: "#a855f7", pais: "#ffffff",
             tis_poligonais: "#ff0055", estados_amazonia_legal: "#10b981"
+          },
+          coresPortos: {
+            ORGANIZADO: "#00f0ff", PUBLICO: "#00a8ff", TUP: "#39ff14", IP4: "#ffe600", ETC: "#d600ff", OUTROS: "#94a3b8"
           }
         },
         classica: {
           nome: "Cartografia Clássica (IBGE / USGS)",
           cores: {
-            instalacoes_portuarias: "#8b0000", vias_navegadas: "#1e3a8a", linhas_travessias: "#b45309",
+            instalacoes_portuarias: "#003366", vias_navegadas: "#1e3a8a", linhas_travessias: "#b45309",
             embarcacoes: "#0369a1", uf: "#374151", regioes: "#6b7280", pais: "#1f2937",
             tis_poligonais: "#b91c1c", estados_amazonia_legal: "#15803d"
+          },
+          coresPortos: {
+            ORGANIZADO: "#003366", PUBLICO: "#336699", TUP: "#2e7d32", IP4: "#e65100", ETC: "#6a1b9a", OUTROS: "#546e7a"
           }
         },
         acessibilidade: {
           nome: "Acessibilidade Universal (Viridis)",
           cores: {
-            instalacoes_portuarias: "#21918c", vias_navegadas: "#3b528b", linhas_travessias: "#5ec962",
+            instalacoes_portuarias: "#440154", vias_navegadas: "#3b528b", linhas_travessias: "#5ec962",
             embarcacoes: "#440154", uf: "#31688e", regioes: "#26828e", pais: "#fde725",
             tis_poligonais: "#d95f02", estados_amazonia_legal: "#1f968b"
+          },
+          coresPortos: {
+            ORGANIZADO: "#440154", PUBLICO: "#3b528b", TUP: "#21918c", IP4: "#5ec962", ETC: "#90d743", OUTROS: "#737373"
           }
         }
       },
@@ -763,29 +775,49 @@
           if (CONFIG_CAMADAS[id]) {
             CONFIG_CAMADAS[id].cor = cor;
             const ind = document.getElementById(`indicador-cor-${id}`);
-            if (ind) ind.style.backgroundColor = cor;
+            if (ind && id !== 'instalacoes_portuarias') ind.style.backgroundColor = cor;
             const picker = document.getElementById(`color-picker-${id}`);
             if (picker) picker.value = cor;
 
-
-            if (CAMADAS_MAPA[id]) {
+            if (CAMADAS_MAPA[id] && id !== 'instalacoes_portuarias') {
               CAMADAS_MAPA[id].eachLayer(l => {
-                if (id === 'instalacoes_portuarias') {
-                  const cat = PortClassification.classificar(l.feature?.properties);
-                  l.setStyle({ fillColor: cat.cor, color: '#ffffff' });
-                } else if (l.setStyle) {
-                  l.setStyle({ color: cor, fillColor: cor });
-                }
+                if (l.setStyle) l.setStyle({ color: cor, fillColor: cor });
               });
             }
           }
         }
+
+        // Aplica a paleta específica das subcamadas de outorga portuária
+        if (preset.coresPortos) {
+          for (const [tKey, cor] of Object.entries(preset.coresPortos)) {
+            if (PortClassification.tipos[tKey]) {
+              PortClassification.tipos[tKey].cor = cor;
+              const inputColor = document.getElementById(`subcolor-${tKey}`);
+              if (inputColor) inputColor.value = cor;
+              if (window.SUBGRUPOS_PORTOS && window.SUBGRUPOS_PORTOS[tKey]) {
+                window.SUBGRUPOS_PORTOS[tKey].eachLayer(m => {
+                  if (m.setStyle) m.setStyle({ fillColor: cor, color: '#ffffff' });
+                });
+              }
+            }
+          }
+        }
+
         this.atualizarLegenda();
-        UI.toast(`✓ Paleta Cartográfica: ${preset.nome}`);
+        UI.toast(`Paleta aplicada: ${preset.nome}`);
       },
       obterOpcoes: function(id) {
         const cfg = CONFIG_CAMADAS[id];
         return {
+          style: f => {
+            if (cfg.tipoGeo === 'linha_tracejada') {
+              return { color: cfg.cor, weight: cfg.peso, opacity: cfg.opacidade, dashArray: '6, 6' };
+            }
+            if (cfg.tipoGeo === 'poligono_linha') {
+              return { color: cfg.cor, weight: cfg.peso, opacity: cfg.opacidade, fill: false };
+            }
+            return { color: cfg.cor, weight: cfg.peso, opacity: cfg.opacidade, fillColor: cfg.cor, fillOpacity: cfg.opacidade };
+          },
           pointToLayer: (f, latlng) => {
             if (id === 'instalacoes_portuarias') {
               const cat = PortClassification.classificar(f.properties);
@@ -797,17 +829,21 @@
                 fillOpacity: cfg.opacidade
               });
             }
-            return L.circleMarker(latlng, { radius: cfg.peso, fillColor: cfg.cor, color: '#ffffff', weight: 1.5, fillOpacity: cfg.opacidade });
+            return L.circleMarker(latlng, {
+              radius: cfg.peso,
+              fillColor: cfg.cor,
+              color: '#ffffff',
+              weight: 1.5,
+              fillOpacity: cfg.opacidade
+            });
           },
-          style: () => ({
-            color: cfg.cor, weight: cfg.peso, fillColor: cfg.cor, fillOpacity: cfg.opacidade,
-            dashArray: id === 'linhas_travessias' ? '6,6' : (id === 'estados_amazonia_legal' ? '8,4' : null)
-          }),
           onEachFeature: (f, layer) => {
-            layer.bindPopup(PopupRenderer.gerar(id, f.properties));
-            if (id === 'uf') {
-              const sigla = Security.escapeHTML(f.properties.SIGLA_UF || f.properties.sigla || f.properties.UF || f.properties.nome);
-              if (sigla) layer.bindTooltip(sigla, { permanent: true, direction: 'center', className: 'rotulo-uf' });
+            if (f.properties) {
+              layer.bindPopup(PopupRenderer.gerar(id, f.properties));
+              if (id === 'uf') {
+                const sigla = Security.escapeHTML(f.properties.SIGLA_UF || f.properties.sigla || f.properties.UF || f.properties.nome);
+                if (sigla) layer.bindTooltip(sigla, { permanent: true, direction: 'center', className: 'rotulo-uf' });
+              }
             }
           }
         };
@@ -816,13 +852,16 @@
         if (!CONFIG_CAMADAS[id]) return;
         CONFIG_CAMADAS[id][prop] = valor;
         const ind = document.getElementById(`indicador-cor-${id}`);
-        if (ind && prop === 'cor') ind.style.backgroundColor = valor;
-
+        if (ind && prop === 'cor' && id !== 'instalacoes_portuarias') ind.style.backgroundColor = valor;
 
         if (CAMADAS_MAPA[id]) {
           CAMADAS_MAPA[id].eachLayer(l => {
-            if (id === 'instalacoes_portuarias' && prop === 'peso') {
-              if (l.setRadius) l.setRadius(valor);
+            if (id === 'instalacoes_portuarias') {
+              if (prop === 'peso' && l.setRadius) {
+                l.setRadius(valor);
+              } else if (prop === 'opacidade' && l.setStyle) {
+                l.setStyle({ fillOpacity: valor });
+              }
             } else if (l.setStyle) {
               const s = {};
               if (prop === 'cor') { s.color = valor; s.fillColor = valor; }
@@ -834,50 +873,71 @@
         }
         this.atualizarLegenda();
       },
+      atualizarSubcamadaPorto: function(tKey, novaCor) {
+        if (!PortClassification.tipos[tKey]) return;
+        PortClassification.tipos[tKey].cor = novaCor;
+
+        if (window.SUBGRUPOS_PORTOS && window.SUBGRUPOS_PORTOS[tKey]) {
+          window.SUBGRUPOS_PORTOS[tKey].eachLayer(m => {
+            if (m.setStyle) {
+              m.setStyle({ fillColor: novaCor, color: '#ffffff' });
+            }
+          });
+        }
+
+        this.atualizarLegenda();
+      },
       atualizarLegenda: function() {
         const corpo = document.getElementById('corpo-legenda');
         if (!corpo) return;
         corpo.innerHTML = '';
 
-
         for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
           const estaAtiva = (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) || (!CAMADAS_MAPA[id] && cfg.ativa);
           if (!estaAtiva) continue;
-
 
           const l = document.createElement('div');
           l.style.marginBottom = '6px';
           l.style.width = '100%';
 
-
           if (id === 'instalacoes_portuarias') {
-            l.innerHTML = `
-              <div style="display:flex; flex-direction:column; gap:4px; width:100%; border-bottom:1px dashed #cbd5e1; padding-bottom:6px;">
-                <span style="font-weight:700; color:#0f172a; font-size:11px;">Instalações Portuárias:</span>
-                <div class="item-legenda-linha"><span class="simbolo-ponto" style="background:#0284c7; width:12px; height:12px;"></span> <span>Porto Organizado (Lei 12.815)</span></div>
-                <div class="item-legenda-linha"><span class="simbolo-ponto" style="background:#06b6d4; width:11px; height:11px;"></span> <span>Porto Público (Cadastro Legado)</span></div>
-                <div class="item-legenda-linha"><span class="simbolo-ponto" style="background:#10b981; width:11px; height:11px;"></span> <span>Terminal de Uso Privado (TUP)</span></div>
-                <div class="item-legenda-linha"><span class="simbolo-ponto" style="background:#f59e0b; width:10px; height:10px;"></span> <span>Pequeno Porte (IP4)</span></div>
-                <div class="item-legenda-linha"><span class="simbolo-ponto" style="background:#8b5cf6; width:10px; height:10px;"></span> <span>Estação de Transbordo (ETC)</span></div>
-                <div class="item-legenda-linha"><span class="simbolo-ponto" style="background:#64748b; width:9px; height:9px;"></span> <span>Demais Registros e Apoio</span></div>
-              </div>
-            `;
+            let subItensHTML = '';
+            for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
+              const chkSub = document.getElementById(`chk-sub-${tKey}`);
+              const subAtiva = chkSub ? chkSub.checked : true;
+              if (subAtiva) {
+                subItensHTML += `
+                  <div class="item-legenda-linha">
+                    <span class="simbolo-ponto" style="background:${cat.cor}; width:${Math.max(8, cat.raio * 1.6)}px; height:${Math.max(8, cat.raio * 1.6)}px;"></span>
+                    <span>${cat.nome}</span>
+                  </div>
+                `;
+              }
+            }
+            if (subItensHTML) {
+              l.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:4px; width:100%; border-bottom:1px dashed #cbd5e1; padding-bottom:6px;">
+                  <span style="font-weight:700; color:#0f172a; font-size:11px;">Instalações Portuárias:</span>
+                  ${subItensHTML}
+                </div>
+              `;
+              corpo.appendChild(l);
+            }
           } else if (cfg.tipoGeo === 'linha' || cfg.tipoGeo === 'linha_tracejada') {
             l.innerHTML = `<div class="item-legenda-linha"><span class="simbolo-linha" style="background:${cfg.cor};"></span> <span>${cfg.nome}</span></div>`;
+            corpo.appendChild(l);
           } else if (cfg.tipoGeo === 'ponto') {
             l.innerHTML = `<div class="item-legenda-linha"><span class="simbolo-ponto" style="background:${cfg.cor};"></span> <span>${cfg.nome}</span></div>`;
+            corpo.appendChild(l);
           } else {
-            l.innerHTML = `<div class="item-legenda-linha"><span class="simbolo-poligono" style="background:${cfg.cor}; opacity:${cfg.opacidade};"></span> <span>${cfg.nome}</span></div>`;
+            l.innerHTML = `<div class="item-legenda-linha"><span class="simbolo-poligono" style="background:${cfg.cor}; opacity:${cfg.opacidade}; border-color:${cfg.cor};"></span> <span>${cfg.nome}</span></div>`;
+            corpo.appendChild(l);
           }
-          corpo.appendChild(l);
         }
       }
     };
 
 
-    /**
-     * MÓDULO 5.1: GERENCIADOR DE FILTROS DINÂMICOS CONTEXTUAIS E SINCRONIZADOS
-     */
     const FilterManager = {
       configFiltros: {
         instalacoes_portuarias: {
@@ -1473,53 +1533,80 @@
         item.className = 'item-camada';
         let subpaletaHTML = '';
 
-
         if (id === 'instalacoes_portuarias') {
+          let listaSubHTML = '';
+          for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
+            listaSubHTML += `
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:3px 0;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <input type="color" id="subcolor-${tKey}" value="${cat.cor}" onchange="Styler.atualizarSubcamadaPorto('${tKey}', this.value)" style="width:16px; height:16px; border:none; padding:0; background:transparent; cursor:pointer;" title="Personalizar cor de ${cat.nome}">
+                  <span>${cat.nome}</span>
+                  <span class="badge-contador" id="subcnt-${tKey}"></span>
+                </div>
+                <input type="checkbox" id="chk-sub-${tKey}" checked onchange="toggleSubcamadaPorto('${tKey}', this.checked)">
+              </div>
+            `;
+          }
+
           subpaletaHTML = `
-            <div style="margin-top:6px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; font-size:10px; display:flex; flex-direction:column; gap:5px;">
+            <div style="margin-top:6px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; font-size:10px; display:flex; flex-direction:column; gap:4px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
                 <span style="font-weight:700; color:#0a2540;">Subcamadas de Outorga (ANTAQ):</span>
                 <span style="font-size:9px; color:#0284c7; cursor:pointer; font-weight:700;" onclick="toggleTodasSubcamadasPortos(true)">Marcar Todas</span>
               </div>
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:2px 0;">
-                <div style="display:flex; align-items:center; gap:6px;"><span class="simbolo-ponto" style="background:#0284c7; width:11px; height:11px;"></span> <span>Porto Organizado (Lei 12.815)</span> <span class="badge-contador" id="subcnt-ORGANIZADO"></span></div>
-                <input type="checkbox" id="chk-sub-ORGANIZADO" checked onchange="toggleSubcamadaPorto('ORGANIZADO', this.checked)">
-              </div>
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:2px 0;">
-                <div style="display:flex; align-items:center; gap:6px;"><span class="simbolo-ponto" style="background:#06b6d4; width:10px; height:10px;"></span> <span>Porto Público (Cadastro Legado)</span> <span class="badge-contador" id="subcnt-PUBLICO"></span></div>
-                <input type="checkbox" id="chk-sub-PUBLICO" checked onchange="toggleSubcamadaPorto('PUBLICO', this.checked)">
-              </div>
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:2px 0;">
-                <div style="display:flex; align-items:center; gap:6px;"><span class="simbolo-ponto" style="background:#10b981; width:10px; height:10px;"></span> <span>Terminal de Uso Privado (TUP)</span> <span class="badge-contador" id="subcnt-TUP"></span></div>
-                <input type="checkbox" id="chk-sub-TUP" checked onchange="toggleSubcamadaPorto('TUP', this.checked)">
-              </div>
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:2px 0;">
-                <div style="display:flex; align-items:center; gap:6px;"><span class="simbolo-ponto" style="background:#f59e0b; width:9px; height:9px;"></span> <span>Pequeno Porte (IP4)</span> <span class="badge-contador" id="subcnt-IP4"></span></div>
-                <input type="checkbox" id="chk-sub-IP4" checked onchange="toggleSubcamadaPorto('IP4', this.checked)">
-              </div>
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:2px 0;">
-                <div style="display:flex; align-items:center; gap:6px;"><span class="simbolo-ponto" style="background:#8b5cf6; width:9px; height:9px;"></span> <span>Estação de Transbordo (ETC)</span> <span class="badge-contador" id="subcnt-ETC"></span></div>
-                <input type="checkbox" id="chk-sub-ETC" checked onchange="toggleSubcamadaPorto('ETC', this.checked)">
-              </div>
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:2px 0;">
-                <div style="display:flex; align-items:center; gap:6px;"><span class="simbolo-ponto" style="background:#64748b; width:8px; height:8px;"></span> <span>Demais Registros e Apoio</span> <span class="badge-contador" id="subcnt-OUTROS"></span></div>
-                <input type="checkbox" id="chk-sub-OUTROS" checked onchange="toggleSubcamadaPorto('OUTROS', this.checked)">
-              </div>
+              ${listaSubHTML}
             </div>
           `;
         }
 
+        const ehPorto = (id === 'instalacoes_portuarias');
+        const indicadorHTML = ehPorto
+          ? `<span class="legenda-cor" id="indicador-cor-${id}" style="display:inline-flex; align-items:center; justify-content:center; background:#0a2540; color:#38bdf8; font-size:11px;" onclick="toggleGavetaEstilo('${id}')" title="Camada Multicategórica - Clique para ajustar estilo">⚓</span>`
+          : `<span class="legenda-cor" id="indicador-cor-${id}" style="background:${cfg.cor};" onclick="toggleGavetaEstilo('${id}')" title="Clique para personalizar estilo"></span>`;
+
+        const gavetaConteudo = ehPorto
+          ? `
+            <div style="font-size:10px; color:#64748b; margin-bottom:6px; line-height:1.3;">
+              💡 <i>Camada multicategórica: as cores são definidas individualmente nos seletores de cor de cada outorga acima.</i>
+            </div>
+            <div class="linha-ajuste">
+              <span>Opacidade Geral:</span>
+              <input type="range" min="0.1" max="1" step="0.05" value="${cfg.opacidade}" oninput="this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'; Styler.atualizar('${id}', 'opacidade', parseFloat(this.value))">
+              <span style="min-width:35px; text-align:right;">${Math.round(cfg.opacidade * 100)}%</span>
+            </div>
+            <div class="linha-ajuste">
+              <span>Tamanho dos Pontos:</span>
+              <input type="range" min="2" max="15" step="1" value="${cfg.peso}" oninput="this.nextElementSibling.innerText = this.value + 'px'; Styler.atualizar('${id}', 'peso', parseInt(this.value))">
+              <span style="min-width:35px; text-align:right;">${cfg.peso}px</span>
+            </div>
+          `
+          : `
+            <div class="linha-ajuste">
+              <span>Cor:</span>
+              <input type="color" id="color-picker-${id}" value="${cfg.cor}" onchange="Styler.atualizar('${id}', 'cor', this.value)">
+            </div>
+            <div class="linha-ajuste">
+              <span>Opacidade:</span>
+              <input type="range" min="0.1" max="1" step="0.05" value="${cfg.opacidade}" oninput="this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'; Styler.atualizar('${id}', 'opacidade', parseFloat(this.value))">
+              <span style="min-width:35px; text-align:right;">${Math.round(cfg.opacidade * 100)}%</span>
+            </div>
+            <div class="linha-ajuste">
+              <span>Espessura / Raio:</span>
+              <input type="range" min="1" max="12" step="0.5" value="${cfg.peso}" oninput="this.nextElementSibling.innerText = this.value + 'px'; Styler.atualizar('${id}', 'peso', parseFloat(this.value))">
+              <span style="min-width:35px; text-align:right;">${cfg.peso}px</span>
+            </div>
+          `;
 
         item.innerHTML = `
           <div class="item-camada-principal">
             <div class="camada-info">
-              <span class="legenda-cor" id="indicador-cor-${id}" style="background:${cfg.cor};" onclick="toggleGavetaEstilo('${id}')" title="Clique para personalizar estilo"></span>
+              ${indicadorHTML}
               <span>${cfg.nome}</span>
               <span class="badge-contador" id="cnt-${id}"></span>
               <span class="badge-erro" id="err-${id}"></span>
             </div>
             <div class="camada-acoes">
-              <button class="btn-acao-icone" title="Personalizar Estilo (Cores e Espessura)" onclick="toggleGavetaEstilo('${id}')">🎨</button>
+              <button class="btn-acao-icone" title="Personalizar Estilo" onclick="toggleGavetaEstilo('${id}')">🎨</button>
               <button class="btn-acao-icone" title="Tabela de Atributos" onclick="abrirTabela('${id}')">📋</button>
               <button class="btn-acao-icone" title="Centralizar" onclick="zoomCamada('${id}')">🔍</button>
               <label class="switch">
@@ -1530,18 +1617,7 @@
           </div>
           ${subpaletaHTML}
           <div class="gaveta-painel" id="gaveta-${id}">
-            <div class="linha-ajuste">
-              <span>Cor:</span>
-              <input type="color" id="color-picker-${id}" value="${cfg.cor}" onchange="Styler.atualizar('${id}', 'cor', this.value)">
-            </div>
-            <div class="linha-ajuste">
-              <span id="lbl-opacidade-${id}">Opacidade (${Math.round(cfg.opacidade * 100)}%):</span>
-              <input type="range" min="0.1" max="1" step="0.05" value="${cfg.opacidade}" oninput="Styler.atualizar('${id}', 'opacidade', parseFloat(this.value)); document.getElementById('lbl-opacidade-${id}').innerText = 'Opacidade (' + Math.round(this.value * 100) + '%):';">
-            </div>
-            <div class="linha-ajuste">
-              <span id="lbl-peso-${id}">Espessura / Raio (${cfg.peso}px):</span>
-              <input type="range" min="1" max="15" step="0.5" value="${cfg.peso}" oninput="Styler.atualizar('${id}', 'peso', parseFloat(this.value)); document.getElementById('lbl-peso-${id}').innerText = 'Espessura (' + this.value + 'px):';">
-            </div>
+            ${gavetaConteudo}
           </div>
         `;
         grupo.appendChild(item);
