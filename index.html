@@ -1153,20 +1153,113 @@
 
 
     /**
-     * MÓDULO 10: ANALYTICS COM CHART.JS
+    /**
+     * MÓDULO 10: ANALYTICS COM CHART.JS (DISTRIBUIÇÃO POR UF AUDITADA)
      */
     const Analytics = {
       chartTipo: null,
       chartUf: null,
+      extrairUF: function(p, f, dadosUf) {
+        const LISTA_UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+        const MAPA_NOMES = {
+          'ACRE': 'AC', 'ALAGOAS': 'AL', 'AMAPA': 'AP', 'AMAPÁ': 'AP', 'AMAZONAS': 'AM', 'BAHIA': 'BA', 'CEARA': 'CE', 'CEARÁ': 'CE',
+
+
+          'DISTRITO FEDERAL': 'DF', 'ESPIRITO SANTO': 'ES', 'ESPÍRITO SANTO': 'ES', 'GOIAS': 'GO', 'GOIÁS': 'GO', 'MARANHAO': 'MA', 'MARANHÃO': 'MA',
+          'MATO GROSSO': 'MT', 'MATO GROSSO DO SUL': 'MS', 'MINAS GERAIS': 'MG', 'PARA': 'PA', 'PARÁ': 'PA', 'PARAIBA': 'PB', 'PARAÍBA': 'PB',
+          'PARANA': 'PR', 'PARANÁ': 'PR', 'PERNAMBUCO': 'PE', 'PIAUI': 'PI', 'PIAUÍ': 'PI', 'RIO DE JANEIRO': 'RJ', 'RIO GRANDE DO NORTE': 'RN',
+          'RIO GRANDE DO SUL': 'RS', 'RONDONIA': 'RO', 'RONDÔNIA': 'RO', 'RORAIMA': 'RR', 'SANTA CATARINA': 'SC', 'SAO PAULO': 'SP', 'SÃO PAULO': 'SP',
+          'SERGIPE': 'SE', 'TOCANTINS': 'TO'
+        };
+        const IBGE_UF = {
+
+
+          '11': 'RO', '12': 'AC', '13': 'AM', '14': 'RR', '15': 'PA', '16': 'AP', '17': 'TO',
+          '21': 'MA', '22': 'PI', '23': 'CE', '24': 'RN', '25': 'PB', '26': 'PE', '27': 'AL', '28': 'SE', '29': 'BA',
+          '31': 'MG', '32': 'ES', '33': 'RJ', '35': 'SP',
+          '41': 'PR', '42': 'SC', '43': 'RS',
+          '50': 'MS', '51': 'MT', '52': 'GO', '53': 'DF'
+        };
+        if (p) {
+          // 1. Chaves prioritárias de UF
+          const chaves = ['SIGLA_UF', 'sigla_uf', 'SG_UF', 'sg_uf', 'UF', 'uf', 'ESTADO', 'estado', 'Estado', 'NM_UF', 'nm_uf', 'CD_UF', 'cd_uf', 'uf_instalacao', 'UF_INSTALACAO'];
+          for (const k of chaves) {
+            if (p[k] !== undefined && p[k] !== null) {
+              const v = String(p[k]).trim().toUpperCase();
+              if (LISTA_UFS.includes(v)) return v;
+              if (MAPA_NOMES[v]) return MAPA_NOMES[v];
+              if (IBGE_UF[v]) return IBGE_UF[v];
+            }
+          }
+          // 2. Varredura por qualquer propriedade com 2 letras da lista de UFs
+          for (const [k, val] of Object.entries(p)) {
+            if (val !== undefined && val !== null) {
+              const v = String(val).trim().toUpperCase();
+              if (v.length === 2 && LISTA_UFS.includes(v)) return v;
+              if (MAPA_NOMES[v]) return MAPA_NOMES[v];
+              if ((k.toLowerCase().includes('uf') || k.toLowerCase().includes('ibge') || k.toLowerCase().includes('mun')) && typeof val === 'number') {
+                const s = String(val).padStart(2, '0');
+                const cod2 = s.substring(0, 2);
+                if (IBGE_UF[cod2]) return IBGE_UF[cod2];
+              }
+            }
+          }
+          // 3. Busca de padrão textual (ex: "Santos/SP" ou "Itajaí - SC")
+          const camposTexto = [p.municipio, p.MUNICIPIO, p.nome, p.NOME_INSTALACAO, p.endereco, p.ENDERECO, p.cidade, p.CIDADE];
+          for (const txt of camposTexto) {
+            if (txt && typeof txt === 'string') {
+              const m = txt.match(/(?:[/\\-\(\[\,\s]|^)([A-Za-z]{2})(?:[\)/\\-\]\,\s]|$)/);
+              if (m) {
+                const sigla = m[1].toUpperCase();
+                if (LISTA_UFS.includes(sigla)) return sigla;
+              }
+            }
+          }
+        }
+        // 4. Fallback Espacial (Point in Polygon cruzando com os polígonos de dados/uf.geojson)
+        if (f && f.geometry && f.geometry.type === 'Point' && dadosUf && dadosUf.features) {
+          const coords = f.geometry.coordinates;
+          if (coords && coords.length >= 2) {
+            const ptLng = coords[0], ptLat = coords[1];
+            const pontoEmAnel = (pt, anel) => {
+              let dentro = false;
+              for (let i = 0, j = anel.length - 1; i < anel.length; j = i++) {
+                const xi = anel[i][0], yi = anel[i][1];
+                const xj = anel[j][0], yj = anel[j][1];
+                const intersect = ((yi > pt[1]) !== (yj > pt[1])) &&
+                  (pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi);
+                if (intersect) dentro = !dentro;
+              }
+              return dentro;
+            };
+            for (const featUf of dadosUf.features) {
+              const geom = featUf.geometry;
+              if (!geom) continue;
+              let achou = false;
+              if (geom.type === 'Polygon') {
+                achou = pontoEmAnel([ptLng, ptLat], geom.coordinates[0]);
+              } else if (geom.type === 'MultiPolygon') {
+                for (const poly of geom.coordinates) {
+                  if (pontoEmAnel([ptLng, ptLat], poly[0])) { achou = true; break; }
+                }
+              }
+              if (achou) {
+                const pUf = featUf.properties || {};
+                const siglaUf = String(pUf.SIGLA_UF || pUf.sigla || pUf.UF || pUf.uf || pUf.nome || '').trim().toUpperCase();
+                if (LISTA_UFS.includes(siglaUf)) return siglaUf;
+                if (MAPA_NOMES[siglaUf]) return MAPA_NOMES[siglaUf];
+              }
+            }
+          }
+        }
+        return 'Outros';
+      },
       gerar: function() {
         const portos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
         if (!portos || !portos.features) return;
-
-
+        const dadosUf = DADOS_GEOJSON_BRUTOS['uf'];
         const tipos = {};
         const ufs = {};
-
-
         portos.features.forEach(f => {
           const p = f.properties || {};
           let t = String(p.tipo || p.TIPO_INSTALACAO || 'Outros').trim();
@@ -1174,13 +1267,9 @@
           else if (t.toUpperCase().includes('ORGANIZADO') || t.toUpperCase().includes('PÚBLICO')) t = 'Porto Público';
           else if (t.toUpperCase().includes('IP4') || t.toUpperCase().includes('PEQUENO')) t = 'IP4 (Pequeno Porte)';
           tipos[t] = (tipos[t] || 0) + 1;
-
-
-          const uf = String(p.uf || p.UF || 'Outros').trim().toUpperCase();
+          const uf = this.extrairUF(p, f, dadosUf);
           if (uf && uf !== 'NONE') ufs[uf] = (ufs[uf] || 0) + 1;
         });
-
-
         const ctxTipo = document.getElementById('grafico-portos-tipo').getContext('2d');
         if (this.chartTipo) this.chartTipo.destroy();
         this.chartTipo = new Chart(ctxTipo, {
@@ -1191,9 +1280,18 @@
           },
           options: { responsive: true, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } }
         });
-
-
-        const ordenadas = Object.entries(ufs).sort((a,b) => b - a).slice(0, 8);
+        // Ordenação decrescente por contagem real (Top 8 estados)
+        const ordenadas = Object.entries(ufs)
+          .filter(i => i[0] !== 'Outros' && i[0] !== 'OUTROS' && i[0] !== 'NONE')
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 8);
+        // Se houver registros não resolvidos, adiciona ao final se sobrar espaço
+        if (ufs['Outros'] || ufs['OUTROS']) {
+          const totalOutros = (ufs['Outros'] || 0) + (ufs['OUTROS'] || 0);
+          if (ordenadas.length < 8 && totalOutros > 0) {
+            ordenadas.push(['Outros', totalOutros]);
+          }
+        }
         const ctxUf = document.getElementById('grafico-portos-uf').getContext('2d');
         if (this.chartUf) this.chartUf.destroy();
         this.chartUf = new Chart(ctxUf, {
@@ -1202,10 +1300,24 @@
             labels: ordenadas.map(i => i[0]),
             datasets: [{ data: ordenadas.map(i => i[1]), backgroundColor: '#0284c7', borderRadius: 4 }]
           },
-          options: { responsive: true, plugins: { legend: { display: false } } }
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, ticks: { precision: 0 } },
+              x: { ticks: { font: { weight: 'bold' } } }
+            }
+          }
         });
       }
     };
+          type: 'doughnut',
+          data: {
+            labels: Object.keys(tipos),
+            datasets: [{ data: Object.values(tipos), backgroundColor: ['#10b981', '#0284c7', '#f59e0b', '#64748b'] }]
+          },
+          options: { responsive: true, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } }
+        });
 
 
     function construirPainelLateral() {
