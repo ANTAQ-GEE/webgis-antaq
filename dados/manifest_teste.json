@@ -8,6 +8,8 @@
     { "id": "regioes", "arquivo": "dados/regioes.geojson", "nome": "Regiões do Brasil", "grupo": "limites", "cor": "#818cf8", "peso": 1.5, "opacidade": 0.7, "ativa": true },
     { "id": "pais", "arquivo": "dados/pais.geojson", "nome": "Limite Nacional", "grupo": "limites", "cor": "#cbd5e1", "peso": 2, "opacidade": 0.5, "ativa": false },
     { "id": "tis_poligonais", "arquivo": "dados/tis_poligonais.geojson", "nome": "Terras Indígenas (FUNAI)", "grupo": "restricoes", "cor": "#ef4444", "peso": 1.5, "opacidade": 0.35, "ativa": true },
-    { "id": "estados_amazonia_legal", "arquivo": "dados/estados_amazonia_legal.geojson", "nome": "Estados da Amazônia Legal", "grupo": "restricoes", "cor": "#059669", "peso": 2, "opacidade": 0.1, "ativa": true }
+    { "id": "estados_amazonia_legal", "arquivo": "dados/estados_amazonia_legal.geojson", "nome": "Estados da Amazônia Legal", "grupo": "restricoes", "cor": "#059669", "peso": 2, "opacidade": 0.1, "ativa": true },
+    { "id": "unidades_conservacao", "arquivo": "dados/unidades_conservacao.geojson", "nome": "Unidades de Conservação (ICMBio)", "grupo": "restricoes", "cor": "#15803d", "peso": 1.5, "opacidade": 0.35, "ativa": true }
   ]
 }
+
