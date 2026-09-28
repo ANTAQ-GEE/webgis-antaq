@@ -8,8 +8,16 @@
 
 
 
+
+
+
+
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+
+
+
 
 
 
@@ -17,6 +25,15 @@
   <!-- Bibliotecas Externas: Chart.js (Dashboard) e shpjs (Shapefile ZIP) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
+  <!-- Conversores Cartográficos Adicionais: KML, KMZ e GeoPackage -->
+  <script src="https://cdn.jsdelivr.net/npm/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/sql-wasm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ngageoint/geopackage@4.2.3/dist/geopackage.min.js"></script>
+
+
+
+
 
 
 
@@ -36,6 +53,10 @@
 
 
 
+
+
+
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body, html, #mapa {
       width: 100%; height: 100%;
@@ -43,6 +64,10 @@
       overflow: hidden;
       background-color: #0b132b;
     }
+
+
+
+
 
 
 
@@ -60,6 +85,32 @@
 
 
 
+
+
+
+
+
+    /* Botão e Dropzone de Importação */
+    .btn-importar {
+      background: #10b981; color: #fff; border: 1px solid #34d399;
+      padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .btn-importar:hover { background: #059669; }
+
+    #dropzone {
+      position: absolute; inset: 52px 0 0 0; z-index: 40000;
+      background: rgba(10,37,64,0.78); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center;
+      color: #fff; font-size: 18px; font-weight: 700; letter-spacing: 0.5px;
+      border: 3px dashed #38bdf8; border-radius: 10px; margin: 12px;
+      pointer-events: none;
+    }
+    #dropzone.ativo { display: flex; }
+    #dropzone small { display: block; font-size: 12px; font-weight: 400; color: #bae6fd; margin-top: 8px; }
+
+    /* Seção de Camadas Importadas no Painel Lateral */
+    .secao-importadas .secao-titulo { background: #ecfdf5; color: #047857; }
 
     .btn-homologacao {
       background: var(--gov-amarelo); color: #000; border: none; padding: 6px 12px;
@@ -79,6 +130,10 @@
 
 
 
+
+
+
+
     /* Dropdown Homologação */
     .dropdown-homologacao {
       display: none; position: fixed; top: 58px; right: 140px; background: #fff;
@@ -90,6 +145,10 @@
     .drop-item:hover { background: #f8fafc; }
     .drop-item.ativo { background: #e0f2fe; border-left: 4px solid var(--antaq-azul-claro); font-weight: 600; }
     .drop-item small { display: block; font-size: 10px; color: var(--texto-claro); margin-top: 2px; }
+
+
+
+
 
 
 
@@ -121,6 +180,10 @@
 
 
 
+
+
+
+
     /* Painel Lateral de Camadas */
     .painel-lateral {
       position: absolute; top: 64px; right: 16px; width: 340px; max-height: calc(100% - 80px);
@@ -139,7 +202,15 @@
 
 
 
+
+
+
+
     .painel-corpo { overflow-y: auto; padding-bottom: 8px; }
+
+
+
+
 
 
 
@@ -156,10 +227,18 @@
 
 
 
+
+
+
+
     .item-camada { display: flex; flex-direction: column; padding: 4px 0; border-bottom: 1px dashed #f1f5f9; }
     .item-camada-principal { display: flex; align-items: center; justify-content: space-between; }
     .camada-info { display: flex; align-items: center; gap: 6px; font-size: 11px; max-width: 210px; }
     .legenda-cor { width: 12px; height: 12px; border-radius: 3px; cursor: pointer; }
+
+
+
+
 
 
 
@@ -171,12 +250,20 @@
 
 
 
+
+
+
+
     .gaveta-painel {
       display: none; background: #f8fafc; padding: 8px 10px; border-radius: 6px;
       margin-top: 6px; border: 1px solid var(--borda); font-size: 10px;
     }
     .gaveta-painel.aberta { display: block; }
     .linha-ajuste { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+
+
+
+
 
 
 
@@ -194,6 +281,10 @@
     }
     input:checked + .slider { background-color: var(--antaq-azul-claro); }
     input:checked + .slider:before { transform: translateX(14px); }
+
+
+
+
 
 
 
@@ -218,6 +309,10 @@
 
 
 
+
+
+
+
     /* Tabela de Atributos */
     .painel-tabela-atributos {
       display: none; position: absolute; bottom: 0; left: 0; right: 370px; height: 260px;
@@ -233,6 +328,10 @@
     .grid-atributos { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; }
     .grid-atributos th { position: sticky; top: 0; background: #e2e8f0; padding: 6px 10px; font-weight: 700; }
     .grid-atributos td { padding: 5px 10px; border-bottom: 1px solid #f1f5f9; }
+
+
+
+
 
 
 
@@ -255,6 +354,10 @@
     .simbolo-ponto { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid #ffffff; box-shadow: 0 0 3px rgba(0,0,0,0.5); flex-shrink: 0; vertical-align: middle; }
     .simbolo-poligono { display: inline-block; width: 14px; height: 10px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.25); flex-shrink: 0; vertical-align: middle; }
     .item-legenda-linha { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #1e293b; padding: 2px 0; }
+
+
+
+
 
 
 
@@ -282,6 +385,10 @@
 
 
 
+
+
+
+
     #toast {
       position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
       background: rgba(15, 23, 42, 0.95); color: #ffffff; padding: 9px 18px;
@@ -295,6 +402,10 @@
 
 
 
+
+
+
+
   <!-- CABEÇALHO -->
   <header class="top-header">
     <div class="brand-area">
@@ -302,6 +413,12 @@
       <div class="brand-sub">SUPERINTENDÊNCIA DE ESTUDOS E PROJETOS AQUAVIÁRIOS &mdash; GERÊNCIA ESPECIAL DE ESTUDOS</div>
     </div>
     <div class="actions-area">
+      <button class="btn-importar" onclick="ImportManager.abrirSeletor()" title="Importar Shapefile (.zip), KML, KMZ, GeoJSON ou GeoPackage">
+        📁 Importar Camada
+      </button>
+      <input type="file" id="input-import" style="display:none"
+             accept=".geojson,.json,.zip,.kml,.kmz,.gpkg,.geopackage"
+             multiple onchange="ImportManager.processar(this.files)">
       <button class="btn-graficos" onclick="UI.toggleGraficos()">📊 Cruzamentos & Gráficos</button>
       <button class="btn-homologacao" onclick="UI.toggleMenuAmbiente(event)">
         <span id="txt-ambiente">Homologação (Estudos)</span> &#9662;
@@ -311,6 +428,10 @@
       </button>
     </div>
   </header>
+
+
+
+
 
 
 
@@ -326,6 +447,10 @@
       <small>🔒 Estilos e campos travados no padrão homologado &bull; Bases oficiais.</small>
     </div>
   </div>
+
+
+
+
 
 
 
@@ -352,8 +477,25 @@
 
 
 
+
+
+
+
   <div id="toast"></div>
+
+  <!-- OVERLAY DE ARRASTAR ARQUIVOS (DRAG & DROP) -->
+  <div id="dropzone">
+    <div style="text-align:center;">
+      📥 Solte os arquivos espaciais aqui
+      <small>Formatos aceitos: .geojson &bull; .json &bull; .zip (Shapefile) &bull; .kml &bull; .kmz &bull; .gpkg</small>
+    </div>
+  </div>
+
   <div id="mapa" style="margin-top: 52px; height: calc(100% - 52px);"></div>
+
+
+
+
 
 
 
@@ -379,6 +521,10 @@
 
 
 
+
+
+
+
   <!-- LEGENDA DINÂMICA -->
   <div class="caixa-legenda">
     <div class="legenda-topo" onclick="document.getElementById('corpo-legenda').classList.toggle('minimizada')">
@@ -387,6 +533,10 @@
     </div>
     <div class="legenda-conteudo" id="corpo-legenda"></div>
   </div>
+
+
+
+
 
 
 
@@ -408,12 +558,20 @@
 
 
 
+
+
+
+
   <!-- PAINEL LATERAL DE CAMADAS -->
   <aside class="painel-lateral">
     <div class="painel-header">
       <h2>PAINEL DE CAMADAS</h2>
       <span id="label-status-estilo">Homologação Ativa</span>
     </div>
+
+
+
+
 
 
 
@@ -437,6 +595,10 @@
 
 
 
+
+
+
+
       <div class="secao">
         <div class="secao-titulo" onclick="UI.alternarSecao(this)"><span>Mapas de Base</span><span>&#9662;</span></div>
         <div class="secao-conteudo">
@@ -454,10 +616,18 @@
 
 
 
+
+
+
+
       <div class="secao">
         <div class="secao-titulo" onclick="UI.alternarSecao(this)"><span>Infraestrutura Aquaviária</span><span>&#9662;</span></div>
         <div class="secao-conteudo" id="grupo-infra"></div>
       </div>
+
+
+
+
 
 
 
@@ -470,9 +640,24 @@
 
 
 
+
+
+
+
       <div class="secao">
         <div class="secao-titulo" onclick="UI.alternarSecao(this)"><span>Restrições Socioambientais</span><span>&#9662;</span></div>
         <div class="secao-conteudo" id="grupo-restricoes"></div>
+
+      <div class="secao secao-importadas">
+        <div class="secao-titulo" onclick="UI.alternarSecao(this)">
+          <span>Camadas Importadas (Sessão)</span><span>&#9662;</span>
+        </div>
+        <div class="secao-conteudo" id="grupo-importadas">
+          <div id="msg-sem-importadas" style="font-size:10px; color:#94a3b8; padding:8px 4px; text-align:center;">
+            Nenhuma camada importada nesta sessão.<br>Use o botão acima ou arraste arquivos no mapa.
+          </div>
+        </div>
+      </div>
       </div>
     </div>
   </aside>
@@ -480,8 +665,16 @@
 
 
 
+
+
+
+
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+
+
+
 
 
 
@@ -520,6 +713,8 @@
              .replace(/Ãº/g, 'ú').replace(/Ã/g, 'Ú');
 
 
+
+
         const nomesProprios = [
           [/\bApu[\uFFFD\?]+/gi, 'Apuí'],
           [/\bPiau[\uFFFD\?]+/gi, 'Piauí'],
@@ -550,6 +745,8 @@
         for (const [re, val] of nomesProprios) s = s.replace(re, val);
 
 
+
+
         s = s.replace(/instala[\uFFFD\?çã]*o/gi, 'instalação')
              .replace(/p[\uFFFD\?ú]*blic[oa]/gi, (m) => m.toLowerCase().endsWith('a') ? 'pública' : 'público')
              .replace(/esta[\uFFFD\?çã]*o/gi, 'estação')
@@ -569,15 +766,21 @@
              .replace(/gest[\uFFFD\?ã]*o/gi, 'gestão');
 
 
+
+
         s = s.replace(/([a-zA-Z]+)[\uFFFD\?]+o\b/g, '$1ão')
              .replace(/([a-zA-Z]+)[\uFFFD\?]+a\b/g, '$1á')
              .replace(/([a-zA-Z]+)u[\uFFFD\?]+\b/g, '$1uí')
              .replace(/\uFFFD/g, '');
 
 
+
+
         return s.trim();
       }
     };
+
+
 
 
     /**
@@ -622,6 +825,10 @@
 
 
 
+
+
+
+
     /**
      * MÓDULO 2: CONFIGURAÇÕES E REGISTROS DE AUDITORIA
      */
@@ -640,8 +847,16 @@
 
 
 
+
+
+
+
     const CAMADAS_MAPA = {};
     const DADOS_GEOJSON_BRUTOS = {};
+
+
+
+
 
 
 
@@ -649,6 +864,10 @@
     // Inicialização do Mapa
     const mapa = L.map('mapa', { center: [-14.0, -52.0], zoom: 4, zoomControl: false });
     L.control.zoom({ position: 'bottomright' }).addTo(mapa);
+
+
+
+
 
 
 
@@ -675,6 +894,10 @@
 
 
 
+
+
+
+
     /**
      * MÓDULO 4: RENDERIZADOR DE POPUPS COM AUDITORIA
      */
@@ -687,6 +910,10 @@
 
 
 
+
+
+
+
         let linhas = '';
         for (const [chave, valor] of Object.entries(p)) {
           if (['geom', 'geometry', 'id', 'gid', 'objectid'].includes(chave.toLowerCase())) continue;
@@ -695,10 +922,18 @@
 
 
 
+
+
+
+
           if (Security.ehValido(valor)) {
             linhas += `<div class="pop-linha"><span class="pop-lbl">${Security.escapeHTML(chave)}:</span><span class="pop-val">${Security.escapeHTML(valor)}</span></div>`;
           }
         }
+
+
+
+
 
 
 
@@ -714,6 +949,10 @@
         `;
       }
     };
+
+
+
+
 
 
 
@@ -779,6 +1018,7 @@
             const picker = document.getElementById(`color-picker-${id}`);
             if (picker) picker.value = cor;
 
+
             if (CAMADAS_MAPA[id] && id !== 'instalacoes_portuarias') {
               CAMADAS_MAPA[id].eachLayer(l => {
                 if (l.setStyle) l.setStyle({ color: cor, fillColor: cor });
@@ -786,6 +1026,7 @@
             }
           }
         }
+
 
         // Aplica a paleta específica das subcamadas de outorga portuária
         if (preset.coresPortos) {
@@ -802,6 +1043,7 @@
             }
           }
         }
+
 
         this.atualizarLegenda();
         UI.toast(`Paleta aplicada: ${preset.nome}`);
@@ -854,6 +1096,7 @@
         const ind = document.getElementById(`indicador-cor-${id}`);
         if (ind && prop === 'cor' && id !== 'instalacoes_portuarias') ind.style.backgroundColor = valor;
 
+
         if (CAMADAS_MAPA[id]) {
           CAMADAS_MAPA[id].eachLayer(l => {
             if (id === 'instalacoes_portuarias') {
@@ -877,6 +1120,7 @@
         if (!PortClassification.tipos[tKey]) return;
         PortClassification.tipos[tKey].cor = novaCor;
 
+
         if (window.SUBGRUPOS_PORTOS && window.SUBGRUPOS_PORTOS[tKey]) {
           window.SUBGRUPOS_PORTOS[tKey].eachLayer(m => {
             if (m.setStyle) {
@@ -885,6 +1129,7 @@
           });
         }
 
+
         this.atualizarLegenda();
       },
       atualizarLegenda: function() {
@@ -892,13 +1137,16 @@
         if (!corpo) return;
         corpo.innerHTML = '';
 
+
         for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
           const estaAtiva = (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) || (!CAMADAS_MAPA[id] && cfg.ativa);
           if (!estaAtiva) continue;
 
+
           const l = document.createElement('div');
           l.style.marginBottom = '6px';
           l.style.width = '100%';
+
 
           if (id === 'instalacoes_portuarias') {
             let subItensHTML = '';
@@ -936,6 +1184,8 @@
         }
       }
     };
+
+
 
 
     const FilterManager = {
@@ -976,6 +1226,8 @@
         if (inputBusca) inputBusca.placeholder = cfg.placeholder;
 
 
+
+
         if (selSub) {
           selSub.innerHTML = '';
           if (cfg.opcoes && cfg.opcoes.length > 0) {
@@ -994,6 +1246,8 @@
         }
 
 
+
+
         // Ativa a camada se estiver desligada
         if (CONFIG_CAMADAS[idCamada]) {
           const chk = document.getElementById(`chk-${idCamada}`);
@@ -1002,6 +1256,8 @@
             toggleCamada(idCamada, true);
           }
         }
+
+
 
 
         this.aplicarFiltro(idCamada, "TODOS");
@@ -1018,10 +1274,14 @@
           const latlngsVisiveis = [];
 
 
+
+
           for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
             const chkSub = document.getElementById(`chk-sub-${tKey}`);
             const deveLigar = (valor === 'TODOS' || tKey === valor);
             if (chkSub) chkSub.checked = deveLigar;
+
+
 
 
             if (deveLigar) {
@@ -1034,16 +1294,22 @@
           }
 
 
+
+
           const cntEl = document.getElementById('cnt-instalacoes_portuarias');
           if (cntEl) {
             cntEl.innerText = (valor === 'TODOS' || visiveis === total) ? `(${total})` : `(${visiveis}/${total})`;
           }
 
 
+
+
           if (latlngsVisiveis.length > 0 && valor !== 'TODOS') {
             const b = L.latLngBounds(latlngsVisiveis);
             mapa.fitBounds(b, { padding: [50, 50], maxZoom: 12, animate: true, duration: 1.0 });
           }
+
+
 
 
           Styler.atualizarLegenda();
@@ -1056,6 +1322,8 @@
     };
 
 
+
+
         const DataManager = {
       atualizarTodasCamadas: function() {
         const btn = document.getElementById('btn-sync');
@@ -1063,11 +1331,15 @@
         btn.disabled = true; ico.classList.add('girando');
 
 
+
+
         const ts = new Date().getTime();
         const promessas = Object.entries(CONFIG_CAMADAS).map(([id, cfg]) => {
           const cntEl = document.getElementById(`cnt-${id}`);
           const errEl = document.getElementById(`err-${id}`);
           const chkEl = document.getElementById(`chk-${id}`);
+
+
 
 
           return fetch(`${cfg.arquivos[0]}?_t=${ts}`)
@@ -1085,7 +1357,18 @@
                 }
               });
               DADOS_GEOJSON_BRUTOS[id] = dados;
+
+              // Detecção e adequação automática de geometria caso não esteja declarada rigidamente
+              if (!cfg.tipoGeo || cfg.tipoGeo === 'auto') {
+                cfg.tipoGeo = GeomTypeDetector.detectar(dados);
+                if (cfg.tipoGeo === 'poligono' && cfg.peso > 3) cfg.peso = 1.5;
+                if (cfg.tipoGeo === 'linha' && cfg.peso > 5) cfg.peso = 2.5;
+                if (cfg.tipoGeo === 'ponto' && cfg.peso < 3) cfg.peso = 5;
+              }
+
               const opcoes = Styler.obterOpcoes(id);
+
+
 
 
               if (id === 'instalacoes_portuarias') {
@@ -1094,6 +1377,8 @@
                   if (window.SUBGRUPOS_PORTOS[tKey]) mapa.removeLayer(window.SUBGRUPOS_PORTOS[tKey]);
                   window.SUBGRUPOS_PORTOS[tKey] = L.featureGroup();
                 }
+
+
 
 
                 dados.features.forEach(f => {
@@ -1115,6 +1400,8 @@
                     }
                   }
                 });
+
+
 
 
                 CAMADAS_MAPA[id] = L.featureGroup();
@@ -1143,6 +1430,8 @@
         });
 
 
+
+
         Promise.allSettled(promessas).then(() => {
           btn.disabled = false; ico.classList.remove('girando');
           Styler.atualizarLegenda();
@@ -1150,6 +1439,8 @@
         });
       }
     };
+
+
 
 
     const SearchEngine = {
@@ -1165,9 +1456,17 @@
 
 
 
+
+
+
+
         const idCamada = document.getElementById('sel-camada-busca').value;
         const geojson = DADOS_GEOJSON_BRUTOS[idCamada];
         if (!geojson || !geojson.features) return;
+
+
+
+
 
 
 
@@ -1178,11 +1477,19 @@
 
 
 
+
+
+
+
         geojson.features.forEach(f => {
           const p = f.properties || {};
           const nome = String(p.nome || p.NOME_INSTALACAO || p.NOME_RIO || p.SIGLA_UF || p.MUNICIPIO || '');
           if (nome.toLowerCase().includes(t)) matches.push({ nome: nome, feature: f });
         });
+
+
+
+
 
 
 
@@ -1211,10 +1518,18 @@
 
 
 
+
+
+
+
         window.CAMADA_DESTAQUE = L.geoJSON(feature, {
           style: { color: '#f59e0b', weight: 6, fillOpacity: 0.5 },
           pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 12, fillColor: '#f59e0b', color: '#fff', weight: 3, fillOpacity: 1 })
         }).addTo(mapa);
+
+
+
+
 
 
 
@@ -1225,6 +1540,10 @@
         } else {
           mapa.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
         }
+
+
+
+
 
 
 
@@ -1287,6 +1606,10 @@
 
 
 
+
+
+
+
     /**
      * MÓDULO 8: GERENCIADOR DO AMBIENTE
      */
@@ -1298,6 +1621,10 @@
         const itemH = document.getElementById('item-env-homolog');
         const itemP = document.getElementById('item-env-prod');
         const lbl = document.getElementById('label-status-estilo');
+
+
+
+
 
 
 
@@ -1316,6 +1643,10 @@
         document.getElementById('drop-ambiente').classList.remove('aberto');
       }
     };
+
+
+
+
 
 
 
@@ -1349,6 +1680,10 @@
 
 
 
+
+
+
+
     /**
      * MÓDULO 10: ANALYTICS COM CHART.JS (DISTRIBUIÇÃO POR UF AUDITADA)
      */
@@ -1373,6 +1708,7 @@
           '50': 'MS', '51': 'MT', '52': 'GO', '53': 'DF'
         };
 
+
         if (p) {
           // 1. Chaves prioritárias diretas
           const chaves = ['SIGLA_UF', 'sigla_uf', 'SG_UF', 'sg_uf', 'UF', 'uf', 'ESTADO', 'estado', 'Estado', 'NM_UF', 'nm_uf', 'CD_UF', 'cd_uf', 'uf_instalacao', 'UF_INSTALACAO'];
@@ -1385,6 +1721,7 @@
               if (IBGE_UF[v]) return IBGE_UF[v];
             }
           }
+
 
           // 2. Varredura por propriedades curtas ou códigos IBGE
           for (const [k, val] of Object.entries(p)) {
@@ -1400,6 +1737,7 @@
             }
           }
 
+
           // 3. Busca de padrão em campos textuais sem regex arriscado
           const camposTexto = [p.municipio, p.MUNICIPIO, p.nome, p.NOME_INSTALACAO, p.endereco, p.ENDERECO, p.cidade, p.CIDADE];
           for (let i = 0; i < camposTexto.length; i++) {
@@ -1414,6 +1752,7 @@
             }
           }
         }
+
 
         // 4. Fallback Espacial Ponto em Polígono com a camada dados/uf.geojson
         if (f && f.geometry && f.geometry.type === 'Point' && dadosUf && dadosUf.features) {
@@ -1456,6 +1795,7 @@
           }
         }
 
+
         return 'Outros';
       },
       gerar: function() {
@@ -1463,8 +1803,10 @@
         if (!portos || !portos.features) return;
         const dadosUf = DADOS_GEOJSON_BRUTOS['uf'];
 
+
         const tipos = {};
         const ufs = {};
+
 
         portos.features.forEach(f => {
           const p = f.properties || {};
@@ -1474,9 +1816,11 @@
           else if (t.toUpperCase().includes('IP4') || t.toUpperCase().includes('PEQUENO')) t = 'IP4 (Pequeno Porte)';
           tipos[t] = (tipos[t] || 0) + 1;
 
+
           const uf = this.extrairUF(p, f, dadosUf);
           if (uf && uf !== 'NONE') ufs[uf] = (ufs[uf] || 0) + 1;
         });
+
 
         const ctxTipo = document.getElementById('grafico-portos-tipo').getContext('2d');
         if (this.chartTipo) this.chartTipo.destroy();
@@ -1489,11 +1833,13 @@
           options: { responsive: true, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } }
         });
 
+
         // Ordenação decrescente por contagem real (Top 8 estados)
         const ordenadas = Object.entries(ufs)
           .filter(i => i[0] !== 'Outros' && i[0] !== 'OUTROS' && i[0] !== 'NONE')
           .sort((a, b) => b[1] - a[1])
           .slice(0, 8);
+
 
         // Se houver registros não resolvidos, adiciona ao final se sobrar espaço
         if (ufs['Outros'] || ufs['OUTROS']) {
@@ -1502,6 +1848,7 @@
             ordenadas.push(['Outros', totalOutros]);
           }
         }
+
 
         const ctxUf = document.getElementById('grafico-portos-uf').getContext('2d');
         if (this.chartUf) this.chartUf.destroy();
@@ -1525,110 +1872,345 @@
 
 
 
-        function construirPainelLateral() {
-      for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
-        const grupo = document.getElementById(`grupo-${cfg.grupo}`);
-        if (!grupo) continue;
-        const item = document.createElement('div');
-        item.className = 'item-camada';
-        let subpaletaHTML = '';
 
-        if (id === 'instalacoes_portuarias') {
-          let listaSubHTML = '';
-          for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
-            listaSubHTML += `
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:3px 0;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <input type="color" id="subcolor-${tKey}" value="${cat.cor}" onchange="Styler.atualizarSubcamadaPorto('${tKey}', this.value)" style="width:16px; height:16px; border:none; padding:0; background:transparent; cursor:pointer;" title="Personalizar cor de ${cat.nome}">
-                  <span>${cat.nome}</span>
-                  <span class="badge-contador" id="subcnt-${tKey}"></span>
-                </div>
-                <input type="checkbox" id="chk-sub-${tKey}" checked onchange="toggleSubcamadaPorto('${tKey}', this.checked)">
-              </div>
-            `;
+
+
+        /* ============================================================
+   MÓDULO 11: DETECÇÃO AUTOMÁTICA DE GEOMETRIA
+   ============================================================ */
+    const GeomTypeDetector = {
+      detectar: function(geojson) {
+        if (!geojson || !geojson.features || !geojson.features.length) return 'ponto';
+        let pontos = 0, linhas = 0, poligonos = 0;
+        for (const f of geojson.features) {
+          const t = (f.geometry && f.geometry.type) || '';
+          if (t.indexOf('Point') !== -1) pontos++;
+          else if (t.indexOf('LineString') !== -1) linhas++;
+          else if (t.indexOf('Polygon') !== -1) poligonos++;
+        }
+        if (poligonos > 0 && poligonos >= pontos && poligonos >= linhas) return 'poligono';
+        if (linhas > 0 && linhas >= pontos) return 'linha';
+        return 'ponto';
+      }
+    };
+
+    /* ============================================================
+       MÓDULO 12: REGISTRO DINÂMICO A PARTIR DO MANIFESTO (JSON)
+       ============================================================ */
+    const LayerRegistry = {
+      paleta: [
+        '#0ea5e9','#f59e0b','#10b981','#8b5cf6','#ef4444','#06b6d4',
+        '#ec4899','#84cc16','#f97316','#6366f1','#14b8a6','#a855f7'
+      ],
+      corAleatoria: function() {
+        return this.paleta[Math.floor(Math.random() * this.paleta.length)];
+      },
+      gerarId: function(nome) {
+        return String(nome || 'camada').toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      },
+      registrar: function(item) {
+        const id = item.id || this.gerarId(item.nome || item.arquivo);
+        if (CONFIG_CAMADAS[id]) return id;
+        CONFIG_CAMADAS[id] = {
+          nome: item.nome || id,
+          grupo: item.grupo || 'importadas',
+          arquivos: [item.arquivo],
+          cor: item.cor || this.corAleatoria(),
+          opacidade: item.opacidade !== undefined ? item.opacidade : 0.85,
+          peso: item.peso || 5,
+          tipoGeo: item.tipoGeo || null,
+          ativa: item.ativa !== false,
+          camposVisiveis: item.camposVisiveis || []
+        };
+        return id;
+      },
+      carregarManifest: async function() {
+        try {
+          const r = await fetch(`dados/manifest.json?_t=${Date.now()}`);
+          if (!r.ok) throw new Error('manifest.json ausente');
+          const m = await r.json();
+          const lista = m.camadas || m.layers || [];
+          for (const item of lista) this.registrar(item);
+          console.info(`✓ Manifesto carregado: ${lista.length} camadas registradas.`);
+        } catch (e) {
+          console.info('Manifesto dados/manifest.json não localizado. Mantendo catálogo padrão estático.');
+        }
+      }
+    };
+
+    /* ============================================================
+       MÓDULO 13: IMPORTADOR MULTIFORMATO DE ARQUIVOS AD-HOC
+       ============================================================ */
+    const ImportManager = {
+      contador: 0,
+      abrirSeletor: function() {
+        const inp = document.getElementById('input-import');
+        if (inp) inp.click();
+      },
+      processar: async function(files) {
+        if (!files || !files.length) return;
+        for (const f of files) {
+          try { await this.importar(f); }
+          catch (e) { console.error(e); UI.toast('⚠️ Erro na importação: ' + e.message); }
+        }
+        const inp = document.getElementById('input-import');
+        if (inp) inp.value = '';
+      },
+      importar: async function(file) {
+        const nome = file.name;
+        const ext = nome.toLowerCase().split('.').pop();
+        UI.toast(`Processando ${nome}...`);
+        let geojson = null;
+
+        if (ext === 'geojson' || ext === 'json') {
+          geojson = JSON.parse(await file.text());
+        } else if (ext === 'zip') {
+          geojson = await shp(await file.arrayBuffer());
+        } else if (ext === 'kml') {
+          geojson = this._kmlDeTexto(await file.text());
+        } else if (ext === 'kmz') {
+          geojson = await this._lerKMZ(file);
+        } else if (ext === 'gpkg' || ext === 'geopackage') {
+          geojson = await this._lerGPKG(file);
+        } else if (ext === 'shp') {
+          throw new Error('Envie o Shapefile compactado em .zip (.shp + .dbf + .shx).');
+        } else {
+          throw new Error('Formato não suportado: .' + ext);
+        }
+
+        if (Array.isArray(geojson)) {
+          for (let i = 0; i < geojson.length; i++) {
+            this._adicionar(`${nome.replace(/\.[^.]+$/, '')}_${i + 1}`, geojson[i]);
           }
+          return;
+        }
+        this._adicionar(nome.replace(/\.[^.]+$/, ''), geojson);
+      },
+      _kmlDeTexto: function(texto) {
+        if (typeof toGeoJSON === 'undefined') throw new Error('Biblioteca toGeoJSON indisponível.');
+        const dom = new DOMParser().parseFromString(texto, 'text/xml');
+        return toGeoJSON.kml(dom);
+      },
+      _lerKMZ: async function(file) {
+        if (typeof JSZip === 'undefined') throw new Error('Biblioteca JSZip indisponível.');
+        const zip = await JSZip.loadAsync(await file.arrayBuffer());
+        const alvo = Object.keys(zip.files).find(n => n.toLowerCase().endsWith('.kml'));
+        if (!alvo) throw new Error('Nenhum arquivo .kml encontrado dentro do .kmz');
+        return this._kmlDeTexto(await zip.files[alvo].async('string'));
+      },
+      _lerGPKG: async function(file) {
+        if (typeof GeoPackageAPI === 'undefined' || typeof window.initSqlJs === 'undefined') {
+          throw new Error('Bibliotecas GeoPackage / SqlJs indisponíveis no momento.');
+        }
+        const SQL = await window.initSqlJs({
+          locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/${f}`
+        });
+        const buf = await file.arrayBuffer();
+        const gpkg = await GeoPackageAPI.open(buf, SQL);
+        const tabelas = gpkg.getFeatureTables();
+        const features = [];
+        for (const t of tabelas) {
+          const fs = gpkg.queryForGeoJSONFeaturesInTable(t);
+          fs.forEach(f => { f._gpkgTable = t; features.push(f); });
+        }
+        return { type: 'FeatureCollection', features: features };
+      },
+      _adicionar: function(nome, geojson) {
+        if (!geojson || !geojson.features || !geojson.features.length) {
+          UI.toast('⚠️ Nenhuma feição espacial encontrada em ' + nome);
+          return;
+        }
+        this.contador++;
+        const id = `imp_${this.contador}_${LayerRegistry.gerarId(nome)}`;
 
-          subpaletaHTML = `
-            <div style="margin-top:6px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; font-size:10px; display:flex; flex-direction:column; gap:4px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
-                <span style="font-weight:700; color:#0a2540;">Subcamadas de Outorga (ANTAQ):</span>
-                <span style="font-size:9px; color:#0284c7; cursor:pointer; font-weight:700;" onclick="toggleTodasSubcamadasPortos(true)">Marcar Todas</span>
+        geojson.features.forEach(f => {
+          if (f.properties) {
+            for (const [k, v] of Object.entries(f.properties)) {
+              if (typeof v === 'string') f.properties[k] = Security.repararTexto(v);
+            }
+          }
+        });
+
+        const tipoGeo = GeomTypeDetector.detectar(geojson);
+        const cor = LayerRegistry.corAleatoria();
+        const cfg = {
+          nome: nome,
+          grupo: 'importadas',
+          arquivos: [],
+          cor: cor,
+          opacidade: tipoGeo === 'poligono' ? 0.4 : (tipoGeo === 'linha' ? 0.9 : 0.95),
+          peso: tipoGeo === 'ponto' ? 5 : (tipoGeo === 'linha' ? 2.5 : 1.5),
+          tipoGeo: tipoGeo,
+          ativa: true,
+          camposVisiveis: []
+        };
+
+        CONFIG_CAMADAS[id] = cfg;
+        DADOS_GEOJSON_BRUTOS[id] = geojson;
+
+        CAMADAS_MAPA[id] = L.geoJSON(geojson, Styler.obterOpcoes(id));
+        CAMADAS_MAPA[id].addTo(mapa);
+
+        const grupoEl = document.getElementById('grupo-importadas');
+        const msgVazio = document.getElementById('msg-sem-importadas');
+        if (msgVazio) msgVazio.style.display = 'none';
+
+        if (grupoEl) {
+          construirItemCamada(id, cfg, grupoEl);
+          const cntBadge = document.getElementById(`cnt-${id}`);
+          if (cntBadge) cntBadge.innerText = `(${geojson.features.length})`;
+          const sec = grupoEl.closest('.secao');
+          if (sec) sec.classList.remove('fechado');
+        }
+
+        Styler.atualizarLegenda();
+        UI.toast(`✓ ${geojson.features.length} feições (${tipoGeo}) importadas de "${nome}"`);
+
+        try {
+          const b = CAMADAS_MAPA[id].getBounds();
+          if (b.isValid()) mapa.fitBounds(b, { padding: [40, 40], maxZoom: 14 });
+        } catch (e) {}
+      }
+    };
+
+    /* Drag & drop no mapa */
+    (function(){
+      const dz = document.getElementById('dropzone');
+      let dragDepth = 0;
+      window.addEventListener('dragenter', e => {
+        if (!e.dataTransfer) return;
+        dragDepth++;
+        if (dz) dz.classList.add('ativo');
+      });
+      window.addEventListener('dragover', e => e.preventDefault());
+      window.addEventListener('dragleave', e => {
+        dragDepth = Math.max(0, dragDepth - 1);
+        if (dragDepth === 0 && dz) dz.classList.remove('ativo');
+      });
+      window.addEventListener('drop', e => {
+        e.preventDefault();
+        dragDepth = 0;
+        if (dz) dz.classList.remove('ativo');
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+          ImportManager.processar(e.dataTransfer.files);
+        }
+      });
+    })();
+
+    function construirItemCamada(id, cfg, grupoEl) {
+      if (!grupoEl) return;
+      const item = document.createElement('div');
+      item.className = 'item-camada';
+      let subpaletaHTML = '';
+
+      if (id === 'instalacoes_portuarias') {
+        let listaSubHTML = '';
+        for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
+          listaSubHTML += `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:3px 0;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <input type="color" id="subcolor-${tKey}" value="${cat.cor}" onchange="Styler.atualizarSubcamadaPorto('${tKey}', this.value)" style="width:16px; height:16px; border:none; padding:0; background:transparent; cursor:pointer;" title="Personalizar cor de ${cat.nome}">
+                <span>${cat.nome}</span>
+                <span class="badge-contador" id="subcnt-${tKey}"></span>
               </div>
-              ${listaSubHTML}
+              <input type="checkbox" id="chk-sub-${tKey}" checked onchange="toggleSubcamadaPorto('${tKey}', this.checked)">
             </div>
           `;
         }
 
-        const ehPorto = (id === 'instalacoes_portuarias');
-        const indicadorHTML = ehPorto
-          ? `<span class="legenda-cor" id="indicador-cor-${id}" style="display:inline-flex; align-items:center; justify-content:center; background:#0a2540; color:#38bdf8; font-size:11px;" onclick="toggleGavetaEstilo('${id}')" title="Camada Multicategórica - Clique para ajustar estilo">⚓</span>`
-          : `<span class="legenda-cor" id="indicador-cor-${id}" style="background:${cfg.cor};" onclick="toggleGavetaEstilo('${id}')" title="Clique para personalizar estilo"></span>`;
-
-        const gavetaConteudo = ehPorto
-          ? `
-            <div style="font-size:10px; color:#64748b; margin-bottom:6px; line-height:1.3;">
-              💡 <i>Camada multicategórica: as cores são definidas individualmente nos seletores de cor de cada outorga acima.</i>
+        subpaletaHTML = `
+          <div style="margin-top:6px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; font-size:10px; display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+              <span style="font-weight:700; color:#0a2540;">Subcamadas de Outorga (ANTAQ):</span>
+              <span style="font-size:9px; color:#0284c7; cursor:pointer; font-weight:700;" onclick="toggleTodasSubcamadasPortos(true)">Marcar Todas</span>
             </div>
-            <div class="linha-ajuste">
-              <span>Opacidade Geral:</span>
-              <input type="range" min="0.1" max="1" step="0.05" value="${cfg.opacidade}" oninput="this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'; Styler.atualizar('${id}', 'opacidade', parseFloat(this.value))">
-              <span style="min-width:35px; text-align:right;">${Math.round(cfg.opacidade * 100)}%</span>
-            </div>
-            <div class="linha-ajuste">
-              <span>Tamanho dos Pontos:</span>
-              <input type="range" min="2" max="15" step="1" value="${cfg.peso}" oninput="this.nextElementSibling.innerText = this.value + 'px'; Styler.atualizar('${id}', 'peso', parseInt(this.value))">
-              <span style="min-width:35px; text-align:right;">${cfg.peso}px</span>
-            </div>
-          `
-          : `
-            <div class="linha-ajuste">
-              <span>Cor:</span>
-              <input type="color" id="color-picker-${id}" value="${cfg.cor}" onchange="Styler.atualizar('${id}', 'cor', this.value)">
-            </div>
-            <div class="linha-ajuste">
-              <span>Opacidade:</span>
-              <input type="range" min="0.1" max="1" step="0.05" value="${cfg.opacidade}" oninput="this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'; Styler.atualizar('${id}', 'opacidade', parseFloat(this.value))">
-              <span style="min-width:35px; text-align:right;">${Math.round(cfg.opacidade * 100)}%</span>
-            </div>
-            <div class="linha-ajuste">
-              <span>Espessura / Raio:</span>
-              <input type="range" min="1" max="12" step="0.5" value="${cfg.peso}" oninput="this.nextElementSibling.innerText = this.value + 'px'; Styler.atualizar('${id}', 'peso', parseFloat(this.value))">
-              <span style="min-width:35px; text-align:right;">${cfg.peso}px</span>
-            </div>
-          `;
-
-        item.innerHTML = `
-          <div class="item-camada-principal">
-            <div class="camada-info">
-              ${indicadorHTML}
-              <span>${cfg.nome}</span>
-              <span class="badge-contador" id="cnt-${id}"></span>
-              <span class="badge-erro" id="err-${id}"></span>
-            </div>
-            <div class="camada-acoes">
-              <button class="btn-acao-icone" title="Personalizar Estilo" onclick="toggleGavetaEstilo('${id}')">🎨</button>
-              <button class="btn-acao-icone" title="Tabela de Atributos" onclick="abrirTabela('${id}')">📋</button>
-              <button class="btn-acao-icone" title="Centralizar" onclick="zoomCamada('${id}')">🔍</button>
-              <label class="switch">
-                <input type="checkbox" id="chk-${id}" ${cfg.ativa ? 'checked' : ''} onchange="toggleCamada('${id}', this.checked)">
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-          ${subpaletaHTML}
-          <div class="gaveta-painel" id="gaveta-${id}">
-            ${gavetaConteudo}
+            ${listaSubHTML}
           </div>
         `;
-        grupo.appendChild(item);
+      }
+
+      const ehPorto = (id === 'instalacoes_portuarias');
+      const indicadorHTML = ehPorto
+        ? `<span class="legenda-cor" id="indicador-cor-${id}" style="display:inline-flex; align-items:center; justify-content:center; background:#0a2540; color:#38bdf8; font-size:11px;" onclick="toggleGavetaEstilo('${id}')" title="Camada Multicategórica - Clique para ajustar estilo">⚓</span>`
+        : `<span class="legenda-cor" id="indicador-cor-${id}" style="background:${cfg.cor};" onclick="toggleGavetaEstilo('${id}')" title="Clique para personalizar estilo"></span>`;
+
+      const gavetaConteudo = ehPorto
+        ? `
+          <div style="font-size:10px; color:#64748b; margin-bottom:6px; line-height:1.3;">
+            💡 <i>Camada multicategórica: as cores são definidas individualmente nos seletores de cor de cada outorga acima.</i>
+          </div>
+          <div class="linha-ajuste">
+            <span>Opacidade Geral:</span>
+            <input type="range" min="0.1" max="1" step="0.05" value="${cfg.opacidade}" oninput="this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'; Styler.atualizar('${id}', 'opacidade', parseFloat(this.value))">
+            <span style="min-width:35px; text-align:right;">${Math.round(cfg.opacidade * 100)}%</span>
+          </div>
+          <div class="linha-ajuste">
+            <span>Tamanho dos Pontos:</span>
+            <input type="range" min="2" max="15" step="1" value="${cfg.peso}" oninput="this.nextElementSibling.innerText = this.value + 'px'; Styler.atualizar('${id}', 'peso', parseInt(this.value))">
+            <span style="min-width:35px; text-align:right;">${cfg.peso}px</span>
+          </div>
+        `
+        : `
+          <div class="linha-ajuste">
+            <span>Cor:</span>
+            <input type="color" id="color-picker-${id}" value="${cfg.cor}" onchange="Styler.atualizar('${id}', 'cor', this.value)">
+          </div>
+          <div class="linha-ajuste">
+            <span>Opacidade:</span>
+            <input type="range" min="0.1" max="1" step="0.05" value="${cfg.opacidade}" oninput="this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'; Styler.atualizar('${id}', 'opacidade', parseFloat(this.value))">
+            <span style="min-width:35px; text-align:right;">${Math.round(cfg.opacidade * 100)}%</span>
+          </div>
+          <div class="linha-ajuste">
+            <span>Espessura / Raio:</span>
+            <input type="range" min="1" max="12" step="0.5" value="${cfg.peso}" oninput="this.nextElementSibling.innerText = this.value + 'px'; Styler.atualizar('${id}', 'peso', parseFloat(this.value))">
+            <span style="min-width:35px; text-align:right;">${cfg.peso}px</span>
+          </div>
+        `;
+
+      item.innerHTML = `
+        <div class="item-camada-principal">
+          <div class="camada-info">
+            ${indicadorHTML}
+            <span>${cfg.nome}</span>
+            <span class="badge-contador" id="cnt-${id}"></span>
+            <span class="badge-erro" id="err-${id}"></span>
+          </div>
+          <div class="camada-acoes">
+            <button class="btn-acao-icone" title="Personalizar Estilo" onclick="toggleGavetaEstilo('${id}')">🎨</button>
+            <button class="btn-acao-icone" title="Tabela de Atributos" onclick="abrirTabela('${id}')">📋</button>
+            <button class="btn-acao-icone" title="Centralizar" onclick="zoomCamada('${id}')">🔍</button>
+            <label class="switch">
+              <input type="checkbox" id="chk-${id}" ${cfg.ativa ? 'checked' : ''} onchange="toggleCamada('${id}', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        ${subpaletaHTML}
+        <div class="gaveta-painel" id="gaveta-${id}">
+          ${gavetaConteudo}
+        </div>
+      `;
+      grupoEl.appendChild(item);
+    }
+
+    function construirPainelLateral() {
+      for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
+        const grupo = document.getElementById(`grupo-${cfg.grupo}`);
+        if (!grupo) continue;
+        construirItemCamada(id, cfg, grupo);
       }
     }
+
 
 
     function toggleGavetaEstilo(id) {
       const g = document.getElementById(`gaveta-${id}`);
       if (g) g.classList.toggle('aberta');
     }
+
+
 
 
     function toggleSubcamadaPorto(subtipo, ligar) {
@@ -1641,9 +2223,13 @@
       }
 
 
+
+
       let ativos = 0;
       let ligadosChaves = [];
       const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
+
+
 
 
       for (const [tKey, subFg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
@@ -1655,10 +2241,14 @@
       }
 
 
+
+
       const cntEl = document.getElementById('cnt-instalacoes_portuarias');
       if (cntEl) {
         cntEl.innerText = (ativos === total) ? `(${total})` : `(${ativos}/${total})`;
       }
+
+
 
 
       const sel = document.getElementById('filtro-subtipo-dinamico');
@@ -1669,8 +2259,12 @@
       }
 
 
+
+
       Styler.atualizarLegenda();
     }
+
+
 
 
     function toggleTodasSubcamadasPortos(ligar) {
@@ -1688,12 +2282,18 @@
       if (cntEl) cntEl.innerText = ligar ? `(${total})` : `(0/${total})`;
 
 
+
+
       const sel = document.getElementById('filtro-subtipo-dinamico');
       if (sel) sel.value = ligar ? 'TODOS' : '';
 
 
+
+
       Styler.atualizarLegenda();
     }
+
+
 
 
     function toggleCamada(id, ligar) {
@@ -1703,10 +2303,14 @@
     }
 
 
+
+
     function zoomCamada(id) {
       if (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) mapa.fitBounds(CAMADAS_MAPA[id].getBounds());
       else UI.toast("Ative a camada para aproximar.");
     }
+
+
 
 
     function abrirTabela(id) {
@@ -1723,12 +2327,16 @@
       thead.innerHTML = th + '</tr>';
 
 
+
+
       g.features.slice(0, 60).forEach(f => {
         let tr = `<tr><td style="text-align:center;"><button style="background:#0284c7; color:#fff; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" onclick='SearchEngine.aproximar(${JSON.stringify(f)})'>📍</button></td>`;
         cols.forEach(c => tr += `<td>${Security.escapeHTML(f.properties[c])}</td>`);
         tbody.innerHTML += tr + '</tr>';
       });
     }
+
+
 
 
     window.addEventListener('click', (e) => {
@@ -1739,11 +2347,18 @@
 
 
 
+
+
+
+
     // Inicialização
-    construirPainelLateral();
-    FilterManager.aoMudarCamada("instalacoes_portuarias");
-    Styler.atualizarLegenda();
-    DataManager.atualizarTodasCamadas();
+    (async function init() {
+      await LayerRegistry.carregarManifest();
+      construirPainelLateral();
+      FilterManager.aoMudarCamada("instalacoes_portuarias");
+      Styler.atualizarLegenda();
+      DataManager.atualizarTodasCamadas();
+    })();
   </script>
 </body>
 </html>
