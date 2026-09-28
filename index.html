@@ -1271,12 +1271,16 @@
         const cfg = CONFIG_CAMADAS[idCamada] || {};
 
         if (inputBusca) {
-          inputBusca.placeholder = `Buscar em ${cfg.nome || 'camada'} por atributos...`;
+          inputBusca.placeholder = `Buscar em ${cfg.nome || 'camada'}...`;
+          inputBusca.value = '';
+          const listaEl = document.getElementById('resultados-busca');
+          if (listaEl) listaEl.style.display = 'none';
         }
 
         if (selSub) {
-          selSub.innerHTML = '<option value="TODOS">Todos os Itens</option>';
+          // EXCLUSIVIDADE: Somente Instalações Portuárias possui o segundo seletor de subdivisões regulatórias
           if (idCamada === 'instalacoes_portuarias') {
+            selSub.innerHTML = '<option value="TODOS">Todos os Regimes</option>';
             selSub.style.display = 'inline-block';
             for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
               const el = document.createElement('option');
@@ -1284,52 +1288,14 @@
               el.innerText = cat.nome;
               selSub.appendChild(el);
             }
+            selSub.value = window.FILTRO_PORTO_ATUAL || "TODOS";
           } else {
-            // Descoberta dinâmica de categorias para qualquer camada existente ou nova
-            const g = DADOS_GEOJSON_BRUTOS[idCamada];
-            if (g && g.features && g.features.length) {
-              const colunasCandidatas = Object.keys(g.features[0].properties || {}).filter(k => {
-                const kl = k.toLowerCase();
-                return !['id', 'gid', 'geom', 'geometry', 'objectid', 'cod', 'codigo'].includes(kl);
-              });
-
-              // Acha a melhor coluna categórica (com entre 2 e 25 valores distintos)
-              let melhorCol = null;
-              let melhoresValores = [];
-              for (const col of colunasCandidatas) {
-                const unicos = new Set();
-                for (const f of g.features) {
-                  const val = f.properties ? f.properties[col] : null;
-                  if (Security.ehValido(val)) unicos.add(String(val).trim());
-                  if (unicos.size > 25) break;
-                }
-                if (unicos.size >= 2 && unicos.size <= 25) {
-                  melhorCol = col;
-                  melhoresValores = Array.from(unicos).sort();
-                  break;
-                }
-              }
-
-              if (melhorCol && melhoresValores.length) {
-                this.colunaSubfiltroDinamico = melhorCol;
-                selSub.style.display = 'inline-block';
-                melhoresValores.forEach(v => {
-                  const el = document.createElement('option');
-                  el.value = v;
-                  el.innerText = `${melhorCol}: ${v}`;
-                  selSub.appendChild(el);
-                });
-              } else {
-                this.colunaSubfiltroDinamico = null;
-                selSub.style.display = 'none';
-              }
-            } else {
-              selSub.style.display = 'none';
-            }
+            selSub.style.display = 'none';
+            selSub.innerHTML = '';
           }
-          selSub.value = "TODOS";
         }
 
+        // Ativa a camada se estiver desligada
         if (CONFIG_CAMADAS[idCamada]) {
           const chk = document.getElementById(`chk-${idCamada}`);
           if (chk && !chk.checked) {
@@ -1338,7 +1304,9 @@
           }
         }
 
-        this.aplicarFiltro(idCamada, "TODOS");
+        if (idCamada === 'instalacoes_portuarias') {
+          this.aplicarFiltro(idCamada, window.FILTRO_PORTO_ATUAL || "TODOS");
+        }
       },
       aoMudarSubfiltro: function(valor) {
         const idCamada = document.getElementById('sel-camada-busca').value;
@@ -1594,8 +1562,17 @@
 
         geojson.features.forEach(f => {
           const p = f.properties || {};
-          const nome = String(p.nome || p.NOME_INSTALACAO || p.NOME_RIO || p.SIGLA_UF || p.MUNICIPIO || '');
-          if (nome.toLowerCase().includes(t)) matches.push({ nome: nome, feature: f });
+          let rotulo = p.nome || p.NOME_INSTALACAO || p.NOME_UC || p.terrai_nom || p.NOME_RIO || p.SIGLA_UF || p.MUNICIPIO || '';
+          let encontrou = false;
+          for (const [k, v] of Object.entries(p)) {
+            if (['geom', 'geometry', 'id', 'gid', 'objectid', '_gpkgtable'].includes(k.toLowerCase())) continue;
+            if (v !== undefined && v !== null && String(v).toLowerCase().includes(t)) {
+              encontrou = true;
+              if (!rotulo) rotulo = `${k}: ${v}`;
+              break;
+            }
+          }
+          if (encontrou) matches.push({ nome: String(rotulo), feature: f });
         });
 
 
