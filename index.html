@@ -544,16 +544,25 @@
   <!-- TABELA DE ATRIBUTOS -->
   <div class="painel-tabela-atributos" id="painel-tabela">
     <div class="tabela-header">
-      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
         <span id="titulo-tabela-camada">Tabela de Atributos</span>
-        <input type="text" id="filtro-busca-tabela" placeholder="Buscar na tabela..." oninput="TabelaManager.filtrar(this.value)" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid #38bdf8; background:#0f172a; color:#fff; width:180px;">
+        <select id="filtro-porto-tabela" onchange="TabelaManager.aoMudarFiltroPorto(this.value)" style="display:none; padding:3px 6px; font-size:11px; border-radius:4px; border:1px solid #0284c7; background:#0f172a; color:#fff;" title="Filtrar por Regime Portuário">
+          <option value="TODOS">Todos os Regimes</option>
+          <option value="PUB">Portos Públicos</option>
+          <option value="TUP">Terminais de Uso Privado (TUP)</option>
+          <option value="IP4">Instalações de Pequeno Porte (IP4)</option>
+          <option value="ETC">Estações de Transbordo (ETC)</option>
+          <option value="OUTROS">Outras Outorgas / Apoio</option>
+        </select>
+        <input type="text" id="filtro-busca-tabela" placeholder="Buscar na tabela..." oninput="TabelaManager.filtrar(this.value)" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid #38bdf8; background:#0f172a; color:#fff; width:160px;">
       </div>
-      <div style="display:flex; align-items:center; gap:10px;">
+      <div style="display:flex; align-items:center; gap:8px;">
         <div id="paginacao-tabela-controles" style="display:flex; align-items:center; gap:6px; font-size:11px;">
           <button onclick="TabelaManager.anterior()" style="padding:2px 7px; background:#0284c7; color:#fff; border:none; border-radius:3px; cursor:pointer;" title="Página Anterior">◀ Anterior</button>
           <span id="info-paginacao-tabela" style="font-weight:400; color:#cbd5e1;">Pág 1</span>
           <button onclick="TabelaManager.proximo()" style="padding:2px 7px; background:#0284c7; color:#fff; border:none; border-radius:3px; cursor:pointer;" title="Próxima Página">Próximo ▶</button>
         </div>
+        <button onclick="ExportManager.exportarCSV()" style="padding:2px 8px; background:#10b981; color:#fff; border:none; border-radius:3px; cursor:pointer; font-size:11px; font-weight:600;" title="Exportar dados filtrados da tabela para Excel (CSV)">📥 CSV</button>
         <span style="cursor:pointer; font-size:14px; margin-left:8px; font-weight:bold;" onclick="UI.fecharTabela()" title="Fechar Tabela">&times; Fechar</span>
       </div>
     </div>
@@ -851,7 +860,8 @@
       regioes: { nome: "Regiões do Brasil", grupo: "limites", arquivos: ["dados/regioes.geojson"], cor: "#818cf8", opacidade: 0.7, peso: 1.5, tipoGeo: "poligono_linha", ativa: true, camposVisiveis: [] },
       pais: { nome: "Limite Nacional", grupo: "limites", arquivos: ["dados/pais.geojson"], cor: "#cbd5e1", opacidade: 0.5, peso: 2, tipoGeo: "poligono_linha", ativa: false, camposVisiveis: [] },
       tis_poligonais: { nome: "Terras Indígenas (FUNAI)", grupo: "restricoes", arquivos: ["dados/tis_poligonais.geojson"], cor: "#ef4444", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: [] },
-      estados_amazonia_legal: { nome: "Estados da Amazônia Legal", grupo: "restricoes", arquivos: ["dados/estados_amazonia_legal.geojson"], cor: "#059669", opacidade: 0.1, peso: 2, tipoGeo: "poligono_tracejado", ativa: true, camposVisiveis: [] }
+      estados_amazonia_legal: { nome: "Estados da Amazônia Legal", grupo: "restricoes", arquivos: ["dados/estados_amazonia_legal.geojson"], cor: "#059669", opacidade: 0.1, peso: 2, tipoGeo: "poligono_tracejado", ativa: true, camposVisiveis: [] },
+      unidades_conservacao: { nome: "Unidades de Conservação (ICMBio)", grupo: "restricoes", arquivos: ["dados/unidades_conservacao.geojson"], cor: "#15803d", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: [] }
     };
 
 
@@ -1326,6 +1336,15 @@
           if (valor !== 'TODOS') {
             const nomeFiltro = PortClassification.tipos[valor]?.nome || valor;
             UI.toast(`Filtro [Portos]: ${nomeFiltro} (${visiveis} ativos visíveis).`);
+          window.FILTRO_PORTO_ATUAL = valor;
+          if (TabelaManager.camadaAtualId === 'instalacoes_portuarias' && document.getElementById('painel-tabela').classList.contains('aberto')) {
+            const selP = document.getElementById('filtro-porto-tabela');
+            if (selP) selP.value = valor;
+            TabelaManager.filtroPorto = valor;
+            TabelaManager.pagina = 1;
+            TabelaManager.aplicarFiltrosInternos();
+            TabelaManager.renderizar();
+          }
           }
         }
       }
@@ -1937,23 +1956,110 @@
         return id;
       },
       carregarManifest: async function() {
-        try {
-          const r = await fetch(`dados/manifest.json?_t=${Date.now()}`);
-          if (!r.ok) throw new Error('manifest.json ausente');
-          const m = await r.json();
-          const lista = m.camadas || m.layers || [];
-          for (const item of lista) this.registrar(item);
-          console.info(`✓ Manifesto carregado: ${lista.length} camadas registradas.`);
-        } catch (e) {
-          console.info('Manifesto dados/manifest.json não localizado. Mantendo catálogo padrão estático.');
+        const caminhos = [
+          'dados/manifest.json',
+          'dados/manifest_teste.json',
+          'dados/manifest_test.json',
+          'manifest.json',
+          'manifest_teste.json',
+          'manifest_test.json'
+        ];
+        for (const c of caminhos) {
+          try {
+            const r = await fetch(`${c}?_t=${Date.now()}`);
+            if (r.ok) {
+              const m = await r.json();
+              const lista = m.camadas || m.layers || [];
+              for (const item of lista) this.registrar(item);
+              console.info(`✓ Manifesto carregado com sucesso de [${c}]: ${lista.length} camadas registradas.`);
+              return;
+            }
+          } catch (e) {}
         }
+        console.info('Nenhum manifesto externo localizado. Operando com o catálogo padrão nativo.');
       }
     };
 
     /* ============================================================
        MÓDULO 13: IMPORTADOR MULTIFORMATO DE ARQUIVOS AD-HOC
        ============================================================ */
+    /* ============================================================
+       MÓDULO DE EXPORTAÇÃO DE CAMADAS E TABELAS
+       ============================================================ */
+    const ExportManager = {
+      exportarGeoJSON: function(id) {
+        const dados = DADOS_GEOJSON_BRUTOS[id];
+        if (!dados || !dados.features || !dados.features.length) {
+          UI.toast("⚠️ Nenhum dado carregado para exportar nesta camada.");
+          return;
+        }
+        const cfg = CONFIG_CAMADAS[id] || {};
+        const slug = String(cfg.nome || id).toLowerCase().replace(/[^a-z0-9]+/g, '_');
+        const nomeArquivo = `${slug}_${new Date().toISOString().slice(0,10)}.geojson`;
+        const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/geo+json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = nomeArquivo;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        UI.toast(`💾 Camada exportada: ${nomeArquivo}`);
+      },
+      exportarCSV: function() {
+        if (!TabelaManager.camadaAtualId || !TabelaManager.filtradas.length) {
+          UI.toast("⚠️ Nenhum dado na tabela para exportar.");
+          return;
+        }
+        const cols = TabelaManager.colunas;
+        const linhas = [];
+        linhas.push(cols.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';'));
+
+        TabelaManager.filtradas.forEach(f => {
+          const p = f.properties || {};
+          const row = cols.map(c => {
+            const v = p[c] !== undefined && p[c] !== null ? p[c] : '';
+            return `"${String(v).replace(/"/g, '""')}"`;
+          });
+          linhas.push(row.join(';'));
+        });
+
+        const csvContent = '﻿' + linhas.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const slug = String(TabelaManager.camadaAtualId).toLowerCase().replace(/[^a-z0-9]+/g, '_');
+        a.href = url; a.download = `tabela_${slug}_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        UI.toast(`📥 CSV exportado com ${TabelaManager.filtradas.length} linhas.`);
+      }
+    };
+
     const ImportManager = {
+      excluir: function(id) {
+        const nome = CONFIG_CAMADAS[id]?.nome || id;
+        if (!confirm(`Deseja realmente remover a camada importada "${nome}"?`)) return;
+
+        if (CAMADAS_MAPA[id]) {
+          if (mapa.hasLayer(CAMADAS_MAPA[id])) mapa.removeLayer(CAMADAS_MAPA[id]);
+          delete CAMADAS_MAPA[id];
+        }
+        delete DADOS_GEOJSON_BRUTOS[id];
+        delete CONFIG_CAMADAS[id];
+
+        const itemEl = document.getElementById(`item-camada-${id}`);
+        if (itemEl) itemEl.remove();
+
+        const grupoEl = document.getElementById('grupo-importadas');
+        if (grupoEl && !grupoEl.querySelectorAll('.item-camada').length) {
+          const msgVazio = document.getElementById('msg-sem-importadas');
+          if (msgVazio) msgVazio.style.display = 'block';
+        }
+
+        if (TabelaManager.camadaAtualId === id) UI.fecharTabela();
+
+        Styler.atualizarLegenda();
+        UI.toast(`🗑️ Camada "${nome}" removida.`);
+      },
       contador: 0,
       abrirSeletor: function() {
         const inp = document.getElementById('input-import');
@@ -2123,6 +2229,7 @@
       if (!grupoEl) return;
       const item = document.createElement('div');
       item.className = 'item-camada';
+      item.id = `item-camada-${id}`;
       let subpaletaHTML = '';
 
       if (id === 'instalacoes_portuarias') {
@@ -2200,7 +2307,9 @@
           <div class="camada-acoes">
             <button class="btn-acao-icone" title="Personalizar Estilo" onclick="toggleGavetaEstilo('${id}')">🎨</button>
             <button class="btn-acao-icone" title="Tabela de Atributos" onclick="abrirTabela('${id}')">📋</button>
-            <button class="btn-acao-icone" title="Centralizar" onclick="zoomCamada('${id}')">🔍</button>
+            <button class="btn-acao-icone" title="Centralizar no Mapa" onclick="zoomCamada('${id}')">🔍</button>
+            <button class="btn-acao-icone" title="Exportar Camada (GeoJSON)" onclick="ExportManager.exportarGeoJSON('${id}')">💾</button>
+            ${cfg.grupo === 'importadas' ? `<button class="btn-acao-icone" title="Excluir Camada Importada" style="color:#ef4444;" onclick="ImportManager.excluir('${id}')">🗑️</button>` : ''}
             <label class="switch">
               <input type="checkbox" id="chk-${id}" ${cfg.ativa ? 'checked' : ''} onchange="toggleCamada('${id}', this.checked)">
               <span class="slider"></span>
@@ -2340,6 +2449,8 @@
       colunas: [],
       pagina: 1,
       porPagina: 50,
+      filtroPorto: 'TODOS',
+      termoBusca: '',
 
       abrir: function(id) {
         const g = DADOS_GEOJSON_BRUTOS[id];
@@ -2349,34 +2460,77 @@
         }
         this.camadaAtualId = id;
         this.features = g.features;
-        this.filtradas = g.features;
         this.pagina = 1;
+        this.termoBusca = '';
 
         const inp = document.getElementById('filtro-busca-tabela');
         if (inp) inp.value = '';
 
+        // Sincronizar seletor de regime portuário
+        const selPorto = document.getElementById('filtro-porto-tabela');
+        if (id === 'instalacoes_portuarias') {
+          if (selPorto) {
+            selPorto.style.display = 'inline-block';
+            const valAtual = window.FILTRO_PORTO_ATUAL || document.getElementById('filtro-subtipo-dinamico')?.value || 'TODOS';
+            selPorto.value = valAtual;
+            this.filtroPorto = valAtual;
+          }
+        } else {
+          if (selPorto) selPorto.style.display = 'none';
+          this.filtroPorto = 'TODOS';
+        }
+
         const amostra = g.features[0].properties || {};
         this.colunas = Object.keys(amostra).filter(c => !['geom', 'geometry', 'id', '_gpkgtable'].includes(c.toLowerCase())).slice(0, 15);
 
+        this.aplicarFiltrosInternos();
         document.getElementById('painel-tabela').classList.add('aberto');
         this.renderizar();
       },
 
+      aoMudarFiltroPorto: function(tipo) {
+        this.filtroPorto = tipo;
+        this.pagina = 1;
+        // Sincroniza com o mapa se desejar
+        const selSub = document.getElementById('filtro-subtipo-dinamico');
+        if (selSub && selSub.value !== tipo) {
+          selSub.value = tipo;
+          FilterManager.aoMudarSubfiltro(tipo);
+        }
+        this.aplicarFiltrosInternos();
+        this.renderizar();
+      },
+
       filtrar: function(termo) {
-        const t = (termo || '').toLowerCase().trim();
-        if (!t) {
-          this.filtradas = this.features;
-        } else {
-          this.filtradas = this.features.filter(f => {
+        this.termoBusca = (termo || '').toLowerCase().trim();
+        this.pagina = 1;
+        this.aplicarFiltrosInternos();
+        this.renderizar();
+      },
+
+      aplicarFiltrosInternos: function() {
+        let base = this.features;
+
+        // Filtro por regime portuario
+        if (this.camadaAtualId === 'instalacoes_portuarias' && this.filtroPorto && this.filtroPorto !== 'TODOS') {
+          base = base.filter(f => {
+            const cat = PortClassification.classificar(f.properties || {});
+            return cat.id === this.filtroPorto;
+          });
+        }
+
+        // Filtro por termo de busca de texto
+        if (this.termoBusca) {
+          base = base.filter(f => {
             const p = f.properties || {};
             for (const c of this.colunas) {
-              if (String(p[c] || '').toLowerCase().includes(t)) return true;
+              if (String(p[c] || '').toLowerCase().includes(this.termoBusca)) return true;
             }
             return false;
           });
         }
-        this.pagina = 1;
-        this.renderizar();
+
+        this.filtradas = base;
       },
 
       anterior: function() {
@@ -2407,9 +2561,14 @@
 
         const titEl = document.getElementById('titulo-tabela-camada');
         if (titEl) {
+          let extra = '';
+          if (this.camadaAtualId === 'instalacoes_portuarias' && this.filtroPorto !== 'TODOS') {
+            const nomeRegime = PortClassification.tipos[this.filtroPorto]?.nome || this.filtroPorto;
+            extra = ` [${nomeRegime}]`;
+          }
           titEl.innerText = total !== totalGeral
-            ? `Tabela: ${nomeCamada} (${total} de ${totalGeral} itens)`
-            : `Tabela: ${nomeCamada} (${totalGeral} itens)`;
+            ? `Tabela: ${nomeCamada}${extra} (${total} de ${totalGeral} itens)`
+            : `Tabela: ${nomeCamada}${extra} (${totalGeral} itens)`;
         }
 
         const infoEl = document.getElementById('info-paginacao-tabela');
@@ -2426,7 +2585,7 @@
 
         const tbody = document.getElementById('tbody-atributos');
         if (!dadosPagina.length) {
-          tbody.innerHTML = `<tr><td colspan="${this.colunas.length + 1}" style="text-align:center; padding:18px; color:#64748b;">Nenhum registro encontrado.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="${this.colunas.length + 1}" style="text-align:center; padding:18px; color:#64748b;">Nenhum registro correspondente ao filtro.</td></tr>`;
           return;
         }
 
