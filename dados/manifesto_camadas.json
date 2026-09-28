@@ -1,4 +1,14 @@
 {
+  "id": "unidades_conservacao",
+  "arquivo": "dados/unidades_conservacao.geojson",
+  "nome": "Unidades de Conservação (ICMBio)",
+  "grupo": "restricoes",
+  "cor": "#15803d",
+  "peso": 1.5,
+  "opacidade": 0.35,
+  "ativa": true
+}
+{
   "id": "portos_impacto_ambiental",
   "nome": "Portos em Área de Restrição Ambiental",
   "categoria": "RESTRIÇÕES SOCIOAMBIENTAIS",
