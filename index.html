@@ -2001,21 +2001,31 @@
         return this._kmlDeTexto(await zip.files[alvo].async('string'));
       },
       _lerGPKG: async function(file) {
-        if (typeof GeoPackageAPI === 'undefined' || typeof window.initSqlJs === 'undefined') {
-          throw new Error('Bibliotecas GeoPackage / SqlJs indisponíveis no momento.');
+        const gp = window.GeoPackage || (typeof GeoPackage !== 'undefined' ? GeoPackage : null);
+        if (!gp || !gp.GeoPackageAPI) {
+          throw new Error('Biblioteca GeoPackage / WebAssembly indisponível. Recomendação: Exporte a camada no QGIS como GeoJSON (.geojson) ou Shapefile compactado (.zip).');
         }
-        const SQL = await window.initSqlJs({
-          locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/${f}`
-        });
-        const buf = await file.arrayBuffer();
-        const gpkg = await GeoPackageAPI.open(buf, SQL);
-        const tabelas = gpkg.getFeatureTables();
-        const features = [];
-        for (const t of tabelas) {
-          const fs = gpkg.queryForGeoJSONFeaturesInTable(t);
-          fs.forEach(f => { f._gpkgTable = t; features.push(f); });
+        try {
+          if (typeof gp.setSqljsWasmLocateFile === 'function') {
+            gp.setSqljsWasmLocateFile(f => `https://cdn.jsdelivr.net/npm/@ngageoint/geopackage@4.2.3/dist/${f}`);
+          }
+          const buf = await file.arrayBuffer();
+          const uint8 = new Uint8Array(buf);
+          const gpkg = await gp.GeoPackageAPI.open(uint8);
+          const tabelas = gpkg.getFeatureTables();
+          if (!tabelas || !tabelas.length) throw new Error('Nenhuma tabela vetorial encontrada no GeoPackage.');
+          const features = [];
+          for (const t of tabelas) {
+            const fs = gpkg.queryForGeoJSONFeaturesInTable(t);
+            if (fs && fs.length) {
+              fs.forEach(f => { f._gpkgTable = t; features.push(f); });
+            }
+          }
+          return { type: 'FeatureCollection', features: features };
+        } catch (err) {
+          console.error(err);
+          throw new Error('Falha ao decodificar GeoPackage: ' + (err.message || err) + '. Converta para GeoJSON ou Shapefile (.zip) no QGIS.');
         }
-        return { type: 'FeatureCollection', features: features };
       },
       _adicionar: function(nome, geojson) {
         if (!geojson || !geojson.features || !geojson.features.length) {
