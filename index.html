@@ -24,7 +24,7 @@
 
   <!-- Bibliotecas Externas: Chart.js (Dashboard) e shpjs (Shapefile ZIP) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/shpjs@4.0.4/dist/shp.min.js"></script>
   <!-- Conversores Cartográficos Adicionais: KML, KMZ e GeoPackage -->
   <script src="https://cdn.jsdelivr.net/npm/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -417,7 +417,7 @@
         📁 Importar Camada
       </button>
       <input type="file" id="input-import" style="display:none"
-             accept=".geojson,.json,.zip,.kml,.kmz,.gpkg,.geopackage"
+             accept=".geojson,.json,.zip,.kml,.kmz,.gpkg,.geopackage,.shp,.dbf,.shx,.prj"
              multiple onchange="ImportManager.processar(this.files)">
       <button class="btn-graficos" onclick="UI.toggleGraficos()">📊 Cruzamentos & Gráficos</button>
       <button class="btn-homologacao" onclick="UI.toggleMenuAmbiente(event)">
@@ -2273,10 +2273,64 @@
       },
       processar: async function(files) {
         if (!files || !files.length) return;
-        for (const f of files) {
+        const fnShp = window.shp || (typeof shp !== 'undefined' ? shp : null);
+
+        // Agrupamento inteligente para permitir arrastar arquivos Shapefile soltos (.shp + .dbf + .shx + .prj)
+        const listaArquivos = Array.from(files);
+        const gruposShp = {};
+        const outrosArquivos = [];
+
+        listaArquivos.forEach(f => {
+          const nomeSemExt = f.name.replace(/\.[^.]+$/, '');
+          const ext = f.name.toLowerCase().split('.').pop();
+          if (['shp', 'dbf', 'shx', 'prj', 'cpg'].includes(ext)) {
+            if (!gruposShp[nomeSemExt]) gruposShp[nomeSemExt] = {};
+            gruposShp[nomeSemExt][ext] = f;
+          } else {
+            outrosArquivos.push(f);
+          }
+        });
+
+        // 1. Processa Shapefiles soltos
+        for (const [nomeBase, partes] of Object.entries(gruposShp)) {
+          try {
+            if (!partes.shp) {
+              throw new Error(`Para o Shapefile "${nomeBase}", o arquivo com extensão .shp é indispensável.`);
+            }
+            if (!fnShp) {
+              throw new Error("Biblioteca de leitura de Shapefile (shpjs) indisponível no navegador.");
+            }
+
+            UI.toast(`Decodificando Shapefile: ${nomeBase}...`);
+            const shpBuf = await partes.shp.arrayBuffer();
+            const dbfBuf = partes.dbf ? await partes.dbf.arrayBuffer() : null;
+            const prjTxt = partes.prj ? await partes.prj.text() : null;
+
+            let geojson;
+            if (dbfBuf) {
+              geojson = await fnShp({ shp: shpBuf, dbf: dbfBuf, prj: prjTxt });
+            } else {
+              UI.toast(`Aviso: Arquivo .dbf não encontrado para "${nomeBase}". Atributos alfanuméricos não serão exibidos.`);
+              geojson = await fnShp({ shp: shpBuf, prj: prjTxt });
+            }
+
+            if (Array.isArray(geojson)) {
+              geojson.forEach((g, i) => this._adicionar(`${nomeBase}_${i + 1}`, g));
+            } else {
+              this._adicionar(nomeBase, geojson);
+            }
+          } catch (e) {
+            console.error(e);
+            UI.toast(`⚠️ Falha ao importar "${nomeBase}": ` + e.message);
+          }
+        }
+
+        // 2. Processa arquivos únicos (.zip, .geojson, .kml, .kmz, .gpkg)
+        for (const f of outrosArquivos) {
           try { await this.importar(f); }
           catch (e) { console.error(e); UI.toast('⚠️ Erro na importação: ' + e.message); }
         }
+
         const inp = document.getElementById('input-import');
         if (inp) inp.value = '';
       },
@@ -2285,11 +2339,17 @@
         const ext = nome.toLowerCase().split('.').pop();
         UI.toast(`Processando ${nome}...`);
         let geojson = null;
+        const fnShp = window.shp || (typeof shp !== 'undefined' ? shp : null);
 
         if (ext === 'geojson' || ext === 'json') {
           geojson = JSON.parse(await file.text());
         } else if (ext === 'zip') {
-          geojson = await shp(await file.arrayBuffer());
+          if (!fnShp) throw new Error('Biblioteca de Shapefile (shpjs) indisponível. Verifique conexão com a internet.');
+          try {
+            geojson = await fnShp(await file.arrayBuffer());
+          } catch (errZip) {
+            throw new Error(`Falha ao ler o .zip como Shapefile: ${errZip.message || errZip}. Certifique-se de que o .zip contém os arquivos .shp e .dbf com o mesmo nome na raiz.`);
+          }
         } else if (ext === 'kml') {
           geojson = this._kmlDeTexto(await file.text());
         } else if (ext === 'kmz') {
@@ -2297,7 +2357,7 @@
         } else if (ext === 'gpkg' || ext === 'geopackage') {
           geojson = await this._lerGPKG(file);
         } else if (ext === 'shp') {
-          throw new Error('Envie o Shapefile compactado em .zip (.shp + .dbf + .shx).');
+          throw new Error('O arquivo .shp precisa estar acompanhado do .dbf e .shx. Selecione todos os arquivos juntos ou envie compactado em .zip.');
         } else {
           throw new Error('Formato não suportado: .' + ext);
         }
