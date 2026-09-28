@@ -544,8 +544,18 @@
   <!-- TABELA DE ATRIBUTOS -->
   <div class="painel-tabela-atributos" id="painel-tabela">
     <div class="tabela-header">
-      <span id="titulo-tabela-camada">Tabela de Atributos</span>
-      <span style="cursor:pointer;" onclick="UI.fecharTabela()">&times; Fechar</span>
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <span id="titulo-tabela-camada">Tabela de Atributos</span>
+        <input type="text" id="filtro-busca-tabela" placeholder="Buscar na tabela..." oninput="TabelaManager.filtrar(this.value)" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid #38bdf8; background:#0f172a; color:#fff; width:180px;">
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div id="paginacao-tabela-controles" style="display:flex; align-items:center; gap:6px; font-size:11px;">
+          <button onclick="TabelaManager.anterior()" style="padding:2px 7px; background:#0284c7; color:#fff; border:none; border-radius:3px; cursor:pointer;" title="Página Anterior">◀ Anterior</button>
+          <span id="info-paginacao-tabela" style="font-weight:400; color:#cbd5e1;">Pág 1</span>
+          <button onclick="TabelaManager.proximo()" style="padding:2px 7px; background:#0284c7; color:#fff; border:none; border-radius:3px; cursor:pointer;" title="Próxima Página">Próximo ▶</button>
+        </div>
+        <span style="cursor:pointer; font-size:14px; margin-left:8px; font-weight:bold;" onclick="UI.fecharTabela()" title="Fechar Tabela">&times; Fechar</span>
+      </div>
     </div>
     <div class="tabela-corpo-scroll">
       <table class="grid-atributos">
@@ -2323,27 +2333,123 @@
 
 
 
+        const TabelaManager = {
+      camadaAtualId: null,
+      features: [],
+      filtradas: [],
+      colunas: [],
+      pagina: 1,
+      porPagina: 50,
+
+      abrir: function(id) {
+        const g = DADOS_GEOJSON_BRUTOS[id];
+        if (!g || !g.features || !g.features.length) {
+          UI.toast("Nenhum dado carregado para esta camada.");
+          return;
+        }
+        this.camadaAtualId = id;
+        this.features = g.features;
+        this.filtradas = g.features;
+        this.pagina = 1;
+
+        const inp = document.getElementById('filtro-busca-tabela');
+        if (inp) inp.value = '';
+
+        const amostra = g.features[0].properties || {};
+        this.colunas = Object.keys(amostra).filter(c => !['geom', 'geometry', 'id', '_gpkgtable'].includes(c.toLowerCase())).slice(0, 15);
+
+        document.getElementById('painel-tabela').classList.add('aberto');
+        this.renderizar();
+      },
+
+      filtrar: function(termo) {
+        const t = (termo || '').toLowerCase().trim();
+        if (!t) {
+          this.filtradas = this.features;
+        } else {
+          this.filtradas = this.features.filter(f => {
+            const p = f.properties || {};
+            for (const c of this.colunas) {
+              if (String(p[c] || '').toLowerCase().includes(t)) return true;
+            }
+            return false;
+          });
+        }
+        this.pagina = 1;
+        this.renderizar();
+      },
+
+      anterior: function() {
+        if (this.pagina > 1) {
+          this.pagina--;
+          this.renderizar();
+        }
+      },
+
+      proximo: function() {
+        const totalPag = Math.max(1, Math.ceil(this.filtradas.length / this.porPagina));
+        if (this.pagina < totalPag) {
+          this.pagina++;
+          this.renderizar();
+        }
+      },
+
+      renderizar: function() {
+        const nomeCamada = CONFIG_CAMADAS[this.camadaAtualId]?.nome || this.camadaAtualId;
+        const total = this.filtradas.length;
+        const totalGeral = this.features.length;
+        const totalPag = Math.max(1, Math.ceil(total / this.porPagina));
+        if (this.pagina > totalPag) this.pagina = totalPag;
+
+        const inicio = (this.pagina - 1) * this.porPagina;
+        const fim = Math.min(inicio + this.porPagina, total);
+        const dadosPagina = this.filtradas.slice(inicio, fim);
+
+        const titEl = document.getElementById('titulo-tabela-camada');
+        if (titEl) {
+          titEl.innerText = total !== totalGeral
+            ? `Tabela: ${nomeCamada} (${total} de ${totalGeral} itens)`
+            : `Tabela: ${nomeCamada} (${totalGeral} itens)`;
+        }
+
+        const infoEl = document.getElementById('info-paginacao-tabela');
+        if (infoEl) {
+          infoEl.innerText = total > 0
+            ? `${inicio + 1}–${fim} de ${total} (Pág ${this.pagina}/${totalPag})`
+            : `0 de 0`;
+        }
+
+        const thead = document.getElementById('thead-atributos');
+        let th = '<tr><th style="width:50px; text-align:center;">Zoom</th>';
+        this.colunas.forEach(c => th += `<th>${Security.escapeHTML(c)}</th>`);
+        thead.innerHTML = th + '</tr>';
+
+        const tbody = document.getElementById('tbody-atributos');
+        if (!dadosPagina.length) {
+          tbody.innerHTML = `<tr><td colspan="${this.colunas.length + 1}" style="text-align:center; padding:18px; color:#64748b;">Nenhum registro encontrado.</td></tr>`;
+          return;
+        }
+
+        let linhasHTML = '';
+        dadosPagina.forEach((f, idx) => {
+          const globalIdx = inicio + idx;
+          linhasHTML += `<tr><td style="text-align:center;"><button style="background:#0284c7; color:#fff; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" onclick="TabelaManager.aproximar(${globalIdx})" title="Aproximar">📍</button></td>`;
+          this.colunas.forEach(c => {
+            linhasHTML += `<td>${Security.escapeHTML(f.properties ? f.properties[c] : '')}</td>`;
+          });
+          linhasHTML += '</tr>';
+        });
+        tbody.innerHTML = linhasHTML;
+      },
+
+      aproximar: function(idx) {
+        const f = this.filtradas[idx];
+        if (f) SearchEngine.aproximar(f);
+      }
+    };
+
     function abrirTabela(id) {
-      const g = DADOS_GEOJSON_BRUTOS[id];
-      if (!g || !g.features) return;
-      document.getElementById('titulo-tabela-camada').innerText = `Tabela: ${CONFIG_CAMADAS[id].nome} (${g.features.length} itens)`;
-      document.getElementById('painel-tabela').classList.add('aberto');
-      const thead = document.getElementById('thead-atributos');
-      const tbody = document.getElementById('tbody-atributos');
-      thead.innerHTML = ''; tbody.innerHTML = '';
-      const cols = Object.keys(g.features[0].properties || {}).filter(c => !['geom', 'geometry', 'id'].includes(c.toLowerCase())).slice(0, 5);
-      let th = '<tr><th style="width:70px; text-align:center;">Zoom</th>';
-      cols.forEach(c => th += `<th>${Security.escapeHTML(c)}</th>`);
-      thead.innerHTML = th + '</tr>';
-
-
-
-
-      g.features.slice(0, 60).forEach(f => {
-        let tr = `<tr><td style="text-align:center;"><button style="background:#0284c7; color:#fff; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" onclick='SearchEngine.aproximar(${JSON.stringify(f)})'>📍</button></td>`;
-        cols.forEach(c => tr += `<td>${Security.escapeHTML(f.properties[c])}</td>`);
-        tbody.innerHTML += tr + '</tr>';
-      });
+      TabelaManager.abrir(id);
     }
 
 
