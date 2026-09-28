@@ -500,20 +500,53 @@
 
 
 
-  <!-- PAINEL DE GRÁFICOS -->
-  <div class="painel-graficos" id="painel-graficos">
+  <!-- PAINEL DE GRÁFICOS & CRUZAMENTO DE BASES -->
+  <div class="painel-graficos" id="painel-graficos" style="width: 520px;">
     <div class="graficos-header">
-      <span>Painel Analítico de Cruzamentos Setoriais</span>
-      <span style="cursor:pointer;" onclick="UI.toggleGraficos()">&times;</span>
+      <span>📊 Painel Analítico & Cruzamentos de Camadas</span>
+      <span style="cursor:pointer; font-size:16px; font-weight:bold;" onclick="UI.toggleGraficos()">&times;</span>
     </div>
     <div class="graficos-corpo">
+      <!-- 1. Cruzamento Territorial entre Camadas -->
+      <div class="card-grafico" style="border-left: 3px solid #0284c7;">
+        <h4 style="display:flex; justify-content:space-between; align-items:center;">
+          <span>🔄 Cruzamento Territorial entre Duas Camadas (por UF)</span>
+        </h4>
+        <div style="display:grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin: 8px 0 12px 0;">
+          <select id="cruz-camada-a" style="padding:4px 6px; font-size:11px; border-radius:4px; border:1px solid #cbd5e1; background:#fff;"></select>
+          <select id="cruz-camada-b" style="padding:4px 6px; font-size:11px; border-radius:4px; border:1px solid #cbd5e1; background:#fff;"></select>
+          <button onclick="Analytics.gerarCruzamentoUF()" style="padding:4px 10px; background:#0284c7; color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:600; cursor:pointer;">Cruzar</button>
+        </div>
+        <div style="position:relative; height:180px;">
+          <canvas id="grafico-cruzamento-uf"></canvas>
+        </div>
+      </div>
+
+      <!-- 2. Gráfico Personalizado por Atributo -->
+      <div class="card-grafico" style="border-left: 3px solid #10b981;">
+        <h4>📈 Gráfico Personalizado de Atributos</h4>
+        <div style="display:grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin: 8px 0 12px 0;">
+          <select id="custom-camada" onchange="Analytics.onMudarCamadaCustom(this.value)" style="padding:4px 6px; font-size:11px; border-radius:4px; border:1px solid #cbd5e1; background:#fff;"></select>
+          <select id="custom-coluna" style="padding:4px 6px; font-size:11px; border-radius:4px; border:1px solid #cbd5e1; background:#fff;"></select>
+          <button onclick="Analytics.gerarGraficoCustomizado()" style="padding:4px 10px; background:#10b981; color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:600; cursor:pointer;">Gerar</button>
+        </div>
+        <div style="position:relative; height:180px;">
+          <canvas id="grafico-personalizado"></canvas>
+        </div>
+      </div>
+
+      <!-- 3. Gráficos Padrão ANTAQ -->
       <div class="card-grafico">
-        <h4>1. Instalações Portuárias por Tipo de Outorga (TUP vs Público)</h4>
-        <canvas id="grafico-portos-tipo" height="150"></canvas>
+        <h4>⚓ Instalações Portuárias por Regime de Outorga</h4>
+        <div style="position:relative; height:150px;">
+          <canvas id="grafico-portos-tipo"></canvas>
+        </div>
       </div>
       <div class="card-grafico">
-        <h4>2. Distribuição Territorial das Instalações por UF (Top 8)</h4>
-        <canvas id="grafico-portos-uf" height="160"></canvas>
+        <h4>🗺️ Distribuição Territorial das Instalações por UF (Top 8)</h4>
+        <div style="position:relative; height:160px;">
+          <canvas id="grafico-portos-uf"></canvas>
+        </div>
       </div>
     </div>
   </div>
@@ -1209,66 +1242,94 @@
 
 
     const FilterManager = {
-      configFiltros: {
-        instalacoes_portuarias: {
-          placeholder: "Buscar instalação portuária por nome, município ou UF...",
-          opcoes: [
-            { valor: "TODOS", rotulo: "⚓ Todas as Instalações" },
-            { valor: "ORGANIZADO", rotulo: "🔷 Portos Organizados (Lei 12.815)" },
-            { valor: "PUBLICO", rotulo: "🔹 Portos Públicos (Cadastro Legado)" },
-            { valor: "TUP", rotulo: "🟢 Terminais Privados (TUP)" },
-            { valor: "IP4", rotulo: "🟡 Pequeno Porte (IP4)" },
-            { valor: "ETC", rotulo: "🟣 Transbordo (ETC)" },
-            { valor: "OUTROS", rotulo: "⚪ Demais Registros e Apoio" }
-          ]
-        },
-        vias_navegadas: {
-          placeholder: "Buscar trecho hidroviário ou rio na base...",
-          opcoes: []
-        },
-        linhas_travessias: {
-          placeholder: "Buscar linha de travessia na base...",
-          opcoes: []
-        },
-        tis_poligonais: {
-          placeholder: "Buscar terra indígena por nome ou etnia...",
-          opcoes: []
-        },
-        uf: {
-          placeholder: "Buscar estado por sigla ou nome...",
-          opcoes: []
+      subfiltroAtivo: 'TODOS',
+      atualizarSeletorCamadas: function() {
+        const sel = document.getElementById('sel-camada-busca');
+        if (!sel) return;
+        const valAtual = sel.value;
+        sel.innerHTML = '';
+        for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
+          const opt = document.createElement('option');
+          opt.value = id;
+          let emoji = '📍';
+          if (id.includes('porto') || id.includes('instalac')) emoji = '⚓';
+          else if (id.includes('via') || id.includes('hidro')) emoji = '🌊';
+          else if (id.includes('travess')) emoji = '⛴️';
+          else if (id.includes('indig') || id.includes('tis')) emoji = '🏹';
+          else if (id.includes('conservacao') || id.includes('uc')) emoji = '🌳';
+          else if (id.includes('uf') || id.includes('estado')) emoji = '🗺️';
+          else if (cfg.grupo === 'importadas') emoji = '📁';
+          opt.innerText = `${emoji} ${cfg.nome}`;
+          sel.appendChild(opt);
         }
+        if (CONFIG_CAMADAS[valAtual]) sel.value = valAtual;
+        else if (CONFIG_CAMADAS['instalacoes_portuarias']) sel.value = 'instalacoes_portuarias';
       },
       aoMudarCamada: function(idCamada) {
-        const cfg = this.configFiltros[idCamada] || this.configFiltros.instalacoes_portuarias;
         const selSub = document.getElementById('filtro-subtipo-dinamico');
         const inputBusca = document.getElementById('input-busca');
-        if (inputBusca) inputBusca.placeholder = cfg.placeholder;
+        const cfg = CONFIG_CAMADAS[idCamada] || {};
 
-
-
-
-        if (selSub) {
-          selSub.innerHTML = '';
-          if (cfg.opcoes && cfg.opcoes.length > 0) {
-            selSub.style.display = 'inline-block';
-            cfg.opcoes.forEach(opt => {
-              const el = document.createElement('option');
-              el.value = opt.valor;
-              el.innerText = opt.rotulo;
-              selSub.appendChild(el);
-            });
-            selSub.value = "TODOS";
-          } else {
-            // Oculta o segundo seletor quando a camada não possui subdivisões regulatórias pré-definidas
-            selSub.style.display = 'none';
-          }
+        if (inputBusca) {
+          inputBusca.placeholder = `Buscar em ${cfg.nome || 'camada'} por atributos...`;
         }
 
+        if (selSub) {
+          selSub.innerHTML = '<option value="TODOS">Todos os Itens</option>';
+          if (idCamada === 'instalacoes_portuarias') {
+            selSub.style.display = 'inline-block';
+            for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
+              const el = document.createElement('option');
+              el.value = tKey;
+              el.innerText = cat.nome;
+              selSub.appendChild(el);
+            }
+          } else {
+            // Descoberta dinâmica de categorias para qualquer camada existente ou nova
+            const g = DADOS_GEOJSON_BRUTOS[idCamada];
+            if (g && g.features && g.features.length) {
+              const colunasCandidatas = Object.keys(g.features[0].properties || {}).filter(k => {
+                const kl = k.toLowerCase();
+                return !['id', 'gid', 'geom', 'geometry', 'objectid', 'cod', 'codigo'].includes(kl);
+              });
 
+              // Acha a melhor coluna categórica (com entre 2 e 25 valores distintos)
+              let melhorCol = null;
+              let melhoresValores = [];
+              for (const col of colunasCandidatas) {
+                const unicos = new Set();
+                for (const f of g.features) {
+                  const val = f.properties ? f.properties[col] : null;
+                  if (Security.ehValido(val)) unicos.add(String(val).trim());
+                  if (unicos.size > 25) break;
+                }
+                if (unicos.size >= 2 && unicos.size <= 25) {
+                  melhorCol = col;
+                  melhoresValores = Array.from(unicos).sort();
+                  break;
+                }
+              }
 
+              if (melhorCol && melhoresValores.length) {
+                this.colunaSubfiltroDinamico = melhorCol;
+                selSub.style.display = 'inline-block';
+                melhoresValores.forEach(v => {
+                  const el = document.createElement('option');
+                  el.value = v;
+                  el.innerText = `${melhorCol}: ${v}`;
+                  selSub.appendChild(el);
+                });
+              } else {
+                this.colunaSubfiltroDinamico = null;
+                selSub.style.display = 'none';
+              }
+            } else {
+              selSub.style.display = 'none';
+            }
+          }
+          selSub.value = "TODOS";
+        }
 
-        // Ativa a camada se estiver desligada
         if (CONFIG_CAMADAS[idCamada]) {
           const chk = document.getElementById(`chk-${idCamada}`);
           if (chk && !chk.checked) {
@@ -1276,9 +1337,6 @@
             toggleCamada(idCamada, true);
           }
         }
-
-
-
 
         this.aplicarFiltro(idCamada, "TODOS");
       },
@@ -1336,6 +1394,30 @@
           if (valor !== 'TODOS') {
             const nomeFiltro = PortClassification.tipos[valor]?.nome || valor;
             UI.toast(`Filtro [Portos]: ${nomeFiltro} (${visiveis} ativos visíveis).`);
+        } else if (CAMADAS_MAPA[idCamada] && DADOS_GEOJSON_BRUTOS[idCamada]) {
+          const col = this.colunaSubfiltroDinamico;
+          const total = DADOS_GEOJSON_BRUTOS[idCamada]?.features?.length || 0;
+          let visiveis = 0;
+          if (col && valor !== 'TODOS') {
+            CAMADAS_MAPA[idCamada].clearLayers();
+            const filtrados = {
+              type: 'FeatureCollection',
+              features: DADOS_GEOJSON_BRUTOS[idCamada].features.filter(f => {
+                const match = String(f.properties ? f.properties[col] : '').trim() === valor;
+                if (match) visiveis++;
+                return match;
+              })
+            };
+            CAMADAS_MAPA[idCamada].addData(filtrados);
+            const cntEl = document.getElementById(`cnt-${idCamada}`);
+            if (cntEl) cntEl.innerText = `(${visiveis}/${total})`;
+            UI.toast(`Filtro [${col}]: ${valor} (${visiveis} de ${total}).`);
+          } else {
+            CAMADAS_MAPA[idCamada].clearLayers();
+            CAMADAS_MAPA[idCamada].addData(DADOS_GEOJSON_BRUTOS[idCamada]);
+            const cntEl = document.getElementById(`cnt-${idCamada}`);
+            if (cntEl) cntEl.innerText = `(${total})`;
+          }
           window.FILTRO_PORTO_ATUAL = valor;
           if (TabelaManager.camadaAtualId === 'instalacoes_portuarias' && document.getElementById('painel-tabela').classList.contains('aberto')) {
             const selP = document.getElementById('filtro-porto-tabela');
@@ -1696,7 +1778,7 @@
       toggleGraficos: function() {
         const p = document.getElementById('painel-graficos');
         p.classList.toggle('aberto');
-        if (p.classList.contains('aberto')) Analytics.gerar();
+        if (p.classList.contains('aberto')) { Analytics.atualizarSeletoresCruzamento(); Analytics.gerar(); Analytics.gerarCruzamentoUF(); Analytics.gerarGraficoCustomizado(); }
       },
       alternarSecao: function(el) {
         el.nextElementSibling.classList.toggle('fechado');
@@ -1719,6 +1801,152 @@
     const Analytics = {
       chartTipo: null,
       chartUf: null,
+      chartCruzamento: null,
+      chartCustom: null,
+
+      atualizarSeletoresCruzamento: function() {
+        const selA = document.getElementById('cruz-camada-a');
+        const selB = document.getElementById('cruz-camada-b');
+        const selCust = document.getElementById('custom-camada');
+        if (!selA || !selB || !selCust) return;
+
+        const opcoes = Object.entries(CONFIG_CAMADAS).map(([id, cfg]) => `<option value="${id}">${cfg.nome}</option>`).join('');
+        selA.innerHTML = opcoes;
+        selB.innerHTML = opcoes;
+        selCust.innerHTML = opcoes;
+
+        if (CONFIG_CAMADAS['instalacoes_portuarias']) selA.value = 'instalacoes_portuarias';
+        if (CONFIG_CAMADAS['unidades_conservacao']) selB.value = 'unidades_conservacao';
+        else if (CONFIG_CAMADAS['tis_poligonais']) selB.value = 'tis_poligonais';
+        else if (CONFIG_CAMADAS['vias_navegadas']) selB.value = 'vias_navegadas';
+
+        this.onMudarCamadaCustom(selCust.value);
+      },
+
+      onMudarCamadaCustom: function(idCamada) {
+        const selCol = document.getElementById('custom-coluna');
+        if (!selCol) return;
+        selCol.innerHTML = '';
+        const g = DADOS_GEOJSON_BRUTOS[idCamada];
+        if (!g || !g.features || !g.features.length) {
+          selCol.innerHTML = '<option value="">Sem dados carregados</option>';
+          return;
+        }
+        const cols = Object.keys(g.features[0].properties || {}).filter(k => {
+          const kl = k.toLowerCase();
+          return !['id', 'gid', 'geom', 'geometry', 'objectid'].includes(kl);
+        });
+        cols.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c; opt.innerText = c;
+          selCol.appendChild(opt);
+        });
+      },
+
+      gerarCruzamentoUF: function() {
+        const idA = document.getElementById('cruz-camada-a').value;
+        const idB = document.getElementById('cruz-camada-b').value;
+        const gA = DADOS_GEOJSON_BRUTOS[idA];
+        const gB = DADOS_GEOJSON_BRUTOS[idB];
+        if (!gA || !gB) { UI.toast("⚠️ Ambas as camadas precisam estar carregadas."); return; }
+
+        const ufsA = {}, ufsB = {};
+        gA.features.forEach(f => {
+          const uf = this.extrairUF(f.properties, f);
+          if (uf) ufsA[uf] = (ufsA[uf] || 0) + 1;
+        });
+        gB.features.forEach(f => {
+          const uf = this.extrairUF(f.properties, f);
+          if (uf) ufsB[uf] = (ufsB[uf] || 0) + 1;
+        });
+
+        // Top UFs combinadas
+        const todasUfs = Array.from(new Set([...Object.keys(ufsA), ...Object.keys(ufsB)]));
+        todasUfs.sort((x, y) => ((ufsA[y] || 0) + (ufsB[y] || 0)) - ((ufsA[x] || 0) + (ufsB[x] || 0)));
+        const topUfs = todasUfs.slice(0, 10);
+
+        const ctx = document.getElementById('grafico-cruzamento-uf')?.getContext('2d');
+        if (!ctx) return;
+        if (this.chartCruzamento) this.chartCruzamento.destroy();
+
+        const nomeA = CONFIG_CAMADAS[idA]?.nome || idA;
+        const nomeB = CONFIG_CAMADAS[idB]?.nome || idB;
+
+        this.chartCruzamento = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: topUfs,
+            datasets: [
+              {
+                label: nomeA,
+                data: topUfs.map(u => ufsA[u] || 0),
+                backgroundColor: CONFIG_CAMADAS[idA]?.cor || '#0284c7'
+              },
+              {
+                label: nomeB,
+                data: topUfs.map(u => ufsB[u] || 0),
+                backgroundColor: CONFIG_CAMADAS[idB]?.cor || '#10b981'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } }
+            },
+            scales: {
+              x: { grid: { display: false } },
+              y: { beginAtZero: true }
+            }
+          }
+        });
+        UI.toast(`✓ Cruzamento [${nomeA}] vs [${nomeB}] gerado.`);
+      },
+
+      gerarGraficoCustomizado: function() {
+        const idCamada = document.getElementById('custom-camada').value;
+        const coluna = document.getElementById('custom-coluna').value;
+        const g = DADOS_GEOJSON_BRUTOS[idCamada];
+        if (!g || !coluna) { UI.toast("Selecione uma camada e uma coluna válida."); return; }
+
+        const contagem = {};
+        g.features.forEach(f => {
+          const val = f.properties ? f.properties[coluna] : null;
+          const k = Security.ehValido(val) ? String(val).trim() : 'Não Informado';
+          contagem[k] = (contagem[k] || 0) + 1;
+        });
+
+        const ordenados = Object.entries(contagem).sort((a,b) => b[1] - a[1]).slice(0, 10);
+        const labels = ordenados.map(o => o[0]);
+        const valores = ordenados.map(o => o[1]);
+
+        const ctx = document.getElementById('grafico-personalizado')?.getContext('2d');
+        if (!ctx) return;
+        if (this.chartCustom) this.chartCustom.destroy();
+
+        const paleta = ['#0284c7','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16','#6366f1','#14b8a6'];
+
+        this.chartCustom = new Chart(ctx, {
+          type: labels.length <= 6 ? 'doughnut' : 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: `Quantidade (${coluna})`,
+              data: valores,
+              backgroundColor: paleta.slice(0, labels.length)
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: labels.length <= 6, position: 'right', labels: { boxWidth: 10, font: { size: 10 } } }
+            }
+          }
+        });
+        UI.toast(`✓ Gráfico customizado para "${coluna}" gerado.`);
+      },
       extrairUF: function(p, f, dadosUf) {
         const LISTA_UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
         const MAPA_NOMES = {
@@ -2058,6 +2286,7 @@
         if (TabelaManager.camadaAtualId === id) UI.fecharTabela();
 
         Styler.atualizarLegenda();
+        FilterManager.atualizarSeletorCamadas();
         UI.toast(`🗑️ Camada "${nome}" removida.`);
       },
       contador: 0,
@@ -2192,6 +2421,7 @@
         }
 
         Styler.atualizarLegenda();
+        FilterManager.atualizarSeletorCamadas();
         UI.toast(`✓ ${geojson.features.length} feições (${tipoGeo}) importadas de "${nome}"`);
 
         try {
@@ -2629,6 +2859,7 @@
     // Inicialização
     (async function init() {
       await LayerRegistry.carregarManifest();
+      FilterManager.atualizarSeletorCamadas();
       construirPainelLateral();
       FilterManager.aoMudarCamada("instalacoes_portuarias");
       Styler.atualizarLegenda();
