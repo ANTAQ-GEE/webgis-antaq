@@ -431,6 +431,25 @@
       border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 50000;
       display: none; box-shadow: 0 6px 20px rgba(0,0,0,0.4); border-left: 4px solid var(--gov-verde);
     }
+  
+    /* Interatividade e Hover Cartográfico Profissional */
+    .leaflet-interactive {
+      cursor: pointer !important;
+    }
+    .rotulo-hover-feicao {
+      background: rgba(10, 37, 64, 0.95) !important;
+      color: #ffffff !important;
+      border: 1px solid #38bdf8 !important;
+      border-radius: 5px !important;
+      font-size: 11px !important;
+      padding: 5px 9px !important;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
+      pointer-events: none !important;
+    }
+    .rotulo-hover-feicao::before {
+      border-top-color: #38bdf8 !important;
+    }
+
   </style>
 </head>
 <body>
@@ -1320,41 +1339,12 @@
         this.atualizarLegenda();
         UI.toast(`Paleta aplicada: ${preset.nome}`);
       },
-      obterOpcoes: function(id) {
+            obterOpcoes: function(id) {
         const cfg = CONFIG_CAMADAS[id] || {};
         let paneAlvo = 'overlayPane';
         if (id === 'instalacoes_portuarias' || cfg.tipoGeo === 'ponto') {
           paneAlvo = 'panePontos';
-        } else if (id === 'ucs_todas_mma') {
-            const esferasUC = [
-              { id: 'Federal', nome: 'Federal (ICMBio)', cor: '#15803d' },
-              { id: 'Estadual', nome: 'Estadual (OEMA)', cor: '#059669' },
-              { id: 'Municipal', nome: 'Municipal', cor: '#0d9488' },
-              { id: 'Privada', nome: 'RPPN / Privada', cor: '#84cc16' }
-            ];
-            let subItensHTML = '';
-            for (const esf of esferasUC) {
-              const chkSub = document.getElementById(`chk-sub-uc-${esf.id}`);
-              const subAtiva = chkSub ? chkSub.checked : true;
-              if (subAtiva) {
-                subItensHTML += `
-                  <div class="item-legenda-linha">
-                    <span class="simbolo-ponto" style="background:${esf.cor}; width:10px; height:10px; border-radius:2px;"></span>
-                    <span>${esf.nome}</span>
-                  </div>
-                `;
-              }
-            }
-            if (subItensHTML) {
-              l.innerHTML = `
-                <div style="display:flex; flex-direction:column; gap:4px; width:100%; border-bottom:1px dashed #cbd5e1; padding-bottom:6px;">
-                  <span style="font-weight:700; color:#0f172a; font-size:11px;">Todas as UCs (Esferas):</span>
-                  ${subItensHTML}
-                </div>
-              `;
-              corpo.appendChild(l);
-            }
-          } else if (cfg.tipoGeo === 'linha' || cfg.tipoGeo === 'linha_tracejada' || cfg.grupo === 'infra') {
+        } else if (cfg.tipoGeo === 'linha' || cfg.tipoGeo === 'linha_tracejada' || cfg.grupo === 'infra') {
           paneAlvo = 'paneLinhas';
         } else if (cfg.grupo === 'restricoes') {
           paneAlvo = 'paneRestricoes';
@@ -1362,8 +1352,12 @@
           paneAlvo = 'paneLimites';
         }
 
+        // Camadas puramente de contorno territorial de fundo não devem bloquear cliques nas feições úteis
+        const ehLimiteDeFundo = (id === 'pais' || id === 'regioes' || id === 'estados_amazonia_legal');
+
         return {
           pane: paneAlvo,
+          interactive: !ehLimiteDeFundo,
           style: f => {
             const s = {
               pane: paneAlvo,
@@ -1382,7 +1376,6 @@
             return s;
           },
           pointToLayer: (f, latlng) => {
-            
             if (id === 'ucs_todas_mma') {
               if (!window.SUBGRUPOS_UCS) window.SUBGRUPOS_UCS = {};
               const coresPadraoUC = {
@@ -1397,6 +1390,7 @@
                 if (window.SUBGRUPOS_UCS[esfKey]) mapa.removeLayer(window.SUBGRUPOS_UCS[esfKey]);
                 const opcEsf = Object.assign({}, opcoes, {
                   style: () => ({
+                    pane: 'paneRestricoes',
                     color: corEsf,
                     fillColor: corEsf,
                     weight: 1.2,
@@ -1422,9 +1416,8 @@
               if (chkEl && chkEl.checked) CAMADAS_MAPA[id].addTo(mapa);
               if (cntEl) cntEl.innerText = `(${dados.features.length})`;
             } else if (id === 'instalacoes_portuarias') {
-
               const cat = PortClassification.classificar(f.properties);
-              return L.circleMarker(latlng, {
+              const m = L.circleMarker(latlng, {
                 pane: 'panePontos',
                 radius: cat.raio,
                 fillColor: cat.cor,
@@ -1432,6 +1425,17 @@
                 weight: cat.peso,
                 fillOpacity: cfg.opacidade
               });
+              m.on({
+                mouseover: e => {
+                  e.target.setRadius(cat.raio + 3);
+                  e.target.setStyle({ color: '#f59e0b', weight: 3 });
+                },
+                mouseout: e => {
+                  e.target.setRadius(cat.raio);
+                  e.target.setStyle({ color: '#ffffff', weight: cat.peso });
+                }
+              });
+              return m;
             }
             return L.circleMarker(latlng, {
               pane: 'panePontos',
@@ -1445,9 +1449,53 @@
           onEachFeature: (f, layer) => {
             if (f.properties) {
               layer.bindPopup(PopupRenderer.gerar(id, f.properties));
-              if (id === 'uf') {
-                const sigla = Security.escapeHTML(f.properties.SIGLA_UF || f.properties.sigla || f.properties.UF || f.properties.nome);
+
+              // Tooltip Dinâmico no Hover (Nome do Ativo + Tipo)
+              const p = f.properties;
+              const nomeFeicao = p.nome || p.NOME_INSTALACAO || p.NOME_UC || p.terrai_nom || p.NOME_RIO || p.SIGLA_UF || cfg.nome;
+              if (nomeFeicao && id !== 'uf' && !ehLimiteDeFundo) {
+                layer.bindTooltip(`<strong>${Security.escapeHTML(nomeFeicao)}</strong><br><small style="color:#0284c7;">${cfg.nome}</small>`, {
+                  sticky: true,
+                  className: 'rotulo-hover-feicao'
+                });
+              } else if (id === 'uf') {
+                const sigla = Security.escapeHTML(p.SIGLA_UF || p.sigla || p.UF || p.nome);
                 if (sigla) layer.bindTooltip(sigla, { permanent: true, direction: 'center', className: 'rotulo-uf' });
+              }
+
+              // Efeito Hover e Seleção Dinâmica de Feições (Linhas e Polígonos)
+              if (!ehLimiteDeFundo && id !== 'instalacoes_portuarias') {
+                layer.on({
+                  mouseover: e => {
+                    const l = e.target;
+                    if (l.setStyle) {
+                      l._origStyle = Object.assign({}, l.options);
+                      l.setStyle({
+                        color: '#f59e0b',
+                        weight: (l.options.weight || 2) + 2.5,
+                        fillOpacity: Math.min(0.9, (l.options.fillOpacity || 0.35) + 0.3)
+                      });
+                    }
+                  },
+                  mouseout: e => {
+                    const l = e.target;
+                    if (l.setStyle && l._origStyle) {
+                      l.setStyle(l._origStyle);
+                    }
+                  },
+                  click: e => {
+                    if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
+                    if (e.target.getBounds) {
+                      // Polígono ou Linha selecionada
+                      window.CAMADA_DESTAQUE = L.polyline(e.target.getLatLngs ? e.target.getLatLngs() : [], {
+                        color: '#f59e0b',
+                        weight: 4,
+                        opacity: 0.9,
+                        dashArray: '4, 4'
+                      }).addTo(mapa);
+                    }
+                  }
+                });
               }
             }
           }
@@ -1538,35 +1586,6 @@
               l.innerHTML = `
                 <div style="display:flex; flex-direction:column; gap:4px; width:100%; border-bottom:1px dashed #cbd5e1; padding-bottom:6px;">
                   <span style="font-weight:700; color:#0f172a; font-size:11px;">Instalações Portuárias:</span>
-                  ${subItensHTML}
-                </div>
-              `;
-              corpo.appendChild(l);
-            }
-          } else if (id === 'ucs_todas_mma') {
-            const esferasUC = [
-              { id: 'Federal', nome: 'Federal (ICMBio)', cor: '#15803d' },
-              { id: 'Estadual', nome: 'Estadual (OEMA)', cor: '#059669' },
-              { id: 'Municipal', nome: 'Municipal', cor: '#0d9488' },
-              { id: 'Privada', nome: 'RPPN / Privada', cor: '#84cc16' }
-            ];
-            let subItensHTML = '';
-            for (const esf of esferasUC) {
-              const chkSub = document.getElementById(`chk-sub-uc-${esf.id}`);
-              const subAtiva = chkSub ? chkSub.checked : true;
-              if (subAtiva) {
-                subItensHTML += `
-                  <div class="item-legenda-linha">
-                    <span class="simbolo-ponto" style="background:${esf.cor}; width:10px; height:10px; border-radius:2px;"></span>
-                    <span>${esf.nome}</span>
-                  </div>
-                `;
-              }
-            }
-            if (subItensHTML) {
-              l.innerHTML = `
-                <div style="display:flex; flex-direction:column; gap:4px; width:100%; border-bottom:1px dashed #cbd5e1; padding-bottom:6px;">
-                  <span style="font-weight:700; color:#0f172a; font-size:11px;">Todas as UCs (Esferas):</span>
                   ${subItensHTML}
                 </div>
               `;
@@ -1892,7 +1911,16 @@
 
         if (cntEl) cntEl.innerText = '(carregando...)';
 
-        this.carregando[id] = fetch(`${cfg.arquivos[0]}?_t=${Date.now()}`)
+        const tentarUrls = async () => {
+          for (const url of cfg.arquivos) {
+            try {
+              const res = await fetch(`${url}?_t=${Date.now()}`);
+              if (res.ok) return await res.json();
+            } catch(e) {}
+          }
+          throw new Error(`Falha ao carregar arquivo de ${id}`);
+        };
+        this.carregando[id] = tentarUrls()
           .then(res => {
             if (!res.ok) throw new Error(`Status ${res.status}`);
             return res.json();
