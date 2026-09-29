@@ -1911,20 +1911,19 @@
 
         if (cntEl) cntEl.innerText = '(carregando...)';
 
-        const tentarUrls = async () => {
+        const carregarGeoJson = async () => {
           for (const url of cfg.arquivos) {
             try {
               const res = await fetch(`${url}?_t=${Date.now()}`);
-              if (res.ok) return await res.json();
+              if (res.ok) {
+                const j = await res.json();
+                if (j && j.features) return j;
+              }
             } catch(e) {}
           }
-          throw new Error(`Falha ao carregar arquivo de ${id}`);
+          throw new Error(`Falha ao carregar arquivo da camada ${id}`);
         };
-        this.carregando[id] = tentarUrls()
-          .then(res => {
-            if (!res.ok) throw new Error(`Status ${res.status}`);
-            return res.json();
-          })
+        this.carregando[id] = carregarGeoJson()
           .then(dados => {
             if (!dados.features) throw new Error("Sem feições válidas");
             dados.features.forEach(f => {
