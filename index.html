@@ -1098,7 +1098,7 @@
       rodovias: { nome: "Rodovias Federais (SNV)", grupo: "infra", arquivos: ["dados/rodovias.geojson"], cor: "#f97316", opacidade: 0.85, peso: 2.2, tipoGeo: "linha", ativa: true, camposVisiveis: [] },
       ferrovias: { nome: "Malha Ferroviária Federal", grupo: "infra", arquivos: ["dados/ferrovias.geojson"], cor: "#a855f7", opacidade: 0.9, peso: 2.5, tipoGeo: "linha", ativa: true, camposVisiveis: [] },
       snv_1973: { nome: "Sistema Nacional de Viação (1973)", grupo: "infra", arquivos: ["dados/snv_1973.geojson"], cor: "#94a3b8", opacidade: 0.7, peso: 1.8, tipoGeo: "linha", ativa: false, camposVisiveis: [] },
-      ucs_federais: { nome: "Unidades de Conservação Federais (ICMBio)", grupo: "restricoes", arquivos: ["dados/ucs_federais.geojson", "dados/unidades_conservacao.geojson"], cor: "#15803d", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: [] },
+      ucs_federais: { nome: "Unidades de Conservação Federais (ICMBio)", grupo: "restricoes", arquivos: ["dados/ucs_federais.geojson"], cor: "#15803d", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: [] },
       ucs_todas_mma: { nome: "Todas as UCs do Brasil (CNUC / MMA)", grupo: "restricoes", arquivos: ["dados/ucs_todas_mma.geojson"], cor: "#047857", opacidade: 0.3, peso: 1.2, tipoGeo: "poligono", ativa: false, camposVisiveis: [] }
     };
 
@@ -2661,7 +2661,7 @@
       gerarSocioambiental: function() {
         const gPortos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
         const gVias = DADOS_GEOJSON_BRUTOS['vias_navegadas'];
-        const gUcs = DADOS_GEOJSON_BRUTOS['ucs_federais'] || DADOS_GEOJSON_BRUTOS['unidades_conservacao'];
+        const gUcs = DADOS_GEOJSON_BRUTOS['ucs_federais'] || DADOS_GEOJSON_BRUTOS['ucs_todas_mma'];
         const gTis = DADOS_GEOJSON_BRUTOS['tis_poligonais'];
 
         const agruparUF = (g) => {
@@ -3018,6 +3018,7 @@
       },
       registrar: function(item) {
         const id = item.id || this.gerarId(item.nome || item.arquivo);
+        if (id === 'unidades_conservacao' || (item.arquivo && item.arquivo.includes('unidades_conservacao'))) return null;
         if (CONFIG_CAMADAS[id]) return id;
         CONFIG_CAMADAS[id] = {
           nome: item.nome || id,
@@ -3045,13 +3046,17 @@
           try {
             const r = await fetch(`${c}?_t=${Date.now()}`);
             if (r.ok) {
-              const m = await r.json();
+              const txt = await r.text();
+              const limpo = txt.replace(/^\ufeff/, '').trim();
+              const m = JSON.parse(limpo);
               const lista = m.camadas || m.layers || [];
               for (const item of lista) this.registrar(item);
               console.info(`✓ Manifesto carregado com sucesso de [${c}]: ${lista.length} camadas registradas.`);
               return;
             }
-          } catch (e) {}
+          } catch (e) {
+            console.warn(`Aviso ao ler manifesto [${c}]:`, e);
+          }
         }
         console.info('Nenhum manifesto externo localizado. Operando com o catálogo padrão nativo.');
       }
@@ -3365,6 +3370,7 @@
     })();
 
     function construirItemCamada(id, cfg, grupoEl) {
+      if (id === 'unidades_conservacao') return;
       if (!grupoEl) return;
       const item = document.createElement('div');
       item.className = 'item-camada';
