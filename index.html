@@ -1183,8 +1183,8 @@
       rodovias: { nome: "Rodovias Federais (SNV)", grupo: "infra", arquivos: ["dados/rodovias.geojson"], cor: "#f97316", opacidade: 0.85, peso: 2.2, tipoGeo: "linha", ativa: true, camposVisiveis: [] },
       ferrovias: { nome: "Malha Ferroviária Federal", grupo: "infra", arquivos: ["dados/ferrovias.geojson"], cor: "#a855f7", opacidade: 0.9, peso: 2.5, tipoGeo: "linha", ativa: true, camposVisiveis: [] },
       snv_1973: { nome: "Sistema Nacional de Viação (1973)", grupo: "infra", arquivos: ["dados/snv_1973.geojson"], cor: "#94a3b8", opacidade: 0.7, peso: 1.8, tipoGeo: "linha", ativa: false, camposVisiveis: [] },
-      ucs_federais: { nome: "Unidades de Conservação Federais (ICMBio)", grupo: "restricoes", arquivos: ["dados/ucs_federais.geojson"], cor: "#15803d", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: [] },
-      ucs_todas_mma: { nome: "Todas as UCs do Brasil (CNUC / MMA)", grupo: "restricoes", arquivos: ["dados/ucs_todas_mma.geojson", "dados/ucs_mma.geojson", "dados/cnuc.geojson", "dados/ucs.geojson"], cor: "#047857", opacidade: 0.3, peso: 1.2, tipoGeo: "poligono", ativa: false, camposVisiveis: [] }
+      ucs_federais: { nome: "Unidades de Conservação Federais (ICMBio)", grupo: "restricoes", arquivos: ["dados/ucs_federais.geojson", "dados/unidades_conservacao.geojson", "dados/ucs_icmbio.geojson"], cor: "#15803d", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: [] },
+      ucs_todas_mma: { nome: "Todas as UCs do Brasil (CNUC / MMA)", grupo: "restricoes", arquivos: ["dados/ucs_todas_mma.geojson", "dados/ucs_mma.geojson", "dados/cnuc.geojson", "dados/ucs.geojson", "dados/unidades_conservacao.geojson"], cor: "#047857", opacidade: 0.3, peso: 1.2, tipoGeo: "poligono", ativa: false, camposVisiveis: [] }
     };
 
 
@@ -1460,47 +1460,8 @@
             }
             return s;
           },
-                    pointToLayer: (f, latlng) => {
-                        if (id === 'ucs_todas_mma') {
-              if (!window.SUBGRUPOS_UCS) window.SUBGRUPOS_UCS = {};
-              const coresPadraoUC = {
-                Federal: '#15803d',
-                Estadual: '#059669',
-                Municipal: '#0d9488',
-                Privada: '#84cc16',
-                Outros: '#047857'
-              };
-
-              for (const [esfKey, corEsf] of Object.entries(coresPadraoUC)) {
-                if (window.SUBGRUPOS_UCS[esfKey]) mapa.removeLayer(window.SUBGRUPOS_UCS[esfKey]);
-                const opcEsf = Object.assign({}, opcoes, {
-                  style: () => ({
-                    pane: 'paneRestricoes',
-                    color: corEsf,
-                    fillColor: corEsf,
-                    weight: 1.2,
-                    fillOpacity: 0.35
-                  })
-                });
-                window.SUBGRUPOS_UCS[esfKey] = L.geoJSON(null, opcEsf);
-              }
-
-              dados.features.forEach(f => {
-                const esf = classificarEsfera(f.properties);
-                const alvo = window.SUBGRUPOS_UCS[esf.id] || window.SUBGRUPOS_UCS['Outros'];
-                if (alvo) alvo.addData(f);
-              });
-
-              CAMADAS_MAPA[id] = L.featureGroup();
-              for (const [esfKey, fg] of Object.entries(window.SUBGRUPOS_UCS)) {
-                CAMADAS_MAPA[id].addLayer(fg);
-                const cntBadge = document.getElementById(`subcnt-uc-${esfKey}`);
-                if (cntBadge) cntBadge.innerText = `(${fg.getLayers().length})`;
-              }
-
-              if (chkEl && chkEl.checked) CAMADAS_MAPA[id].addTo(mapa);
-              if (cntEl) cntEl.innerText = `(${dados.features.length})`;
-            } else if (id === 'instalacoes_portuarias') {
+                              pointToLayer: (f, latlng) => {
+            if (id === 'instalacoes_portuarias') {
               const cat = PortClassification.classificar(f.properties);
               const m = L.circleMarker(latlng, {
                 pane: 'panePontos',
@@ -3304,12 +3265,40 @@
 
         if (ext === 'geojson' || ext === 'json') {
           geojson = JSON.parse(await file.text());
-        } else if (ext === 'zip') {
-          if (!fnShp) throw new Error('Biblioteca de Shapefile (shpjs) indisponível. Verifique conexão com a internet.');
+                } else if (ext === 'zip') {
+          if (!fnShp) throw new Error('Biblioteca de Shapefile (shpjs) indisponível. Verifique a conexão com a internet.');
           try {
-            geojson = await fnShp(await file.arrayBuffer());
+            // Descompactação direta e segura via JSZip para evitar conflito de versão do shpjs
+            const zip = await JSZip.loadAsync(file);
+            const entradas = Object.keys(zip.files).filter(n => !n.includes('__MACOSX') && !n.startsWith('.'));
+            
+            // Localiza os arquivos .shp, .dbf e .prj (inclusive se estiverem dentro de subpastas do ZIP)
+            const shpNome = entradas.find(n => n.toLowerCase().endsWith('.shp'));
+            if (!shpNome) {
+              // Se não encontrou .shp explícito, tenta o método nativo de fallback
+              const buf = await file.arrayBuffer();
+              geojson = await fnShp(buf);
+            } else {
+              const baseNome = shpNome.replace(/\.shp$/i, '');
+              const dbfNome = entradas.find(n => n.replace(/\.dbf$/i, '').toLowerCase() === baseNome.toLowerCase() && n.toLowerCase().endsWith('.dbf')) ||
+                              entradas.find(n => n.toLowerCase().endsWith('.dbf'));
+              const prjNome = entradas.find(n => n.replace(/\.prj$/i, '').toLowerCase() === baseNome.toLowerCase() && n.toLowerCase().endsWith('.prj')) ||
+                              entradas.find(n => n.toLowerCase().endsWith('.prj'));
+
+              const shpBuf = await zip.files[shpNome].async('arraybuffer');
+              const dbfBuf = dbfNome ? await zip.files[dbfNome].async('arraybuffer') : null;
+              const prjTxt = prjNome ? await zip.files[prjNome].async('string') : null;
+
+              if (dbfBuf) {
+                geojson = await fnShp({ shp: shpBuf, dbf: dbfBuf, prj: prjTxt });
+              } else {
+                UI.toast(`Aviso: Arquivo .dbf não encontrado no zip "${nome}". Geometrias carregadas sem atributos.`);
+                geojson = await fnShp({ shp: shpBuf, prj: prjTxt });
+              }
+            }
           } catch (errZip) {
-            throw new Error(`Falha ao ler o .zip como Shapefile: ${errZip.message || errZip}. Certifique-se de que o .zip contém os arquivos .shp e .dbf com o mesmo nome na raiz.`);
+            console.error('Erro na descompactação do Shapefile ZIP:', errZip);
+            throw new Error(`Falha ao ler o Shapefile ZIP "${nome}": ${errZip.message || errZip}`);
           }
         } else if (ext === 'kml') {
           geojson = this._kmlDeTexto(await file.text());
