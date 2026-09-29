@@ -1099,7 +1099,7 @@
       ferrovias: { nome: "Malha Ferroviária Federal", grupo: "infra", arquivos: ["dados/ferrovias.geojson"], cor: "#a855f7", opacidade: 0.9, peso: 2.5, tipoGeo: "linha", ativa: true, camposVisiveis: [] },
       snv_1973: { nome: "Sistema Nacional de Viação (1973)", grupo: "infra", arquivos: ["dados/snv_1973.geojson"], cor: "#94a3b8", opacidade: 0.7, peso: 1.8, tipoGeo: "linha", ativa: false, camposVisiveis: [] },
       ucs_federais: { nome: "Unidades de Conservação Federais (ICMBio)", grupo: "restricoes", arquivos: ["dados/ucs_federais.geojson"], cor: "#15803d", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: [] },
-      ucs_todas_mma: { nome: "Todas as UCs do Brasil (CNUC / MMA)", grupo: "restricoes", arquivos: ["dados/ucs_todas_mma.geojson"], cor: "#047857", opacidade: 0.3, peso: 1.2, tipoGeo: "poligono", ativa: false, camposVisiveis: [] }
+      ucs_todas_mma: { nome: "Todas as UCs do Brasil (CNUC / MMA)", grupo: "restricoes", arquivos: ["dados/ucs_todas_mma.geojson", "dados/ucs_mma.geojson", "dados/cnuc.geojson", "dados/ucs.geojson"], cor: "#047857", opacidade: 0.3, peso: 1.2, tipoGeo: "poligono", ativa: false, camposVisiveis: [] }
     };
 
 
@@ -1375,8 +1375,8 @@
             }
             return s;
           },
-          pointToLayer: (f, latlng) => {
-            if (id === 'ucs_todas_mma') {
+                    pointToLayer: (f, latlng) => {
+                        if (id === 'ucs_todas_mma') {
               if (!window.SUBGRUPOS_UCS) window.SUBGRUPOS_UCS = {};
               const coresPadraoUC = {
                 Federal: '#15803d',
@@ -1438,7 +1438,7 @@
               return m;
             }
             return L.circleMarker(latlng, {
-              pane: 'panePontos',
+              pane: (cfg.grupo === 'restricoes') ? 'paneRestricoes' : 'panePontos',
               radius: cfg.peso || 5,
               fillColor: cfg.cor,
               color: '#ffffff',
