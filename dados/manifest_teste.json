@@ -154,16 +154,5 @@
       "tipoGeo": "poligono",
       "ativa": false
     },
-    {
-      "id": "unidades_conservacao",
-      "arquivo": "dados/unidades_conservacao.geojson",
-      "nome": "Unidades de Conservação (Geral)",
-      "grupo": "restricoes",
-      "cor": "#16a34a",
-      "peso": 1.5,
-      "opacidade": 0.35,
-      "tipoGeo": "poligono",
-      "ativa": false
-    }
   ]
 }
