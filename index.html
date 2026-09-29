@@ -983,6 +983,43 @@
     /**
      * MÓDULO 1.1: CLASSIFICAÇÃO REGULATÓRIA DE INSTALAÇÕES PORTUÁRIAS (ANTAQ / LEI 12.815)
      */
+    
+    window.SUBGRUPOS_UCS = {};
+    window.FILTRO_UC_ATUAL = "TODOS";
+
+    function classificarEsfera(props) {
+      if (!props) return { id: 'Outros', nome: 'Outros / Geral', cor: '#047857' };
+      let val = '';
+      for (const [k, v] of Object.entries(props)) {
+        const kLow = k.toLowerCase().trim();
+        if (kLow === 'esfera' || kLow.includes('esfera') || kLow.includes('jurisd') || kLow.includes('gestao') || kLow === 'administracao' || kLow === 'tipo_adm') {
+          if (v && typeof v === 'string' && v.trim().length > 0) {
+            val = v.trim();
+            break;
+          }
+        }
+      }
+      if (!val) {
+        for (const [k, v] of Object.entries(props)) {
+          const vStr = String(v || '').toLowerCase();
+          if (vStr.includes('icmbio') || vStr.includes('ibama') || vStr.includes('união') || vStr.includes('uniao')) {
+            return { id: 'Federal', nome: 'Federal (ICMBio/União)', cor: '#15803d' };
+          }
+        }
+      }
+      const vLow = val.toLowerCase();
+      if (vLow.includes('fed') || vLow.includes('uni')) {
+        return { id: 'Federal', nome: 'Federal (ICMBio/União)', cor: '#15803d' };
+      } else if (vLow.includes('est')) {
+        return { id: 'Estadual', nome: 'Estadual (OEMA)', cor: '#059669' };
+      } else if (vLow.includes('mun')) {
+        return { id: 'Municipal', nome: 'Municipal (Prefeituras)', cor: '#0d9488' };
+      } else if (vLow.includes('priv') || vLow.includes('rppn') || vLow.includes('partic')) {
+        return { id: 'Privada', nome: 'RPPN / Privada', cor: '#84cc16' };
+      }
+      return { id: 'Outros', nome: 'Outros', cor: '#047857' };
+    }
+
     const PortClassification = {
       tipos: {
         ORGANIZADO: { id: 'ORGANIZADO', nome: 'Porto Organizado (Lei 12.815)', cor: '#0284c7', raio: 7.5, peso: 2 },
@@ -1039,11 +1076,10 @@
       pais: { nome: "Limite Nacional", grupo: "limites", arquivos: ["dados/pais.geojson"], cor: "#cbd5e1", opacidade: 0.5, peso: 2, tipoGeo: "poligono_linha", ativa: false, camposVisiveis: [] },
       tis_poligonais: { nome: "Terras Indígenas (FUNAI)", grupo: "restricoes", arquivos: ["dados/tis_poligonais.geojson"], cor: "#ef4444", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: [] },
       estados_amazonia_legal: { nome: "Estados da Amazônia Legal", grupo: "restricoes", arquivos: ["dados/estados_amazonia_legal.geojson"], cor: "#059669", opacidade: 0.1, peso: 2, tipoGeo: "poligono_tracejado", ativa: true, camposVisiveis: [] },
-      unidades_conservacao: { nome: "Unidades de Conservação (Geral)", grupo: "restricoes", arquivos: ["dados/unidades_conservacao.geojson"], cor: "#15803d", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: false, camposVisiveis: [] },
       rodovias: { nome: "Rodovias Federais (SNV)", grupo: "infra", arquivos: ["dados/rodovias.geojson"], cor: "#f97316", opacidade: 0.85, peso: 2.2, tipoGeo: "linha", ativa: true, camposVisiveis: [] },
       ferrovias: { nome: "Malha Ferroviária Federal", grupo: "infra", arquivos: ["dados/ferrovias.geojson"], cor: "#a855f7", opacidade: 0.9, peso: 2.5, tipoGeo: "linha", ativa: true, camposVisiveis: [] },
       snv_1973: { nome: "Sistema Nacional de Viação (1973)", grupo: "infra", arquivos: ["dados/snv_1973.geojson"], cor: "#94a3b8", opacidade: 0.7, peso: 1.8, tipoGeo: "linha", ativa: false, camposVisiveis: [] },
-      ucs_federais: { nome: "Unidades de Conservação Federais (ICMBio)", grupo: "restricoes", arquivos: ["dados/ucs_federais.geojson"], cor: "#15803d", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: [] },
+      ucs_federais: { nome: "Unidades de Conservação Federais (ICMBio)", grupo: "restricoes", arquivos: ["dados/ucs_federais.geojson", "dados/unidades_conservacao.geojson"], cor: "#15803d", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: [] },
       ucs_todas_mma: { nome: "Todas as UCs do Brasil (CNUC / MMA)", grupo: "restricoes", arquivos: ["dados/ucs_todas_mma.geojson"], cor: "#047857", opacidade: 0.3, peso: 1.2, tipoGeo: "poligono", ativa: false, camposVisiveis: [] }
     };
 
@@ -1190,8 +1226,7 @@
             embarcacoes: "#38bdf8", rodovias: "#f97316", ferrovias: "#a855f7", snv_1973: "#94a3b8",
             uf: "#60a5fa", regioes: "#818cf8", pais: "#cbd5e1",
             tis_poligonais: "#ef4444", estados_amazonia_legal: "#059669",
-            ucs_federais: "#15803d", ucs_todas_mma: "#047857", unidades_conservacao: "#16a34a"
-          },
+            ucs_federais: "#15803d", ucs_todas_mma: "#047857", },
           coresPortos: {
             ORGANIZADO: "#0284c7", PUBLICO: "#06b6d4", TUP: "#10b981", IP4: "#f59e0b", ETC: "#8b5cf6", OUTROS: "#64748b"
           }
@@ -1203,8 +1238,7 @@
             embarcacoes: "#ffff00", rodovias: "#ffaa00", ferrovias: "#ff00bb", snv_1973: "#888888",
             uf: "#38bdf8", regioes: "#a855f7", pais: "#ffffff",
             tis_poligonais: "#ff0055", estados_amazonia_legal: "#10b981",
-            ucs_federais: "#00ff66", ucs_todas_mma: "#00dd77", unidades_conservacao: "#00ee88"
-          },
+            ucs_federais: "#00ff66", ucs_todas_mma: "#00dd77", },
           coresPortos: {
             ORGANIZADO: "#00f0ff", PUBLICO: "#00a8ff", TUP: "#39ff14", IP4: "#ffe600", ETC: "#d600ff", OUTROS: "#94a3b8"
           }
@@ -1216,8 +1250,7 @@
             embarcacoes: "#0369a1", rodovias: "#c2410c", ferrovias: "#581c87", snv_1973: "#64748b",
             uf: "#374151", regioes: "#6b7280", pais: "#1f2937",
             tis_poligonais: "#b91c1c", estados_amazonia_legal: "#15803d",
-            ucs_federais: "#166534", ucs_todas_mma: "#065f46", unidades_conservacao: "#15803d"
-          },
+            ucs_federais: "#166534", ucs_todas_mma: "#065f46", },
           coresPortos: {
             ORGANIZADO: "#003366", PUBLICO: "#336699", TUP: "#2e7d32", IP4: "#e65100", ETC: "#6a1b9a", OUTROS: "#546e7a"
           }
@@ -1229,8 +1262,7 @@
             embarcacoes: "#440154", rodovias: "#fde725", ferrovias: "#7ad151", snv_1973: "#414487",
             uf: "#31688e", regioes: "#26828e", pais: "#fde725",
             tis_poligonais: "#d95f02", estados_amazonia_legal: "#1f968b",
-            ucs_federais: "#2a788e", ucs_todas_mma: "#22a884", unidades_conservacao: "#2a788e"
-          },
+            ucs_federais: "#2a788e", ucs_todas_mma: "#22a884", },
           coresPortos: {
             ORGANIZADO: "#440154", PUBLICO: "#3b528b", TUP: "#21918c", IP4: "#5ec962", ETC: "#90d743", OUTROS: "#737373"
           }
@@ -1293,7 +1325,36 @@
         let paneAlvo = 'overlayPane';
         if (id === 'instalacoes_portuarias' || cfg.tipoGeo === 'ponto') {
           paneAlvo = 'panePontos';
-        } else if (cfg.tipoGeo === 'linha' || cfg.tipoGeo === 'linha_tracejada' || cfg.grupo === 'infra') {
+        } else if (id === 'ucs_todas_mma') {
+            const esferasUC = [
+              { id: 'Federal', nome: 'Federal (ICMBio)', cor: '#15803d' },
+              { id: 'Estadual', nome: 'Estadual (OEMA)', cor: '#059669' },
+              { id: 'Municipal', nome: 'Municipal', cor: '#0d9488' },
+              { id: 'Privada', nome: 'RPPN / Privada', cor: '#84cc16' }
+            ];
+            let subItensHTML = '';
+            for (const esf of esferasUC) {
+              const chkSub = document.getElementById(`chk-sub-uc-${esf.id}`);
+              const subAtiva = chkSub ? chkSub.checked : true;
+              if (subAtiva) {
+                subItensHTML += `
+                  <div class="item-legenda-linha">
+                    <span class="simbolo-ponto" style="background:${esf.cor}; width:10px; height:10px; border-radius:2px;"></span>
+                    <span>${esf.nome}</span>
+                  </div>
+                `;
+              }
+            }
+            if (subItensHTML) {
+              l.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:4px; width:100%; border-bottom:1px dashed #cbd5e1; padding-bottom:6px;">
+                  <span style="font-weight:700; color:#0f172a; font-size:11px;">Todas as UCs (Esferas):</span>
+                  ${subItensHTML}
+                </div>
+              `;
+              corpo.appendChild(l);
+            }
+          } else if (cfg.tipoGeo === 'linha' || cfg.tipoGeo === 'linha_tracejada' || cfg.grupo === 'infra') {
           paneAlvo = 'paneLinhas';
         } else if (cfg.grupo === 'restricoes') {
           paneAlvo = 'paneRestricoes';
@@ -1321,7 +1382,47 @@
             return s;
           },
           pointToLayer: (f, latlng) => {
-            if (id === 'instalacoes_portuarias') {
+            
+            if (id === 'ucs_todas_mma') {
+              if (!window.SUBGRUPOS_UCS) window.SUBGRUPOS_UCS = {};
+              const coresPadraoUC = {
+                Federal: '#15803d',
+                Estadual: '#059669',
+                Municipal: '#0d9488',
+                Privada: '#84cc16',
+                Outros: '#047857'
+              };
+
+              for (const [esfKey, corEsf] of Object.entries(coresPadraoUC)) {
+                if (window.SUBGRUPOS_UCS[esfKey]) mapa.removeLayer(window.SUBGRUPOS_UCS[esfKey]);
+                const opcEsf = Object.assign({}, opcoes, {
+                  style: () => ({
+                    color: corEsf,
+                    fillColor: corEsf,
+                    weight: 1.2,
+                    fillOpacity: 0.35
+                  })
+                });
+                window.SUBGRUPOS_UCS[esfKey] = L.geoJSON(null, opcEsf);
+              }
+
+              dados.features.forEach(f => {
+                const esf = classificarEsfera(f.properties);
+                const alvo = window.SUBGRUPOS_UCS[esf.id] || window.SUBGRUPOS_UCS['Outros'];
+                if (alvo) alvo.addData(f);
+              });
+
+              CAMADAS_MAPA[id] = L.featureGroup();
+              for (const [esfKey, fg] of Object.entries(window.SUBGRUPOS_UCS)) {
+                CAMADAS_MAPA[id].addLayer(fg);
+                const cntBadge = document.getElementById(`subcnt-uc-${esfKey}`);
+                if (cntBadge) cntBadge.innerText = `(${fg.getLayers().length})`;
+              }
+
+              if (chkEl && chkEl.checked) CAMADAS_MAPA[id].addTo(mapa);
+              if (cntEl) cntEl.innerText = `(${dados.features.length})`;
+            } else if (id === 'instalacoes_portuarias') {
+
               const cat = PortClassification.classificar(f.properties);
               return L.circleMarker(latlng, {
                 pane: 'panePontos',
@@ -1378,6 +1479,15 @@
         }
         this.atualizarLegenda();
       },
+      
+      atualizarSubcamadaUC: function(esfId, cor) {
+        if (!window.SUBGRUPOS_UCS || !window.SUBGRUPOS_UCS[esfId]) return;
+        window.SUBGRUPOS_UCS[esfId].eachLayer(m => {
+          if (m.setStyle) m.setStyle({ color: cor, fillColor: cor });
+        });
+        this.atualizarLegenda();
+      },
+
       atualizarSubcamadaPorto: function(tKey, novaCor) {
         if (!PortClassification.tipos[tKey]) return;
         PortClassification.tipos[tKey].cor = novaCor;
@@ -1428,6 +1538,35 @@
               l.innerHTML = `
                 <div style="display:flex; flex-direction:column; gap:4px; width:100%; border-bottom:1px dashed #cbd5e1; padding-bottom:6px;">
                   <span style="font-weight:700; color:#0f172a; font-size:11px;">Instalações Portuárias:</span>
+                  ${subItensHTML}
+                </div>
+              `;
+              corpo.appendChild(l);
+            }
+          } else if (id === 'ucs_todas_mma') {
+            const esferasUC = [
+              { id: 'Federal', nome: 'Federal (ICMBio)', cor: '#15803d' },
+              { id: 'Estadual', nome: 'Estadual (OEMA)', cor: '#059669' },
+              { id: 'Municipal', nome: 'Municipal', cor: '#0d9488' },
+              { id: 'Privada', nome: 'RPPN / Privada', cor: '#84cc16' }
+            ];
+            let subItensHTML = '';
+            for (const esf of esferasUC) {
+              const chkSub = document.getElementById(`chk-sub-uc-${esf.id}`);
+              const subAtiva = chkSub ? chkSub.checked : true;
+              if (subAtiva) {
+                subItensHTML += `
+                  <div class="item-legenda-linha">
+                    <span class="simbolo-ponto" style="background:${esf.cor}; width:10px; height:10px; border-radius:2px;"></span>
+                    <span>${esf.nome}</span>
+                  </div>
+                `;
+              }
+            }
+            if (subItensHTML) {
+              l.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:4px; width:100%; border-bottom:1px dashed #cbd5e1; padding-bottom:6px;">
+                  <span style="font-weight:700; color:#0f172a; font-size:11px;">Todas as UCs (Esferas):</span>
                   ${subItensHTML}
                 </div>
               `;
@@ -1515,6 +1654,26 @@
               selSub.appendChild(el);
             }
             selSub.value = window.FILTRO_PORTO_ATUAL || "TODOS";
+          } else if (idCamada === 'ucs_todas_mma') {
+            selSub.innerHTML = `
+              <option value="TODOS">🏛️ Todas as Esferas Federativas</option>
+              <option value="Federal">🏛️ Federal (ICMBio/União)</option>
+              <option value="Estadual">🏢 Estadual (OEMA)</option>
+              <option value="Municipal">🏙️ Municipal (Prefeituras)</option>
+              <option value="Privada">🌲 RPPN / Privada</option>
+            `;
+            selSub.style.display = 'inline-block';
+            selSub.value = window.FILTRO_UC_ATUAL || "TODOS";
+          } else if (false) {
+            selSub.innerHTML = '<option value="TODOS">⚓ Todos os Regimes Portuários</option>';
+            selSub.style.display = 'inline-block';
+            for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
+              const el = document.createElement('option');
+              el.value = tKey;
+              el.innerText = cat.nome;
+              selSub.appendChild(el);
+            }
+            selSub.value = window.FILTRO_PORTO_ATUAL || "TODOS";
           } else {
             // Detecção e Filtro de Esfera Governamental ou Jurisdição
             const g = DADOS_GEOJSON_BRUTOS[idCamada];
@@ -1573,6 +1732,26 @@
         }
 
         if (idCamada === 'instalacoes_portuarias') {
+            selSub.innerHTML = '<option value="TODOS">⚓ Todos os Regimes Portuários</option>';
+            selSub.style.display = 'inline-block';
+            for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
+              const el = document.createElement('option');
+              el.value = tKey;
+              el.innerText = cat.nome;
+              selSub.appendChild(el);
+            }
+            selSub.value = window.FILTRO_PORTO_ATUAL || "TODOS";
+          } else if (idCamada === 'ucs_todas_mma') {
+            selSub.innerHTML = `
+              <option value="TODOS">🏛️ Todas as Esferas Federativas</option>
+              <option value="Federal">🏛️ Federal (ICMBio/União)</option>
+              <option value="Estadual">🏢 Estadual (OEMA)</option>
+              <option value="Municipal">🏙️ Municipal (Prefeituras)</option>
+              <option value="Privada">🌲 RPPN / Privada</option>
+            `;
+            selSub.style.display = 'inline-block';
+            selSub.value = window.FILTRO_UC_ATUAL || "TODOS";
+          } else if (false) {
           this.aplicarFiltro(idCamada, window.FILTRO_PORTO_ATUAL || "TODOS");
         }
       },
@@ -1625,6 +1804,36 @@
             TabelaManager.filtroPorto = valor;
             TabelaManager.pagina = 1;
             TabelaManager.aplicarFiltrosInternos();
+            TabelaManager.renderizar();
+          }
+        } else if (idCamada === 'ucs_todas_mma' && window.SUBGRUPOS_UCS) {
+          let visiveis = 0;
+          const total = DADOS_GEOJSON_BRUTOS['ucs_todas_mma']?.features?.length || 0;
+          for (const [esfKey, fg] of Object.entries(window.SUBGRUPOS_UCS)) {
+            const chkSub = document.getElementById(`chk-sub-uc-${esfKey}`);
+            const deveLigar = (valor === 'TODOS' || esfKey === valor);
+            if (chkSub) chkSub.checked = deveLigar;
+            if (deveLigar) {
+              if (!mapa.hasLayer(fg)) fg.addTo(mapa);
+              visiveis += fg.getLayers().length;
+            } else {
+              if (mapa.hasLayer(fg)) mapa.removeLayer(fg);
+            }
+          }
+          const cntEl = document.getElementById('cnt-ucs_todas_mma');
+          if (cntEl) {
+            cntEl.innerText = (valor === 'TODOS' || visiveis === total) ? `(${total})` : `(${visiveis}/${total})`;
+          }
+          window.FILTRO_UC_ATUAL = valor;
+          UI.toast(`Filtro [Esfera]: ${valor === 'TODOS' ? 'Todas as Esferas' : valor} (${visiveis} de ${total}).`);
+
+          if (TabelaManager.camadaAtualId === 'ucs_todas_mma' && document.getElementById('painel-tabela').classList.contains('aberto')) {
+            if (valor === 'TODOS') {
+              TabelaManager.filtradas = DADOS_GEOJSON_BRUTOS['ucs_todas_mma'].features;
+            } else {
+              TabelaManager.filtradas = DADOS_GEOJSON_BRUTOS['ucs_todas_mma'].features.filter(f => classificarEsfera(f.properties).id === valor);
+            }
+            TabelaManager.pagina = 1;
             TabelaManager.renderizar();
           }
         } else if (CAMADAS_MAPA[idCamada] && DADOS_GEOJSON_BRUTOS[idCamada]) {
@@ -2288,7 +2497,8 @@
         const uRodovias = agruparUF(gRodovias);
         const uFerrovias = agruparUF(gFerrovias);
 
-        const todasUfs = Array.from(new Set([...Object.keys(uPortos), ...Object.keys(uVias), ...Object.keys(uRodovias), ...Object.keys(uFerrovias)]));
+        const LISTA_VALIDA = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+        const todasUfs = Array.from(new Set([...Object.keys(uPortos), ...Object.keys(uVias), ...Object.keys(uRodovias), ...Object.keys(uFerrovias)])).filter(u => LISTA_VALIDA.includes(u));
         todasUfs.sort((a,b) => ((uPortos[b]||0) + (uVias[b]||0) + (uRodovias[b]||0) + (uFerrovias[b]||0)) - ((uPortos[a]||0) + (uVias[a]||0) + (uRodovias[a]||0) + (uFerrovias[a]||0)));
         const topUfs = todasUfs.slice(0, 10);
 
@@ -2390,7 +2600,8 @@
         const ctxDistrib = document.getElementById('canvas-esferas-distrib')?.getContext('2d');
         if (ctxDistrib) {
           if (this.chartEsfDistrib) this.chartEsfDistrib.destroy();
-          const ufs = Object.keys(contPorUf).sort((a,b) => {
+          const LISTA_VALIDA = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+          const ufs = Object.keys(contPorUf).filter(u => LISTA_VALIDA.includes(u)).sort((a,b) => {
             const totB = Object.values(contPorUf[b]).reduce((acc,v)=>acc+v, 0);
             const totA = Object.values(contPorUf[a]).reduce((acc,v)=>acc+v, 0);
             return totB - totA;
@@ -2439,7 +2650,8 @@
         const uUcs = agruparUF(gUcs);
         const uTis = agruparUF(gTis);
 
-        const todasUfs = Array.from(new Set([...Object.keys(uPortos), ...Object.keys(uUcs), ...Object.keys(uTis)]));
+        const LISTA_VALIDA = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+        const todasUfs = Array.from(new Set([...Object.keys(uPortos), ...Object.keys(uUcs), ...Object.keys(uTis)])).filter(u => LISTA_VALIDA.includes(u));
         todasUfs.sort((a,b) => ((uPortos[b]||0) + (uVias[b]||0) + (uUcs[b]||0) + (uTis[b]||0)) - ((uPortos[a]||0) + (uVias[a]||0) + (uUcs[a]||0) + (uTis[a]||0)));
         const topUfs = todasUfs.slice(0, 10);
 
@@ -2512,10 +2724,19 @@
         }
 
         const contUf = {};
+        let naoIdentificados = 0;
+        const LISTA_VALIDA = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+        
         g.features.forEach(f => {
-          const u = this.extrairUF(f.properties, f);
-          if (u) contUf[u] = (contUf[u] || 0) + 1;
+          const u = this.extrairUF(f.properties, f, DADOS_GEOJSON_BRUTOS['uf']);
+          if (u && LISTA_VALIDA.includes(u)) {
+            contUf[u] = (contUf[u] || 0) + 1;
+          } else {
+            naoIdentificados++;
+          }
         });
+
+        // Ranking estrito dos 10 maiores Estados brasileiros (exclui Outros)
         const topUfs = Object.entries(contUf).sort((a,b) => b[1] - a[1]).slice(0, 10);
         const ctxUf = document.getElementById('canvas-oficial-ufs')?.getContext('2d');
         if (ctxUf) {
@@ -2544,7 +2765,7 @@
         }
       },
 
-      extrairUF: function(p, f, dadosUf) {
+            extrairUF: function(p, f, dadosUf) {
         const LISTA_UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
         const MAPA_NOMES = {
           'ACRE': 'AC', 'ALAGOAS': 'AL', 'AMAPA': 'AP', 'AMAPÁ': 'AP', 'AMAZONAS': 'AM', 'BAHIA': 'BA', 'CEARA': 'CE', 'CEARÁ': 'CE',
@@ -2561,7 +2782,19 @@
           '41': 'PR', '42': 'SC', '43': 'RS',
           '50': 'MS', '51': 'MT', '52': 'GO', '53': 'DF'
         };
-
+        const CIDADES_PORTUARIAS = {
+          'SANTOS': 'SP', 'SAO SEBASTIAO': 'SP', 'SÃO SEBASTIÃO': 'SP', 'ILHABELA': 'SP', 'PARANAGUA': 'PR', 'PARANAGUÁ': 'PR',
+          'ANTONINA': 'PR', 'ITAJAI': 'SC', 'ITAJAÍ': 'SC', 'SAO FRANCISCO DO SUL': 'SC', 'IMBITUBA': 'SC', 'NAVEGANTES': 'SC',
+          'ITAPOA': 'SC', 'ITAPOÁ': 'SC', 'RIO GRANDE': 'RS', 'PORTO ALEGRE': 'RS', 'PELOTAS': 'RS', 'CANOAS': 'RS', 'TRIUNFO': 'RS',
+          'VITORIA': 'ES', 'VITÓRIA': 'ES', 'VILA VELHA': 'ES', 'ARACRUZ': 'ES', 'TUBARAO': 'ES', 'TUBARÃO': 'ES', 'UBU': 'ES',
+          'SALVADOR': 'BA', 'ARATU': 'BA', 'ILHEUS': 'BA', 'ILHÉUS': 'BA', 'CANDEIAS': 'BA', 'MADRE DE DEUS': 'BA',
+          'SUAPE': 'PE', 'RECIFE': 'PE', 'FORTALEZA': 'CE', 'PECEM': 'CE', 'PECÉM': 'CE', 'ITAQUI': 'MA', 'SAO LUIS': 'MA', 'SÃO LUÍS': 'MA',
+          'PONTA DA MADEIRA': 'MA', 'BELEM': 'PA', 'BELÉM': 'PA', 'BARCARENA': 'PA', 'SANTAREM': 'PA', 'SANTARÉM': 'PA',
+          'VILA DO CONDE': 'PA', 'ITAITUBA': 'PA', 'JURUTI': 'PA', 'ORIXIMINA': 'PA', 'ORIXIMINÁ': 'PA',
+          'MANAUS': 'AM', 'ITACOATIARA': 'AM', 'COARI': 'AM', 'PARINTINS': 'AM', 'TABATINGA': 'AM', 'TEFE': 'AM', 'TEFÉ': 'AM',
+          'MACAPA': 'AP', 'MACAPÁ': 'AP', 'SANTANA': 'AP', 'PORTO VELHO': 'RO', 'CORUMBA': 'MS', 'CORUMBÁ': 'MS', 'LADARIO': 'MS', 'LADÁRIO': 'MS',
+          'ANGRA DOS REIS': 'RJ', 'ITAGUAI': 'RJ', 'ITAGUAÍ': 'RJ', 'NITEROI': 'RJ', 'NITERÓI': 'RJ', 'RIO DE JANEIRO': 'RJ', 'AÇU': 'RJ', 'ACU': 'RJ'
+        };
 
         if (p) {
           // 1. Chaves prioritárias diretas
@@ -2576,79 +2809,70 @@
             }
           }
 
+          // 2. Busca por cidades portuárias conhecidas em campos de texto
+          const camposTexto = [p.municipio, p.MUNICIPIO, p.nome, p.NOME_INSTALACAO, p.cidade, p.CIDADE, p.endereco, p.ENDERECO, p.ds_local, p.DS_LOCAL];
+          for (const txt of camposTexto) {
+            if (txt && typeof txt === 'string') {
+              const upper = txt.toUpperCase();
+              // Verifica se tem padrão " - UF" ou "/UF"
+              const matchSigla = upper.match(/[\s\-\/\(]([A-Z]{2})[\s\)\.\,]?$/);
+              if (matchSigla && LISTA_UFS.includes(matchSigla[1])) return matchSigla[1];
 
-          // 2. Varredura por propriedades curtas ou códigos IBGE
+              for (const [cid, ufCid] of Object.entries(CIDADES_PORTUARIAS)) {
+                if (upper.includes(cid)) return ufCid;
+              }
+            }
+          }
+
+          // 3. Varredura por códigos IBGE
           for (const [k, val] of Object.entries(p)) {
             if (val !== undefined && val !== null) {
               const v = String(val).trim().toUpperCase();
               if (v.length === 2 && LISTA_UFS.includes(v)) return v;
               if (MAPA_NOMES[v]) return MAPA_NOMES[v];
-              if ((k.toLowerCase().includes('uf') || k.toLowerCase().includes('ibge') || k.toLowerCase().includes('mun')) && typeof val === 'number') {
-                const s = String(val).padStart(2, '0');
-                const cod2 = s.substring(0, 2);
-                if (IBGE_UF[cod2]) return IBGE_UF[cod2];
-              }
-            }
-          }
-
-
-          // 3. Busca de padrão em campos textuais sem regex arriscado
-          const camposTexto = [p.municipio, p.MUNICIPIO, p.nome, p.NOME_INSTALACAO, p.endereco, p.ENDERECO, p.cidade, p.CIDADE];
-          for (let i = 0; i < camposTexto.length; i++) {
-            const txt = camposTexto[i];
-            if (txt && typeof txt === 'string') {
-              const palavras = txt.toUpperCase().split(/[^A-Z]/);
-              for (let j = 0; j < palavras.length; j++) {
-                if (palavras[j].length === 2 && LISTA_UFS.includes(palavras[j])) {
-                  return palavras[j];
-                }
+              if ((k.toLowerCase().includes('ibge') || k.toLowerCase().includes('mun')) && typeof val === 'number') {
+                const s = String(val).padStart(2, '0').substring(0, 2);
+                if (IBGE_UF[s]) return IBGE_UF[s];
               }
             }
           }
         }
 
-
-        // 4. Fallback Espacial Ponto em Polígono com a camada dados/uf.geojson
-        if (f && f.geometry && f.geometry.type === 'Point' && dadosUf && dadosUf.features) {
-          const coords = f.geometry.coordinates;
-          if (coords && coords.length >= 2) {
-            const ptLng = coords[0], ptLat = coords[1];
-            const pontoEmAnel = (pt, anel) => {
-              let dentro = false;
-              for (let i = 0, j = anel.length - 1; i < anel.length; j = i++) {
-                const xi = anel[i][0], yi = anel[i][1];
-                const xj = anel[j][0], yj = anel[j][1];
-                const intersect = ((yi > pt[1]) !== (yj > pt[1])) &&
-                  (pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi);
-                if (intersect) dentro = !dentro;
-              }
-              return dentro;
-            };
-            for (let i = 0; i < dadosUf.features.length; i++) {
-              const featUf = dadosUf.features[i];
-              const geom = featUf.geometry;
-              if (!geom) continue;
-              let achou = false;
-              if (geom.type === 'Polygon' && geom.coordinates && geom.coordinates[0]) {
-                achou = pontoEmAnel([ptLng, ptLat], geom.coordinates[0]);
-              } else if (geom.type === 'MultiPolygon' && geom.coordinates) {
-                for (let k = 0; k < geom.coordinates.length; k++) {
-                  if (geom.coordinates[k] && geom.coordinates[k][0] && pontoEmAnel([ptLng, ptLat], geom.coordinates[k][0])) {
-                    achou = true;
-                    break;
-                  }
-                }
-              }
-              if (achou) {
-                const pUf = featUf.properties || {};
-                const siglaUf = String(pUf.SIGLA_UF || pUf.sigla || pUf.UF || pUf.uf || pUf.nome || '').trim().toUpperCase();
-                if (LISTA_UFS.includes(siglaUf)) return siglaUf;
-                if (MAPA_NOMES[siglaUf]) return MAPA_NOMES[siglaUf];
-              }
-            }
-          }
+        // 4. Fallback Espacial por Coordenadas Costeiras ou Polígono de UF
+        if (!dadosUf && typeof DADOS_GEOJSON_BRUTOS !== 'undefined') {
+          dadosUf = DADOS_GEOJSON_BRUTOS['uf'];
         }
 
+        if (f && f.geometry && f.geometry.coordinates) {
+          let coords = f.geometry.coordinates;
+          if (f.geometry.type === 'Point' && coords.length >= 2) {
+            const lng = coords[0], lat = coords[1];
+
+            // Heurística de coordenadas costeiras/marítimas do Brasil
+            if (lat >= -2.0 && lat <= 4.5 && lng <= -49.0 && lng >= -53.0) return 'AP';
+            if (lat >= -4.5 && lat <= 1.0 && lng <= -45.0 && lng >= -52.0) return 'PA';
+            if (lat >= -4.0 && lat <= 0.0 && lng <= -41.0 && lng >= -46.0) return 'MA';
+            if (lat >= -5.0 && lat <= -2.5 && lng <= -37.0 && lng >= -41.5) return 'CE';
+            if (lat >= -6.5 && lat <= -4.8 && lng <= -35.0 && lng >= -37.5) return 'RN';
+            if (lat >= -7.6 && lat <= -6.5 && lng <= -34.7 && lng >= -35.5) return 'PB';
+            if (lat >= -9.0 && lat <= -7.5 && lng <= -34.8 && lng >= -35.5) return 'PE';
+            if (lat >= -10.5 && lat <= -8.8 && lng <= -35.1 && lng >= -36.5) return 'AL';
+            if (lat >= -11.5 && lat <= -10.4 && lng <= -36.4 && lng >= -37.5) return 'SE';
+            if (lat >= -18.4 && lat <= -11.5 && lng <= -37.3 && lng >= -40.5) return 'BA';
+            if (lat >= -21.3 && lat <= -18.3 && lng <= -39.5 && lng >= -41.5) return 'ES';
+            if (lat >= -23.4 && lat <= -21.1 && lng <= -40.8 && lng >= -44.9) return 'RJ';
+            if (lat >= -25.3 && lat <= -23.3 && lng <= -44.6 && lng >= -48.2) return 'SP';
+            if (lat >= -26.0 && lat <= -25.2 && lng <= -48.2 && lng >= -48.8) return 'PR';
+            if (lat >= -29.4 && lat <= -25.9 && lng <= -48.3 && lng >= -49.0) return 'SC';
+            if (lat >= -33.8 && lat <= -29.3 && lng <= -49.6 && lng >= -53.8) return 'RS';
+            if (lat >= -9.5 && lat <= 2.5 && lng <= -58.0 && lng >= -73.0) return 'AM';
+            if (lat >= -13.7 && lat <= -8.0 && lng <= -60.0 && lng >= -66.8) return 'RO';
+            if (lat >= -11.2 && lat <= -7.0 && lng <= -66.8 && lng >= -74.0) return 'AC';
+            if (lat >= -18.1 && lat <= -5.0 && lng <= -46.0 && lng >= -50.8) return 'TO';
+            if (lat >= -18.0 && lat <= -9.0 && lng <= -50.0 && lng >= -61.5) return 'MT';
+            if (lat >= -24.1 && lat <= -17.0 && lng <= -53.0 && lng >= -58.5) return 'MS';
+          }
+        }
 
         return 'Outros';
       },
@@ -3143,11 +3367,42 @@
             ${listaSubHTML}
           </div>
         `;
+      } else if (id === 'ucs_todas_mma') {
+        const esferasUC = [
+          { id: 'Federal', nome: '🏛️ Federal (ICMBio/União)', cor: '#15803d' },
+          { id: 'Estadual', nome: '🏢 Estadual (OEMA)', cor: '#059669' },
+          { id: 'Municipal', nome: '🏙️ Municipal (Prefeituras)', cor: '#0d9488' },
+          { id: 'Privada', nome: '🌲 RPPN / Privada', cor: '#84cc16' }
+        ];
+        let listaSubHTML = '';
+        for (const esf of esferasUC) {
+          listaSubHTML += `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:3px 0;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <input type="color" id="subcolor-uc-${esf.id}" value="${esf.cor}" onchange="Styler.atualizarSubcamadaUC('${esf.id}', this.value)" style="width:16px; height:16px; border:none; padding:0; background:transparent; cursor:pointer;" title="Personalizar cor de ${esf.nome}">
+                <span style="font-weight:600; color:#1e293b;">${esf.nome}</span>
+                <span class="badge-contador" id="subcnt-uc-${esf.id}"></span>
+              </div>
+              <input type="checkbox" id="chk-sub-uc-${esf.id}" checked onchange="toggleSubcamadaUC('${esf.id}', this.checked)">
+            </div>
+          `;
+        }
+
+        subpaletaHTML = `
+          <div style="margin-top:6px; padding:8px 10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; font-size:10px; display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+              <span style="font-weight:700; color:#14532d;">🏛️ Subcamadas por Esfera de Gestão:</span>
+              <span style="font-size:9px; color:#0284c7; cursor:pointer; font-weight:700;" onclick="toggleTodasSubcamadasUC(true)">Marcar Todas</span>
+            </div>
+            ${listaSubHTML}
+          </div>
+        `;
       }
 
       const ehPorto = (id === 'instalacoes_portuarias');
-      const indicadorHTML = ehPorto
-        ? `<span class="legenda-cor" id="indicador-cor-${id}" style="display:inline-flex; align-items:center; justify-content:center; background:#0a2540; color:#38bdf8; font-size:11px;" onclick="toggleGavetaEstilo('${id}')" title="Camada Multicategórica - Clique para ajustar estilo">⚓</span>`
+      const ehMulti = (id === 'instalacoes_portuarias' || id === 'ucs_todas_mma');
+      const indicadorHTML = ehMulti
+        ? `<span class="legenda-cor" id="indicador-cor-${id}" style="display:inline-flex; align-items:center; justify-content:center; background:#0a2540; color:#38bdf8; font-size:11px;" onclick="toggleGavetaEstilo('${id}')" title="Camada Multicategórica - Clique para ajustar estilo">${id === 'instalacoes_portuarias' ? '⚓' : '🏛️'}</span>`
         : `<span class="legenda-cor" id="indicador-cor-${id}" style="background:${cfg.cor};" onclick="toggleGavetaEstilo('${id}')" title="Clique para personalizar estilo"></span>`;
 
       const gavetaConteudo = ehPorto
@@ -3228,6 +3483,46 @@
 
 
 
+
+    
+    function toggleSubcamadaUC(esfId, ligar) {
+      if (!window.SUBGRUPOS_UCS || !window.SUBGRUPOS_UCS[esfId]) return;
+      const fg = window.SUBGRUPOS_UCS[esfId];
+      if (ligar) {
+        if (!mapa.hasLayer(fg)) fg.addTo(mapa);
+      } else {
+        if (mapa.hasLayer(fg)) mapa.removeLayer(fg);
+      }
+
+      let ativos = 0;
+      let total = DADOS_GEOJSON_BRUTOS['ucs_todas_mma']?.features?.length || 0;
+      for (const [k, subFg] of Object.entries(window.SUBGRUPOS_UCS)) {
+        const chk = document.getElementById(`chk-sub-uc-${k}`);
+        if (chk && chk.checked) ativos += subFg.getLayers().length;
+      }
+
+      const cntEl = document.getElementById('cnt-ucs_todas_mma');
+      if (cntEl) {
+        cntEl.innerText = (ativos === total) ? `(${total})` : `(${ativos}/${total})`;
+      }
+      Styler.atualizarLegenda();
+    }
+
+    function toggleTodasSubcamadasUC(ligar) {
+      for (const k of ['Federal', 'Estadual', 'Municipal', 'Privada', 'Outros']) {
+        const chk = document.getElementById(`chk-sub-uc-${k}`);
+        if (chk) chk.checked = ligar;
+        if (window.SUBGRUPOS_UCS && window.SUBGRUPOS_UCS[k]) {
+          const fg = window.SUBGRUPOS_UCS[k];
+          if (ligar) { if (!mapa.hasLayer(fg)) fg.addTo(mapa); }
+          else { if (mapa.hasLayer(fg)) mapa.removeLayer(fg); }
+        }
+      }
+      const total = DADOS_GEOJSON_BRUTOS['ucs_todas_mma']?.features?.length || 0;
+      const cntEl = document.getElementById('cnt-ucs_todas_mma');
+      if (cntEl) cntEl.innerText = ligar ? `(${total})` : `(0/${total})`;
+      Styler.atualizarLegenda();
+    }
 
     function toggleSubcamadaPorto(subtipo, ligar) {
       if (!window.SUBGRUPOS_PORTOS || !window.SUBGRUPOS_PORTOS[subtipo]) return;
