@@ -536,31 +536,31 @@
 
 
 
-  <!-- PAINEL ANALÍTICO PROFISSIONAL DA ANTAQ -->
+  <!-- ESTÚDIO ANALÍTICO & INTELIGÊNCIA EXECUTIVA DA ANTAQ -->
   <div class="painel-graficos" id="painel-graficos">
     <div class="graficos-header">
       <div style="display:flex; align-items:center; gap:8px;">
-        <span>📊 Estúdio Analítico & Gráficos Executivos</span>
-        <span style="font-size:10px; background:rgba(2,132,199,0.3); padding:2px 6px; border-radius:3px; color:#7dd3fc;">ANTAQ GEE</span>
+        <span>📊 Estúdio de Inteligência Geográfica & Regulatória</span>
+        <span style="font-size:10px; background:rgba(2,132,199,0.3); padding:2px 6px; border-radius:3px; color:#7dd3fc; font-weight:700;">ANTAQ GEE</span>
       </div>
       <span style="cursor:pointer; font-size:16px; font-weight:bold;" onclick="UI.toggleGraficos()" title="Fechar Painel">&times;</span>
     </div>
 
-    <!-- NAVEGAÇÃO POR ABAS -->
+    <!-- NAVEGAÇÃO POR ABAS EXECUTIVAS -->
     <div class="graficos-tabs">
-      <button class="grafico-tab-btn ativo" id="tab-btn-univariada" onclick="Analytics.trocarAba('univariada')">📈 Análise por Atributo (Qualquer Camada)</button>
-      <button class="grafico-tab-btn" id="tab-btn-bivariada" onclick="Analytics.trocarAba('bivariada')">🔄 Cruzamento Bivariado (Segmentação)</button>
-      <button class="grafico-tab-btn" id="tab-btn-comparativo" onclick="Analytics.trocarAba('comparativo')">⚖️ Comparativo entre Duas Camadas</button>
-      <button class="grafico-tab-btn" id="tab-btn-oficial" onclick="Analytics.trocarAba('oficial')">⚓ Panorama Setorial Oficial</button>
+      <button class="grafico-tab-btn ativo" id="tab-btn-univariada" onclick="Analytics.trocarAba('univariada')">📈 Análise por Atributo</button>
+      <button class="grafico-tab-btn" id="tab-btn-multimodal" onclick="Analytics.trocarAba('multimodal')">🚆 Matriz Multimodal de Transportes</button>
+      <button class="grafico-tab-btn" id="tab-btn-esferas" onclick="Analytics.trocarAba('esferas')">🏛️ Esferas Federativas (Fed/Est/Mun)</button>
+      <button class="grafico-tab-btn" id="tab-btn-socioambiental" onclick="Analytics.trocarAba('socioambiental')">🌿 Interseção Socioambiental</button>
+      <button class="grafico-tab-btn" id="tab-btn-oficial" onclick="Analytics.trocarAba('oficial')">⚓ Panorama Portuário Oficial</button>
     </div>
 
     <div class="graficos-corpo">
-      <!-- ABA 1: ANÁLISE POR ATRIBUTO (QUALQUER CAMADA) -->
+      <!-- ABA 1: ANÁLISE POR ATRIBUTO (UNIVERSAL) -->
       <div id="aba-univariada" class="aba-grafico-conteudo">
-        <!-- Barra de Seletores -->
         <div class="grafico-filtros-bar">
           <label>Camada: <select id="uni-camada" class="grafico-select" onchange="Analytics.onMudarCamadaUni(this.value)"></select></label>
-          <label>Atributo / Campo: <select id="uni-coluna" class="grafico-select"></select></label>
+          <label>Atributo: <select id="uni-coluna" class="grafico-select"></select></label>
           <label>Visualização: 
             <select id="uni-tipo-grafico" class="grafico-select" style="min-width:160px;">
               <option value="bar-h">Barras Horizontais (Sem Cortes)</option>
@@ -578,9 +578,9 @@
             </select>
           </label>
           <button class="btn-grafico-acao" onclick="Analytics.gerarUnivariada()">Gerar Gráfico</button>
+          <button class="btn-grafico-acao" style="background:#059669;" onclick="Analytics.exportarImagem('canvas-univariada', 'grafico_atributo')" title="Salvar imagem para relatórios">📸 Imagem PNG</button>
         </div>
 
-        <!-- Cards de KPI -->
         <div class="kpis-container" id="kpis-uni">
           <div class="kpi-card">
             <div class="kpi-label">Total de Feições</div>
@@ -590,7 +590,7 @@
           <div class="kpi-card">
             <div class="kpi-label">Categorias Únicas</div>
             <div class="kpi-valor" id="kpi-uni-categorias">0</div>
-            <div class="kpi-sub">Classes distintas encontradas</div>
+            <div class="kpi-sub">Classes distintas</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Maior Concentração</div>
@@ -599,18 +599,16 @@
           </div>
         </div>
 
-        <!-- Canvas do Gráfico -->
-        <div class="grafico-canvas-box">
+        <div class="grafico-canvas-box" style="height:270px;">
           <canvas id="canvas-univariada"></canvas>
         </div>
 
-        <!-- Tabela Sintética de Apoio -->
         <div class="tabela-sintetica-box">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <strong style="font-size:11px; color:#334155;">📋 Distribuição Quantitativa e Percentual</strong>
             <button class="btn-grafico-acao" style="background:#10b981; padding:3px 8px; font-size:10px;" onclick="Analytics.exportarCSVUnivariada()">📥 Exportar Dados (CSV)</button>
           </div>
-          <div style="max-height:160px; overflow-y:auto; margin-top:4px;">
+          <div style="max-height:150px; overflow-y:auto; margin-top:4px;">
             <table class="tabela-sintetica">
               <thead>
                 <tr>
@@ -625,45 +623,58 @@
         </div>
       </div>
 
-      <!-- ABA 2: CRUZAMENTO BIVARIADO (SEGMENTAÇÃO) -->
-      <div id="aba-bivariada" class="aba-grafico-conteudo" style="display:none;">
-        <div class="grafico-filtros-bar">
-          <label>Camada: <select id="bi-camada" class="grafico-select" onchange="Analytics.onMudarCamadaBi(this.value)"></select></label>
-          <label>Eixo Principal (Agrupador): <select id="bi-coluna-x" class="grafico-select"></select></label>
-          <label>Segmentar por (Série): <select id="bi-coluna-serie" class="grafico-select"></select></label>
-          <label>Formato:
-            <select id="bi-formato" class="grafico-select" style="min-width:150px;">
-              <option value="stacked">Barras Empilhadas</option>
-              <option value="grouped">Barras Agrupadas</option>
-            </select>
-          </label>
-          <button class="btn-grafico-acao" onclick="Analytics.gerarBivariada()">Gerar Cruzamento</button>
+      <!-- ABA 2: MATRIZ MULTIMODAL DE TRANSPORTES -->
+      <div id="aba-multimodal" class="aba-grafico-conteudo" style="display:none;">
+        <div style="padding:10px 14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; margin-bottom:12px; font-size:11px; color:#166534; display:flex; justify-content:space-between; align-items:center;">
+          <span>🚆 <strong>Integração Multimodal:</strong> Comparação de infraestrutura por estado (Portos ANTAQ, Vias Navegadas, Rodovias Federais e Ferrovias).</span>
+          <button class="btn-grafico-acao" style="background:#10b981;" onclick="Analytics.exportarImagem('canvas-multimodal', 'matriz_multimodal')">📸 Salvar PNG</button>
         </div>
         <div class="grafico-canvas-box" style="height:320px;">
-          <canvas id="canvas-bivariada"></canvas>
+          <canvas id="canvas-multimodal"></canvas>
         </div>
       </div>
 
-      <!-- ABA 3: COMPARATIVO ENTRE DUAS CAMADAS -->
-      <div id="aba-comparativo" class="aba-grafico-conteudo" style="display:none;">
+      <!-- ABA 3: ESFERAS FEDERATIVAS (FEDERAL, ESTADUAL, MUNICIPAL) -->
+      <div id="aba-esferas" class="aba-grafico-conteudo" style="display:none;">
         <div class="grafico-filtros-bar">
-          <label>Camada 1: <select id="comp-camada-a" class="grafico-select"></select></label>
-          <label>Camada 2: <select id="comp-camada-b" class="grafico-select"></select></label>
-          <label>Critério:
-            <select id="comp-criterio" class="grafico-select">
-              <option value="uf">Distribuição Estadual (UF)</option>
-              <option value="total">Volume Total de Feições</option>
+          <label>Camada para Análise de Gestão:
+            <select id="esf-camada" class="grafico-select" onchange="Analytics.gerarEsferas()">
+              <option value="ucs_todas_mma">Todas as UCs do Brasil (CNUC / MMA)</option>
+              <option value="ucs_federais">UCs Federais (ICMBio)</option>
+              <option value="rodovias">Rodovias Federais (SNV)</option>
             </select>
           </label>
-          <button class="btn-grafico-acao" onclick="Analytics.gerarComparativo()">Comparar</button>
+          <button class="btn-grafico-acao" onclick="Analytics.gerarEsferas()">Atualizar Gráfico</button>
+          <button class="btn-grafico-acao" style="background:#059669;" onclick="Analytics.exportarImagem('canvas-esferas-distrib', 'gestao_esferas')">📸 Salvar PNG</button>
         </div>
-        <div id="aviso-comparativo-uf" style="display:none; padding:8px 12px; background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:4px; font-size:11px; margin-bottom:8px;"></div>
-        <div class="grafico-canvas-box" style="height:300px;">
-          <canvas id="canvas-comparativo"></canvas>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="grafico-canvas-box" style="height:290px;">
+            <strong style="font-size:11px; color:#0f172a; display:block; margin-bottom:6px;">🏛️ Proporção de Gestão (Federal vs Estadual vs Municipal)</strong>
+            <div style="height:245px; position:relative;">
+              <canvas id="canvas-esferas-rosca"></canvas>
+            </div>
+          </div>
+          <div class="grafico-canvas-box" style="height:290px;">
+            <strong style="font-size:11px; color:#0f172a; display:block; margin-bottom:6px;">🗺️ Distribuição por Estado (Top UFs)</strong>
+            <div style="height:245px; position:relative;">
+              <canvas id="canvas-esferas-distrib"></canvas>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- ABA 4: PANORAMA SETORIAL OFICIAL DA ANTAQ -->
+      <!-- ABA 4: INTERSEÇÃO SOCIOAMBIENTAL -->
+      <div id="aba-socioambiental" class="aba-grafico-conteudo" style="display:none;">
+        <div style="padding:10px 14px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; margin-bottom:12px; font-size:11px; color:#1e40af; display:flex; justify-content:space-between; align-items:center;">
+          <span>🌿 <strong>Análise de Conformidade Socioambiental:</strong> Comparação territorial entre Ativos Aquaviários (Portos + Hidrovias) vs Restrições Ambientais (UCs + Terras Indígenas).</span>
+          <button class="btn-grafico-acao" onclick="Analytics.exportarImagem('canvas-socioambiental', 'intersecao_socioambiental')">📸 Salvar PNG</button>
+        </div>
+        <div class="grafico-canvas-box" style="height:320px;">
+          <canvas id="canvas-socioambiental"></canvas>
+        </div>
+      </div>
+
+      <!-- ABA 5: PANORAMA PORTUÁRIO OFICIAL DA ANTAQ -->
       <div id="aba-oficial" class="aba-grafico-conteudo" style="display:none;">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
           <div class="grafico-canvas-box" style="height:310px;">
@@ -680,6 +691,8 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
     </div>
   </div>
 
@@ -1168,14 +1181,16 @@
     /**
      * MÓDULO 5: ESTILIZADOR DINÂMICO
      */
-    const Styler = {
+        const Styler = {
       presets: {
         padrao_antaq: {
           nome: "Padrão Institucional ANTAQ (Oficial)",
           cores: {
             instalacoes_portuarias: "#0284c7", vias_navegadas: "#00e5ff", linhas_travessias: "#f59e0b",
-            embarcacoes: "#38bdf8", uf: "#60a5fa", regioes: "#818cf8", pais: "#cbd5e1",
-            tis_poligonais: "#ef4444", estados_amazonia_legal: "#059669"
+            embarcacoes: "#38bdf8", rodovias: "#f97316", ferrovias: "#a855f7", snv_1973: "#94a3b8",
+            uf: "#60a5fa", regioes: "#818cf8", pais: "#cbd5e1",
+            tis_poligonais: "#ef4444", estados_amazonia_legal: "#059669",
+            ucs_federais: "#15803d", ucs_todas_mma: "#047857", unidades_conservacao: "#16a34a"
           },
           coresPortos: {
             ORGANIZADO: "#0284c7", PUBLICO: "#06b6d4", TUP: "#10b981", IP4: "#f59e0b", ETC: "#8b5cf6", OUTROS: "#64748b"
@@ -1185,8 +1200,10 @@
           nome: "Neon Satellite (NASA High-Contrast)",
           cores: {
             instalacoes_portuarias: "#00f0ff", vias_navegadas: "#00ffff", linhas_travessias: "#ff00ff",
-            embarcacoes: "#ffff00", uf: "#38bdf8", regioes: "#a855f7", pais: "#ffffff",
-            tis_poligonais: "#ff0055", estados_amazonia_legal: "#10b981"
+            embarcacoes: "#ffff00", rodovias: "#ffaa00", ferrovias: "#ff00bb", snv_1973: "#888888",
+            uf: "#38bdf8", regioes: "#a855f7", pais: "#ffffff",
+            tis_poligonais: "#ff0055", estados_amazonia_legal: "#10b981",
+            ucs_federais: "#00ff66", ucs_todas_mma: "#00dd77", unidades_conservacao: "#00ee88"
           },
           coresPortos: {
             ORGANIZADO: "#00f0ff", PUBLICO: "#00a8ff", TUP: "#39ff14", IP4: "#ffe600", ETC: "#d600ff", OUTROS: "#94a3b8"
@@ -1196,8 +1213,10 @@
           nome: "Cartografia Clássica (IBGE / USGS)",
           cores: {
             instalacoes_portuarias: "#003366", vias_navegadas: "#1e3a8a", linhas_travessias: "#b45309",
-            embarcacoes: "#0369a1", uf: "#374151", regioes: "#6b7280", pais: "#1f2937",
-            tis_poligonais: "#b91c1c", estados_amazonia_legal: "#15803d"
+            embarcacoes: "#0369a1", rodovias: "#c2410c", ferrovias: "#581c87", snv_1973: "#64748b",
+            uf: "#374151", regioes: "#6b7280", pais: "#1f2937",
+            tis_poligonais: "#b91c1c", estados_amazonia_legal: "#15803d",
+            ucs_federais: "#166534", ucs_todas_mma: "#065f46", unidades_conservacao: "#15803d"
           },
           coresPortos: {
             ORGANIZADO: "#003366", PUBLICO: "#336699", TUP: "#2e7d32", IP4: "#e65100", ETC: "#6a1b9a", OUTROS: "#546e7a"
@@ -1207,8 +1226,10 @@
           nome: "Acessibilidade Universal (Viridis)",
           cores: {
             instalacoes_portuarias: "#440154", vias_navegadas: "#3b528b", linhas_travessias: "#5ec962",
-            embarcacoes: "#440154", uf: "#31688e", regioes: "#26828e", pais: "#fde725",
-            tis_poligonais: "#d95f02", estados_amazonia_legal: "#1f968b"
+            embarcacoes: "#440154", rodovias: "#fde725", ferrovias: "#7ad151", snv_1973: "#414487",
+            uf: "#31688e", regioes: "#26828e", pais: "#fde725",
+            tis_poligonais: "#d95f02", estados_amazonia_legal: "#1f968b",
+            ucs_federais: "#2a788e", ucs_todas_mma: "#22a884", unidades_conservacao: "#2a788e"
           },
           coresPortos: {
             ORGANIZADO: "#440154", PUBLICO: "#3b528b", TUP: "#21918c", IP4: "#5ec962", ETC: "#90d743", OUTROS: "#737373"
@@ -1218,19 +1239,30 @@
       aplicarPresetGlobal: function(chave) {
         const preset = this.presets[chave];
         if (!preset) return;
-        for (const [id, cor] of Object.entries(preset.cores)) {
-          if (CONFIG_CAMADAS[id]) {
-            CONFIG_CAMADAS[id].cor = cor;
-            const ind = document.getElementById(`indicador-cor-${id}`);
-            if (ind && id !== 'instalacoes_portuarias') ind.style.backgroundColor = cor;
-            const picker = document.getElementById(`color-picker-${id}`);
-            if (picker) picker.value = cor;
 
+        for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
+          let cor = preset.cores[id];
+          if (!cor) {
+            // Cor temática para novas camadas ou importadas
+            if (cfg.grupo === 'restricoes') cor = preset.cores.ucs_federais || '#15803d';
+            else if (cfg.grupo === 'infra') cor = preset.cores.rodovias || '#0284c7';
+            else if (cfg.grupo === 'limites') cor = preset.cores.uf || '#60a5fa';
+            else cor = '#06b6d4';
+          }
+          cfg.cor = cor;
 
-            if (CAMADAS_MAPA[id] && id !== 'instalacoes_portuarias') {
-              CAMADAS_MAPA[id].eachLayer(l => {
-                if (l.setStyle) l.setStyle({ color: cor, fillColor: cor });
-              });
+          const ind = document.getElementById(`indicador-cor-${id}`);
+          if (ind && id !== 'instalacoes_portuarias') ind.style.backgroundColor = cor;
+          const picker = document.getElementById(`color-picker-${id}`);
+          if (picker) picker.value = cor;
+
+          if (CAMADAS_MAPA[id] && id !== 'instalacoes_portuarias') {
+            const isLinha = cfg.tipoGeo === 'linha' || cfg.tipoGeo === 'linha_tracejada';
+            const estilo = isLinha ? { color: cor } : { color: cor, fillColor: cor };
+            if (CAMADAS_MAPA[id].setStyle) {
+              CAMADAS_MAPA[id].setStyle(estilo);
+            } else if (CAMADAS_MAPA[id].eachLayer) {
+              CAMADAS_MAPA[id].eachLayer(l => { if (l.setStyle) l.setStyle(estilo); });
             }
           }
         }
@@ -1447,7 +1479,7 @@
         else if (CONFIG_CAMADAS['instalacoes_portuarias']) sel.value = 'instalacoes_portuarias';
       },
 
-      aoMudarCamada: function(idCamada) {
+      aoMudarCamada: async function(idCamada) {
         const selSub = document.getElementById('filtro-subtipo-dinamico');
         const inputBusca = document.getElementById('input-busca');
         const cfg = CONFIG_CAMADAS[idCamada] || {};
@@ -1459,11 +1491,22 @@
           if (listaEl) listaEl.style.display = 'none';
         }
 
+        // Se a camada ainda não foi baixada, baixa sob demanda para detectar esferas imediatamente
+        if (!DADOS_GEOJSON_BRUTOS[idCamada]) {
+          if (selSub) {
+            selSub.style.display = 'inline-block';
+            selSub.innerHTML = '<option value="">Carregando dados...</option>';
+          }
+          try {
+            await DataManager.carregarCamada(idCamada);
+          } catch (e) {}
+        }
+
         this.colunaEsferaAtiva = null;
 
         if (selSub) {
           if (idCamada === 'instalacoes_portuarias') {
-            selSub.innerHTML = '<option value="TODOS">Todos os Regimes</option>';
+            selSub.innerHTML = '<option value="TODOS">⚓ Todos os Regimes Portuários</option>';
             selSub.style.display = 'inline-block';
             for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
               const el = document.createElement('option');
@@ -1473,9 +1516,9 @@
             }
             selSub.value = window.FILTRO_PORTO_ATUAL || "TODOS";
           } else {
-            // Detecção e Filtro Dinâmico de Esfera (Federal, Estadual, Municipal) ou Jurisdição
+            // Detecção e Filtro de Esfera Governamental ou Jurisdição
             const g = DADOS_GEOJSON_BRUTOS[idCamada];
-            const colunasEsfera = ['esfera', 'esfera_adm', 'esfera_administrativa', 'jurisdicao', 'administracao', 'tipo_administracao', 'esfera_gestao'];
+            const colunasEsfera = ['esfera', 'esfera_adm', 'esfera_administrativa', 'jurisdicao', 'administracao', 'tipo_administracao', 'esfera_gestao', 'tipo'];
             let colDetectada = null;
 
             if (g && g.features && g.features.length) {
@@ -1488,7 +1531,7 @@
               }
             }
 
-            if (colDetectada) {
+            if (colDetectada && g && g.features) {
               this.colunaEsferaAtiva = colDetectada;
               const unicos = new Set();
               g.features.forEach(f => {
@@ -1496,7 +1539,8 @@
                 if (Security.ehValido(val)) unicos.add(String(val).trim());
               });
 
-              selSub.innerHTML = `<option value="TODOS">Todas as Esferas (${colDetectada})</option>`;
+              const nomeRotulo = colDetectada.toLowerCase().includes('jurisd') ? 'Jurisdição' : 'Esfera';
+              selSub.innerHTML = `<option value="TODOS">🏛️ Todas as ${nomeRotulo}s (${colDetectada})</option>`;
               const listaValores = Array.from(unicos).sort();
               listaValores.forEach(v => {
                 const el = document.createElement('option');
@@ -1506,6 +1550,7 @@
                 if (vl.includes('estad')) icone = '🏢';
                 else if (vl.includes('municip')) icone = '🏙️';
                 else if (vl.includes('conced')) icone = '🛣️';
+                else if (vl.includes('privad') || vl.includes('rppn')) icone = '🌲';
                 el.innerText = `${icone} ${v}`;
                 selSub.appendChild(el);
               });
@@ -2011,8 +2056,10 @@
     const Analytics = {
       abaAtiva: 'univariada',
       chartUni: null,
-      chartBi: null,
-      chartComp: null,
+      chartMulti: null,
+      chartEsfRosca: null,
+      chartEsfDistrib: null,
+      chartSocio: null,
       chartOficialRegimes: null,
       chartOficialUfs: null,
       dadosUltimaUni: null,
@@ -2025,7 +2072,7 @@
 
       trocarAba: function(aba) {
         this.abaAtiva = aba;
-        ['univariada', 'bivariada', 'comparativo', 'oficial'].forEach(a => {
+        ['univariada', 'multimodal', 'esferas', 'socioambiental', 'oficial'].forEach(a => {
           const elBtn = document.getElementById(`tab-btn-${a}`);
           const elAba = document.getElementById(`aba-${a}`);
           if (elBtn) elBtn.classList.toggle('ativo', a === aba);
@@ -2033,8 +2080,9 @@
         });
 
         if (aba === 'univariada') this.gerarUnivariada();
-        else if (aba === 'bivariada') this.gerarBivariada();
-        else if (aba === 'comparativo') this.gerarComparativo();
+        else if (aba === 'multimodal') this.gerarMultimodal();
+        else if (aba === 'esferas') this.gerarEsferas();
+        else if (aba === 'socioambiental') this.gerarSocioambiental();
         else if (aba === 'oficial') this.gerarOficial();
       },
 
@@ -2042,26 +2090,12 @@
         const camadas = Object.entries(CONFIG_CAMADAS);
         const optsHTML = camadas.map(([id, cfg]) => `<option value="${id}">${cfg.nome}</option>`).join('');
 
-        // Aba 1
         const selUni = document.getElementById('uni-camada');
-        if (selUni) { selUni.innerHTML = optsHTML; if (CONFIG_CAMADAS['instalacoes_portuarias']) selUni.value = 'instalacoes_portuarias'; }
-        this.onMudarCamadaUni(selUni?.value);
-
-        // Aba 2
-        const selBi = document.getElementById('bi-camada');
-        if (selBi) { selBi.innerHTML = optsHTML; if (CONFIG_CAMADAS['instalacoes_portuarias']) selBi.value = 'instalacoes_portuarias'; }
-        this.onMudarCamadaBi(selBi?.value);
-
-        // Aba 3
-        const selCompA = document.getElementById('comp-camada-a');
-        const selCompB = document.getElementById('comp-camada-b');
-        if (selCompA && selCompB) {
-          selCompA.innerHTML = optsHTML;
-          selCompB.innerHTML = optsHTML;
-          if (CONFIG_CAMADAS['instalacoes_portuarias']) selCompA.value = 'instalacoes_portuarias';
-          if (CONFIG_CAMADAS['unidades_conservacao']) selCompB.value = 'unidades_conservacao';
-          else if (CONFIG_CAMADAS['vias_navegadas']) selCompB.value = 'vias_navegadas';
+        if (selUni) {
+          selUni.innerHTML = optsHTML;
+          if (CONFIG_CAMADAS['instalacoes_portuarias']) selUni.value = 'instalacoes_portuarias';
         }
+        this.onMudarCamadaUni(selUni?.value);
       },
 
       onMudarCamadaUni: function(idCamada) {
@@ -2080,35 +2114,6 @@
           opt.value = c; opt.innerText = c;
           selCol.appendChild(opt);
         });
-      },
-
-      onMudarCamadaBi: function(idCamada) {
-        const selX = document.getElementById('bi-coluna-x');
-        const selS = document.getElementById('bi-coluna-serie');
-        if (!selX || !selS) return;
-        selX.innerHTML = ''; selS.innerHTML = '';
-        const g = DADOS_GEOJSON_BRUTOS[idCamada];
-        if (!g || !g.features || !g.features.length) {
-          selX.innerHTML = '<option value="">Sem dados</option>';
-          selS.innerHTML = '<option value="">Sem dados</option>';
-          return;
-        }
-
-        const cols = this.obterColunasRelevantes(g);
-        cols.forEach(c => {
-          const o1 = document.createElement('option'); o1.value = c; o1.innerText = c; selX.appendChild(o1);
-          const o2 = document.createElement('option'); o2.value = c; o2.innerText = c; selS.appendChild(o2);
-        });
-
-        // Sugestoes inteligentes para portos
-        if (idCamada === 'instalacoes_portuarias') {
-          const colUf = cols.find(c => ['sigla_uf','sg_uf','uf','uf_instalacao'].includes(c.toLowerCase()));
-          const colTipo = cols.find(c => ['tipo','regime','tipo_instalacao'].includes(c.toLowerCase()));
-          if (colUf) selX.value = colUf;
-          if (colTipo) selS.value = colTipo;
-        } else if (cols.length >= 2) {
-          selS.selectedIndex = 1;
-        }
       },
 
       obterColunasRelevantes: function(g) {
@@ -2146,7 +2151,6 @@
         const labels = filtrados.map(o => o[0]);
         const valores = filtrados.map(o => o[1]);
 
-        // Atualizar KPIs
         document.getElementById('kpi-uni-total').innerText = total.toLocaleString('pt-BR');
         document.getElementById('kpi-uni-camada-nome').innerText = CONFIG_CAMADAS[idCamada]?.nome || idCamada;
         document.getElementById('kpi-uni-categorias').innerText = Object.keys(contagem).length;
@@ -2156,7 +2160,6 @@
           document.getElementById('kpi-uni-maior-rotulo').innerText = ordenados[0][0];
         }
 
-        // Tabela Sintética
         const tbody = document.getElementById('tbody-sintetica-uni');
         if (tbody) {
           tbody.innerHTML = '';
@@ -2171,7 +2174,6 @@
         }
         this.dadosUltimaUni = { coluna, total, dados: ordenados };
 
-        // Renderizar Chart.js com rótulos sem corte
         const ctx = document.getElementById('canvas-univariada')?.getContext('2d');
         if (!ctx) return;
         if (this.chartUni) this.chartUni.destroy();
@@ -2215,14 +2217,9 @@
               }
             },
             scales: isPie ? {} : {
-              x: {
-                beginAtZero: true,
-                grid: { color: '#f1f5f9' },
-                ticks: { font: { size: 10 } }
-              },
+              x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
               y: {
-                beginAtZero: true,
-                grid: { color: '#f1f5f9' },
+                beginAtZero: true, grid: { color: '#f1f5f9' },
                 ticks: {
                   font: { size: 10 },
                   callback: function(val, index) {
@@ -2256,142 +2253,216 @@
         a.href = url; a.download = `dados_${coluna}_${new Date().toISOString().slice(0,10)}.csv`;
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        UI.toast("📥 Tabela do gráfico exportada com sucesso.");
+        UI.toast("📥 Tabela exportada com sucesso.");
       },
 
-      gerarBivariada: function() {
-        const idCamada = document.getElementById('bi-camada')?.value;
-        const colX = document.getElementById('bi-coluna-x')?.value;
-        const colSerie = document.getElementById('bi-coluna-serie')?.value;
-        const formato = document.getElementById('bi-formato')?.value || 'stacked';
-        const g = DADOS_GEOJSON_BRUTOS[idCamada];
-
-        if (!g || !g.features || !colX || !colSerie) return;
-
-        // Top 10 categorias no eixo principal
-        const contX = {};
-        g.features.forEach(f => {
-          const v = String(f.properties ? f.properties[colX] : 'Não Informado').trim();
-          if (Security.ehValido(v)) contX[v] = (contX[v] || 0) + 1;
-        });
-        const topX = Object.entries(contX).sort((a,b) => b[1] - a[1]).slice(0, 10).map(o => o[0]);
-
-        // Top 6 series
-        const contS = {};
-        g.features.forEach(f => {
-          const v = String(f.properties ? f.properties[colSerie] : 'Outros').trim();
-          if (Security.ehValido(v)) contS[v] = (contS[v] || 0) + 1;
-        });
-        const topSeries = Object.entries(contS).sort((a,b) => b[1] - a[1]).slice(0, 6).map(o => o[0]);
-
-        const datasets = topSeries.map((serieNome, idx) => {
-          const data = topX.map(xVal => {
-            return g.features.filter(f => {
-              const p = f.properties || {};
-              const matchX = String(p[colX] || '').trim() === xVal;
-              const matchS = String(p[colSerie] || '').trim() === serieNome;
-              return matchX && matchS;
-            }).length;
-          });
-          return {
-            label: serieNome,
-            data: data,
-            backgroundColor: this.paletaProfissional[idx % this.paletaProfissional.length],
-            borderRadius: 3
-          };
-        });
-
-        const ctx = document.getElementById('canvas-bivariada')?.getContext('2d');
-        if (!ctx) return;
-        if (this.chartBi) this.chartBi.destroy();
-
-        this.chartBi = new Chart(ctx, {
-          type: 'bar',
-          data: { labels: topX, datasets: datasets },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
-              tooltip: { mode: 'index', intersect: false }
-            },
-            scales: {
-              x: { stacked: formato === 'stacked', grid: { display: false } },
-              y: { stacked: formato === 'stacked', beginAtZero: true, grid: { color: '#f1f5f9' } }
-            }
-          }
-        });
+      exportarImagem: function(canvasId, nomeArquivo) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const link = document.createElement('a');
+        link.download = `${nomeArquivo}_${new Date().toISOString().slice(0,10)}.png`;
+        link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        UI.toast("📸 Gráfico exportado em alta resolução (PNG).");
       },
 
-      gerarComparativo: function() {
-        const idA = document.getElementById('comp-camada-a')?.value;
-        const idB = document.getElementById('comp-camada-b')?.value;
-        const criterio = document.getElementById('comp-criterio')?.value || 'uf';
-        const gA = DADOS_GEOJSON_BRUTOS[idA];
-        const gB = DADOS_GEOJSON_BRUTOS[idB];
-        const avisoEl = document.getElementById('aviso-comparativo-uf');
+      gerarMultimodal: function() {
+        const gPortos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
+        const gVias = DADOS_GEOJSON_BRUTOS['vias_navegadas'];
+        const gRodovias = DADOS_GEOJSON_BRUTOS['rodovias'];
+        const gFerrovias = DADOS_GEOJSON_BRUTOS['ferrovias'];
 
-        if (!gA || !gB) return;
-        const nomeA = CONFIG_CAMADAS[idA]?.nome || idA;
-        const nomeB = CONFIG_CAMADAS[idB]?.nome || idB;
-
-        let labels = [], dataA = [], dataB = [];
-
-        if (criterio === 'total') {
-          if (avisoEl) avisoEl.style.display = 'none';
-          labels = [nomeA, nomeB];
-          dataA = [gA.features.length, 0];
-          dataB = [0, gB.features.length];
-        } else {
-          // Comparativo por UF rigoroso: checa se as camadas realmente possuem informacao estadual
-          const ufsA = {}, ufsB = {};
-          let validosA = 0, validosB = 0;
-
-          gA.features.forEach(f => {
-            const u = this.extrairUF(f.properties, f);
-            if (u) { ufsA[u] = (ufsA[u] || 0) + 1; validosA++; }
-          });
-          gB.features.forEach(f => {
-            const u = this.extrairUF(f.properties, f);
-            if (u) { ufsB[u] = (ufsB[u] || 0) + 1; validosB++; }
-          });
-
-          // Se uma camada tiver 0 registros com UF (ex: Regiões do Brasil ou Limite Nacional), avisa o usuário!
-          if (validosA === 0 || validosB === 0) {
-            const semUf = validosA === 0 ? nomeA : nomeB;
-            if (avisoEl) {
-              avisoEl.innerText = `ℹ️ A camada "${semUf}" não possui atributo estadual (UF). Para bases regionais ou nacionais, selecione "Volume Total de Feições" ou cruze com bases territoriais como Portos, Vias, UCs ou Terras Indígenas.`;
-              avisoEl.style.display = 'block';
-            }
-          } else {
-            if (avisoEl) avisoEl.style.display = 'none';
+        const agruparUF = (geojson) => {
+          const c = {};
+          if (geojson && geojson.features) {
+            geojson.features.forEach(f => {
+              const u = this.extrairUF(f.properties, f);
+              if (u) c[u] = (c[u] || 0) + 1;
+            });
           }
+          return c;
+        };
 
-          const todasUfs = Array.from(new Set([...Object.keys(ufsA), ...Object.keys(ufsB)]));
-          todasUfs.sort((x, y) => ((ufsA[y] || 0) + (ufsB[y] || 0)) - ((ufsA[x] || 0) + (ufsB[x] || 0)));
-          labels = todasUfs.slice(0, 10);
-          dataA = labels.map(u => ufsA[u] || 0);
-          dataB = labels.map(u => ufsB[u] || 0);
-        }
+        const uPortos = agruparUF(gPortos);
+        const uVias = agruparUF(gVias);
+        const uRodovias = agruparUF(gRodovias);
+        const uFerrovias = agruparUF(gFerrovias);
 
-        const ctx = document.getElementById('canvas-comparativo')?.getContext('2d');
+        const todasUfs = Array.from(new Set([...Object.keys(uPortos), ...Object.keys(uVias), ...Object.keys(uRodovias), ...Object.keys(uFerrovias)]));
+        todasUfs.sort((a,b) => ((uPortos[b]||0) + (uVias[b]||0) + (uRodovias[b]||0) + (uFerrovias[b]||0)) - ((uPortos[a]||0) + (uVias[a]||0) + (uRodovias[a]||0) + (uFerrovias[a]||0)));
+        const topUfs = todasUfs.slice(0, 10);
+
+        const ctx = document.getElementById('canvas-multimodal')?.getContext('2d');
         if (!ctx) return;
-        if (this.chartComp) this.chartComp.destroy();
+        if (this.chartMulti) this.chartMulti.destroy();
 
-        this.chartComp = new Chart(ctx, {
+        this.chartMulti = new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: labels,
+            labels: topUfs,
             datasets: [
-              { label: nomeA, data: dataA, backgroundColor: CONFIG_CAMADAS[idA]?.cor || '#0284c7', borderRadius: 3 },
-              { label: nomeB, data: dataB, backgroundColor: CONFIG_CAMADAS[idB]?.cor || '#10b981', borderRadius: 3 }
+              { label: '⚓ Portos (ANTAQ)', data: topUfs.map(u => uPortos[u]||0), backgroundColor: '#0284c7', borderRadius: 3 },
+              { label: '🌊 Hidrovias', data: topUfs.map(u => uVias[u]||0), backgroundColor: '#00e5ff', borderRadius: 3 },
+              { label: '🛣️ Rodovias Federais', data: topUfs.map(u => uRodovias[u]||0), backgroundColor: '#f97316', borderRadius: 3 },
+              { label: '🚆 Ferrovias', data: topUfs.map(u => uFerrovias[u]||0), backgroundColor: '#a855f7', borderRadius: 3 }
             ]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } }
+              legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10, weight: 'bold' } } },
+              tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+              x: { grid: { display: false } },
+              y: { beginAtZero: true, grid: { color: '#f1f5f9' } }
+            }
+          }
+        });
+      },
+
+      gerarEsferas: function() {
+        const idCamada = document.getElementById('esf-camada')?.value || 'ucs_todas_mma';
+        const g = DADOS_GEOJSON_BRUTOS[idCamada];
+        if (!g || !g.features) { UI.toast("Dados da camada ainda não carregados."); return; }
+
+        const colunasEsfera = ['esfera', 'esfera_adm', 'esfera_administrativa', 'jurisdicao', 'administracao', 'tipo_administracao', 'esfera_gestao'];
+        let col = null;
+        const sample = g.features[0].properties || {};
+        for (const k of Object.keys(sample)) {
+          if (colunasEsfera.includes(k.toLowerCase())) { col = k; break; }
+        }
+        if (!col) col = Object.keys(sample)[0];
+
+        const contEsfera = {};
+        const contPorUf = {};
+        let total = 0;
+
+        g.features.forEach(f => {
+          const val = f.properties ? f.properties[col] : null;
+          const k = Security.ehValido(val) ? String(val).trim() : 'Outros';
+          contEsfera[k] = (contEsfera[k] || 0) + 1;
+          total++;
+
+          const u = this.extrairUF(f.properties, f);
+          if (u) {
+            if (!contPorUf[u]) contPorUf[u] = {};
+            contPorUf[u][k] = (contPorUf[u][k] || 0) + 1;
+          }
+        });
+
+        // 1. Gráfico de Rosca
+        const ctxRosca = document.getElementById('canvas-esferas-rosca')?.getContext('2d');
+        if (ctxRosca) {
+          if (this.chartEsfRosca) this.chartEsfRosca.destroy();
+          const ord = Object.entries(contEsfera).sort((a,b) => b[1] - a[1]);
+          this.chartEsfRosca = new Chart(ctxRosca, {
+            type: 'doughnut',
+            data: {
+              labels: ord.map(x => x[0]),
+              datasets: [{
+                data: ord.map(x => x[1]),
+                backgroundColor: ['#0284c7', '#10b981', '#f59e0b', '#8b5cf6', '#94a3b8'],
+                borderWidth: 2
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+                tooltip: {
+                  callbacks: {
+                    label: function(i) {
+                      const v = i.parsed;
+                      const p = ((v / total) * 100).toFixed(1);
+                      return ` ${v} feições (${p}%)`;
+                    }
+                  }
+                }
+              }
+            }
+          });
+        }
+
+        // 2. Gráfico Empilhado por UF
+        const ctxDistrib = document.getElementById('canvas-esferas-distrib')?.getContext('2d');
+        if (ctxDistrib) {
+          if (this.chartEsfDistrib) this.chartEsfDistrib.destroy();
+          const ufs = Object.keys(contPorUf).sort((a,b) => {
+            const totB = Object.values(contPorUf[b]).reduce((acc,v)=>acc+v, 0);
+            const totA = Object.values(contPorUf[a]).reduce((acc,v)=>acc+v, 0);
+            return totB - totA;
+          }).slice(0, 8);
+
+          const series = Object.keys(contEsfera).slice(0, 4);
+          const datasets = series.map((s, idx) => ({
+            label: s,
+            data: ufs.map(u => (contPorUf[u] && contPorUf[u][s]) || 0),
+            backgroundColor: ['#0284c7', '#10b981', '#f59e0b', '#8b5cf6'][idx % 4]
+          }));
+
+          this.chartEsfDistrib = new Chart(ctxDistrib, {
+            type: 'bar',
+            data: { labels: ufs, datasets: datasets },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { position: 'top', labels: { boxWidth: 8, font: { size: 9 } } } },
+              scales: {
+                x: { stacked: true, grid: { display: false } },
+                y: { stacked: true, beginAtZero: true }
+              }
+            }
+          });
+        }
+      },
+
+      gerarSocioambiental: function() {
+        const gPortos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
+        const gVias = DADOS_GEOJSON_BRUTOS['vias_navegadas'];
+        const gUcs = DADOS_GEOJSON_BRUTOS['ucs_federais'] || DADOS_GEOJSON_BRUTOS['unidades_conservacao'];
+        const gTis = DADOS_GEOJSON_BRUTOS['tis_poligonais'];
+
+        const agruparUF = (g) => {
+          const c = {};
+          if (g && g.features) g.features.forEach(f => {
+            const u = this.extrairUF(f.properties, f);
+            if (u) c[u] = (c[u] || 0) + 1;
+          });
+          return c;
+        };
+
+        const uPortos = agruparUF(gPortos);
+        const uVias = agruparUF(gVias);
+        const uUcs = agruparUF(gUcs);
+        const uTis = agruparUF(gTis);
+
+        const todasUfs = Array.from(new Set([...Object.keys(uPortos), ...Object.keys(uUcs), ...Object.keys(uTis)]));
+        todasUfs.sort((a,b) => ((uPortos[b]||0) + (uVias[b]||0) + (uUcs[b]||0) + (uTis[b]||0)) - ((uPortos[a]||0) + (uVias[a]||0) + (uUcs[a]||0) + (uTis[a]||0)));
+        const topUfs = todasUfs.slice(0, 10);
+
+        const ctx = document.getElementById('canvas-socioambiental')?.getContext('2d');
+        if (!ctx) return;
+        if (this.chartSocio) this.chartSocio.destroy();
+
+        this.chartSocio = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: topUfs,
+            datasets: [
+              { label: '⚓ Ativos Aquaviários (Portos + Hidrovias)', data: topUfs.map(u => (uPortos[u]||0) + (uVias[u]||0)), backgroundColor: '#0284c7', borderRadius: 3 },
+              { label: '🌳 Unidades de Conservação', data: topUfs.map(u => uUcs[u]||0), backgroundColor: '#10b981', borderRadius: 3 },
+              { label: '🏹 Terras Indígenas (FUNAI)', data: topUfs.map(u => uTis[u]||0), backgroundColor: '#ef4444', borderRadius: 3 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10, weight: 'bold' } } },
+              tooltip: { mode: 'index', intersect: false }
             },
             scales: {
               x: { grid: { display: false } },
@@ -2405,7 +2476,6 @@
         const g = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
         if (!g || !g.features) return;
 
-        // 1. Regimes de Outorga em Barra Horizontal (Legivel, sem cortes)
         const contRegimes = {};
         for (const [k, c] of Object.entries(PortClassification.tipos)) contRegimes[c.nome] = 0;
         g.features.forEach(f => {
@@ -2441,7 +2511,6 @@
           });
         }
 
-        // 2. Top UFs
         const contUf = {};
         g.features.forEach(f => {
           const u = this.extrairUF(f.properties, f);
