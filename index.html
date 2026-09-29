@@ -450,6 +450,27 @@
       border-top-color: #38bdf8 !important;
     }
 
+  
+    /* Controles de Ordenação e Sobreposição de Camadas */
+    .btn-ordem-camada {
+      padding: 1px 3px !important;
+      line-height: 1;
+      opacity: 0.75;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .btn-ordem-camada:hover {
+      opacity: 1;
+      transform: scale(1.15);
+      background: #e0f2fe !important;
+      border-radius: 3px;
+    }
+    .item-camada.arrastando {
+      opacity: 0.45;
+      background: #f0f9ff;
+      border: 1px dashed #0284c7;
+      border-radius: 4px;
+    }
+
   </style>
 </head>
 <body>
@@ -1038,6 +1059,70 @@
       }
       return { id: 'Outros', nome: 'Outros', cor: '#047857' };
     }
+
+    
+    /**
+     * MÓDULO: GERENCIADOR DE ORDEM E SOBREPOSIÇÃO DE CAMADAS (Z-INDEX INTRA-GRUPO)
+     */
+    const LayerOrderManager = {
+      mover: function(id, direcao) {
+        const item = document.getElementById(`item-camada-${id}`);
+        if (!item) return;
+        const grupoEl = item.parentElement;
+        if (!grupoEl) return;
+
+        if (direcao === 'cima') {
+          const prev = item.previousElementSibling;
+          if (prev && prev.classList.contains('item-camada')) {
+            grupoEl.insertBefore(item, prev);
+            this.sincronizarOrdemMapa(grupoEl);
+            const nome = CONFIG_CAMADAS[id]?.nome || id;
+            UI.toast(`⬆️ "${nome}" movida para cima.`);
+          }
+        } else if (direcao === 'baixo') {
+          const next = item.nextElementSibling;
+          if (next && next.classList.contains('item-camada')) {
+            grupoEl.insertBefore(next, item);
+            this.sincronizarOrdemMapa(grupoEl);
+            const nome = CONFIG_CAMADAS[id]?.nome || id;
+            UI.toast(`⬇️ "${nome}" movida para baixo.`);
+          }
+        }
+      },
+
+      sincronizarOrdemMapa: function(grupoEl) {
+        if (!grupoEl) return;
+        const itens = Array.from(grupoEl.querySelectorAll('.item-camada'));
+        // Itera da última camada (base do painel) até a primeira (topo do painel)
+        // Chamando bringToFront() para que a camada do topo do grupo fique sobreposta às de baixo no mapa
+        for (let i = itens.length - 1; i >= 0; i--) {
+          const layerId = itens[i].id.replace('item-camada-', '');
+          const layer = CAMADAS_MAPA[layerId];
+          if (layer && mapa.hasLayer(layer)) {
+            if (layer.bringToFront) layer.bringToFront();
+            if (layer.eachLayer) {
+              layer.eachLayer(sub => {
+                if (sub.bringToFront) sub.bringToFront();
+              });
+            }
+          }
+        }
+        Styler.atualizarLegenda();
+      },
+
+      obterElementoAposArrasto: function(container, y) {
+        const elementos = [...container.querySelectorAll('.item-camada:not(.arrastando)')];
+        return elementos.reduce((maisProximo, filho) => {
+          const box = filho.getBoundingClientRect();
+          const offset = y - box.top - box.height / 2;
+          if (offset < 0 && offset > maisProximo.offset) {
+            return { offset: offset, element: filho };
+          } else {
+            return maisProximo;
+          }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+      }
+    };
 
     const PortClassification = {
       tipos: {
@@ -3480,6 +3565,8 @@
             <span class="badge-erro" id="err-${id}"></span>
           </div>
           <div class="camada-acoes">
+            <button class="btn-acao-icone btn-ordem-camada" title="Mover para Cima (Sobrepor às outras camadas deste grupo)" onclick="LayerOrderManager.mover('${id}', 'cima')" style="color:#0284c7; font-size:10px; font-weight:bold;">▲</button>
+            <button class="btn-acao-icone btn-ordem-camada" title="Mover para Baixo" onclick="LayerOrderManager.mover('${id}', 'baixo')" style="color:#0284c7; font-size:10px; font-weight:bold;">▼</button>
             <button class="btn-acao-icone" title="Personalizar Estilo" onclick="toggleGavetaEstilo('${id}')">🎨</button>
             <button class="btn-acao-icone" title="Tabela de Atributos" onclick="abrirTabela('${id}')">📋</button>
             <button class="btn-acao-icone" title="Centralizar no Mapa" onclick="zoomCamada('${id}')">🔍</button>
@@ -3496,6 +3583,37 @@
           ${gavetaConteudo}
         </div>
       `;
+      
+      // Suporte a Arrastar e Soltar (Drag & Drop) dentro do grupo
+      item.draggable = true;
+      item.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', id);
+        item.classList.add('arrastando');
+      });
+      item.addEventListener('dragend', () => {
+        item.classList.remove('arrastando');
+        LayerOrderManager.sincronizarOrdemMapa(grupoEl);
+      });
+
+      if (!grupoEl._dragConfigurado) {
+        grupoEl._dragConfigurado = true;
+        grupoEl.addEventListener('dragover', e => {
+          e.preventDefault();
+          const arrastando = grupoEl.querySelector('.arrastando');
+          if (!arrastando) return;
+          const apos = LayerOrderManager.obterElementoAposArrasto(grupoEl, e.clientY);
+          if (apos == null) {
+            grupoEl.appendChild(arrastando);
+          } else {
+            grupoEl.insertBefore(arrastando, apos);
+          }
+        });
+        grupoEl.addEventListener('drop', e => {
+          e.preventDefault();
+          LayerOrderManager.sincronizarOrdemMapa(grupoEl);
+        });
+      }
+
       grupoEl.appendChild(item);
     }
 
@@ -3652,6 +3770,8 @@
       }
       if (ligar) {
         if (!mapa.hasLayer(CAMADAS_MAPA[id])) CAMADAS_MAPA[id].addTo(mapa);
+        const grupo = document.getElementById(`grupo-${CONFIG_CAMADAS[id]?.grupo}`);
+        if (grupo) LayerOrderManager.sincronizarOrdemMapa(grupo);
       } else {
         if (mapa.hasLayer(CAMADAS_MAPA[id])) mapa.removeLayer(CAMADAS_MAPA[id]);
       }
