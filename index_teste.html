@@ -4075,7 +4075,7 @@
       // ✅ NOVO: restaura estado a partir da URL (se houver parâmetros)
       try {
         await URLState.init();
-      } catch(e) { console.warn('URLState não pôde ser inicializado:', e); }
+      } catch(e) { console.warn('[URLState] init falhou:', e); }
 
       console.info('✓ WebGIS ANTAQ inicializado com sucesso.');
     })();
