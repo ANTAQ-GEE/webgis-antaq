@@ -15,6 +15,11 @@
   <script src="https://cdn.jsdelivr.net/npm/@ngageoint/geopackage@4.2.3/dist/geopackage.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
 
+    <!-- Leaflet MarkerCluster: agregação inteligente de pontos -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
   <style>
     :root {
       --antaq-azul-escuro: #0a2540;
@@ -584,6 +589,28 @@
       transition: all 0.15s ease;
     }
     .btn-acao-localizar:hover { background: #0369a1; transform: scale(1.05); }
+
+    /* ============================================================
+       CLUSTERS DE PONTOS (MarkerCluster)
+       ============================================================ */
+    .marker-cluster-custom {
+      background: transparent !important;
+      border: none !important;
+    }
+    .marker-cluster-custom > div {
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .marker-cluster-custom:hover > div {
+      transform: scale(1.08);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;
+    }
+
+    /* Animação de spiderfy (quando clica num cluster no zoom máximo) */
+    .leaflet-cluster-spider-leg {
+      stroke: #0284c7 !important;
+      stroke-width: 2 !important;
+      stroke-dasharray: 3,3;
+    }
   </style>
 </head>
 <body>
@@ -1157,8 +1184,10 @@
     </div>
   </aside>
 
-  <!-- Leaflet JS -->
+   <!-- Leaflet MarkerCluster: agregação inteligente de pontos -->
+    <!-- Leaflet JS + MarkerCluster (ordem importa!) -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
   <!-- ============================================================ -->
   <!-- PARTE 2 do arquivo: JavaScript (vem na próxima resposta)     -->
@@ -1993,9 +2022,40 @@
 
             if (id === 'instalacoes_portuarias') {
               if (!window.SUBGRUPOS_PORTOS) window.SUBGRUPOS_PORTOS = {};
+
+              // Função auxiliar que cria um cluster estilizado com a cor da categoria
+              const criarClusterDaCategoria = (tKey, cat) => {
+                if (typeof L.markerClusterGroup !== 'function') {
+                  console.warn('[Cluster] Biblioteca indisponível. Fallback para featureGroup.');
+                  return L.featureGroup();
+                }
+                return L.markerClusterGroup({
+                  maxClusterRadius: 55,
+                  disableClusteringAtZoom: 12, // acima desse zoom, mostra pontos individuais
+                  spiderfyOnMaxZoom: true,
+                  showCoverageOnHover: false,
+                  zoomToBoundsOnClick: true,
+                  chunkedLoading: true,
+                  chunkInterval: 100,
+                  chunkDelay: 50,
+                  iconCreateFunction: (cluster) => {
+                    const count = cluster.getChildCount();
+                    let dim = 32;
+                    let fontSize = 11;
+                    if (count >= 100) { dim = 48; fontSize = 14; }
+                    else if (count >= 10) { dim = 40; fontSize = 12; }
+                    return L.divIcon({
+                      html: `<div style="background:${cat.cor}; color:#ffffff; width:${dim}px; height:${dim}px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:${fontSize}px; border:3px solid rgba(255,255,255,0.92); box-shadow:0 2px 8px rgba(0,0,0,0.35); font-family:'Segoe UI',sans-serif;">${count}</div>`,
+                      className: 'marker-cluster-custom',
+                      iconSize: L.point(dim, dim)
+                    });
+                  }
+                });
+              };
+
               for (const tKey of Object.keys(PortClassification.tipos)) {
                 if (window.SUBGRUPOS_PORTOS[tKey]) mapa.removeLayer(window.SUBGRUPOS_PORTOS[tKey]);
-                window.SUBGRUPOS_PORTOS[tKey] = L.featureGroup();
+                window.SUBGRUPOS_PORTOS[tKey] = criarClusterDaCategoria(tKey, PortClassification.tipos[tKey]);
               }
               dados.features.forEach(f => {
                 if (!f.geometry || !f.geometry.coordinates) return;
