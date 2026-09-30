@@ -4900,7 +4900,17 @@
         await URLState.init();
       } catch(e) { console.warn('[URLState] init falhou:', e); }
 
+      // ✅ NOVO: atalhos globais da ferramenta de medição
+      document.addEventListener('keydown', (ev) => {
+        if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT') return;
+        if (ev.key === 'd' || ev.key === 'D') MeasurementTool.ativar('distancia');
+        if (ev.key === 'a' || ev.key === 'A') MeasurementTool.ativar('area');
+        if (ev.key === 'r' || ev.key === 'R') MeasurementTool.ativar('raio');
+        if (ev.key === 'Escape') MeasurementTool.desativar();
+      });
+
       console.info('✓ WebGIS ANTAQ inicializado com sucesso.');
+      console.info('💡 Dica: pressione "d" (distância), "a" (área), "r" (raio) para medir.');
     })();
   </script>
 </body>
