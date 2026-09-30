@@ -4860,7 +4860,8 @@
 
           p.set('lat', centro.lat.toFixed(5));
           p.set('lng', centro.lng.toFixed(5));
-          p.set('z', String(mapa.getZoom()));
+          // Arredonda o zoom para evitar valores fracionários como 15.66535 na URL
+          p.set('z', String(Math.round(mapa.getZoom())));
 
           const selCamada = document.getElementById('sel-camada-busca');
           if (selCamada && selCamada.value) p.set('camada', selCamada.value);
