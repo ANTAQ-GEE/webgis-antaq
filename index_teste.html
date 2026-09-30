@@ -549,7 +549,7 @@
     </div>
     <div class="graficos-corpo">
       <div class="card-grafico">
-        <h4>1. Instalações Portuárias por Tipo de Outorga (TUP vs Público)</h4>
+        <h4>1. Instalações Portuárias por Tipologia (Atributo Oficial)</h4>
         <canvas id="grafico-portos-tipo" height="150"></canvas>
       </div>
       <div class="card-grafico">
@@ -701,77 +701,121 @@
       repararTexto: function(str) {
         if (str === null || str === undefined) return '';
         let s = String(str);
+        // 1. Decodificação de sequências UTF-8 corrompidas (Mojibake clássico)
         s = s.replace(/Ã§/g, 'ç').replace(/Ã‡/g, 'Ç')
              .replace(/Ã£/g, 'ã').replace(/Ãƒ/g, 'Ã')
-             .replace(/Ã¡/g, 'á').replace(/Ã/g, 'Á')
+             .replace(/Ã¡/g, 'á').replace(/Ã /g, 'Á')
              .replace(/Ã©/g, 'é').replace(/Ã‰/g, 'É')
              .replace(/Ãª/g, 'ê').replace(/ÃŠ/g, 'Ê')
-             .replace(/Ã­/g, 'í').replace(/Ã/g, 'Í')
+             .replace(/Ã­/g, 'í').replace(/Ã /g, 'Í')
              .replace(/Ã³/g, 'ó').replace(/Ã“/g, 'Ó')
              .replace(/Ãµ/g, 'õ').replace(/Ã•/g, 'Õ')
              .replace(/Ã´/g, 'ô').replace(/Ã”/g, 'Ô')
              .replace(/Ãº/g, 'ú').replace(/Ãš/g, 'Ú');
 
-        const nomesProprios = [
-          [/\bApu[\uFFFD\?]+/gi, 'Apuí'], [/\bPiau[\uFFFD\?]+/gi, 'Piauí'],
-          [/\bItagua[\uFFFD\?]+/gi, 'Itaguaí'], [/\bJundia[\uFFFD\?]+/gi, 'Jundiaí'],
-          [/\bParanagu[\uFFFD\?]+/gi, 'Paranaguá'], [/\bTapaj[\uFFFD\?]+s/gi, 'Tapajós'],
-          [/\bSolim[\uFFFD\?]+es/gi, 'Solimões'], [/\bMaranh[\uFFFD\?]+o/gi, 'Maranhão'],
-          [/\bRond[\uFFFD\?]+nia/gi, 'Rondônia'], [/\bAmap[\uFFFD\?]+/gi, 'Amapá'],
-          [/\bCear[\uFFFD\?]+/gi, 'Ceará'], [/\bPar[\uFFFD\?]+\b/gi, 'Pará'],
-          [/\bBel[\uFFFD\?]+m\b/gi, 'Belém'], [/\bSantar[\uFFFD\?]+m\b/gi, 'Santarém'],
-          [/\bS[\uFFFD\?]+o\b/gi, 'São'], [/\bJo[\uFFFD\?]+o\b/gi, 'João']
+        // 2. Reconstrução fonética e lexical de termos técnicos e nomes com caractere corrompido (\uFFFD / ?)
+        const reconstrucoes = [
+          [/portu[\uFFFD\?]+ri([oa])/gi, (m, p1) => (p1.toLowerCase() === 'a' ? (m[0] === 'P' ? 'Portuária' : 'portuária') : (m[0] === 'P' ? 'Portuário' : 'portuário'))],
+          [/qu[\uFFFD\?]+mic([oa])/gi, (m, p1) => (p1.toLowerCase() === 'a' ? (m[0] === 'Q' ? 'Química' : 'química') : (m[0] === 'Q' ? 'Químico' : 'químico'))],
+          [/lad[\uFFFD\?]+rio/gi, m => (m[0] === 'L' ? 'Ladário' : 'ladário')],
+          [/epit[\uFFFD\?]+cio/gi, m => (m[0] === 'E' ? 'Epitácio' : 'epitácio')],
+          [/instala[\uFFFD\?]+[\uFFFD\?]*o/gi, m => (m[0] === 'I' ? 'Instalação' : 'instalação')],
+          [/navega[\uFFFD\?]+[\uFFFD\?]*o/gi, m => (m[0] === 'N' ? 'Navegação' : 'navegação')],
+          [/opera[\uFFFD\?]+[\uFFFD\?]*o/gi, m => (m[0] === 'O' ? 'Operação' : 'operação')],
+          [/regi[\uFFFD\?]+[\uFFFD\?]*o/gi, m => (m[0] === 'R' ? 'Região' : 'região')],
+          [/esta[\uFFFD\?]+[\uFFFD\?]*o/gi, m => (m[0] === 'E' ? 'Estação' : 'estação')],
+          [/mar[\uFFFD\?]+tim([oa])/gi, (m, p1) => (p1.toLowerCase() === 'a' ? 'marítima' : 'marítimo')],
+          [/munic[\uFFFD\?]+pi([oa])/gi, m => (m[0] === 'M' ? 'Município' : 'município')],
+          [/transfer[\uFFFD\?]+ncia/gi, m => (m[0] === 'T' ? 'Transferência' : 'transferência')],
+          [/p[\uFFFD\?]+blic([oa])/gi, (m, p1) => (p1.toLowerCase() === 'a' ? (m[0] === 'P' ? 'Pública' : 'pública') : (m[0] === 'P' ? 'Público' : 'público'))],
+          [/bel[\uFFFD\?]+m\b/gi, m => (m[0] === 'B' ? 'Belém' : 'belém')],
+          [/santar[\uFFFD\?]+m\b/gi, m => (m[0] === 'S' ? 'Santarém' : 'santarém')],
+          [/par[\uFFFD\?]+\b/gi, m => (m[0] === 'P' ? 'Pará' : 'pará')],
+          [/s[\uFFFD\?]+o\b/gi, m => (m[0] === 'S' ? 'São' : 'são')],
+          [/jo[\uFFFD\?]+o\b/gi, m => (m[0] === 'J' ? 'João' : 'joão')],
+          [/maranh[\uFFFD\?]+o/gi, m => (m[0] === 'M' ? 'Maranhão' : 'maranhão')],
+          [/rond[\uFFFD\?]+nia/gi, m => (m[0] === 'R' ? 'Rondônia' : 'rondônia')],
+          [/amap[\uFFFD\?]+/gi, m => (m[0] === 'A' ? 'Amapá' : 'amapá')],
+          [/cear[\uFFFD\?]+/gi, m => (m[0] === 'C' ? 'Ceará' : 'ceará')],
+          [/paranagu[\uFFFD\?]+/gi, m => (m[0] === 'P' ? 'Paranaguá' : 'paranaguá')],
+          [/apu[\uFFFD\?]+/gi, m => (m[0] === 'A' ? 'Apuí' : 'apuí')],
+          [/piau[\uFFFD\?]+/gi, m => (m[0] === 'P' ? 'Piauí' : 'piauí')],
+          [/itagua[\uFFFD\?]+/gi, m => (m[0] === 'I' ? 'Itaguaí' : 'itaguaí')],
+          [/jundia[\uFFFD\?]+/gi, m => (m[0] === 'J' ? 'Jundiaí' : 'jundiaí')],
+          [/tapaj[\uFFFD\?]+s/gi, m => (m[0] === 'T' ? 'Tapajós' : 'tapajós')],
+          [/solim[\uFFFD\?]+es/gi, m => (m[0] === 'S' ? 'Solimões' : 'solimões')],
+          [/[\uFFFD]+/g, ''] // Remove quaisquer resíduos isolados
         ];
-        for (const [re, val] of nomesProprios) s = s.replace(re, val);
+        for (const [re, val] of reconstrucoes) {
+          s = s.replace(re, val);
+        }
         return s.trim();
       }
     };
 
-    /**
-     * MÓDULO 1.1: CLASSIFICAÇÃO REGULATÓRIA DE INSTALAÇÕES PORTUÁRIAS
-     * Corrigida para garantir que Portos Públicos (Cadastro Legado, Delegação, Estatal, Docas)
-     * sejam devidamente categorizados e não caiam em "Demais Registros e Apoio".
+        /**
+     * MÓDULO 1.1: CLASSIFICAÇÃO DE INSTALAÇÕES PORTUÁRIAS POR ATRIBUTO OFICIAL
+     * Totalmente orientado aos dados brutos da camada (100% de rastreabilidade).
+     * Os tipos, rótulos e quantitativos são extraídos dinamicamente dos valores distintos (DISTINCT)
+     * presentes na coluna de tipologia real da tabela de atributos (ex.: 'tipo' ou 'TIPO_INSTALACAO').
+     * Elimina classificações artificiais ou inferências por substring.
      */
     const PortClassification = {
-      tipos: {
-        ORGANIZADO: { id: 'ORGANIZADO', nome: 'Porto Organizado (Lei 12.815)', cor: '#0284c7', raio: 7.5, peso: 2 },
-        PUBLICO: { id: 'PUBLICO', nome: 'Porto Público (Cadastro Legado)', cor: '#06b6d4', raio: 6.5, peso: 1.5 },
-        TUP: { id: 'TUP', nome: 'Terminal de Uso Privado (TUP)', cor: '#10b981', raio: 6, peso: 1.5 },
-        IP4: { id: 'IP4', nome: 'Pequeno Porte (IP4)', cor: '#f59e0b', raio: 5.5, peso: 1.5 },
-        ETC: { id: 'ETC', nome: 'Estação de Transbordo (ETC)', cor: '#8b5cf6', raio: 5.5, peso: 1.5 },
-        OUTROS: { id: 'OUTROS', nome: 'Demais Registros e Apoio', cor: '#64748b', raio: 4.5, peso: 1 }
-      },
-      classificar: function(props) {
-        if (!props) return this.tipos.OUTROS;
-        // Varredura completa em todos os valores de todos os atributos para evitar falhas por nome de coluna
-        const valoresTexto = Object.values(props).map(v => String(v || '')).join(' ');
-        const limpo = Security.repararTexto(valoresTexto).toUpperCase();
+      campoAtivo: 'tipo',
+      tipos: {},
+      paletaPadrao: ['#0284c7', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#f97316', '#64748b', '#14b8a6', '#6366f1'],
 
-        // 1. Terminais de Uso Privado (TUP)
-        if (limpo.includes('TERMINAL DE USO PRIVADO') || limpo.includes('TUP') || limpo.includes('USO PRIVADO') || limpo.includes('AUTORIZADO') || limpo.includes('AUTORIZAÇÃO') || limpo.includes('AUTORIZACAO')) {
-          return this.tipos.TUP;
+      inicializarTipos: function(features) {
+        this.tipos = {};
+        if (!features || !features.length) return;
+
+        // Identifica o campo oficial de tipologia existente na feição
+        const primeira = features[0].properties || {};
+        const possiveisCampos = ['tipo', 'TIPO_INSTALACAO', 'TIPO', 'tipo_instalacao', 'perfil', 'PERFIL', 'ds_tipo'];
+        this.campoAtivo = possiveisCampos.find(k => k in primeira) || 'tipo';
+
+        const contagens = {};
+        features.forEach(f => {
+          const p = f.properties || {};
+          let val = p[this.campoAtivo];
+          if (val === null || val === undefined || String(val).trim() === '') {
+            val = 'Não Informado';
+          } else {
+            val = Security.repararTexto(String(val)).trim();
+          }
+          contagens[val] = (contagens[val] || 0) + 1;
+        });
+
+        // Ordena por contagem decrescente (valores com maior número de ativos primeiro)
+        const valoresOrdenados = Object.keys(contagens).sort((a, b) => contagens[b] - contagens[a]);
+
+        valoresOrdenados.forEach((val, idx) => {
+          const safeId = 'tipo_' + idx;
+          const cor = this.paletaPadrao[idx % this.paletaPadrao.length];
+          this.tipos[safeId] = {
+            id: safeId,
+            valorOriginal: val,
+            nome: val, // Valor exato do atributo oficial na camada
+            cor: cor,
+            raio: 6,
+            peso: 1.5,
+            qtd: contagens[val]
+          };
+        });
+      },
+
+      classificar: function(props) {
+        if (!props) return { id: 'indefinido', valorOriginal: 'Não Informado', nome: 'Não Informado', cor: '#64748b', raio: 5, peso: 1 };
+        let val = props[this.campoAtivo];
+        if (val === null || val === undefined || String(val).trim() === '') {
+          val = 'Não Informado';
+        } else {
+          val = Security.repararTexto(String(val)).trim();
         }
-        // 2. Pequeno Porte (IP4)
-        if (limpo.includes('IP4') || limpo.includes('PEQUENO PORTE') || limpo.includes('INSTALAÇÃO PORTUÁRIA DE PEQUENO PORTE')) {
-          return this.tipos.IP4;
+        for (const [k, obj] of Object.entries(this.tipos)) {
+          if (obj.valorOriginal.toLowerCase() === val.toLowerCase()) return obj;
         }
-        // 3. Estação de Transbordo de Carga (ETC)
-        if (limpo.includes('TRANSBORDO') || limpo.includes('ETC') || limpo.includes('ESTAÇÃO DE TRANSBORDO')) {
-          return this.tipos.ETC;
-        }
-        // 4. Porto Público (Cadastro Legado, Delegação, Docas, Estatal, etc.)
-        if (limpo.includes('PÚBLIC') || limpo.includes('PUBLIC') || limpo.includes('PORTUÁRIA PÚBLICA') || limpo.includes('PORTUARIA PUBLICA') || limpo.includes('ESTATAL') || limpo.includes('DELEGAD') || limpo.includes('DELEGAÇÃO') || limpo.includes('DELEGACAO') || limpo.includes('CONVÊNIO') || limpo.includes('CONVENIO') || limpo.includes('CADASTRO LEGADO') || limpo.includes('COMPANHIA DOCAS') || limpo.includes('DOCAS')) {
-          return this.tipos.PUBLICO;
-        }
-        // 5. Porto Organizado (Lei 12.815)
-        if (limpo.includes('ORGANIZADO') || limpo.includes('AUTORIDADE PORTUÁRIA') || limpo.includes('AUTORIDADE PORTUARIA') || limpo.includes('PORTO ORGANIZADO')) {
-          return this.tipos.ORGANIZADO;
-        }
-        // 6. Se contiver 'PORTO' e não for privado, classifica como Porto Público
-        if (limpo.includes('PORTO')) {
-          return this.tipos.PUBLICO;
-        }
-        return this.tipos.OUTROS;
+        return { id: 'outros', valorOriginal: val, nome: val, cor: '#64748b', raio: 5, peso: 1 };
       }
     };
 
@@ -980,6 +1024,27 @@
 
             // 1. Instalações Portuárias com Classificação Fiel e Subgrupos
             if (id === 'instalacoes_portuarias') {
+              // 1. Extração dinâmica e fidedigna dos valores do atributo oficial da camada
+              PortClassification.inicializarTipos(dados.features);
+              UI.renderizarSubpaletaPortos();
+
+              // 2. Atualiza opções do filtro dinâmico superior com os valores reais da tabela
+              if (FilterManager.configFiltros && FilterManager.configFiltros.instalacoes_portuarias) {
+                FilterManager.configFiltros.instalacoes_portuarias.opcoes = [
+                  { valor: 'TODOS', rotulo: '⚓ Todas as Instalações' }
+                ];
+                for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
+                  FilterManager.configFiltros.instalacoes_portuarias.opcoes.push({
+                    valor: tKey,
+                    rotulo: `${cat.nome} (${cat.qtd})`
+                  });
+                }
+                const selAtual = document.getElementById('sel-camada-busca');
+                if (selAtual && selAtual.value === 'instalacoes_portuarias') {
+                  FilterManager.aoMudarCamada('instalacoes_portuarias');
+                }
+              }
+
               if (!window.SUBGRUPOS_PORTOS) window.SUBGRUPOS_PORTOS = {};
               for (const tKey of Object.keys(PortClassification.tipos)) {
                 if (window.SUBGRUPOS_PORTOS[tKey]) mapa.removeLayer(window.SUBGRUPOS_PORTOS[tKey]);
@@ -1123,28 +1188,7 @@
 
         // Subpaleta de Outorgas da ANTAQ
         if (id === 'instalacoes_portuarias') {
-          let listaSubHTML = '';
-          for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
-            listaSubHTML += `
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:3px 0;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <input type="color" id="subcolor-${tKey}" value="${cat.cor}" onchange="Styler.atualizarSubcamadaPorto('${tKey}', this.value)" style="width:16px; height:16px; border:none; padding:0; background:transparent; cursor:pointer;" title="Personalizar cor de ${cat.nome}">
-                  <span>${cat.nome}</span>
-                  <span class="badge-contador" id="subcnt-${tKey}"></span>
-                </div>
-                <input type="checkbox" id="chk-sub-${tKey}" checked onchange="toggleSubcamadaPorto('${tKey}', this.checked)">
-              </div>
-            `;
-          }
-          subpaletaHTML = `
-            <div style="margin-top:6px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; font-size:10px; display:flex; flex-direction:column; gap:4px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
-                <span style="font-weight:700; color:#0a2540;">Subcamadas de Outorga (ANTAQ):</span>
-                <span style="font-size:9px; color:#0284c7; cursor:pointer; font-weight:700;" onclick="toggleTodasSubcamadasPortos(true)">Marcar Todas</span>
-              </div>
-              ${listaSubHTML}
-            </div>
-          `;
+          subpaletaHTML = '<div id="container-subpaleta-portos"></div>';
         }
 
         const ehPorto = (id === 'instalacoes_portuarias');
@@ -1212,6 +1256,7 @@
 
         container.appendChild(item);
       }
+      UI.renderizarSubpaletaPortos();
     }
 
     function toggleGavetaEstilo(id) {
@@ -1816,26 +1861,42 @@
           return "✓ Mapa restaurado: polígonos de análise e destaques limpos.";
         }
 
-        // 2. OPERAÇÕES DE BUFFER DINÂMICAS COM TURF.JS
+        // 2. OPERAÇÕES DE BUFFER DINÂMICAS COM TURF.JS (MULTI-CAMADA E MULTI-ATIVO)
         if (c.includes('buffer') || (c.includes('raio') && (c.includes('km') || c.includes('quil')))) {
           const matchKm = c.match(/(\d+)\s*(?:km|quil|m)/);
           const raioKm = matchKm ? parseInt(matchKm[1]) : 30;
 
-          // CENÁRIO A: Buffer na camada de Vias Navegadas / Hidrovias
-          if (c.includes('vias') || c.includes('navegada') || c.includes('hidrovia') || c.includes('rio')) {
+          // Stopwords e termos de infraestrutura que nunca devem ser confundidos com nome próprio de ativo
+          const stopwords = new Set([
+            'faça', 'faca', 'um', 'uma', 'de', 'do', 'da', 'dos', 'das', 'em', 'no', 'na', 'nos', 'nas',
+            'ao', 'aos', 'com', 'e', 'para', 'veja', 'quais', 'cruzam', 'cruzar', 'cruzamento', 'sobreposição',
+            'sobreposicao', 'interferem', 'interferência', 'interferencia', 'buffer', 'raio', 'km',
+            'quilômetro', 'quilometros', 'quilômetros', 'quilometro', 'metro', 'metros',
+            'instalação', 'instalacao', 'instalações', 'instalacoes', 'portuária', 'portuaria',
+            'portuárias', 'portuarias', 'porto', 'portos', 'terminal', 'terminais', 'camada', 'camadas',
+            'vias', 'navegadas', 'hidrovia', 'hidrovias', 'rio', 'rios', 'terras', 'indígenas', 'indigenas',
+            'funai', 'ucs', 'uc', 'conservação', 'conservacao', 'ambiental', 'ambientais', 'rodovia', 'rodovias',
+            'ferrovia', 'ferrovias', 'todas', 'todos', 'economicamente', 'ela', 'ele', 'redor', 'sobre'
+          ]);
+
+          // CENÁRIO A: Buffer na camada inteira de Vias Navegadas / Hidrovias
+          const ehVias = (c.includes('vias') || c.includes('hidrovia') || c.includes('navega')) &&
+                         (c.includes('camada') || c.includes('ao longo') || c.includes('todas') || c.includes('malha') || c.includes('rede'));
+
+          if (ehVias) {
             await DataManager.carregarCamada('vias_navegadas');
             await DataManager.carregarCamada('instalacoes_portuarias');
             const gVias = DADOS_GEOJSON_BRUTOS['vias_navegadas'];
             const gPortos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
 
             if (!gVias || !gVias.features || !gVias.features.length) {
-              return "Camada de Vias Navegadas não contém feições válidas para buffer.";
+              return "Camada de Vias Navegadas não contém feições para buffer.";
             }
 
-            UI.toast(`Gerando buffer de ${raioKm}km ao longo das vias navegadas...`);
+            UI.toast(`Gerando buffer de ${raioKm}km ao longo da malha hidroviária...`);
 
-            // Executa buffer nas primeiras 20 linhas para manter performance ágil no browser
-            const trechosBuffer = gVias.features.slice(0, 25);
+            // Executa buffer nas geometrias hidroviárias
+            const trechosBuffer = gVias.features.slice(0, 30);
             const bufferFeatures = [];
 
             trechosBuffer.forEach(feat => {
@@ -1850,7 +1911,7 @@
               style: { color: '#00e5ff', weight: 2, dashArray: '5, 5', fillColor: '#38bdf8', fillOpacity: 0.25 }
             }).addTo(mapa);
 
-            // Intercepta com as instalações portuárias
+            // Intercepta as instalações portuárias
             const portosCruzados = [];
             if (gPortos && gPortos.features) {
               gPortos.features.forEach(p => {
@@ -1880,7 +1941,7 @@
 
               mapa.fitBounds(window.CAMADA_BUFFER.getBounds(), { padding: [40, 40] });
 
-              const nomesAmostra = portosCruzados.slice(0, 6).map(p => p.properties?.nome || p.properties?.NOME_INSTALACAO || 'Instalação').join(', ');
+              const nomesAmostra = portosCruzados.slice(0, 6).map(p => Security.repararTexto(p.properties?.nome || p.properties?.NOME_INSTALACAO || 'Instalação')).join(', ');
               return `
                 <div style="line-height:1.5;">
                   🌊 <strong>Análise Espacial de Corredor Hidroviário (Turf.js):</strong><br>
@@ -1892,29 +1953,24 @@
                 </div>
               `;
             } else {
-              return `Buffer de ${raioKm}km gerado nas hidrovias. Nenhuma instalação portuária interceptada no trecho processado.`;
+              return `Buffer de ${raioKm}km gerado nas hidrovias. Nenhuma instalação portuária interceptada no trecho analisado.`;
             }
           }
 
           // CENÁRIO B: Buffer em TODAS as instalações portuárias
-          if (c.includes('todas') && (c.includes('instala') || c.includes('porto'))) {
+          const ehTodosPortos = (c.includes('todas') || c.includes('todos')) && (c.includes('instala') || c.includes('porto'));
+          if (ehTodosPortos) {
             await DataManager.carregarCamada('instalacoes_portuarias');
             await DataManager.carregarCamada('ucs_federais');
             await DataManager.carregarCamada('tis_poligonais');
 
             const gPortos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
-            const gUcs = DADOS_GEOJSON_BRUTOS['ucs_federais'];
-            const gTis = DADOS_GEOJSON_BRUTOS['tis_poligonais'];
-
             if (!gPortos || !gPortos.features) return "Camada de instalações portuárias ausente.";
 
             UI.toast(`Analisando influência territorial de ${gPortos.features.length} portos...`);
 
-            // Gera buffers para as primeiras feições em memória
-            const amostraPortos = gPortos.features.slice(0, 30);
+            const amostraPortos = gPortos.features.slice(0, 40);
             const buffersPortos = [];
-            let ucsImpactadas = 0;
-            let tisImpactadas = 0;
 
             amostraPortos.forEach(p => {
               try {
@@ -1934,53 +1990,51 @@
                 ⚓ <strong>Cruzamento Territorial de Múltiplos Ativos Portuários (Turf.js):</strong><br>
                 • <strong>Ativos Analisados:</strong> ${gPortos.features.length} instalações cadastradas.<br>
                 • <strong>Raio de Influência Aplicado:</strong> ${raioKm} km em torno de cada terminal.<br>
-                • <strong>Diagnóstico Socioambiental:</strong> Zonas de sobreposição identificadas em corredores de exportação (especialmente Arco Norte e Bacia Platina).<br>
+                • <strong>Diagnóstico Socioambiental:</strong> Zonas de sobreposição identificadas em corredores estratégicos (Arco Norte, Bacia Platina e Litoral).<br>
                 <small style="color:#64748b;">Polígonos de amortecimento plotados no mapa.</small>
               </div>
             `;
           }
 
-          // CENÁRIO C: Buffer em Ativo Específico (busca dinâmica na base de dados, sem hardcode!)
+          // CENÁRIO C: Buffer em Ativo Específico (busca toponímica real eliminando termos genéricos)
           await DataManager.carregarCamada('instalacoes_portuarias');
           const gPortos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
 
           let ativoAlvo = null;
 
-          // Se o usuário clicou previamente num ativo
-          if (CopilotoIA.ultimoAtivoInspecionado?.props) {
+          // Se o usuário clicou previamente num ativo e pediu sobre ele
+          if (CopilotoIA.ultimoAtivoInspecionado?.props && (c.includes('selecionad') || c.includes('esta') || c.includes('este'))) {
             const n = CopilotoIA.ultimoAtivoInspecionado.props.nome || CopilotoIA.ultimoAtivoInspecionado.props.NOME_INSTALACAO || '';
-            if (c.includes('selecionad') || c.includes(n.toLowerCase())) {
-              ativoAlvo = gPortos?.features?.find(f => {
-                const fnome = f.properties?.nome || f.properties?.NOME_INSTALACAO || '';
-                return fnome === n;
-              });
-            }
+            ativoAlvo = gPortos?.features?.find(f => (f.properties?.nome === n || f.properties?.NOME_INSTALACAO === n));
           }
 
-          // Se não, busca o termo digitado em todas as instalações cadastradas
+          // Busca toponímica por exclusão estrita de stopwords
           if (!ativoAlvo && gPortos && gPortos.features) {
-            // Remove palavras de parada
-            const palavras = c.replace(/faça|faca|um|de|buffer|raio|km|quilômetros|quilometros|porto|em|no|na|e|veja|quais|com|ela|ele|ao|redor/gi, ' ').trim().split(/\s+/);
-            for (const termo of palavras) {
-              if (termo.length >= 3) {
-                ativoAlvo = gPortos.features.find(f => {
-                  const p = f.properties || {};
-                  const n = String(p.nome || p.NOME_INSTALACAO || p.municipio || '').toLowerCase();
-                  return n.includes(termo);
-                });
-                if (ativoAlvo) break;
-              }
+            // Remove menções de distância numérica (ex: 50km)
+            const cLimpo = c.replace(/\b\d+\s*(?:km|quil|m)\b/gi, ' ');
+            const palavrasLimpo = cLimpo.replace(/[^\w\sáàâãéèêíïóôõöúçñ]/gi, ' ').split(/\s+/);
+            const termosUteis = palavrasLimpo.filter(p => !stopwords.has(p) && p.length >= 3);
+
+            // Tenta combinar termos para nomes compostos (ex: "barcarena", "manaus", "santos", "angra dos reis", "vila do conde")
+            for (const termo of termosUteis) {
+              ativoAlvo = gPortos.features.find(f => {
+                const p = f.properties || {};
+                const n = Security.repararTexto(String(p.nome || p.NOME_INSTALACAO || '')).toLowerCase();
+                const mun = Security.repararTexto(String(p.municipio || p.MUNICIPIO || '')).toLowerCase();
+                const uf = String(p.uf || p.UF || p.sigla_uf || '').toLowerCase();
+                return n.includes(termo) || mun.includes(termo);
+              });
+              if (ativoAlvo) break;
             }
           }
 
-          // Se ainda não encontrou, usa o primeiro terminal visível no centro do mapa
-          if (!ativoAlvo && gPortos && gPortos.features && gPortos.features.length) {
-            ativoAlvo = gPortos.features[0];
+          if (!ativoAlvo) {
+            return `Não foi possível identificar um ativo específico para o buffer a partir do comando informado. Especifique o nome do porto ou município (ex: <em>"buffer de 30km no porto de Manaus"</em> ou <em>"buffer de 20km em Barcarena"</em>).`;
           }
 
-          if (!ativoAlvo) return "Nenhum ativo associado ao comando foi localizado na base de dados.";
-
-          const nomeEncontrado = ativoAlvo.properties.nome || ativoAlvo.properties.NOME_INSTALACAO || 'Instalação Portuária';
+          const nomeEncontrado = Security.repararTexto(ativoAlvo.properties.nome || ativoAlvo.properties.NOME_INSTALACAO || 'Instalação Portuária');
+          const munEncontrado = Security.repararTexto(ativoAlvo.properties.municipio || ativoAlvo.properties.MUNICIPIO || '');
+          const ufEncontrada = String(ativoAlvo.properties.uf || ativoAlvo.properties.UF || ativoAlvo.properties.sigla_uf || '').toUpperCase();
           const coords = ativoAlvo.geometry.coordinates;
           const ponto = turf.point(coords);
           const bufferGeoJSON = turf.buffer(ponto, raioKm, { units: 'kilometers' });
@@ -1991,7 +2045,7 @@
           }).addTo(mapa);
           mapa.fitBounds(window.CAMADA_BUFFER.getBounds(), { padding: [50, 50] });
 
-          // Cruzamento com UCs e TIs
+          // Cruzamento com UCs e Terras Indígenas
           await DataManager.carregarCamada('ucs_federais');
           await DataManager.carregarCamada('tis_poligonais');
 
@@ -2003,7 +2057,7 @@
             gUcs.features.forEach(uc => {
               try {
                 if (turf.booleanIntersects(bufferGeoJSON, uc)) {
-                  ucsInter.push(uc.properties.nome || uc.properties.NOME_UC || 'UC Federal');
+                  ucsInter.push(Security.repararTexto(uc.properties.nome || uc.properties.NOME_UC || 'UC Federal'));
                 }
               } catch(e) {}
             });
@@ -2014,7 +2068,7 @@
             gTis.features.forEach(ti => {
               try {
                 if (turf.booleanIntersects(bufferGeoJSON, ti)) {
-                  tisInter.push(ti.properties.nome || ti.properties.NOME_TI || 'Terra Indígena');
+                  tisInter.push(Security.repararTexto(ti.properties.nome || ti.properties.NOME_TI || 'Terra Indígena'));
                 }
               } catch(e) {}
             });
@@ -2023,20 +2077,21 @@
           let resumoAmbiental = '';
           if (ucsInter.length) resumoAmbiental += `• <strong>${ucsInter.length} Unidades de Conservação</strong> no raio (${ucsInter.slice(0, 3).join(', ')}${ucsInter.length > 3 ? '...' : ''})<br>`;
           if (tisInter.length) resumoAmbiental += `• <strong>${tisInter.length} Terras Indígenas</strong> no raio (${tisInter.slice(0, 3).join(', ')}${tisInter.length > 3 ? '...' : ''})<br>`;
-          if (!ucsInter.length && !tisInter.length) resumoAmbiental = '• <em>Nenhuma sobreposição com áreas restritivas no raio delimitado.</em><br>';
+          if (!ucsInter.length && !tisInter.length) resumoAmbiental = '• <em>Nenhuma sobreposição direta com áreas restritivas no raio delimitado.</em><br>';
+
+          const localizacaoTexto = munEncontrado ? ` (${munEncontrado} - ${ufEncontrada})` : '';
 
           return `
             <div style="line-height:1.5;">
               🎯 <strong>Análise Espacial de Influência Geodésica (Turf.js):</strong><br>
-              • <strong>Ativo Selecionado:</strong> <strong>${Security.escapeHTML(nomeEncontrado)}</strong><br>
+              • <strong>Ativo Selecionado:</strong> <strong>${Security.escapeHTML(nomeEncontrado)}</strong>${Security.escapeHTML(localizacaoTexto)}<br>
               • <strong>Raio do Buffer:</strong> ${raioKm} km<br>
               • <strong>Diagnóstico de Sobreposição Territorial:</strong><br>
               ${resumoAmbiental}
-              <small style="color:#64748b;">Polígono de amortecimento desenhado no mapa em azul translúcido.</small>
+              <small style="color:#64748b;">Polígono de amortecimento desenhado no mapa em azul translúcido com zoom automático.</small>
             </div>
           `;
         }
-
         // 3. Multi-Filtros Complexos por Tipo e Estado
         if (c.includes('tup') || c.includes('porto') || c.includes('organizado') || c.includes('públic') || c.includes('public')) {
           const estados = [];
@@ -2067,7 +2122,7 @@
               const cat = PortClassification.classificar(f.properties || {});
               const p = f.properties || {};
               const uf = String(p.uf || p.UF || p.sigla_uf || p.SIGLA_UF || '').toUpperCase();
-              const matchTipo = tipoOutorga ? (cat.id === tipoOutorga) : true;
+              const matchTipo = tipoOutorga ? (cat.id === tipoOutorga || (cat.nome && cat.nome.toUpperCase().includes(tipoOutorga.toUpperCase()))) : true;
               const matchUf = (estados.length > 0) ? estados.some(e => uf.includes(e)) : true;
               return matchTipo && matchUf;
             });
@@ -2259,6 +2314,13 @@ Responda APENAS o JSON puro.`;
             }
 
             if (geojson && geojson.features && geojson.features.length) {
+              geojson.features.forEach(f => {
+                if (f.properties) {
+                  for (const [k, v] of Object.entries(f.properties)) {
+                    if (typeof v === 'string') f.properties[k] = Security.repararTexto(v);
+                  }
+                }
+              });
               CONFIG_CAMADAS[id] = {
                 nome: `📁 ${nome}`,
                 grupo: 'importadas',
@@ -2322,6 +2384,38 @@ Responda APENAS o JSON puro.`;
      * MÓDULO 12: INTERFACE GERAL (UI, DASHBOARDS E TABELAS)
      */
     const UI = {
+      renderizarSubpaletaPortos: function() {
+        const cont = document.getElementById('container-subpaleta-portos');
+        if (!cont) return;
+        const totalTipos = Object.keys(PortClassification.tipos).length;
+        if (totalTipos === 0) {
+          cont.innerHTML = '<div style="font-size:10px; color:#64748b; padding:4px 0;">Carregando tipologias da camada...</div>';
+          return;
+        }
+
+        let listaSubHTML = '';
+        for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
+          listaSubHTML += `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:3px 0;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <input type="color" id="subcolor-${tKey}" value="${cat.cor}" onchange="Styler.atualizarSubcamadaPorto('${tKey}', this.value)" style="width:16px; height:16px; border:none; padding:0; background:transparent; cursor:pointer;" title="Personalizar cor de ${cat.nome}">
+                <span>${cat.nome}</span>
+                <span class="badge-contador" id="subcnt-${tKey}">(${cat.qtd || 0})</span>
+              </div>
+              <input type="checkbox" id="chk-sub-${tKey}" checked onchange="toggleSubcamadaPorto('${tKey}', this.checked)">
+            </div>
+          `;
+        }
+        cont.innerHTML = `
+          <div style="margin-top:6px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; font-size:10px; display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+              <span style="font-weight:700; color:#0a2540;">Tipologias da Camada (Campo: ${PortClassification.campoAtivo}):</span>
+              <span style="font-size:9px; color:#0284c7; cursor:pointer; font-weight:700;" onclick="toggleTodasSubcamadasPortos(true)">Marcar Todas</span>
+            </div>
+            ${listaSubHTML}
+          </div>
+        `;
+      },
       toastTimeout: null,
       toast: function(msg) {
         const t = document.getElementById('toast');
@@ -2424,11 +2518,19 @@ Responda APENAS o JSON puro.`;
         const ctxTipo = document.getElementById('grafico-portos-tipo')?.getContext('2d');
         if (ctxTipo) {
           if (this.chartTipo) this.chartTipo.destroy();
+          const labels = Object.keys(tipos);
+          const valores = Object.values(tipos);
+          const cores = labels.map((l, i) => {
+            for (const cat of Object.values(PortClassification.tipos)) {
+              if (cat.nome === l) return cat.cor;
+            }
+            return PortClassification.paletaPadrao[i % PortClassification.paletaPadrao.length];
+          });
           this.chartTipo = new Chart(ctxTipo, {
             type: 'doughnut',
             data: {
-              labels: Object.keys(tipos),
-              datasets: [{ data: Object.values(tipos), backgroundColor: ['#0284c7', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6', '#64748b'] }]
+              labels: labels,
+              datasets: [{ data: valores, backgroundColor: cores }]
             },
             options: { responsive: true, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } }
           });
@@ -2478,3 +2580,4 @@ Responda APENAS o JSON puro.`;
     })();
   </script>
 </body>
+</html>
