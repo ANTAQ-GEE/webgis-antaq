@@ -4912,8 +4912,9 @@
         try {
           const lat = parseFloat(params.get('lat'));
           const lng = parseFloat(params.get('lng'));
-          const z = parseInt(params.get('z'), 10);
-          if (!isNaN(lat) && !isNaN(lng) && !isNaN(z) && z >= 1 && z <= 18) {
+          const zRaw = parseFloat(params.get('z'));
+          const z = Math.min(Math.max(Math.round(zRaw), 1), 18); // clampa entre 1 e 18
+          if (!isNaN(lat) && !isNaN(lng) && !isNaN(zRaw) && z >= 1 && z <= 18) {
             mapa.setView([lat, lng], z);
             console.info(`[URLState] Mapa posicionado em (${lat}, ${lng}) z=${z}`);
           }
