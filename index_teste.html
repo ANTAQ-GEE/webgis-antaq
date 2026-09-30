@@ -4300,6 +4300,8 @@
 
       desativar: function() {
         this.modo = null;
+        this._ultimoClickTempo = 0;
+        this._ultimoClickScreen = null;
         document.querySelectorAll('.btn-medicao').forEach(b => b.classList.remove('ativo'));
         document.getElementById('mapa').style.cursor = '';
         const painel = document.getElementById('painel-medicao-resultados');
@@ -4334,6 +4336,23 @@
       _onMapClick: function(e) {
         if (!this.modo) return;
         const latlng = e.latlng;
+        const screenPoint = mapa.latLngToContainerPoint(latlng);
+        const agora = Date.now();
+
+        // ✅ CORREÇÃO: detecta o 2º clique de um duplo-clique e o ignora.
+        // Um duplo-clique dispara: click → click → dblclick, tudo na mesma posição.
+        // Sem isso, cada duplo-clique adiciona 2 pontos idênticos (medição de 0m).
+        if (this._ultimoClickTempo &&
+            (agora - this._ultimoClickTempo) < 320 &&
+            this._ultimoClickScreen &&
+            this._ultimoClickScreen.distanceTo(screenPoint) < 10) {
+          // É o 2º clique do duplo-clique: ignora
+          this._ultimoClickTempo = 0;
+          this._ultimoClickScreen = null;
+          return;
+        }
+        this._ultimoClickTempo = agora;
+        this._ultimoClickScreen = screenPoint;
 
         if (this.modo === 'raio') {
           if (this.pontos.length === 0) {
