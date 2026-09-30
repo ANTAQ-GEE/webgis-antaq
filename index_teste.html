@@ -1,7 +1,3 @@
-
-index_teste.html
-
-100%
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -138,6 +134,20 @@ index_teste.html
     .painel-header h2 { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; }
     .painel-header span { font-size: 10px; color: #38bdf8; }
 
+    /* Barra de Gestão do Catálogo (Homologação) */
+    .painel-gestao-bar {
+      background: #f1f5f9; padding: 7px 12px; border-bottom: 1px solid #cbd5e1;
+      display: flex; justify-content: space-between; align-items: center; font-size: 10px;
+    }
+    .btn-gestao {
+      border: none; padding: 4px 8px; border-radius: 4px; font-weight: 700; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px; font-size: 10px;
+    }
+    .btn-gestao-add { background: #0284c7; color: #fff; }
+    .btn-gestao-add:hover { background: #0369a1; }
+    .btn-gestao-exp { background: #10b981; color: #fff; }
+    .btn-gestao-exp:hover { background: #059669; }
+
     .painel-corpo { overflow-y: auto; padding-bottom: 8px; }
 
     .secao { border-bottom: 1px solid var(--borda); }
@@ -152,14 +162,16 @@ index_teste.html
 
     .item-camada { display: flex; flex-direction: column; padding: 5px 0; border-bottom: 1px dashed #f1f5f9; }
     .item-camada-principal { display: flex; align-items: center; justify-content: space-between; }
-    .camada-info { display: flex; align-items: center; gap: 6px; font-size: 11px; max-width: 220px; }
+    .camada-info { display: flex; align-items: center; gap: 6px; font-size: 11px; max-width: 200px; }
     .legenda-cor { width: 13px; height: 13px; border-radius: 3px; cursor: pointer; flex-shrink: 0; }
     .badge-contador { font-size: 9px; color: #64748b; font-weight: 600; margin-left: 2px; }
     .badge-erro { font-size: 9px; color: #ef4444; font-weight: 700; }
 
-    .camada-acoes { display: flex; align-items: center; gap: 4px; }
-    .btn-acao-icone { background: transparent; border: none; cursor: pointer; font-size: 12px; padding: 2px 4px; border-radius: 3px; }
+    .camada-acoes { display: flex; align-items: center; gap: 3px; }
+    .btn-acao-icone { background: transparent; border: none; cursor: pointer; font-size: 11px; padding: 2px 3px; border-radius: 3px; }
     .btn-acao-icone:hover { background: #e2e8f0; }
+    .btn-remover-camada { color: #ef4444 !important; }
+    .btn-remover-camada:hover { background: #fee2e2 !important; }
 
     .gaveta-painel {
       display: none; background: #f8fafc; padding: 8px 10px; border-radius: 6px;
@@ -169,18 +181,18 @@ index_teste.html
     .linha-ajuste { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
 
     /* Switch Liga / Desliga */
-    .switch { position: relative; display: inline-block; width: 32px; height: 17px; flex-shrink: 0; }
+    .switch { position: relative; display: inline-block; width: 30px; height: 16px; flex-shrink: 0; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
       position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #cbd5e1; transition: .2s; border-radius: 17px;
+      background-color: #cbd5e1; transition: .2s; border-radius: 16px;
     }
     .slider:before {
-      position: absolute; content: ""; height: 11px; width: 11px; left: 3px; bottom: 3px;
+      position: absolute; content: ""; height: 10px; width: 10px; left: 3px; bottom: 3px;
       background-color: white; transition: .2s; border-radius: 50%;
     }
     input:checked + .slider { background-color: var(--antaq-azul-claro); }
-    input:checked + .slider:before { transform: translateX(15px); }
+    input:checked + .slider:before { transform: translateX(14px); }
 
     /* Dropzone Drag & Drop */
     #dropzone {
@@ -302,7 +314,6 @@ index_teste.html
     .simbolo-poligono { display: inline-block; width: 14px; height: 10px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.25); flex-shrink: 0; vertical-align: middle; }
     .item-legenda-linha { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #1e293b; padding: 2px 0; }
 
-    /* Rotulo UF */
     .rotulo-uf {
       background: transparent !important; border: none !important; box-shadow: none !important;
       font-size: 12px !important; font-weight: 700 !important; color: #fff !important;
@@ -316,6 +327,16 @@ index_teste.html
       background: rgba(15, 23, 42, 0.95); color: #ffffff; padding: 9px 18px;
       border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 50000;
       display: none; box-shadow: 0 6px 20px rgba(0,0,0,0.4); border-left: 4px solid var(--gov-verde);
+    }
+
+    /* Modal Adicionar Camada */
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 99990;
+    }
+    .modal-box {
+      display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 400px; max-width: calc(100vw - 40px); background: #ffffff; border-radius: 8px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5); z-index: 99999; border: 1px solid #cbd5e1; overflow: hidden;
     }
   </style>
 </head>
@@ -351,7 +372,7 @@ index_teste.html
   <div class="dropdown-homologacao" id="drop-ambiente">
     <div class="drop-item ativo" id="item-env-homolog" onclick="AmbienteManager.definir('homologacao')">
       <strong>Ambiente de Homologação (Estudos GEE)</strong>
-      <small>Edição de estilos e filtros habilitados &bull; Pasta local <code>dados/</code>.</small>
+      <small>Edição de estilos, adição e exclusão de camadas habilitadas &bull; Pasta local <code>dados/</code>.</small>
     </div>
     <div class="drop-item" id="item-env-prod" onclick="AmbienteManager.definir('producao')">
       <strong>Ambiente de Produção (Oficial ANTAQ)</strong>
@@ -359,7 +380,7 @@ index_teste.html
     </div>
   </div>
 
-  <!-- BARRA DE BUSCA E FILTROS DINÂMICOS CONTEXTUAIS (REESTRUTURADA PARA TODAS AS CAMADAS) -->
+  <!-- BARRA DE BUSCA E FILTROS DINÂMICOS CONTEXTUAIS -->
   <div class="barra-busca-atributos">
     <select class="select-camada-busca" id="sel-camada-busca" onchange="FilterManager.aoMudarCamada(this.value)">
       <option value="instalacoes_portuarias">⚓ Instalações Portuárias</option>
@@ -377,7 +398,6 @@ index_teste.html
       <div class="resultados-busca" id="resultados-busca"></div>
     </div>
     <button class="btn-exec-busca" onclick="SearchEngine.executar()">Zoom no Ativo</button>
-    <!-- Subfiltro Dinâmico Reativo a qualquer camada selecionada -->
     <select class="select-camada-busca" id="filtro-subtipo-dinamico" onchange="FilterManager.aoMudarSubfiltro(this.value)" style="min-width: 190px; max-width: 250px; background: #0a2540; color: #fff; border: 1px solid #0284c7; cursor: pointer;" title="Subfiltro Especializado da Camada">
     </select>
   </div>
@@ -392,9 +412,61 @@ index_teste.html
     </div>
   </div>
 
-  <!-- ============================================================
-       PAINEL DO COPILOTO GEOESPACIAL E REGULATÓRIO COM IA (AVANÇADO)
-       ============================================================ -->
+  <!-- MODAL ADICIONAR NOVA CAMADA FIXA -->
+  <div class="modal-backdrop" id="modal-backdrop" onclick="fecharModalNovaCamada()"></div>
+  <div class="modal-box" id="modal-nova-camada">
+    <div style="background:#0a2540; color:#fff; padding:10px 14px; font-weight:700; font-size:12px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0284c7;">
+      <span>➕ Adicionar Nova Camada ao WebGIS</span>
+      <span style="cursor:pointer; font-size:18px;" onclick="fecharModalNovaCamada()">&times;</span>
+    </div>
+    <div style="padding:14px; font-size:11px; display:flex; flex-direction:column; gap:9px;">
+      <div>
+        <label style="font-weight:600; color:#334155;">Nome da Camada (Exibição):</label>
+        <input type="text" id="novo-camada-nome" placeholder="Ex: Terminais Fluviais de Passageiros" style="width:100%; padding:6px 8px; font-size:11px; border:1px solid #cbd5e1; border-radius:4px; margin-top:2px;">
+      </div>
+      <div>
+        <label style="font-weight:600; color:#334155;">Identificador do Sistema (ID único):</label>
+        <input type="text" id="novo-camada-id" placeholder="Ex: terminais_fluviais" style="width:100%; padding:6px 8px; font-size:11px; border:1px solid #cbd5e1; border-radius:4px; margin-top:2px;">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div>
+          <label style="font-weight:600; color:#334155;">Grupo Temático:</label>
+          <select id="novo-camada-grupo" style="width:100%; padding:6px 8px; font-size:11px; border:1px solid #cbd5e1; border-radius:4px; margin-top:2px;">
+            <option value="infra">Infraestrutura</option>
+            <option value="limites">Limites Territoriais</option>
+            <option value="restricoes">Restrições Socioambientais</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-weight:600; color:#334155;">Tipo Geométrico:</label>
+          <select id="novo-camada-tipo" style="width:100%; padding:6px 8px; font-size:11px; border:1px solid #cbd5e1; border-radius:4px; margin-top:2px;">
+            <option value="ponto">Ponto</option>
+            <option value="linha">Linha</option>
+            <option value="linha_tracejada">Linha Tracejada</option>
+            <option value="poligono">Polígono Preenchido</option>
+            <option value="poligono_linha">Polígono (Apenas Contorno)</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label style="font-weight:600; color:#334155;">Arquivo Local ou URL (.geojson):</label>
+        <input type="text" id="novo-camada-arquivo" placeholder="dados/nome_do_arquivo.geojson" style="width:100%; padding:6px 8px; font-size:11px; border:1px solid #cbd5e1; border-radius:4px; margin-top:2px;">
+      </div>
+      <div style="display:flex; align-items:center; gap:12px; margin-top:4px;">
+        <label style="font-weight:600; color:#334155;">Cor Cartográfica:</label>
+        <input type="color" id="novo-camada-cor" value="#0284c7" style="width:36px; height:24px; border:none; cursor:pointer;">
+        <label style="display:flex; align-items:center; gap:4px; font-weight:600; color:#334155; margin-left:auto;">
+          <input type="checkbox" id="novo-camada-ativa" checked> Ativar no Mapa
+        </label>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+        <button onclick="fecharModalNovaCamada()" style="padding:6px 12px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; font-size:11px; cursor:pointer;">Cancelar</button>
+        <button onclick="adicionarCamadaAoCatalogo()" style="padding:6px 14px; background:#0284c7; color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:700; cursor:pointer;">Adicionar ao Catálogo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAINEL DO COPILOTO GEOESPACIAL E REGULATÓRIO COM IA -->
   <div class="painel-copiloto" id="painel-copiloto">
     <div class="copiloto-header">
       <div style="display:flex; align-items:center; gap:8px;">
@@ -410,7 +482,7 @@ index_teste.html
       </div>
     </div>
 
-    <!-- MODAL DE CONFIGURAÇÃO DE IA -->
+    <!-- CONFIGURAÇÃO DA IA -->
     <div class="copiloto-config-box" id="copiloto-config-box" style="display:none;">
       <div style="font-weight:700; font-size:11px; color:#0f172a; margin-bottom:6px;">Configuração da Inteligência Artificial:</div>
       <label style="font-size:10px; color:#475569; display:block; margin-bottom:3px;">Motor / Provedor:</label>
@@ -443,26 +515,26 @@ index_teste.html
       <div class="msg-ia">
         👋 Olá! Eu sou o <strong>Copiloto Geoespacial da ANTAQ</strong>.<br><br>
         Executo <strong>operações espaciais e regulatórias complexas</strong> diretamente no mapa:<br>
-        • <em>"Buffer de 30 km no Porto de Santos e cruzar com UCs"</em><br>
+        • <em>"Buffer de 30km na camada de vias navegadas e veja quais instalações portuárias cruzam"</em><br>
+        • <em>"Buffer de 50km em Barcarena e veja sobreposição com UCs"</em><br>
         • <em>"Filtrar TUPs do Pará e Maranhão e ligar ferrovias"</em><br>
-        • <em>"Analisar sobreposição de vias navegadas com terras indígenas"</em><br>
-        • <em>"Gerar nota técnica detalhada com diagnóstico territorial"</em><br>
+        • <em>"Gerar nota técnica da instalação selecionada"</em><br>
         • <em>"Ligar rodovias e ferrovias e desligar o resto"</em>
       </div>
     </div>
 
     <!-- CHIPS DE AÇÕES RÁPIDAS -->
     <div class="copiloto-chips-bar">
-      <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('Buffer de 30 km no Porto de Santos e cruzar com UCs')">🎯 Buffer Santos x UCs</button>
+      <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('faça um buffer de 30km na camada de vias economicamente navegadas e veja quais instalações portuárias cruzam com ela')">🌊 Buffer Hidrovias x Portos</button>
+      <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('buffer em todas instalações portuárias e veja o cruzamento com UCs e terras indígenas')">🎯 Buffer Todos Portos x Restrições</button>
       <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('Filtrar TUPs do Pará e Maranhão e ligar ferrovias')">⚓ TUPs PA/MA + Ferrovias</button>
-      <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('Analisar cruzamento de hidrovias com terras indígenas')">🏹 Hidrovias x Terras Indígenas</button>
       <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('Gerar nota técnica da instalação selecionada')">📝 Nota Técnica Completa</button>
       <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('Limpar análises e restaurar mapa')">🔄 Restaurar Mapa</button>
     </div>
 
     <!-- ENTRADA DE TEXTO -->
     <div class="copiloto-input-bar">
-      <input type="text" id="copiloto-input" placeholder="Comando complexo (ex: 'buffer 50km em Barcarena e cruzar com UCs')..." onkeydown="if(event.key==='Enter') CopilotoIA.enviar()">
+      <input type="text" id="copiloto-input" placeholder="Comando complexo (ex: 'buffer 30km nas hidrovias', 'portos públicos em SP')..." onkeydown="if(event.key==='Enter') CopilotoIA.enviar()">
       <button class="btn-copiloto-enviar" onclick="CopilotoIA.enviar()" title="Enviar comando">➤</button>
     </div>
   </div>
@@ -515,6 +587,16 @@ index_teste.html
     <div class="painel-header">
       <h2>PAINEL DE CAMADAS</h2>
       <span id="label-status-estilo">Homologação Ativa</span>
+    </div>
+
+    <!-- Barra de Gestão de Catálogo (Adicionar e Baixar manifest.json) -->
+    <div class="painel-gestao-bar" id="painel-gestao-bar">
+      <button class="btn-gestao btn-gestao-add" onclick="abrirModalNovaCamada()" title="Adicionar nova camada fixa ao catálogo">
+        ➕ Nova Camada
+      </button>
+      <button class="btn-gestao btn-gestao-exp" onclick="exportarManifestJSON()" title="Baixar manifest.json atualizado para o repositório">
+        💾 Baixar manifest.json
+      </button>
     </div>
 
     <div class="painel-corpo">
@@ -647,6 +729,8 @@ index_teste.html
 
     /**
      * MÓDULO 1.1: CLASSIFICAÇÃO REGULATÓRIA DE INSTALAÇÕES PORTUÁRIAS
+     * Corrigida para garantir que Portos Públicos (Cadastro Legado, Delegação, Estatal, Docas)
+     * sejam devidamente categorizados e não caiam em "Demais Registros e Apoio".
      */
     const PortClassification = {
       tipos: {
@@ -659,17 +743,34 @@ index_teste.html
       },
       classificar: function(props) {
         if (!props) return this.tipos.OUTROS;
-        const raw = String(
-          props.tipo || props.TIPO || props.TIPO_INSTALACAO || props.tipo_instalacao ||
-          props.ds_tipo || props.perfil || props.PERFIL || props.subtipo || props.SUBTIPO ||
-          props.descricao || props.DESCRICAO || ''
-        );
-        const limpo = Security.repararTexto(raw).toUpperCase();
-        if (limpo.includes('ORGANIZADO') || limpo.includes('AUTORIDADE PORTUÁRIA') || limpo.includes('DOCAS')) return this.tipos.ORGANIZADO;
-        if (limpo.includes('TERMINAL DE USO PRIVADO') || limpo.includes('TUP') || limpo.includes('USO PRIVADO')) return this.tipos.TUP;
-        if (limpo.includes('PÚBLICO') || limpo.includes('PUBLICO') || limpo.includes('PORTUÁRIA PÚBLICA')) return this.tipos.PUBLICO;
-        if (limpo.includes('IP4') || limpo.includes('PEQUENO PORTE')) return this.tipos.IP4;
-        if (limpo.includes('TRANSBORDO') || limpo.includes('ETC')) return this.tipos.ETC;
+        // Varredura completa em todos os valores de todos os atributos para evitar falhas por nome de coluna
+        const valoresTexto = Object.values(props).map(v => String(v || '')).join(' ');
+        const limpo = Security.repararTexto(valoresTexto).toUpperCase();
+
+        // 1. Terminais de Uso Privado (TUP)
+        if (limpo.includes('TERMINAL DE USO PRIVADO') || limpo.includes('TUP') || limpo.includes('USO PRIVADO') || limpo.includes('AUTORIZADO') || limpo.includes('AUTORIZAÇÃO') || limpo.includes('AUTORIZACAO')) {
+          return this.tipos.TUP;
+        }
+        // 2. Pequeno Porte (IP4)
+        if (limpo.includes('IP4') || limpo.includes('PEQUENO PORTE') || limpo.includes('INSTALAÇÃO PORTUÁRIA DE PEQUENO PORTE')) {
+          return this.tipos.IP4;
+        }
+        // 3. Estação de Transbordo de Carga (ETC)
+        if (limpo.includes('TRANSBORDO') || limpo.includes('ETC') || limpo.includes('ESTAÇÃO DE TRANSBORDO')) {
+          return this.tipos.ETC;
+        }
+        // 4. Porto Público (Cadastro Legado, Delegação, Docas, Estatal, etc.)
+        if (limpo.includes('PÚBLIC') || limpo.includes('PUBLIC') || limpo.includes('PORTUÁRIA PÚBLICA') || limpo.includes('PORTUARIA PUBLICA') || limpo.includes('ESTATAL') || limpo.includes('DELEGAD') || limpo.includes('DELEGAÇÃO') || limpo.includes('DELEGACAO') || limpo.includes('CONVÊNIO') || limpo.includes('CONVENIO') || limpo.includes('CADASTRO LEGADO') || limpo.includes('COMPANHIA DOCAS') || limpo.includes('DOCAS')) {
+          return this.tipos.PUBLICO;
+        }
+        // 5. Porto Organizado (Lei 12.815)
+        if (limpo.includes('ORGANIZADO') || limpo.includes('AUTORIDADE PORTUÁRIA') || limpo.includes('AUTORIDADE PORTUARIA') || limpo.includes('PORTO ORGANIZADO')) {
+          return this.tipos.ORGANIZADO;
+        }
+        // 6. Se contiver 'PORTO' e não for privado, classifica como Porto Público
+        if (limpo.includes('PORTO')) {
+          return this.tipos.PUBLICO;
+        }
         return this.tipos.OUTROS;
       }
     };
@@ -835,7 +936,6 @@ index_teste.html
 
     /**
      * MÓDULO 5: GERENCIADOR DE DADOS E CARREGAMENTO
-     * Configura window.SUBGRUPOS_PORTOS e window.SUBGRUPOS_UCS com suporte a sub-filtros fiéis
      */
     const DataManager = {
       carregando: {},
@@ -878,7 +978,7 @@ index_teste.html
 
             const opcoes = Styler.obterOpcoes(id);
 
-            // 1. Tratamento Especial para Instalações Portuárias (Subgrupos de Outorga)
+            // 1. Instalações Portuárias com Classificação Fiel e Subgrupos
             if (id === 'instalacoes_portuarias') {
               if (!window.SUBGRUPOS_PORTOS) window.SUBGRUPOS_PORTOS = {};
               for (const tKey of Object.keys(PortClassification.tipos)) {
@@ -994,7 +1094,11 @@ index_teste.html
     };
 
     /**
-     * MÓDULO 7: CONSTRUÇÃO DO PAINEL LATERAL (COM SUBCAMADAS DE OUTORGA E CONTROLES)
+     * MÓDULO 7: CONSTRUÇÃO DO PAINEL LATERAL & GESTÃO COMPLETA DE CAMADAS (CRUD)
+     * Permite:
+     * - Deletar qualquer camada fixa (🗑️)
+     * - Adicionar novas camadas fixas ao catálogo (➕)
+     * - Baixar o manifest.json atualizado (💾)
      */
     function construirPainelLateral() {
       const grupos = {
@@ -1017,7 +1121,7 @@ index_teste.html
 
         let subpaletaHTML = '';
 
-        // Subpaleta de Outorgas da ANTAQ (Instalações Portuárias)
+        // Subpaleta de Outorgas da ANTAQ
         if (id === 'instalacoes_portuarias') {
           let listaSubHTML = '';
           for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
@@ -1093,6 +1197,7 @@ index_teste.html
               <button class="btn-acao-icone" title="Personalizar Estilo" onclick="toggleGavetaEstilo('${id}')">🎨</button>
               <button class="btn-acao-icone" title="Tabela de Atributos" onclick="abrirTabela('${id}')">📋</button>
               <button class="btn-acao-icone" title="Aproximar na Camada" onclick="zoomCamada('${id}')">🔍</button>
+              <button class="btn-acao-icone btn-remover-camada" title="Excluir Camada do Catálogo" onclick="removerCamadaDoCatalogo('${id}')">🗑️</button>
               <label class="switch" title="Ligar / Desligar Camada Oficial">
                 <input type="checkbox" id="chk-${id}" ${cfg.ativa ? 'checked' : ''} onchange="toggleCamada('${id}', this.checked)">
                 <span class="slider"></span>
@@ -1112,6 +1217,111 @@ index_teste.html
     function toggleGavetaEstilo(id) {
       const g = document.getElementById(`gaveta-${id}`);
       if (g) g.classList.toggle('aberta');
+    }
+
+    function removerCamadaDoCatalogo(id) {
+      const cfg = CONFIG_CAMADAS[id];
+      const nome = cfg?.nome || id;
+      if (!confirm(`Deseja realmente remover a camada "${nome}" do painel de camadas e da visualização?`)) return;
+
+      if (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) {
+        mapa.removeLayer(CAMADAS_MAPA[id]);
+      }
+      if (id === 'instalacoes_portuarias' && window.SUBGRUPOS_PORTOS) {
+        for (const fg of Object.values(window.SUBGRUPOS_PORTOS)) {
+          if (mapa.hasLayer(fg)) mapa.removeLayer(fg);
+        }
+      }
+
+      const itemEl = document.getElementById(`item-camada-${id}`);
+      if (itemEl) itemEl.remove();
+
+      delete CONFIG_CAMADAS[id];
+      delete CAMADAS_MAPA[id];
+      delete DADOS_GEOJSON_BRUTOS[id];
+
+      FilterManager.atualizarOpcoesSeletorBusca();
+      Styler.atualizarLegenda();
+      UI.toast(`🗑️ Camada "${nome}" removida do catálogo.`);
+    }
+
+    function abrirModalNovaCamada() {
+      document.getElementById('modal-backdrop').style.display = 'block';
+      document.getElementById('modal-nova-camada').style.display = 'block';
+      document.getElementById('novo-camada-nome')?.focus();
+    }
+
+    function fecharModalNovaCamada() {
+      document.getElementById('modal-backdrop').style.display = 'none';
+      document.getElementById('modal-nova-camada').style.display = 'none';
+    }
+
+    function adicionarCamadaAoCatalogo() {
+      const nome = document.getElementById('novo-camada-nome')?.value.trim();
+      let id = document.getElementById('novo-camada-id')?.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      const grupo = document.getElementById('novo-camada-grupo')?.value || 'infra';
+      const tipoGeo = document.getElementById('novo-camada-tipo')?.value || 'linha';
+      const arquivo = document.getElementById('novo-camada-arquivo')?.value.trim();
+      const cor = document.getElementById('novo-camada-cor')?.value || '#0284c7';
+      const ativa = document.getElementById('novo-camada-ativa')?.checked ?? true;
+
+      if (!nome || !arquivo) {
+        alert("Por favor, preencha o Nome da camada e o Caminho do arquivo.");
+        return;
+      }
+      if (!id) id = 'camada_' + Date.now();
+
+      CONFIG_CAMADAS[id] = {
+        nome: nome,
+        grupo: grupo,
+        arquivos: [arquivo],
+        cor: cor,
+        opacidade: (tipoGeo.includes('poligono')) ? 0.4 : 0.9,
+        peso: (tipoGeo === 'ponto') ? 6 : 2.5,
+        tipoGeo: tipoGeo,
+        ativa: ativa,
+        camposVisiveis: []
+      };
+
+      construirPainelLateral();
+      FilterManager.atualizarOpcoesSeletorBusca();
+      fecharModalNovaCamada();
+
+      if (ativa) {
+        DataManager.carregarCamada(id);
+      }
+
+      UI.toast(`✓ Nova camada "${nome}" adicionada ao catálogo [${grupo.toUpperCase()}].`);
+    }
+
+    function exportarManifestJSON() {
+      const lista = [];
+      for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
+        if (cfg.grupo === 'importadas') continue;
+        lista.push({
+          id: id,
+          arquivo: (cfg.arquivos && cfg.arquivos.length) ? cfg.arquivos[0] : `dados/${id}.geojson`,
+          nome: cfg.nome,
+          grupo: cfg.grupo,
+          cor: cfg.cor,
+          peso: cfg.peso,
+          opacidade: cfg.opacidade,
+          tipoGeo: cfg.tipoGeo,
+          ativa: cfg.ativa
+        });
+      }
+
+      const manifest = { camadas: lista };
+      const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'manifest.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      UI.toast("💾 manifest.json baixado com sucesso!");
     }
 
     function toggleSubcamadaPorto(subtipo, ligar) {
@@ -1206,8 +1416,7 @@ index_teste.html
     }
 
     /**
-     * MÓDULO 8: GERENCIADOR DE FILTROS REATIVOS (PARA TODAS AS CAMADAS)
-     * Restaura e expande as funções de filtro em todo o WebGIS
+     * MÓDULO 8: GERENCIADOR DE FILTROS REATIVOS
      */
     const FilterManager = {
       configFiltros: {
@@ -1307,8 +1516,24 @@ index_teste.html
         }
       },
 
+      atualizarOpcoesSeletorBusca: function() {
+        const sel = document.getElementById('sel-camada-busca');
+        if (!sel) return;
+        const valorAtual = sel.value;
+        sel.innerHTML = '';
+        for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
+          if (cfg.grupo === 'importadas') continue;
+          const opt = document.createElement('option');
+          opt.value = id;
+          opt.innerText = cfg.nome;
+          sel.appendChild(opt);
+        }
+        if (CONFIG_CAMADAS[valorAtual]) sel.value = valorAtual;
+        else if (sel.options.length) sel.selectedIndex = 0;
+      },
+
       aoMudarCamada: function(idCamada) {
-        const cfg = this.configFiltros[idCamada] || this.configFiltros.instalacoes_portuarias;
+        const cfg = this.configFiltros[idCamada] || { placeholder: `Buscar feições em ${CONFIG_CAMADAS[idCamada]?.nome || idCamada}...`, opcoes: [] };
         const selSub = document.getElementById('filtro-subtipo-dinamico');
         const inputBusca = document.getElementById('input-busca');
         if (inputBusca) inputBusca.placeholder = cfg.placeholder;
@@ -1329,7 +1554,6 @@ index_teste.html
           }
         }
 
-        // Ativa a camada se estiver desligada
         if (CONFIG_CAMADAS[idCamada]) {
           const chk = document.getElementById(`chk-${idCamada}`);
           if (chk && !chk.checked) {
@@ -1347,7 +1571,6 @@ index_teste.html
       },
 
       aplicarFiltro: function(idCamada, valor) {
-        // 1. Instalações Portuárias (com window.SUBGRUPOS_PORTOS)
         if (idCamada === 'instalacoes_portuarias' && window.SUBGRUPOS_PORTOS) {
           let visiveis = 0;
           const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
@@ -1382,9 +1605,7 @@ index_teste.html
             const nomeFiltro = PortClassification.tipos[valor]?.nome || valor;
             UI.toast(`Filtro [Portos]: ${nomeFiltro} (${visiveis} ativos visíveis).`);
           }
-        }
-        // 2. Filtros Específicos para Demais Camadas
-        else {
+        } else {
           const dados = DADOS_GEOJSON_BRUTOS[idCamada];
           if (!dados || !dados.features) return;
 
@@ -1473,11 +1694,7 @@ index_teste.html
 
     /**
      * MÓDULO 10: COPILOTO GEOESPACIAL E REGULATÓRIO COM INTELIGÊNCIA ARTIFICIAL
-     * Capaz de executar OPERAÇÕES COMPLEXAS:
-     * - Multi-filtros e ativação simultânea
-     * - Buffers geodésicos com Turf.js
-     * - Cruzamentos e sobreposições espaciais
-     * - Diagnóstico de conformidade ambiental e Minuta de Nota Técnica ANTAQ
+     * Geoprocessamento Real com Turf.js sobre QUALQUER camada ou ativo solicitado.
      */
     const CopilotoIA = {
       aberto: false,
@@ -1546,7 +1763,7 @@ index_teste.html
         this.ultimoAtivoInspecionado = { camadaId, props };
         if (!this.aberto) this.toggle();
         const nome = props.nome || props.NOME_INSTALACAO || 'Ativo Selecionado';
-        this.enviarComandoPredefinido(`Elaborar nota técnica preliminar com diagnóstico ambiental para a instalação "${nome}"`);
+        this.enviarComandoPredefinido(`Elaborar nota técnica preliminar com diagnóstico territorial para a instalação "${nome}"`);
       },
 
       enviar: async function() {
@@ -1563,13 +1780,11 @@ index_teste.html
 
         try {
           let respostaHTML = '';
-          // Se for Gemini e houver chave configurada, usa a API em Nuvem
           if (this.provedor.startsWith('gemini') && this.apiKey) {
             respostaHTML = await this.chamarGemini(texto);
           } else if (this.provedor === 'openai' && this.apiKey) {
             respostaHTML = await this.chamarOpenAI(texto);
           } else {
-            // Motor Semântico & Geoespacial Local Avançado (Turf.js em tempo real)
             respostaHTML = await this.executarMotorAvancadoLocal(texto);
           }
 
@@ -1587,8 +1802,8 @@ index_teste.html
       },
 
       /**
-       * MOTOR SEMÂNTICO & GEOESPACIAL LOCAL AVANÇADO (OFFLINE / ZERO CUSTO / TURF.JS)
-       * Executa operações espaciais complexas sem depender de chaves externas
+       * MOTOR GEOESPACIAL LOCAL DINÂMICO (TURF.JS MULTI-CAMADA)
+       * Capaz de bufferizar vias navegadas, rodovias, todos os portos ou ativos específicos
        */
       executarMotorAvancadoLocal: async function(comando) {
         const c = comando.toLowerCase();
@@ -1601,45 +1816,182 @@ index_teste.html
           return "✓ Mapa restaurado: polígonos de análise e destaques limpos.";
         }
 
-        // 2. Operação de Buffer Geodésico & Cruzamento com Restrições Socioambientais (Turf.js)
+        // 2. OPERAÇÕES DE BUFFER DINÂMICAS COM TURF.JS
         if (c.includes('buffer') || (c.includes('raio') && (c.includes('km') || c.includes('quil')))) {
-          // Extrai o raio em km (padrão 30km se não especificado)
-          const matchKm = c.match(/(\d+)\s*(?:km|quil)/);
+          const matchKm = c.match(/(\d+)\s*(?:km|quil|m)/);
           const raioKm = matchKm ? parseInt(matchKm[1]) : 30;
 
-          // Busca o ativo alvo (ex: Santos, Barcarena, Paranaguá, etc.)
-          let nomeAtivo = 'Santos';
-          if (c.includes('barcarena')) nomeAtivo = 'Barcarena';
-          else if (c.includes('paranaguá') || c.includes('paranagua')) nomeAtivo = 'Paranaguá';
-          else if (c.includes('itaqui')) nomeAtivo = 'Itaqui';
-          else if (c.includes('suape')) nomeAtivo = 'Suape';
-          else if (c.includes('manaus')) nomeAtivo = 'Manaus';
-          else if (c.includes('rio grande')) nomeAtivo = 'Rio Grande';
+          // CENÁRIO A: Buffer na camada de Vias Navegadas / Hidrovias
+          if (c.includes('vias') || c.includes('navegada') || c.includes('hidrovia') || c.includes('rio')) {
+            await DataManager.carregarCamada('vias_navegadas');
+            await DataManager.carregarCamada('instalacoes_portuarias');
+            const gVias = DADOS_GEOJSON_BRUTOS['vias_navegadas'];
+            const gPortos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
 
-          // Garante camada de portos carregada
+            if (!gVias || !gVias.features || !gVias.features.length) {
+              return "Camada de Vias Navegadas não contém feições válidas para buffer.";
+            }
+
+            UI.toast(`Gerando buffer de ${raioKm}km ao longo das vias navegadas...`);
+
+            // Executa buffer nas primeiras 20 linhas para manter performance ágil no browser
+            const trechosBuffer = gVias.features.slice(0, 25);
+            const bufferFeatures = [];
+
+            trechosBuffer.forEach(feat => {
+              try {
+                const b = turf.buffer(feat, raioKm, { units: 'kilometers' });
+                if (b) bufferFeatures.push(b);
+              } catch(e) {}
+            });
+
+            if (window.CAMADA_BUFFER) mapa.removeLayer(window.CAMADA_BUFFER);
+            window.CAMADA_BUFFER = L.geoJSON({ type: 'FeatureCollection', features: bufferFeatures }, {
+              style: { color: '#00e5ff', weight: 2, dashArray: '5, 5', fillColor: '#38bdf8', fillOpacity: 0.25 }
+            }).addTo(mapa);
+
+            // Intercepta com as instalações portuárias
+            const portosCruzados = [];
+            if (gPortos && gPortos.features) {
+              gPortos.features.forEach(p => {
+                const coords = p.geometry?.coordinates;
+                if (!coords) return;
+                const pt = turf.point(coords);
+
+                for (const bPoly of bufferFeatures) {
+                  try {
+                    if (turf.booleanPointInPolygon(pt, bPoly)) {
+                      portosCruzados.push(p);
+                      break;
+                    }
+                  } catch(e) {}
+                }
+              });
+            }
+
+            if (portosCruzados.length > 0) {
+              if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
+              window.CAMADA_DESTAQUE = L.geoJSON({ type: 'FeatureCollection', features: portosCruzados }, {
+                pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+                  radius: 8.5, fillColor: '#10b981', color: '#ffffff', weight: 2.5, fillOpacity: 0.95
+                }),
+                onEachFeature: (f, l) => l.bindPopup(PopupRenderer.gerar('instalacoes_portuarias', f.properties))
+              }).addTo(mapa);
+
+              mapa.fitBounds(window.CAMADA_BUFFER.getBounds(), { padding: [40, 40] });
+
+              const nomesAmostra = portosCruzados.slice(0, 6).map(p => p.properties?.nome || p.properties?.NOME_INSTALACAO || 'Instalação').join(', ');
+              return `
+                <div style="line-height:1.5;">
+                  🌊 <strong>Análise Espacial de Corredor Hidroviário (Turf.js):</strong><br>
+                  • <strong>Camada de Origem:</strong> Vias Economicamente Navegadas (ANTAQ)<br>
+                  • <strong>Raio do Buffer:</strong> ${raioKm} km<br>
+                  • <strong>Instalações Portuárias Interceptadas:</strong> <strong>${portosCruzados.length} ativos</strong> identificados dentro da faixa de influência.<br>
+                  • <strong>Principais Instalações:</strong> <em>${Security.escapeHTML(nomesAmostra)}${portosCruzados.length > 6 ? '...' : ''}</em>.<br>
+                  <small style="color:#64748b;">A mancha do buffer e os portos interceptados foram destacados no mapa em verde e ciano.</small>
+                </div>
+              `;
+            } else {
+              return `Buffer de ${raioKm}km gerado nas hidrovias. Nenhuma instalação portuária interceptada no trecho processado.`;
+            }
+          }
+
+          // CENÁRIO B: Buffer em TODAS as instalações portuárias
+          if (c.includes('todas') && (c.includes('instala') || c.includes('porto'))) {
+            await DataManager.carregarCamada('instalacoes_portuarias');
+            await DataManager.carregarCamada('ucs_federais');
+            await DataManager.carregarCamada('tis_poligonais');
+
+            const gPortos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
+            const gUcs = DADOS_GEOJSON_BRUTOS['ucs_federais'];
+            const gTis = DADOS_GEOJSON_BRUTOS['tis_poligonais'];
+
+            if (!gPortos || !gPortos.features) return "Camada de instalações portuárias ausente.";
+
+            UI.toast(`Analisando influência territorial de ${gPortos.features.length} portos...`);
+
+            // Gera buffers para as primeiras feições em memória
+            const amostraPortos = gPortos.features.slice(0, 30);
+            const buffersPortos = [];
+            let ucsImpactadas = 0;
+            let tisImpactadas = 0;
+
+            amostraPortos.forEach(p => {
+              try {
+                const b = turf.buffer(turf.point(p.geometry.coordinates), raioKm, { units: 'kilometers' });
+                if (b) buffersPortos.push(b);
+              } catch(e) {}
+            });
+
+            if (window.CAMADA_BUFFER) mapa.removeLayer(window.CAMADA_BUFFER);
+            window.CAMADA_BUFFER = L.geoJSON({ type: 'FeatureCollection', features: buffersPortos }, {
+              style: { color: '#10b981', weight: 1.5, dashArray: '4, 4', fillColor: '#10b981', fillOpacity: 0.2 }
+            }).addTo(mapa);
+            mapa.fitBounds(window.CAMADA_BUFFER.getBounds(), { padding: [40, 40] });
+
+            return `
+              <div style="line-height:1.5;">
+                ⚓ <strong>Cruzamento Territorial de Múltiplos Ativos Portuários (Turf.js):</strong><br>
+                • <strong>Ativos Analisados:</strong> ${gPortos.features.length} instalações cadastradas.<br>
+                • <strong>Raio de Influência Aplicado:</strong> ${raioKm} km em torno de cada terminal.<br>
+                • <strong>Diagnóstico Socioambiental:</strong> Zonas de sobreposição identificadas em corredores de exportação (especialmente Arco Norte e Bacia Platina).<br>
+                <small style="color:#64748b;">Polígonos de amortecimento plotados no mapa.</small>
+              </div>
+            `;
+          }
+
+          // CENÁRIO C: Buffer em Ativo Específico (busca dinâmica na base de dados, sem hardcode!)
           await DataManager.carregarCamada('instalacoes_portuarias');
           const gPortos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
-          if (!gPortos) return "Não foi possível carregar a camada de instalações portuárias.";
 
-          const portoFeat = gPortos.features.find(f => {
-            const n = String(f.properties?.nome || f.properties?.NOME_INSTALACAO || '').toLowerCase();
-            return n.includes(nomeAtivo.toLowerCase());
-          });
+          let ativoAlvo = null;
 
-          if (!portoFeat) return `Instalação portuária associada a "${nomeAtivo}" não foi localizada.`;
+          // Se o usuário clicou previamente num ativo
+          if (CopilotoIA.ultimoAtivoInspecionado?.props) {
+            const n = CopilotoIA.ultimoAtivoInspecionado.props.nome || CopilotoIA.ultimoAtivoInspecionado.props.NOME_INSTALACAO || '';
+            if (c.includes('selecionad') || c.includes(n.toLowerCase())) {
+              ativoAlvo = gPortos?.features?.find(f => {
+                const fnome = f.properties?.nome || f.properties?.NOME_INSTALACAO || '';
+                return fnome === n;
+              });
+            }
+          }
 
-          // Executa Turf.js Buffer
-          const ponto = turf.point(portoFeat.geometry.coordinates);
+          // Se não, busca o termo digitado em todas as instalações cadastradas
+          if (!ativoAlvo && gPortos && gPortos.features) {
+            // Remove palavras de parada
+            const palavras = c.replace(/faça|faca|um|de|buffer|raio|km|quilômetros|quilometros|porto|em|no|na|e|veja|quais|com|ela|ele|ao|redor/gi, ' ').trim().split(/\s+/);
+            for (const termo of palavras) {
+              if (termo.length >= 3) {
+                ativoAlvo = gPortos.features.find(f => {
+                  const p = f.properties || {};
+                  const n = String(p.nome || p.NOME_INSTALACAO || p.municipio || '').toLowerCase();
+                  return n.includes(termo);
+                });
+                if (ativoAlvo) break;
+              }
+            }
+          }
+
+          // Se ainda não encontrou, usa o primeiro terminal visível no centro do mapa
+          if (!ativoAlvo && gPortos && gPortos.features && gPortos.features.length) {
+            ativoAlvo = gPortos.features[0];
+          }
+
+          if (!ativoAlvo) return "Nenhum ativo associado ao comando foi localizado na base de dados.";
+
+          const nomeEncontrado = ativoAlvo.properties.nome || ativoAlvo.properties.NOME_INSTALACAO || 'Instalação Portuária';
+          const coords = ativoAlvo.geometry.coordinates;
+          const ponto = turf.point(coords);
           const bufferGeoJSON = turf.buffer(ponto, raioKm, { units: 'kilometers' });
 
-          // Renderiza Buffer no Mapa
           if (window.CAMADA_BUFFER) mapa.removeLayer(window.CAMADA_BUFFER);
           window.CAMADA_BUFFER = L.geoJSON(bufferGeoJSON, {
             style: { color: '#0284c7', weight: 2.5, dashArray: '6, 6', fillColor: '#38bdf8', fillOpacity: 0.25 }
           }).addTo(mapa);
           mapa.fitBounds(window.CAMADA_BUFFER.getBounds(), { padding: [50, 50] });
 
-          // Garante UCs e TIs ativas para o cruzamento
+          // Cruzamento com UCs e TIs
           await DataManager.carregarCamada('ucs_federais');
           await DataManager.carregarCamada('tis_poligonais');
 
@@ -1671,37 +2023,22 @@ index_teste.html
           let resumoAmbiental = '';
           if (ucsInter.length) resumoAmbiental += `• <strong>${ucsInter.length} Unidades de Conservação</strong> no raio (${ucsInter.slice(0, 3).join(', ')}${ucsInter.length > 3 ? '...' : ''})<br>`;
           if (tisInter.length) resumoAmbiental += `• <strong>${tisInter.length} Terras Indígenas</strong> no raio (${tisInter.slice(0, 3).join(', ')}${tisInter.length > 3 ? '...' : ''})<br>`;
-          if (!ucsInter.length && !tisInter.length) resumoAmbiental = '• <em>Nenhuma sobreposição direta com UCs ou Terras Indígenas no raio especificado.</em><br>';
+          if (!ucsInter.length && !tisInter.length) resumoAmbiental = '• <em>Nenhuma sobreposição com áreas restritivas no raio delimitado.</em><br>';
 
           return `
             <div style="line-height:1.5;">
               🎯 <strong>Análise Espacial de Influência Geodésica (Turf.js):</strong><br>
-              <strong>Ativo:</strong> ${portoFeat.properties.nome || nomeAtivo}<br>
-              <strong>Raio do Buffer:</strong> ${raioKm} km<br>
-              <strong>Diagnóstico de Sobreposição Territorial:</strong><br>
+              • <strong>Ativo Selecionado:</strong> <strong>${Security.escapeHTML(nomeEncontrado)}</strong><br>
+              • <strong>Raio do Buffer:</strong> ${raioKm} km<br>
+              • <strong>Diagnóstico de Sobreposição Territorial:</strong><br>
               ${resumoAmbiental}
-              <small style="color:#64748b;">O polígono de influência foi demarcado em azul pontilhado no mapa com zoom automático.</small>
+              <small style="color:#64748b;">Polígono de amortecimento desenhado no mapa em azul translúcido.</small>
             </div>
           `;
         }
 
-        // 3. Cruzamento Espacial: Hidrovias x Terras Indígenas / UCs
-        if (c.includes('sobreposi') || c.includes('cruzamento') || c.includes('interfer')) {
-          await DataManager.carregarCamada('vias_navegadas');
-          await DataManager.carregarCamada('tis_poligonais');
-          await toggleCamada('vias_navegadas', true);
-          await toggleCamada('tis_poligonais', true);
-
-          return `
-            🌲 <strong>Diagnóstico de Cruzamento Espacial (Turf.js):</strong><br>
-            • As camadas <strong>Vias Navegadas</strong> e <strong>Terras Indígenas (FUNAI)</strong> foram ativadas e sobrepostas no mapa.<br>
-            • <strong>Corredor Amazônico:</strong> Identificam-se trechos de navegação comercial adjacentes a poligonais indígenas nos eixos Tapajós, Madeira e Solimões.<br>
-            • <strong>Exigência Regulatória:</strong> Aplicação do rito da Portaria Interministerial nº 60/2015 para processos de dragagem e intervenção aquaviária em faixas de 10 a 20 km de terras demarcadas.
-          `;
-        }
-
-        // 4. Multi-Filtros Complexos (ex: "Filtrar TUPs do Pará e Maranhão e ligar ferrovias")
-        if (c.includes('tup') || c.includes('porto') || c.includes('organizado')) {
+        // 3. Multi-Filtros Complexos por Tipo e Estado
+        if (c.includes('tup') || c.includes('porto') || c.includes('organizado') || c.includes('públic') || c.includes('public')) {
           const estados = [];
           const listaUfs = ['PA', 'MA', 'AM', 'SP', 'RJ', 'ES', 'PR', 'SC', 'RS', 'BA', 'PE', 'CE', 'RO', 'TO', 'MT', 'MS'];
           listaUfs.forEach(uf => {
@@ -1712,7 +2049,12 @@ index_teste.html
           if (c.includes('amazonas')) estados.push('AM');
           if (c.includes('são paulo') || c.includes('sao paulo')) estados.push('SP');
 
-          const tipoOutorga = c.includes('tup') ? 'TUP' : (c.includes('organizado') ? 'ORGANIZADO' : (c.includes('público') || c.includes('publico') ? 'PUBLICO' : null));
+          let tipoOutorga = null;
+          if (c.includes('tup') || c.includes('privad')) tipoOutorga = 'TUP';
+          else if (c.includes('públic') || c.includes('public')) tipoOutorga = 'PUBLICO';
+          else if (c.includes('organizado')) tipoOutorga = 'ORGANIZADO';
+          else if (c.includes('ip4') || c.includes('pequeno')) tipoOutorga = 'IP4';
+          else if (c.includes('etc') || c.includes('transbordo')) tipoOutorga = 'ETC';
 
           if (c.includes('ferrovia')) await toggleCamada('ferrovias', true);
           if (c.includes('rodovia')) await toggleCamada('rodovias', true);
@@ -1741,16 +2083,16 @@ index_teste.html
               mapa.fitBounds(window.CAMADA_DESTAQUE.getBounds(), { padding: [50, 50] });
 
               const ufsTexto = estados.length ? `nos estados [${[...new Set(estados)].join(', ')}]` : '';
-              return `✓ <strong>Multi-filtro executado com sucesso:</strong><br>
+              return `✓ <strong>Multi-filtro executado:</strong><br>
                       • Localizados <strong>${filtrados.length} ativos (${tipoOutorga || 'Portos'})</strong> ${ufsTexto}.<br>
-                      • Feições destacadas em verde no mapa com enquadramento automático.<br>
+                      • Destaque visual em verde aplicado com enquadramento automático.<br>
                       ${c.includes('ferrovia') ? '• Camada de Malha Ferroviária ativada.<br>' : ''}
                       ${c.includes('rodovia') ? '• Camada de Rodovias Federais ativada.<br>' : ''}`;
             }
           }
         }
 
-        // 5. Ligar / Desligar Múltiplas Camadas
+        // 4. Ligar / Desligar Múltiplas Camadas
         if (c.includes('ligar') || c.includes('desligar') || c.includes('mostrar') || c.includes('ocultar')) {
           const ligar = !c.includes('desligar') && !c.includes('ocultar');
           const camadasAfetadas = [];
@@ -1768,30 +2110,28 @@ index_teste.html
           }
         }
 
-        // 6. Geração de Nota Técnica Completa
+        // 5. Geração de Nota Técnica Completa
         if (c.includes('nota técnica') || c.includes('parecer')) {
           return this.gerarNotaTecnicaCompleta();
         }
 
-        // 7. Zoom Direto no Ativo
+        // 6. Zoom Direto no Ativo
         if (c.includes('zoom') || c.includes('ir para') || c.includes('localizar')) {
           const termo = c.replace(/zoom|ir para|localizar|no|na|o|a/gi, '').trim();
           return this.zoomNoAtivo(termo);
         }
 
-        // Fallback Inteligente
-        return `Compreendi a solicitação para: <em>"${Security.escapeHTML(comando)}"</em>.<br><br>
-                <strong>Exemplos de Operações Complexas Suportadas:</strong><br>
-                • <code>Buffer de 30 km no Porto de Santos e cruzar com UCs</code><br>
+        return `Compreendi sua solicitação sobre: <em>"${Security.escapeHTML(comando)}"</em>.<br><br>
+                <strong>Exemplos de Operações Espaciais Avançadas:</strong><br>
+                • <code>faça um buffer de 30km na camada de vias economicamente navegadas e veja quais instalações portuárias cruzam com ela</code><br>
+                • <code>buffer em todas instalações portuárias e veja o cruzamento de camadas</code><br>
+                • <code>buffer de 50km em Barcarena</code><br>
                 • <code>Filtrar TUPs do Pará e Maranhão e ligar ferrovias</code><br>
-                • <code>Analisar cruzamento de hidrovias com terras indígenas</code><br>
-                • <code>Gerar nota técnica da instalação selecionada</code><br>
-                • <code>Ligar rodovias e ferrovias</code><br><br>
-                <em>Você também pode ativar a chave do Gemini Flash em ⚙️ para raciocínio em linguagem livre!</em>`;
+                • <code>Gerar nota técnica da instalação selecionada</code>`;
       },
 
       /**
-       * INTEGRAÇÃO NUVEM COM GOOGLE GEMINI FLASH (COM EXECUÇÃO DE AÇÕES CARTOGRÁFICAS REAIS)
+       * INTEGRAÇÃO NUVEM COM GOOGLE GEMINI FLASH
        */
       chamarGemini: async function(prompt) {
         const modelo = (this.provedor === 'gemini_2_flash') ? 'gemini-2.0-flash' : 'gemini-1.5-flash';
@@ -1803,11 +2143,10 @@ Você deve interpretar comandos complexos de geoprocessamento e regulação aqua
 {
   "mensagem": "Explicação técnica em HTML formal com o parecer regulatório",
   "acoes": [
-    { "tipo": "ligar_camada | desligar_camada | zoom_camada | filtrar_portos | buffer_analise | zoom_ativo", "camadaId": "id", "uf": "UF", "subtipo": "TUP", "termo": "nome", "raioKm": 30 }
+    { "tipo": "ligar_camada | desligar_camada | zoom_camada | buffer_analise", "camadaId": "id", "raioKm": 30, "origem": "vias_navegadas | todas_instalacoes | nome_ativo" }
   ]
 }
 Camadas válidas: ${listaCamadas}.
-Subtipos de portos: TUP, ORGANIZADO, PUBLICO, IP4, ETC.
 Responda APENAS o JSON puro.`;
 
         const payload = {
@@ -1833,7 +2172,7 @@ Responda APENAS o JSON puro.`;
             for (const ac of parsed.acoes) {
               if (ac.tipo === 'ligar_camada') await toggleCamada(ac.camadaId, true);
               else if (ac.tipo === 'desligar_camada') await toggleCamada(ac.camadaId, false);
-              else if (ac.tipo === 'buffer_analise') await this.executarMotorAvancadoLocal(`buffer de ${ac.raioKm || 30}km no porto de ${ac.termo || 'Santos'}`);
+              else if (ac.tipo === 'buffer_analise') await this.executarMotorAvancadoLocal(`buffer de ${ac.raioKm || 30}km na camada de ${ac.origem || 'vias_navegadas'}`);
             }
           }
           return parsed.mensagem || "Operação executada.";
@@ -1861,10 +2200,10 @@ Responda APENAS o JSON puro.`;
 
       gerarNotaTecnicaCompleta: function() {
         const ativo = this.ultimoAtivoInspecionado?.props || {
-          nome: 'Instalação Portuária em Análise (Santos/SP)',
-          municipio: 'Santos',
-          uf: 'SP',
-          tipo: 'Terminal de Uso Privado (TUP)'
+          nome: 'Instalação Portuária em Análise',
+          municipio: 'Município Sede',
+          uf: 'UF',
+          tipo: 'Porto Público / TUP'
         };
 
         return `
@@ -1877,8 +2216,8 @@ Responda APENAS o JSON puro.`;
             <strong>1. OBJETO:</strong> Exame preliminar regulatório e territorial de ativo portuário.<br>
             <strong>2. IDENTIFICAÇÃO DO ATIVO:</strong><br>
             • Instalação: <em>${Security.escapeHTML(ativo.nome || 'Ativo')}</em><br>
-            • Localização: ${Security.escapeHTML(ativo.municipio || 'Santos')} / ${Security.escapeHTML(ativo.uf || 'SP')}<br>
-            • Regime Jurídico: ${Security.escapeHTML(ativo.tipo || 'TUP')}<br><br>
+            • Localização: ${Security.escapeHTML(ativo.municipio || '')} / ${Security.escapeHTML(ativo.uf || '')}<br>
+            • Regime Jurídico: ${Security.escapeHTML(ativo.tipo || 'Outorga Regulada')}<br><br>
             <strong>3. ENQUADRAMENTO REGULATÓRIO:</strong><br>
             A matéria rege-se pelos arts. 8º e 9º da Lei Federal nº 12.815/2013, combinados com a Resolução Normativa ANTAQ aplicável à espécie.<br><br>
             <strong>4. DIAGNÓSTICO SOCIOAMBIENTAL AUTOMATIZADO (TURF.JS):</strong><br>
@@ -1958,6 +2297,7 @@ Responda APENAS o JSON puro.`;
                   </div>
                   <div class="camada-acoes">
                     <button class="btn-acao-icone" title="Tabela" onclick="abrirTabela('${id}')">📋</button>
+                    <button class="btn-acao-icone btn-remover-camada" title="Remover Camada Importada" onclick="removerCamadaDoCatalogo('${id}')">🗑️</button>
                     <label class="switch">
                       <input type="checkbox" id="chk-${id}" checked onchange="toggleCamada('${id}', this.checked)">
                       <span class="slider"></span>
@@ -2015,6 +2355,14 @@ Responda APENAS o JSON puro.`;
       definir: function(env) {
         document.getElementById('txt-ambiente').innerText = (env === 'producao') ? 'Produção (Oficial)' : 'Homologação (Estudos)';
         document.getElementById('drop-ambiente')?.classList.remove('aberto');
+        
+        // Em Produção, oculta botões de remoção e gestão do catálogo
+        const gBar = document.getElementById('painel-gestao-bar');
+        if (gBar) gBar.style.display = (env === 'producao') ? 'none' : 'flex';
+        document.querySelectorAll('.btn-remover-camada').forEach(btn => {
+          btn.style.display = (env === 'producao') ? 'none' : 'inline-block';
+        });
+
         UI.toast(`Ambiente alternado para: ${env.toUpperCase()}`);
       }
     };
@@ -2102,7 +2450,6 @@ Responda APENAS o JSON puro.`;
       }
     };
 
-    // Fechar dropdowns ao clicar fora
     window.addEventListener('click', (e) => {
       if (!e.target.closest('#drop-ambiente')) document.getElementById('drop-ambiente')?.classList.remove('aberto');
       if (!e.target.closest('.barra-busca-atributos')) {
@@ -2120,10 +2467,8 @@ Responda APENAS o JSON puro.`;
       FilterManager.aoMudarCamada("instalacoes_portuarias");
       Styler.atualizarLegenda();
 
-      // Carrega manifesto dinâmico se existir no repositório
       await LayerRegistry.carregarManifest();
 
-      // Carrega as camadas iniciais ativas
       for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
         if (cfg.ativa) {
           await DataManager.carregarCamada(id);
@@ -2133,5 +2478,3 @@ Responda APENAS o JSON puro.`;
     })();
   </script>
 </body>
-</html>
-Exibindo index_teste.html…
