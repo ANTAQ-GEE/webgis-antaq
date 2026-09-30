@@ -22,7 +22,7 @@
       "peso": 3.0,
       "opacidade": 0.95,
       "tipoGeo": "linha",
-      "ativa": true
+      "ativa": false
     },
     {
       "id": "ven_2022",
@@ -33,7 +33,7 @@
       "peso": 2.6,
       "opacidade": 0.85,
       "tipoGeo": "linha",
-      "ativa": false
+      "ativa": true
     },
     {
       "id": "ven_2020",
