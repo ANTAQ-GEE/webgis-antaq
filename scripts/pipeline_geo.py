@@ -6,11 +6,8 @@ Pipeline Automatizado de Governança Cartográfica e GitOps (ANTAQ/GEE)
 Objetivo:
 1. Varrer a pasta 'dados/' identificando novos arquivos vetoriais (.geojson, .zip, .shp).
 2. Otimizar geometrias e normalizar atributos no padrão EPSG:4326 (WGS 84).
-3. Classificar camadas automaticamente nos grupos regulatórios:
-   - 'infra' (Infraestrutura Aquaviária e Multimodal)
-   - 'restricoes' (Restrições Socioambientais)
-   - 'limites' (Limites Territoriais e Administrativos)
-4. Gerar e validar o arquivo 'dados/manifest.json' sem risco de erros de sintaxe ou UTF-8 BOM.
+3. Classificar camadas automaticamente nos grupos regulatórios.
+4. Gerar e validar o arquivo 'dados/manifest.json'.
 """
 
 import os
@@ -19,11 +16,9 @@ import re
 import sys
 from pathlib import Path
 
-# Diretórios base
 DIRETORIO_PROJETO = Path(__file__).resolve().parent.parent
 PASTA_DADOS = DIRETORIO_PROJETO / "dados"
 
-# Mapeamento Temático de Cores Institucionais
 PALETA_PADRAO = {
     "instalacoes_portuarias": {"cor": "#10b981", "peso": 6, "opacidade": 0.95, "tipo": "ponto"},
     "ven_2024": {"cor": "#00e5ff", "peso": 3.0, "opacidade": 0.95, "tipo": "linha"},
@@ -49,6 +44,7 @@ PALETA_PADRAO = {
     "ucs_todas_mma": {"cor": "#047857", "peso": 1.2, "opacidade": 0.30, "tipo": "poligono"}
 }
 
+
 def normalizar_id(texto: str) -> str:
     """Gera identificador slug sem acentos e caracteres especiais."""
     t = texto.lower().strip()
@@ -60,6 +56,7 @@ def normalizar_id(texto: str) -> str:
     t = re.sub(r'[ç]', 'c', t)
     t = re.sub(r'[^a-z0-9_]+', '_', t)
     return t.strip('_')
+
 
 def formatar_titulo(slug: str) -> str:
     """Converte identificador em título limpo e legível."""
@@ -94,6 +91,7 @@ def formatar_titulo(slug: str) -> str:
         return nomes_conhecidos[slug]
     return slug.replace('_', ' ').title()
 
+
 def identificar_grupo(nome: str) -> str:
     """Classifica a camada no grupo cartográfico adequado."""
     n = nome.lower()
@@ -105,12 +103,8 @@ def identificar_grupo(nome: str) -> str:
         return "restricoes"
     elif any(k in n for k in ['uf', 'estado', 'municip', 'regio', 'pais', 'limite', 'fronteira', 'bacia']):
         return "limites"
-    return "infra"""
-    elif any(k in n for k in ['uc', 'conservacao', 'indig', 'tis', 'quilomb', 'amazonia', 'floresta', 'ambiental', 'manancial']):
-        return "restricoes"
-    elif any(k in n for k in ['uf', 'estado', 'municip', 'regio', 'pais', 'limite', 'fronteira', 'bacia']):
-        return "limites"
     return "infra"
+
 
 def detectar_tipo_geometria(caminho_geojson: Path) -> str:
     """Inspeciona a geometria do GeoJSON."""
@@ -127,7 +121,9 @@ def detectar_tipo_geometria(caminho_geojson: Path) -> str:
         pass
     return "poligono"
 
+
 def processar_pasta_dados():
+    """Gera o catálogo de camadas com integridade referencial."""
     # Camadas descartadas para manter o catálogo enxuto e focado no escopo ANTAQ
     CAMADAS_IGNORADAS = [
         "unidades_conservacao", "ucs_todas_mma", "estados_amazonia_legal",
@@ -135,7 +131,7 @@ def processar_pasta_dados():
         "bacias_nivel_2", "bacias_nivel_3", "bacias_nivel_4", "bacias_nivel_5", "bacias_nivel_6",
         "regioes", "pais"
     ]
-    """Gera o catálogo de camadas com integridade referencial."""
+
     if not PASTA_DADOS.exists():
         PASTA_DADOS.mkdir(parents=True, exist_ok=True)
         print(f"[INFO] Pasta de dados criada em: {PASTA_DADOS}")
@@ -145,7 +141,6 @@ def processar_pasta_dados():
 
     camadas_manifesto = []
 
-    # Ordem de prioridade na interface cartográfica
     ordem_prioritaria = [
         "instalacoes_portuarias", "ven_2022", "ven_2024", "ven_2020", "ven_2018", "ven_2013",
         "linhas_travessias", "snv_1973", "embarcacoes",
@@ -157,13 +152,11 @@ def processar_pasta_dados():
 
     # 1. Processa camadas padrão prioritárias
     for slug in ordem_prioritaria:
-        # Ignora camada legada descontinuada
         if slug in CAMADAS_IGNORADAS or slug == "unidades_conservacao":
             continue
 
         p = arquivos_dict.get(slug)
         if not p:
-            # Verifica variações de nome
             for k, caminho in arquivos_dict.items():
                 if normalizar_id(k) == slug:
                     p = caminho
@@ -219,12 +212,12 @@ def processar_pasta_dados():
     with open(caminho_manifesto, "w", encoding="utf-8") as f:
         json.dump(manifesto_final, f, ensure_ascii=False, indent=2)
 
-    # Cria cópia de redundância na raiz caso o servidor web sirva da raiz
     with open(DIRETORIO_PROJETO / "manifest.json", "w", encoding="utf-8") as f:
         json.dump(manifesto_final, f, ensure_ascii=False, indent=2)
 
     print(f"[✓ SUCESSO] Manifesto cartográfico gerado com {len(camadas_manifesto)} camadas.")
     print(f"            Arquivo: {caminho_manifesto}")
+
 
 if __name__ == "__main__":
     processar_pasta_dados()
