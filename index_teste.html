@@ -5055,6 +5055,20 @@
         if (ev.key === 'Escape') MeasurementTool.desativar();
       });
 
+      // ✅ NOVO: hooks de impressão — redimensiona o mapa ao abrir/fechar o diálogo
+      window.addEventListener('beforeprint', () => {
+        // Anota a data atual para o rodapé da impressão
+        document.body.setAttribute('data-data-impressao',
+          new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }));
+        // Força o Leaflet a redesenhar no novo tamanho (sem painel, etc.)
+        if (mapa && mapa.invalidateSize) setTimeout(() => mapa.invalidateSize(), 50);
+      });
+
+      window.addEventListener('afterprint', () => {
+        // Volta ao tamanho normal após imprimir
+        if (mapa && mapa.invalidateSize) setTimeout(() => mapa.invalidateSize(), 100);
+      });
+
       console.info('✓ WebGIS ANTAQ inicializado com sucesso.');
       console.info('💡 Dica: pressione "d" (distância), "a" (área), "r" (raio) para medir.');
     })();
