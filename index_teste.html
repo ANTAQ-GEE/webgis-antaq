@@ -4412,7 +4412,13 @@
         // Mostra painel de resultados
         const painel = document.getElementById('painel-medicao-resultados');
         if (painel) painel.classList.add('aberto');
-        this._atualizarPainel(modo, 0, 'Clique no mapa para começar.');
+
+        // ✅ Mostra contador de medições já salvas
+        const totalSalvas = this.medicoesSalvas.length;
+        const dicaInicial = totalSalvas > 0
+          ? `Clique para nova medição. ${totalSalvas} medição(ões) finalizada(s) no mapa.`
+          : 'Clique no mapa para começar. Duplo-clique para finalizar.';
+        this._atualizarPainel(modo, 0, dicaInicial);
 
         // Cursor crosshair
         document.getElementById('mapa').style.cursor = 'crosshair';
@@ -4496,12 +4502,19 @@
         this._atualizarFormaTemporaria();
 
         if (this.pontos.length === 1) {
-          this._atualizarPainel(this.modo, 0, 'Clique em mais pontos. Duplo-clique ou ESC para finalizar.');
-        }
+        const totalSalvas = this.medicoesSalvas.length;
+        this._atualizarPainel(this.modo, 0,
+          `Clique para iniciar nova medição. ${totalSalvas} medição(ões) finalizada(s).`);
       },
 
       _onMouseMove: function(e) {
         if (!this.modo || this.pontos.length === 0) return;
+
+        // ✅ THROTTLE: limita a ~30fps para não recriar labels centenas de vezes por segundo
+        const agora = Date.now();
+        if (this._ultimoMove && (agora - this._ultimoMove) < 33) return;
+        this._ultimoMove = agora;
+
         const ponto = e.latlng;
 
         if (this.modo === 'raio') {
@@ -4536,9 +4549,26 @@
           this._atualizarPainel('raio', raio * 1000, `Área total ≈ ${areaKm2.toFixed(2)} km²`);
           this.medicoesSalvas.push(this.circuloTemp);
           this.circuloTemp = null;
+
+          // ✅ Adiciona um label permanente com o raio calculado
+          const labelRaio = L.marker(centro, {
+            icon: L.divIcon({
+              className: 'label-medicao',
+              html: `⭕ ${raio.toFixed(2)} km`,
+              iconSize: [100, 20],
+              iconAnchor: [50, -12]
+            }),
+            interactive: false,
+            pane: 'panePontos'
+          }).addTo(mapa);
+          this.medicoesSalvas.push(labelRaio);
         } else if (this.modo === 'distancia') {
           if (this.pontos.length < 2) { this.desativar(); return; }
-          if (this.linhaTemp) this.medicoesSalvas.push(this.linhaTemp);
+          if (this.linhaTemp) {
+            // ✅ Solidifica a linha ao finalizar (tira o tracejado de preview)
+            try { this.linhaTemp.setStyle({ dashArray: null }); } catch(e) {}
+            this.medicoesSalvas.push(this.linhaTemp);
+          }
           this.linhaTemp = null;
         } else if (this.modo === 'area') {
           if (this.pontos.length < 3) { this.desativar(); return; }
@@ -4546,8 +4576,12 @@
           this.poligonoTemp = null;
         }
 
-        // Converte labels temporários em permanentes
-        this.labelsTemp.forEach(l => l._permanente = true);
+        // ✅ CORREÇÃO CRÍTICA: salva os labels junto com a medição
+        // Sem isso, os labels ficam órfãos no mapa para sempre.
+        this.labelsTemp.forEach(l => {
+          l._permanente = true;
+          this.medicoesSalvas.push(l);
+        });
 
         // Reinicia estado do modo mas mantém ativo
         this.pontos = [];
@@ -4700,10 +4734,30 @@
       },
 
       limparTudo: function() {
+        // 1. Limpa temporários (linhas/labels em andamento)
         this.limparTemporarios();
-        this.medicoesSalvas.forEach(m => mapa.removeLayer(m));
+
+        // 2. Remove tudo o que foi salvo
+        this.medicoesSalvas.forEach(m => { if (mapa.hasLayer(m)) mapa.removeLayer(m); });
         this.medicoesSalvas = [];
-        UI.toast('🧹 Todas as medições foram removidas.');
+
+        // 3. ✅ REDE DE SEGURANÇA: varre o mapa procurando labels órfãos
+        //    (protege contra medições finalizadas em versões antigas do código)
+        const orfaos = [];
+        mapa.eachLayer(layer => {
+          try {
+            if (layer instanceof L.Marker &&
+                layer.options &&
+                layer.options.icon &&
+                layer.options.icon.options &&
+                layer.options.icon.options.className === 'label-medicao') {
+              orfaos.push(layer);
+            }
+          } catch(e) {}
+        });
+        orfaos.forEach(l => mapa.removeLayer(l));
+
+        UI.toast(`🧹 Medições removidas (${this.medicoesSalvas.length + orfaos.length} elementos).`);
       }
     };
 
