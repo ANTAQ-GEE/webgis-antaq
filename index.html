@@ -993,26 +993,22 @@
   <header class="top-header">
     <div class="brand-area">
       <div class="brand-title">AGÊNCIA NACIONAL DE TRANSPORTES AQUAVIÁRIOS &bull; ANTAQ</div>
-      <div class="brand-sub">SUPERINTENDÊNCIA DE ESTUDOS E PROJETOS AQUAVIÁRIOS &mdash; GERÊNCIA ESPECIAL DE ESTUDOS</div>
+      <div class="brand-sub">SUPERINTENDÊNCIA DE ESTUDOS E PROJETOS HIDROVIÁRIOS &mdash; GEE</div>
     </div>
     <div class="actions-area">
-      <button class="btn-importar" onclick="ImportManager.abrirSeletor()" title="Importar Shapefile (.zip), KML, KMZ, GeoJSON ou GeoPackage">
-        📁 Importar Camada
+      <button class="btn-matriz-ven" onclick="MatrizVENManager.abrirModal()" title="Visualizar Matriz Operacional do VEN com Tempos de Viagem e Extensões" style="background:#0284c7; border:1px solid #38bdf8;">
+        ⏱️ Matriz VEN
       </button>
-      <input type="file" id="input-import" style="display:none"
-             accept=".geojson,.json,.zip,.kml,.kmz,.gpkg,.geopackage,.shp,.dbf,.shx,.prj"
-             multiple onchange="ImportManager.processar(this.files)">
-      <button class="btn-matriz-ven" onclick="MatrizVENManager.abrirModal()" title="Visualizar Matriz Operacional do VEN com Tempos de Viagem e Extensões">
-        ⏱️ Matriz VEN & Tempos
+      <button class="btn-graficos" onclick="UI.toggleGraficos()" style="background:#0369a1; border:1px solid #0284c7;" title="Abrir Estúdio Analítico Institucional da ANTAQ">
+        📊 Painel Analítico
       </button>
-      <button class="btn-graficos" onclick="UI.toggleGraficos()">📊 Cruzamentos & Gráficos</button>
-      <button class="btn-copiloto-ia" onclick="CopilotoIA.toggle()" title="Abrir Copiloto Geoespacial e Regulatório com IA">
-        🤖 Copiloto IA
+      <button class="btn-copiloto-ia" onclick="CopilotoIA.toggle()" title="Abrir Assistente Regulatório e Territorial" style="background:#0f2744; border:1px solid #38bdf8;">
+        🤖 Assistente IA
       </button>
-      <button class="btn-homologacao" onclick="UI.toggleMenuAmbiente(event)">
-        <span id="txt-ambiente">Homologação (Estudos)</span> &#9662;
+      <button class="btn-homologacao" id="btn-env-topo" onclick="UI.toggleMenuAmbiente(event)" style="background:#0a2540; color:#38bdf8; border:1px solid #0284c7;" title="Alternar entre Produção Oficial e Homologação GEE">
+        <span id="txt-ambiente">Produção (Oficial ANTAQ)</span> &#9662;
       </button>
-      <button class="btn-atualizar" id="btn-sync" onclick="DataManager.atualizarTodasCamadas()">
+      <button class="btn-atualizar" id="btn-sync" onclick="DataManager.atualizarTodasCamadas()" style="background:#0284c7; border:1px solid #38bdf8;" title="Sincronizar e recarregar dados do servidor">
         <span id="ico-sync">🔄</span> Atualizar
       </button>
     </div>
@@ -1133,8 +1129,8 @@
         <div class="filtros-matriz-bar">
           <label style="font-size:11px; font-weight:600; color:#38bdf8;">Safra VEN:</label>
           <select id="matriz-filtro-ano" onchange="MatrizVENManager.mudarAno(this.value)">
-            <option value="ven_2024">2024 (Oficial V4 - sob demanda)</option>
-            <option value="ven_2022" selected>2022 (Série Histórica - Ativa)</option>
+            <option value="ven_2024">2024 (Oficial V4)</option>
+            <option value="ven_2022" selected>2022 (Série Histórica)</option>
             <option value="ven_2020">2020 (Série Histórica)</option>
             <option value="ven_2018">2018 (Série Histórica)</option>
             <option value="ven_2013">2013 (Marco Inicial)</option>
@@ -1198,17 +1194,67 @@
 
   
   <!-- ============================================================
-       PAINEL DO COPILOTO GEOESPACIAL E REGULATÓRIO COM IA (ANTAQ GEE)
+       PAINEL INSTITUCIONAL DO ASSISTENTE IA DA ANTAQ
        ============================================================ -->
-  <div class="painel-copiloto" id="painel-copiloto">
-    <div class="copiloto-header">
+  <div class="painel-copiloto" id="painel-copiloto" style="background:#0a192f; border:1px solid #0284c7; box-shadow:0 15px 40px rgba(0,0,0,0.6); border-radius:10px; width:380px; max-width:92vw;">
+    <div class="copiloto-header" style="background:#061426; border-bottom:1px solid rgba(2,132,199,0.3); padding:12px 16px;">
       <div style="display:flex; align-items:center; gap:8px;">
-        <span style="font-size:16px;">🤖</span>
+        <span style="font-size:18px;">🏛️</span>
         <div>
-          <div style="font-weight:700; font-size:12px; letter-spacing:0.5px;">Copiloto Geoespacial & Regulatório</div>
-          <div style="font-size:9px; color:#38bdf8;">Inteligência Territorial ANTAQ / GEE</div>
+          <div style="font-weight:700; font-size:12px; color:#f8fafc; letter-spacing:0.5px;">Assistente Virtual Regulatório &bull; ANTAQ</div>
+          <div style="font-size:9.5px; color:#38bdf8;">Superintendência de Estudos e Projetos Hidroviários (SEPH/GEE)</div>
         </div>
       </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button class="btn-copiloto-config" onclick="CopilotoIA.toggleConfig()" title="Configurações de IA (Chave de API / Local)" style="background:transparent; border:none; color:#94a3b8; font-size:14px; cursor:pointer;">⚙️</button>
+        <span class="btn-copiloto-fechar" onclick="CopilotoIA.toggle()" title="Fechar Assistente" style="color:#94a3b8; cursor:pointer; font-size:18px; font-weight:bold;">&times;</span>
+      </div>
+    </div>
+
+    <!-- CONFIGURAÇÕES DISCRETAS -->
+    <div class="copiloto-config-box" id="copiloto-config-box" style="display:none; background:#0b1d33; padding:12px; border-bottom:1px solid #1e3a5f;">
+      <div style="font-weight:700; font-size:11px; color:#38bdf8; margin-bottom:6px;">Configuração do Modelo de IA:</div>
+      <select id="ia-provedor" class="grafico-select" style="width:100%; margin-bottom:8px;" onchange="CopilotoIA.onMudarProvedor(this.value)">
+        <option value="heuristico">🧠 Base Regulatória Integrada (Offline / Padrão ANTAQ)</option>
+        <option value="gemini">✨ Google Gemini API</option>
+        <option value="openai">⚡ OpenAI GPT-4o</option>
+        <option value="local">🔒 Servidor On-Premise ANTAQ (Ollama Local)</option>
+      </select>
+      <div id="box-api-key" style="display:none; margin-bottom:8px;">
+        <input type="password" id="ia-api-key" placeholder="Chave de API..." style="width:100%; padding:5px 8px; font-size:11px; border-radius:4px; border:1px solid #1e4976; background:#061426; color:#fff;">
+      </div>
+      <div id="box-url-local" style="display:none; margin-bottom:8px;">
+        <input type="text" id="ia-url-local" value="http://localhost:11434/v1" style="width:100%; padding:5px 8px; font-size:11px; border-radius:4px; border:1px solid #1e4976; background:#061426; color:#fff;">
+      </div>
+      <button class="btn-copiloto-enviar" onclick="CopilotoIA.salvarConfig()" style="width:100%; padding:6px; font-size:11px; background:#0284c7; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:700;">Salvar Preferência</button>
+    </div>
+
+    <!-- ÁREA DE MENSAGENS -->
+    <div class="copiloto-mensagens" id="copiloto-mensagens" style="height:350px; overflow-y:auto; padding:14px; font-size:11px; color:#cbd5e1; display:flex; flex-direction:column; gap:10px;">
+      <div class="msg-ia" style="background:#0f2744; border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:12px; color:#f1f5f9;">
+        <div style="font-weight:700; color:#38bdf8; margin-bottom:4px;">Olá, analista! 👋</div>
+        Sou o assistente de inteligência territorial e regulatória da ANTAQ. Posso responder sobre:
+        <ul style="padding-left:16px; margin:6px 0; color:#cbd5e1; font-size:10.5px;">
+          <li>Série histórica das <strong>Vias Economicamente Navegadas (2020 a 2024)</strong>;</li>
+          <li>Regimes de outorga portuária (Lei nº 12.815/2013: <strong>TUP, IP4, ETC, Portos Organizados</strong>);</li>
+          <li>Estatísticas de navegação, caminhos mínimos e tempos de viagem da <strong>Matriz VEN</strong>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- COMANDOS RÁPIDOS INSTITUCIONAIS -->
+    <div style="padding:6px 14px; background:#08192d; border-top:1px solid rgba(2,132,199,0.2); display:flex; gap:5px; flex-wrap:wrap;">
+      <button class="btn-acao-chip" onclick="CopilotoIA.perguntar('Quais são os 1.179 ativos portuários regulados por tipo?')">⚓ Portos por Regime</button>
+      <button class="btn-acao-chip" onclick="CopilotoIA.perguntar('Qual a extensão total do VEN 2024 e o crescimento na Amazônia?')">🌊 VEN 2024 & Amazônia</button>
+      <button class="btn-acao-chip" onclick="CopilotoIA.perguntar('Como é calculada a Matriz de tempos e velocidades do VEN?')">⏱️ Metodologia VEN</button>
+    </div>
+
+    <!-- CAMPO DE DIGITAÇÃO -->
+    <div class="copiloto-rodape" style="padding:10px 14px; background:#061426; border-top:1px solid rgba(2,132,199,0.3); display:flex; gap:8px;">
+      <input type="text" id="copiloto-input" placeholder="Faça uma pergunta regulatória ou sobre o mapa..." style="flex:1; padding:7px 10px; font-size:11px; border-radius:5px; border:1px solid #1e4976; background:#0c223c; color:#fff;" onkeydown="if(event.key==='Enter') CopilotoIA.enviarMensagem()">
+      <button onclick="CopilotoIA.enviarMensagem()" style="background:#0284c7; color:#fff; border:none; padding:7px 14px; border-radius:5px; font-size:11px; font-weight:700; cursor:pointer;">Enviar</button>
+    </div>
+  </div>
       <div style="display:flex; align-items:center; gap:6px;">
         <button class="btn-copiloto-config" onclick="CopilotoIA.toggleConfig()" title="Configurar Provedor de IA (Gemini, OpenAI ou Local)">⚙️</button>
         <span class="btn-copiloto-fechar" onclick="CopilotoIA.toggle()" title="Fechar Assistente">&times;</span>
@@ -2643,24 +2689,31 @@
         if (!sel) return;
         const valAtual = sel.value;
         sel.innerHTML = '';
+
+        // Adiciona Instalações Portuárias primeiro
+        sel.appendChild(new Option('⚓ Instalações Portuárias', 'instalacoes_portuarias'));
+
+        // Adiciona a Pasta Unificada do VEN
+        sel.appendChild(new Option('🌊 Vias Economicamente Navegadas (VEN)', 'ven'));
+
+        // Adiciona as demais camadas que não sejam safras individuais do VEN
         for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
-          const opt = document.createElement('option');
-          opt.value = id;
+          if (id === 'instalacoes_portuarias' || id.startsWith('ven_') || id === 'unidades_conservacao') continue;
           let emoji = '📍';
-          if (id.includes('porto') || id.includes('instalac')) emoji = '⚓';
-          else if (id.includes('via') || id.includes('hidro')) emoji = '🌊';
-          else if (id.includes('travess')) emoji = '⛴️';
+          if (id.includes('travess')) emoji = '⛴️';
           else if (id.includes('indig') || id.includes('tis')) emoji = '🏹';
           else if (id.includes('conservacao') || id.includes('uc')) emoji = '🌳';
           else if (id.includes('uf') || id.includes('estado')) emoji = '🗺️';
           else if (id.includes('rodovia')) emoji = '🛣️';
           else if (id.includes('ferrovia')) emoji = '🚆';
-          else if (cfg.grupo === 'importadas') emoji = '📁';
-          opt.innerText = `${emoji} ${cfg.nome}`;
-          sel.appendChild(opt);
+          else if (id.includes('embarcac') || id.includes('ais')) emoji = '🚢';
+          else if (id.includes('snv')) emoji = '📜';
+          sel.appendChild(new Option(`${emoji} ${cfg.nome}`, id));
         }
-        if (CONFIG_CAMADAS[valAtual]) sel.value = valAtual;
-        else if (CONFIG_CAMADAS['instalacoes_portuarias']) sel.value = 'instalacoes_portuarias';
+
+        if (valAtual === 'ven' || valAtual.startsWith('ven_')) sel.value = 'ven';
+        else if (CONFIG_CAMADAS[valAtual]) sel.value = valAtual;
+        else sel.value = 'instalacoes_portuarias';
       },
 
       aoMudarCamada: async function(idCamada) {
@@ -2803,6 +2856,10 @@
 
       aoMudarSubfiltro: function(valor) {
         const idCamada = document.getElementById('sel-camada-busca').value;
+        if (idCamada === 'ven') {
+          VENUnifiedManager.mudarSafra(valor);
+          return;
+        }
         this.aplicarFiltro(idCamada, valor);
       },
 
@@ -3033,35 +3090,45 @@
         return this.carregando[id];
       },
 
-      atualizarTodasCamadas: function(apenasAtivas = true) {
+      atualizarTodasCamadas: async function(apenasAtivas = true) {
         const btn = document.getElementById('btn-sync');
         const ico = document.getElementById('ico-sync');
         if (btn) btn.disabled = true;
         if (ico) ico.classList.add('girando');
 
+        UI.toast("🔄 Sincronizando catálogo e atualizando camadas em tempo real...");
+
+        // 1. Recarrega o manifesto com timestamp anti-cache
+        try {
+          await LayerRegistry.carregarManifest();
+        } catch(e) {}
+
+        // 2. Recarrega todas as camadas ativas
         const promessas = Object.entries(CONFIG_CAMADAS).map(([id, cfg]) => {
           const chkEl = document.getElementById(`chk-${id}`);
           const deveCarregar = !apenasAtivas || (chkEl ? chkEl.checked : cfg.ativa);
           if (deveCarregar) {
+            delete this.carregando[id];
+            delete DADOS_GEOJSON_BRUTOS[id];
             return this.carregarCamada(id);
-          } else {
-            const cntEl = document.getElementById(`cnt-${id}`);
-            if (cntEl && !DADOS_GEOJSON_BRUTOS[id]) cntEl.innerText = '(sob demanda)';
-            return Promise.resolve();
           }
+          return Promise.resolve();
         });
 
-        Promise.allSettled(promessas).then(() => {
-          if (btn) btn.disabled = false;
-          if (ico) ico.classList.remove('girando');
-          Styler.atualizarLegenda();
-          UI.toast(`✓ Camadas sincronizadas às ${new Date().toLocaleTimeString('pt-BR')}`);
-        });
+        await Promise.allSettled(promessas);
+
+        if (btn) btn.disabled = false;
+        if (ico) ico.classList.remove('girando');
+        Styler.atualizarLegenda();
+
+        // Atualiza contadores
+        const qtdVen = DADOS_GEOJSON_BRUTOS[VENUnifiedManager.anoAtivo]?.features?.length || 0;
+        const cntVen = document.getElementById('cnt-ven-unificado');
+        if (cntVen) cntVen.innerText = qtdVen > 0 ? `(${qtdVen})` : '';
+
+        UI.toast(`✓ WebGIS atualizado com sucesso às ${new Date().toLocaleTimeString('pt-BR')}`);
       }
     };
-
-
-
 
     const SearchEngine = {
       debounceTimer: null,
@@ -3244,33 +3311,69 @@
      * MÓDULO 8: GERENCIADOR DO AMBIENTE
      */
     const AmbienteManager = {
-      atual: 'homologacao',
-      definir: function(tipo) {
+      atual: 'producao', // Padrão seguro inicial: Produção Oficial
+      hashCorreto: '847ad09d04f991bbc665ab36a7e2cfb55f2e70bf488fad1b615083d999a401fe', // sha256 de painelgee2026
+
+      sha256: async function(texto) {
+        const msgBuffer = new TextEncoder().encode(texto);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      },
+
+      definir: async function(tipo) {
+        document.getElementById('drop-ambiente')?.classList.remove('aberto');
+
+        if (tipo === 'homologacao') {
+          // Verifica se já autenticado na sessão
+          const auth = sessionStorage.getItem('antaq_auth_homolog');
+          if (auth !== 'true') {
+            const senhaDigitada = prompt("🔒 ACESSO RESTRITO - HOMOLOGAÇÃO GEE/SEPH
+
+Digite a senha técnica institucional para liberar o modo de homologação e edição:");
+            if (!senhaDigitada) return;
+
+            const hashDigitado = await this.sha256(senhaDigitada.trim());
+            if (hashDigitado !== this.hashCorreto) {
+              alert("❌ Acesso Negado: Senha incorreta.
+
+O ambiente de homologação e edição é restrito à equipe da GEE/SEPH.");
+              return;
+            }
+            sessionStorage.setItem('antaq_auth_homolog', 'true');
+            UI.toast("🔓 Acesso autorizado! Ambiente de Homologação ativado.");
+          }
+        }
+
+        this.aplicarAmbiente(tipo);
+      },
+
+      aplicarAmbiente: function(tipo) {
         this.atual = tipo;
         const txt = document.getElementById('txt-ambiente');
         const itemH = document.getElementById('item-env-homolog');
         const itemP = document.getElementById('item-env-prod');
-        const lbl = document.getElementById('label-status-estilo');
-
-
-
-
-
-
-
+        const btnEnv = document.getElementById('btn-env-topo');
 
         if (tipo === 'homologacao') {
-          txt.innerText = 'Homologação (Estudos)';
-          itemH.classList.add('ativo'); itemP.classList.remove('ativo');
-          lbl.innerText = 'Homologação Ativa (Edição Livre)';
-          UI.toast("Ambiente: Homologação &bull; Customização liberada.");
+          if (txt) txt.innerText = 'Homologação (Estudos GEE)';
+          if (btnEnv) {
+            btnEnv.style.background = '#f59e0b';
+            btnEnv.style.color = '#000';
+          }
+          itemH?.classList.add('ativo'); itemP?.classList.remove('ativo');
+          document.body.classList.add('modo-homologacao');
+          UI.toast("🟡 Modo Homologação Ativo: Edição de estilos e testes de camadas liberados.");
         } else {
-          txt.innerText = 'Produção (Oficial)';
-          itemP.classList.add('ativo'); itemH.classList.remove('ativo');
-          lbl.innerText = '🔒 Padrão Regulatório Travado';
-          UI.toast("Ambiente: Produção &bull; Estilos travados no padrão homologado.");
+          if (txt) txt.innerText = 'Produção (Oficial ANTAQ)';
+          if (btnEnv) {
+            btnEnv.style.background = '#0a2540';
+            btnEnv.style.color = '#38bdf8';
+          }
+          itemP?.classList.add('ativo'); itemH?.classList.remove('ativo');
+          document.body.classList.remove('modo-homologacao');
+          UI.toast("🟢 Modo Produção Ativo: Padrão oficial travado para consulta.");
         }
-        document.getElementById('drop-ambiente').classList.remove('aberto');
       }
     };
 
@@ -4501,7 +4604,15 @@
     }
 
     function construirPainelLateral() {
+      // 1. Constrói o Card Unificado do VEN na seção de Infraestrutura
+      const grupoInfra = document.getElementById('grupo-infra');
+      if (grupoInfra) {
+        VENUnifiedManager.construirCard(grupoInfra);
+      }
+
+      // 2. Constrói as demais camadas regulares (ignorando ven_ individuais)
       for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
+        if (id.startsWith('ven_')) continue; // Agrupadas na pasta única do VEN
         const grupo = document.getElementById(`grupo-${cfg.grupo}`);
         if (!grupo) continue;
         construirItemCamada(id, cfg, grupo);
@@ -5263,6 +5374,147 @@
       }
     };
 
+    
+    /* ============================================================
+       MÓDULO: GERENCIADOR UNIFICADO DA SÉRIE HISTÓRICA DO VEN
+       ============================================================ */
+    const VENUnifiedManager = {
+      anoAtivo: 'ven_2022',
+      ligado: true,
+
+      construirCard: function(container) {
+        if (!container) return;
+        let card = document.getElementById('item-camada-ven-unificado');
+        if (card) card.remove();
+
+        card = document.createElement('div');
+        card.className = 'item-camada item-camada-pasta';
+        card.id = 'item-camada-ven-unificado';
+        card.style.border = '1px solid #bae6fd';
+        card.style.background = '#f0f9ff';
+
+        card.innerHTML = `
+          <div class="item-camada-linha-topo">
+            <div class="camada-info-bloco">
+              <span class="legenda-cor" style="background:#00e5ff; box-shadow:0 0 4px #00e5ff;" title="Vias Economicamente Navegadas"></span>
+              <span class="camada-titulo-txt" style="color:#0369a1; font-weight:700;">Vias Navegadas (VEN)</span>
+              <span class="badge-contador" id="cnt-ven-unificado">(carregando...)</span>
+            </div>
+            <label class="switch" title="Ligar/Desligar Malha Hidroviária no Mapa">
+              <input type="checkbox" id="chk-ven-unificado" checked onchange="VENUnifiedManager.toggle(this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px; background:#e0f2fe; padding:4px 8px; border-radius:5px; font-size:10.5px;">
+            <span style="font-weight:700; color:#0369a1;">📁 Safra Selecionada:</span>
+            <select id="sel-safra-ven-painel" onchange="VENUnifiedManager.mudarSafra(this.value)" style="padding:2px 6px; font-size:11px; border:1px solid #0284c7; border-radius:4px; background:#fff; font-weight:700; color:#0284c7; cursor:pointer;">
+              <option value="ven_2024">2024 (Oficial V4)</option>
+              <option value="ven_2022" selected>2022 (Série Histórica)</option>
+              <option value="ven_2020">2020</option>
+              <option value="ven_2018">2018</option>
+              <option value="ven_2013">2013</option>
+            </select>
+          </div>
+
+          <div class="camada-acoes-barra" style="border-top-color:#bae6fd;">
+            <button class="btn-acao-chip" title="Abrir Matriz Operacional e Tempos de Percurso" onclick="MatrizVENManager.abrirModal()" style="color:#0284c7; font-weight:700;">⏱️ Matriz VEN</button>
+            <button class="btn-acao-chip" title="Centralizar e dar Zoom na Malha" onclick="zoomCamada(VENUnifiedManager.anoAtivo)">🔍 Zoom</button>
+            <button class="btn-acao-chip" title="Ajustar Estilo e Espessura" onclick="toggleGavetaEstilo('ven-unificado')">🎨 Estilo</button>
+            <button class="btn-acao-chip" title="Baixar Planilha Oficial do VEN (Excel)" onclick="MatrizVENManager.baixarPlanilhaExcel()">📊 Excel</button>
+            <button class="btn-acao-chip" title="Exportar GeoJSON desta Safra" onclick="ExportManager.exportarGeoJSON(VENUnifiedManager.anoAtivo)">💾 GeoJSON</button>
+          </div>
+
+          <div class="gaveta-painel" id="gaveta-ven-unificado" style="background:#f8fafc;">
+            <div class="linha-ajuste">
+              <span>Opacidade:</span>
+              <input type="range" min="0.1" max="1" step="0.05" value="0.9" oninput="VENUnifiedManager.atualizarOpacidade(parseFloat(this.value))">
+            </div>
+            <div class="linha-ajuste">
+              <span>Espessura:</span>
+              <input type="range" min="1" max="8" step="0.5" value="2.8" oninput="VENUnifiedManager.atualizarPeso(parseFloat(this.value))">
+            </div>
+          </div>
+        `;
+
+        container.insertBefore(card, container.firstChild);
+      },
+
+      mudarSafra: async function(novoAno) {
+        // Desliga o ano anterior do mapa
+        const anoVelho = this.anoAtivo;
+        if (CAMADAS_MAPA[anoVelho] && mapa.hasLayer(CAMADAS_MAPA[anoVelho])) {
+          mapa.removeLayer(CAMADAS_MAPA[anoVelho]);
+        }
+
+        this.anoAtivo = novoAno;
+
+        // Atualiza seletores no painel e na busca
+        const selP = document.getElementById('sel-safra-ven-painel');
+        if (selP) selP.value = novoAno;
+
+        const selB = document.getElementById('filtro-subtipo-dinamico');
+        const selCamadaB = document.getElementById('sel-camada-busca');
+        if (selB && selCamadaB && selCamadaB.value === 'ven') {
+          selB.value = novoAno;
+        }
+
+        // Carrega e adiciona a nova safra
+        if (this.ligado) {
+          UI.toast(`Carregando malha do VEN (${novoAno.replace('ven_', '')})...`);
+          try {
+            await DataManager.carregarCamada(novoAno);
+            if (CAMADAS_MAPA[novoAno]) {
+              CAMADAS_MAPA[novoAno].addTo(mapa);
+              const qtd = DADOS_GEOJSON_BRUTOS[novoAno]?.features?.length || 0;
+              const cnt = document.getElementById('cnt-ven-unificado');
+              if (cnt) cnt.innerText = `(${qtd})`;
+              UI.toast(`✓ VEN ${novoAno.replace('ven_', '')} carregado com ${qtd} trechos.`);
+            }
+          } catch(e) {
+            UI.toast(`⚠️ Base ${novoAno} não encontrada. Exibindo safra consolidada 2022.`);
+            this.anoAtivo = 'ven_2022';
+            if (CAMADAS_MAPA['ven_2022']) CAMADAS_MAPA['ven_2022'].addTo(mapa);
+          }
+        }
+        Styler.atualizarLegenda();
+      },
+
+      toggle: function(ligar) {
+        this.ligado = ligar;
+        const ano = this.anoAtivo;
+        if (ligar) {
+          if (CAMADAS_MAPA[ano]) {
+            if (!mapa.hasLayer(CAMADAS_MAPA[ano])) CAMADAS_MAPA[ano].addTo(mapa);
+          } else {
+            DataManager.carregarCamada(ano).then(() => {
+              if (CAMADAS_MAPA[ano] && !mapa.hasLayer(CAMADAS_MAPA[ano])) CAMADAS_MAPA[ano].addTo(mapa);
+              const qtd = DADOS_GEOJSON_BRUTOS[ano]?.features?.length || 0;
+              const cnt = document.getElementById('cnt-ven-unificado');
+              if (cnt) cnt.innerText = `(${qtd})`;
+            });
+          }
+        } else {
+          for (const a of ['ven_2024', 'ven_2022', 'ven_2020', 'ven_2018', 'ven_2013']) {
+            if (CAMADAS_MAPA[a] && mapa.hasLayer(CAMADAS_MAPA[a])) mapa.removeLayer(CAMADAS_MAPA[a]);
+          }
+        }
+        Styler.atualizarLegenda();
+      },
+
+      atualizarOpacidade: function(val) {
+        const ano = this.anoAtivo;
+        if (CONFIG_CAMADAS[ano]) CONFIG_CAMADAS[ano].opacidade = val;
+        if (CAMADAS_MAPA[ano]) CAMADAS_MAPA[ano].setStyle({ opacity: val });
+      },
+
+      atualizarPeso: function(val) {
+        const ano = this.anoAtivo;
+        if (CONFIG_CAMADAS[ano]) CONFIG_CAMADAS[ano].peso = val;
+        if (CAMADAS_MAPA[ano]) CAMADAS_MAPA[ano].setStyle({ weight: val });
+      }
+    };
+
     // Inicialização
     (async function init() {
       
@@ -5279,7 +5531,12 @@
       construirPainelLateral();
       FilterManager.aoMudarCamada("instalacoes_portuarias");
       Styler.atualizarLegenda();
-      DataManager.atualizarTodasCamadas(true); // Lazy Loading: baixa apenas ativas no boot
+      DataManager.atualizarTodasCamadas(true);
+      setTimeout(() => {
+        const qtd = DADOS_GEOJSON_BRUTOS['ven_2022']?.features?.length || 0;
+        const cnt = document.getElementById('cnt-ven-unificado');
+        if (cnt) cnt.innerText = qtd > 0 ? `(${qtd})` : '';
+      }, 1000);
     })();
   </script>
 </body>
