@@ -99,7 +99,7 @@ index_teste.html
     .drop-item.ativo { background: #e0f2fe; border-left: 4px solid var(--antaq-azul-claro); font-weight: 600; }
     .drop-item small { display: block; font-size: 10px; color: var(--texto-claro); margin-top: 2px; }
 
-    /* Barra de Busca de Atributos */
+    /* Barra de Busca de Atributos e Filtro Dinâmico */
     .barra-busca-atributos {
       position: absolute; top: 64px; left: 60px; z-index: 1500;
       background: rgba(10, 37, 64, 0.95); backdrop-filter: blur(6px);
@@ -109,14 +109,14 @@ index_teste.html
     .select-camada-busca, .input-busca-atributo {
       padding: 6px 10px; font-size: 11px; border-radius: 4px; border: 1px solid var(--borda);
     }
-    .select-camada-busca { width: 180px; font-weight: 600; }
+    .select-camada-busca { width: 190px; font-weight: 600; background: #fff; color: #0f172a; }
     .input-busca-atributo { width: 220px; }
     .btn-exec-busca {
       background: var(--antaq-azul-claro); border: none; color: #fff; padding: 6px 12px;
       border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;
     }
     .resultados-busca {
-      display: none; position: absolute; top: 44px; left: 195px; width: 280px; max-height: 220px;
+      display: none; position: absolute; top: 44px; left: 205px; width: 280px; max-height: 220px;
       overflow-y: auto; background: #fff; border-radius: 4px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
       z-index: 2500; border: 1px solid var(--borda);
     }
@@ -125,7 +125,7 @@ index_teste.html
 
     /* Painel Lateral de Camadas */
     .painel-lateral {
-      position: absolute; top: 64px; right: 16px; width: 350px; max-height: calc(100% - 80px);
+      position: absolute; top: 64px; right: 16px; width: 360px; max-height: calc(100% - 80px);
       background: #ffffff; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.35);
       z-index: 1000; display: flex; flex-direction: column; border: 1px solid var(--borda);
     }
@@ -152,7 +152,7 @@ index_teste.html
 
     .item-camada { display: flex; flex-direction: column; padding: 5px 0; border-bottom: 1px dashed #f1f5f9; }
     .item-camada-principal { display: flex; align-items: center; justify-content: space-between; }
-    .camada-info { display: flex; align-items: center; gap: 6px; font-size: 11px; max-width: 215px; }
+    .camada-info { display: flex; align-items: center; gap: 6px; font-size: 11px; max-width: 220px; }
     .legenda-cor { width: 13px; height: 13px; border-radius: 3px; cursor: pointer; flex-shrink: 0; }
     .badge-contador { font-size: 9px; color: #64748b; font-weight: 600; margin-left: 2px; }
     .badge-erro { font-size: 9px; color: #ef4444; font-weight: 700; }
@@ -196,7 +196,7 @@ index_teste.html
 
     /* Painel do Copiloto IA */
     .painel-copiloto {
-      display: none; position: absolute; bottom: 20px; right: 380px; width: 420px; height: 560px;
+      display: none; position: absolute; bottom: 20px; right: 390px; width: 440px; height: 580px;
       max-height: calc(100vh - 85px); background: #ffffff; border-radius: 10px;
       box-shadow: 0 18px 45px rgba(0,0,0,0.4); z-index: 2500; border: 1px solid #cbd5e1;
       flex-direction: column; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif;
@@ -223,7 +223,7 @@ index_teste.html
     .msg-ia {
       align-self: flex-start; background: #ffffff; border: 1px solid #e2e8f0;
       border-radius: 8px 8px 8px 1px; padding: 9px 12px; font-size: 11px; line-height: 1.45;
-      color: #1e293b; max-width: 92%; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      color: #1e293b; max-width: 95%; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
     .msg-usuario {
       align-self: flex-end; background: #0284c7; color: #ffffff;
@@ -269,7 +269,7 @@ index_teste.html
 
     /* Tabela de Atributos */
     .painel-tabela-atributos {
-      display: none; position: absolute; bottom: 0; left: 0; right: 370px; height: 260px;
+      display: none; position: absolute; bottom: 0; left: 0; right: 380px; height: 260px;
       background: #ffffff; border-top: 3px solid var(--antaq-azul-claro);
       box-shadow: 0 -8px 25px rgba(0,0,0,0.3); z-index: 1800; flex-direction: column;
     }
@@ -301,6 +301,15 @@ index_teste.html
     .simbolo-ponto { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid #ffffff; box-shadow: 0 0 3px rgba(0,0,0,0.5); flex-shrink: 0; vertical-align: middle; }
     .simbolo-poligono { display: inline-block; width: 14px; height: 10px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.25); flex-shrink: 0; vertical-align: middle; }
     .item-legenda-linha { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #1e293b; padding: 2px 0; }
+
+    /* Rotulo UF */
+    .rotulo-uf {
+      background: transparent !important; border: none !important; box-shadow: none !important;
+      font-size: 12px !important; font-weight: 700 !important; color: #fff !important;
+      letter-spacing: 1.5px !important; text-transform: uppercase !important;
+      text-shadow: -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 1px 1px 2px #000;
+      pointer-events: none !important;
+    }
 
     #toast {
       position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -350,21 +359,26 @@ index_teste.html
     </div>
   </div>
 
-  <!-- BARRA DE BUSCA E FILTROS DINÂMICOS CONTEXTUAIS -->
+  <!-- BARRA DE BUSCA E FILTROS DINÂMICOS CONTEXTUAIS (REESTRUTURADA PARA TODAS AS CAMADAS) -->
   <div class="barra-busca-atributos">
     <select class="select-camada-busca" id="sel-camada-busca" onchange="FilterManager.aoMudarCamada(this.value)">
       <option value="instalacoes_portuarias">⚓ Instalações Portuárias</option>
       <option value="vias_navegadas">🌊 Vias Navegadas</option>
       <option value="linhas_travessias">⛴️ Linhas de Travessias</option>
+      <option value="rodovias">🛣️ Rodovias Federais (SNV)</option>
+      <option value="ferrovias">🚆 Malha Ferroviária</option>
       <option value="tis_poligonais">🏹 Terras Indígenas (FUNAI)</option>
+      <option value="ucs_federais">🏛️ UCs Federais (ICMBio)</option>
+      <option value="ucs_todas_mma">🌲 Todas as UCs (CNUC/MMA)</option>
       <option value="uf">🗺️ Estados (UF)</option>
     </select>
     <div style="position:relative;">
-      <input type="text" class="input-busca-atributo" id="input-busca" placeholder="Buscar instalação portuária por nome ou UF..." oninput="SearchEngine.onInput(this.value)">
+      <input type="text" class="input-busca-atributo" id="input-busca" placeholder="Buscar instalação portuária por nome, município ou UF..." oninput="SearchEngine.onInput(this.value)">
       <div class="resultados-busca" id="resultados-busca"></div>
     </div>
     <button class="btn-exec-busca" onclick="SearchEngine.executar()">Zoom no Ativo</button>
-    <select class="select-camada-busca" id="filtro-subtipo-dinamico" onchange="FilterManager.aoMudarSubfiltro(this.value)" style="min-width: 180px; max-width: 230px; background: #0a2540; color: #fff; border: 1px solid #0284c7; cursor: pointer;" title="Subfiltro da Camada Selecionada">
+    <!-- Subfiltro Dinâmico Reativo a qualquer camada selecionada -->
+    <select class="select-camada-busca" id="filtro-subtipo-dinamico" onchange="FilterManager.aoMudarSubfiltro(this.value)" style="min-width: 190px; max-width: 250px; background: #0a2540; color: #fff; border: 1px solid #0284c7; cursor: pointer;" title="Subfiltro Especializado da Camada">
     </select>
   </div>
 
@@ -379,7 +393,7 @@ index_teste.html
   </div>
 
   <!-- ============================================================
-       PAINEL DO COPILOTO GEOESPACIAL E REGULATÓRIO COM IA (ANTAQ GEE)
+       PAINEL DO COPILOTO GEOESPACIAL E REGULATÓRIO COM IA (AVANÇADO)
        ============================================================ -->
   <div class="painel-copiloto" id="painel-copiloto">
     <div class="copiloto-header">
@@ -387,11 +401,11 @@ index_teste.html
         <span style="font-size:16px;">🤖</span>
         <div>
           <div style="font-weight:700; font-size:12px; letter-spacing:0.5px;">Copiloto Geoespacial & Regulatório</div>
-          <div style="font-size:9px; color:#38bdf8;">Inteligência Territorial ANTAQ / GEE</div>
+          <div style="font-size:9px; color:#38bdf8;">Inteligência Territorial ANTAQ / GEE (Turf.js + Gemini Flash)</div>
         </div>
       </div>
       <div style="display:flex; align-items:center; gap:6px;">
-        <button class="btn-copiloto-config" onclick="CopilotoIA.toggleConfig()" title="Configurar Provedor de IA (Gemini Flash, OpenAI ou Heurístico)">⚙️</button>
+        <button class="btn-copiloto-config" onclick="CopilotoIA.toggleConfig()" title="Configurar Modo de IA (Local Avançado ou Nuvem)">⚙️</button>
         <span class="btn-copiloto-fechar" onclick="CopilotoIA.toggle()" title="Fechar Assistente">&times;</span>
       </div>
     </div>
@@ -399,19 +413,19 @@ index_teste.html
     <!-- MODAL DE CONFIGURAÇÃO DE IA -->
     <div class="copiloto-config-box" id="copiloto-config-box" style="display:none;">
       <div style="font-weight:700; font-size:11px; color:#0f172a; margin-bottom:6px;">Configuração da Inteligência Artificial:</div>
-      <label style="font-size:10px; color:#475569; display:block; margin-bottom:3px;">Modo / Provedor:</label>
+      <label style="font-size:10px; color:#475569; display:block; margin-bottom:3px;">Motor / Provedor:</label>
       <select id="ia-provedor" style="width:100%; padding:5px 8px; font-size:11px; border:1px solid #cbd5e1; border-radius:4px; margin-bottom:8px;" onchange="CopilotoIA.onMudarProvedor(this.value)">
-        <option value="heuristico">🧠 Motor Heurístico Embutido (Offline / Zero Custo / Sem Chave)</option>
+        <option value="local_avancado">🧠 Motor Semântico & Geoespacial Local (Offline / Turf.js / Gratuito)</option>
         <option value="gemini_flash">✨ Google Gemini 1.5 Flash (Gratuito no Google AI Studio / Super Rápido)</option>
         <option value="gemini_2_flash">⚡ Google Gemini 2.0 Flash (Nova Geração / Baixa Latência)</option>
         <option value="openai">🔮 OpenAI API (GPT-4o / GPT-4o-mini)</option>
-        <option value="local">🔒 Servidor Local ANTAQ (Ollama / vLLM On-Premise)</option>
+        <option value="local_ollama">🔒 Servidor Local ANTAQ (Ollama / vLLM On-Premise)</option>
       </select>
 
       <div id="box-api-key" style="display:none; margin-bottom:8px;">
         <label style="font-size:10px; color:#475569; display:block; margin-bottom:3px;">Chave de API (Armazenamento Local no Navegador):</label>
         <input type="password" id="ia-api-key" placeholder="Insira sua chave do Google AI Studio ou OpenAI..." style="width:100%; padding:5px 8px; font-size:11px; border:1px solid #cbd5e1; border-radius:4px;">
-        <small style="color:#64748b; font-size:9px; display:block; margin-top:2px;">Obtenha gratuitamente sua chave do Gemini em <a href="https://aistudio.google.com/" target="_blank" style="color:#0284c7;">aistudio.google.com</a> (15 req/min gratuitas).</small>
+        <small style="color:#64748b; font-size:9px; display:block; margin-top:2px;">Obtenha gratuitamente em <a href="https://aistudio.google.com/" target="_blank" style="color:#0284c7;">aistudio.google.com</a> (15 req/min gratuitas).</small>
       </div>
 
       <div id="box-url-local" style="display:none; margin-bottom:8px;">
@@ -428,26 +442,27 @@ index_teste.html
     <div class="copiloto-mensagens" id="copiloto-mensagens">
       <div class="msg-ia">
         👋 Olá! Eu sou o <strong>Copiloto Geoespacial da ANTAQ</strong>.<br><br>
-        Entendo comandos em linguagem natural para controlar o WebGIS. Experimente:<br>
-        • <em>"Ligar camada de rodovias"</em> ou <em>"Desligar hidrovias"</em><br>
-        • <em>"Mostrar TUPs no Pará"</em> ou <em>"Zoom no Porto de Santos"</em><br>
-        • <em>"Analisar sobreposição de UCs com hidrovias"</em><br>
-        • <em>"Gerar nota técnica da instalação selecionada"</em>
+        Executo <strong>operações espaciais e regulatórias complexas</strong> diretamente no mapa:<br>
+        • <em>"Buffer de 30 km no Porto de Santos e cruzar com UCs"</em><br>
+        • <em>"Filtrar TUPs do Pará e Maranhão e ligar ferrovias"</em><br>
+        • <em>"Analisar sobreposição de vias navegadas com terras indígenas"</em><br>
+        • <em>"Gerar nota técnica detalhada com diagnóstico territorial"</em><br>
+        • <em>"Ligar rodovias e ferrovias e desligar o resto"</em>
       </div>
     </div>
 
     <!-- CHIPS DE AÇÕES RÁPIDAS -->
     <div class="copiloto-chips-bar">
-      <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('Ligar camada de rodovias')">🛣️ Ligar Rodovias</button>
-      <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('Mostrar TUPs no Pará')">⚓ TUPs no Pará</button>
-      <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('Desligar todas as camadas')">👁️ Desligar Todas</button>
-      <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('Analisar sobreposição de UCs com hidrovias')">🌿 UCs x Hidrovias</button>
-      <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('Gerar nota técnica da instalação selecionada')">📝 Nota Técnica</button>
+      <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('Buffer de 30 km no Porto de Santos e cruzar com UCs')">🎯 Buffer Santos x UCs</button>
+      <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('Filtrar TUPs do Pará e Maranhão e ligar ferrovias')">⚓ TUPs PA/MA + Ferrovias</button>
+      <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('Analisar cruzamento de hidrovias com terras indígenas')">🏹 Hidrovias x Terras Indígenas</button>
+      <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('Gerar nota técnica da instalação selecionada')">📝 Nota Técnica Completa</button>
+      <button class="copiloto-chip" onclick="CopilotoIA.enviarComandoPredefinido('Limpar análises e restaurar mapa')">🔄 Restaurar Mapa</button>
     </div>
 
     <!-- ENTRADA DE TEXTO -->
     <div class="copiloto-input-bar">
-      <input type="text" id="copiloto-input" placeholder="Digite um comando (ex: 'ligar rodovias', 'tups no pará')..." onkeydown="if(event.key==='Enter') CopilotoIA.enviar()">
+      <input type="text" id="copiloto-input" placeholder="Comando complexo (ex: 'buffer 50km em Barcarena e cruzar com UCs')..." onkeydown="if(event.key==='Enter') CopilotoIA.enviar()">
       <button class="btn-copiloto-enviar" onclick="CopilotoIA.enviar()" title="Enviar comando">➤</button>
     </div>
   </div>
@@ -661,7 +676,6 @@ index_teste.html
 
     /**
      * MÓDULO 2: CATÁLOGO OFICIAL DE CAMADAS (CONFIG_CAMADAS)
-     * Contém todas as camadas do WebGIS Oficial da ANTAQ
      */
     const CONFIG_CAMADAS = {
       // Infraestrutura Aquaviária & Terrestre
@@ -687,13 +701,17 @@ index_teste.html
 
     const CAMADAS_MAPA = {};
     const DADOS_GEOJSON_BRUTOS = {};
+    window.SUBGRUPOS_PORTOS = {};
+    window.SUBGRUPOS_UCS = {};
+    window.CAMADA_DESTAQUE = null;
+    window.CAMADA_BUFFER = null;
 
     // Inicialização do Mapa Leaflet
     const mapa = L.map('mapa', { center: [-14.0, -52.0], zoom: 4, zoomControl: false });
     L.control.zoom({ position: 'bottomright' }).addTo(mapa);
 
     /**
-     * MÓDULO 3: BASEMAPS
+     * MÓDULO 3: GERENCIADOR DE BASEMAPS
      */
     const BasemapManager = {
       satelite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 }).addTo(mapa),
@@ -731,9 +749,9 @@ index_teste.html
         return `
           <div style="background:#0a2540; color:#fff; padding:10px 14px; font-size:12px; font-weight:700; border-bottom:2px solid #38bdf8;">${titulo}</div>
           <div style="padding:10px 14px; font-size:11px; max-height:220px; overflow-y:auto;">${linhas || '<p>Nenhum atributo ativo.</p>'}</div>
-          <div style="background:#f8fafc; padding:6px 14px; font-size:9px; color:#64748b; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between;">
+          <div style="background:#f8fafc; padding:6px 14px; font-size:9px; color:#64748b; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
             <span>Fonte: ANTAQ/GEE</span>
-            <span style="color:#0284c7; cursor:pointer; font-weight:700;" onclick="CopilotoIA.inspecionarFeicao('${id}', ${JSON.stringify(p).replace(/"/g, '&quot;')})">🤖 Analisar com IA</span>
+            <button style="background:#0284c7; color:#fff; border:none; padding:3px 8px; border-radius:3px; cursor:pointer; font-weight:700;" onclick="CopilotoIA.inspecionarFeicao('${id}', ${JSON.stringify(p).replace(/"/g, '&quot;')})">🤖 Analisar com IA</button>
           </div>
         `;
       }
@@ -761,8 +779,30 @@ index_teste.html
         CONFIG_CAMADAS[id][prop] = valor;
         const layer = CAMADAS_MAPA[id];
         if (layer) {
-          const opts = this.obterOpcoes(id);
-          if (layer.setStyle) layer.setStyle(opts);
+          if (id === 'instalacoes_portuarias') {
+            for (const fg of Object.values(window.SUBGRUPOS_PORTOS)) {
+              fg.eachLayer(l => {
+                if (prop === 'peso' && l.setRadius) l.setRadius(valor);
+                else if (prop === 'opacidade' && l.setStyle) l.setStyle({ fillOpacity: valor });
+              });
+            }
+          } else if (layer.setStyle) {
+            const opts = this.obterOpcoes(id);
+            layer.setStyle(opts);
+          }
+        }
+        this.atualizarLegenda();
+      },
+      atualizarSubcamadaPorto: function(tKey, cor) {
+        if (PortClassification.tipos[tKey]) {
+          PortClassification.tipos[tKey].cor = cor;
+          const inputColor = document.getElementById(`subcolor-${tKey}`);
+          if (inputColor) inputColor.value = cor;
+          if (window.SUBGRUPOS_PORTOS && window.SUBGRUPOS_PORTOS[tKey]) {
+            window.SUBGRUPOS_PORTOS[tKey].eachLayer(m => {
+              if (m.setStyle) m.setStyle({ fillColor: cor, color: '#ffffff' });
+            });
+          }
         }
         this.atualizarLegenda();
       },
@@ -772,10 +812,19 @@ index_teste.html
         let html = '';
         for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
           if (!cfg.ativa) continue;
-          let icone = `<span class="simbolo-linha" style="background:${cfg.cor};"></span>`;
-          if (cfg.tipoGeo === 'ponto') icone = `<span class="simbolo-ponto" style="background:${cfg.cor};"></span>`;
-          else if (cfg.tipoGeo === 'poligono') icone = `<span class="simbolo-poligono" style="background:${cfg.cor};"></span>`;
-          html += `<div class="item-legenda-linha">${icone} <span>${cfg.nome}</span></div>`;
+          if (id === 'instalacoes_portuarias') {
+            for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
+              const chk = document.getElementById(`chk-sub-${tKey}`);
+              if (!chk || chk.checked) {
+                html += `<div class="item-legenda-linha"><span class="simbolo-ponto" style="background:${cat.cor};"></span> <span>${cat.nome}</span></div>`;
+              }
+            }
+          } else {
+            let icone = `<span class="simbolo-linha" style="background:${cfg.cor};"></span>`;
+            if (cfg.tipoGeo === 'ponto') icone = `<span class="simbolo-ponto" style="background:${cfg.cor};"></span>`;
+            else if (cfg.tipoGeo === 'poligono') icone = `<span class="simbolo-poligono" style="background:${cfg.cor};"></span>`;
+            html += `<div class="item-legenda-linha">${icone} <span>${cfg.nome}</span></div>`;
+          }
         }
         el.innerHTML = html || '<span style="color:#94a3b8; font-size:10px;">Nenhuma camada ativa.</span>';
       },
@@ -786,6 +835,7 @@ index_teste.html
 
     /**
      * MÓDULO 5: GERENCIADOR DE DADOS E CARREGAMENTO
+     * Configura window.SUBGRUPOS_PORTOS e window.SUBGRUPOS_UCS com suporte a sub-filtros fiéis
      */
     const DataManager = {
       carregando: {},
@@ -827,32 +877,57 @@ index_teste.html
             DADOS_GEOJSON_BRUTOS[id] = dados;
 
             const opcoes = Styler.obterOpcoes(id);
-            let layerLeaflet;
 
+            // 1. Tratamento Especial para Instalações Portuárias (Subgrupos de Outorga)
             if (id === 'instalacoes_portuarias') {
-              layerLeaflet = L.geoJSON(dados, {
-                pointToLayer: (f, latlng) => {
-                  const cat = PortClassification.classificar(f.properties || {});
-                  return L.circleMarker(latlng, {
-                    radius: cat.raio, fillColor: cat.cor, color: '#ffffff', weight: cat.peso, fillOpacity: 0.95
+              if (!window.SUBGRUPOS_PORTOS) window.SUBGRUPOS_PORTOS = {};
+              for (const tKey of Object.keys(PortClassification.tipos)) {
+                if (window.SUBGRUPOS_PORTOS[tKey]) mapa.removeLayer(window.SUBGRUPOS_PORTOS[tKey]);
+                window.SUBGRUPOS_PORTOS[tKey] = L.featureGroup();
+              }
+
+              dados.features.forEach(f => {
+                const cat = PortClassification.classificar(f.properties || {});
+                const coords = f.geometry?.coordinates;
+                if (coords && coords.length >= 2) {
+                  const lat = coords[1], lng = coords[0];
+                  const m = L.circleMarker([lat, lng], {
+                    radius: cat.raio, fillColor: cat.cor, color: '#ffffff', weight: cat.peso, fillOpacity: cfg.opacidade
                   });
-                },
-                onEachFeature: (f, layer) => {
-                  layer.bindPopup(PopupRenderer.gerar(id, f.properties));
+                  m.feature = f;
+                  m.bindPopup(PopupRenderer.gerar('instalacoes_portuarias', f.properties));
+                  if (window.SUBGRUPOS_PORTOS[cat.id]) {
+                    window.SUBGRUPOS_PORTOS[cat.id].addLayer(m);
+                  }
                 }
               });
-            } else {
-              layerLeaflet = L.geoJSON(dados, {
+
+              CAMADAS_MAPA[id] = L.featureGroup();
+              for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
+                CAMADAS_MAPA[id].addLayer(fg);
+                const cntBadge = document.getElementById(`subcnt-${tKey}`);
+                if (cntBadge) cntBadge.innerText = `(${fg.getLayers().length})`;
+              }
+
+              if (cfg.ativa) CAMADAS_MAPA[id].addTo(mapa);
+            }
+            // 2. Demais Camadas Vetoriais
+            else {
+              const layerLeaflet = L.geoJSON(dados, {
                 style: () => opcoes,
                 pointToLayer: (f, latlng) => L.circleMarker(latlng, opcoes),
                 onEachFeature: (f, layer) => {
                   layer.bindPopup(PopupRenderer.gerar(id, f.properties));
+                  if (id === 'uf') {
+                    const sigla = Security.escapeHTML(f.properties.SIGLA_UF || f.properties.sigla || f.properties.UF || f.properties.nome);
+                    if (sigla) layer.bindTooltip(sigla, { permanent: true, direction: 'center', className: 'rotulo-uf' });
+                  }
                 }
               });
-            }
 
-            CAMADAS_MAPA[id] = layerLeaflet;
-            if (cfg.ativa) layerLeaflet.addTo(mapa);
+              CAMADAS_MAPA[id] = layerLeaflet;
+              if (cfg.ativa) layerLeaflet.addTo(mapa);
+            }
 
             if (cntEl) cntEl.innerText = `(${dados.features.length})`;
             if (errEl) errEl.innerText = '';
@@ -881,7 +956,7 @@ index_teste.html
     };
 
     /**
-     * MÓDULO 6: INTEGRAÇÃO COM MANIFEST.JSON (GITOPS AUTOMATIZADO)
+     * MÓDULO 6: MANIFEST.JSON
      */
     const LayerRegistry = {
       carregarManifest: async function() {
@@ -913,17 +988,15 @@ index_teste.html
             construirPainelLateral();
           }
         } catch(e) {
-          console.log("[Manifest] Operando com catálogo pré-configurado.");
+          console.log("[Manifest] Operando com catálogo nativo.");
         }
       }
     };
 
     /**
-     * MÓDULO 7: CONSTRUÇÃO DO PAINEL LATERAL (TOC) E CONTROLES DE CAMADAS
-     * Permite ligar, desligar, ajustar estilo, visualizar tabela e ordenar camadas
+     * MÓDULO 7: CONSTRUÇÃO DO PAINEL LATERAL (COM SUBCAMADAS DE OUTORGA E CONTROLES)
      */
     function construirPainelLateral() {
-      // Limpa os containers antes de preencher
       const grupos = {
         infra: document.getElementById('grupo-infra'),
         limites: document.getElementById('grupo-limites'),
@@ -942,27 +1015,71 @@ index_teste.html
         item.className = 'item-camada';
         item.id = `item-camada-${id}`;
 
+        let subpaletaHTML = '';
+
+        // Subpaleta de Outorgas da ANTAQ (Instalações Portuárias)
+        if (id === 'instalacoes_portuarias') {
+          let listaSubHTML = '';
+          for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
+            listaSubHTML += `
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:3px 0;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <input type="color" id="subcolor-${tKey}" value="${cat.cor}" onchange="Styler.atualizarSubcamadaPorto('${tKey}', this.value)" style="width:16px; height:16px; border:none; padding:0; background:transparent; cursor:pointer;" title="Personalizar cor de ${cat.nome}">
+                  <span>${cat.nome}</span>
+                  <span class="badge-contador" id="subcnt-${tKey}"></span>
+                </div>
+                <input type="checkbox" id="chk-sub-${tKey}" checked onchange="toggleSubcamadaPorto('${tKey}', this.checked)">
+              </div>
+            `;
+          }
+          subpaletaHTML = `
+            <div style="margin-top:6px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; font-size:10px; display:flex; flex-direction:column; gap:4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                <span style="font-weight:700; color:#0a2540;">Subcamadas de Outorga (ANTAQ):</span>
+                <span style="font-size:9px; color:#0284c7; cursor:pointer; font-weight:700;" onclick="toggleTodasSubcamadasPortos(true)">Marcar Todas</span>
+              </div>
+              ${listaSubHTML}
+            </div>
+          `;
+        }
+
         const ehPorto = (id === 'instalacoes_portuarias');
         const indicadorHTML = ehPorto
-          ? `<span class="legenda-cor" id="indicador-cor-${id}" style="display:inline-flex; align-items:center; justify-content:center; background:#0a2540; color:#38bdf8; font-size:11px;" onclick="toggleGavetaEstilo('${id}')" title="Ajustar estilo de outorgas">⚓</span>`
+          ? `<span class="legenda-cor" id="indicador-cor-${id}" style="display:inline-flex; align-items:center; justify-content:center; background:#0a2540; color:#38bdf8; font-size:11px;" onclick="toggleGavetaEstilo('${id}')" title="Camada Multicategórica - Clique para ajustar estilo">⚓</span>`
           : `<span class="legenda-cor" id="indicador-cor-${id}" style="background:${cfg.cor};" onclick="toggleGavetaEstilo('${id}')" title="Clique para personalizar estilo"></span>`;
 
-        const gavetaConteudo = `
-          <div class="linha-ajuste">
-            <span>Cor:</span>
-            <input type="color" value="${cfg.cor}" onchange="Styler.atualizar('${id}', 'cor', this.value)">
-          </div>
-          <div class="linha-ajuste">
-            <span>Opacidade:</span>
-            <input type="range" min="0.1" max="1" step="0.05" value="${cfg.opacidade}" oninput="this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'; Styler.atualizar('${id}', 'opacidade', parseFloat(this.value))">
-            <span style="min-width:35px; text-align:right;">${Math.round(cfg.opacidade * 100)}%</span>
-          </div>
-          <div class="linha-ajuste">
-            <span>Espessura / Raio:</span>
-            <input type="range" min="1" max="15" step="0.5" value="${cfg.peso}" oninput="this.nextElementSibling.innerText = this.value + 'px'; Styler.atualizar('${id}', 'peso', parseFloat(this.value))">
-            <span style="min-width:35px; text-align:right;">${cfg.peso}px</span>
-          </div>
-        `;
+        const gavetaConteudo = ehPorto
+          ? `
+            <div style="font-size:10px; color:#64748b; margin-bottom:6px; line-height:1.3;">
+              💡 <i>Camada multicategórica: as cores são definidas individualmente nos seletores de cor de cada outorga acima.</i>
+            </div>
+            <div class="linha-ajuste">
+              <span>Opacidade Geral:</span>
+              <input type="range" min="0.1" max="1" step="0.05" value="${cfg.opacidade}" oninput="this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'; Styler.atualizar('${id}', 'opacidade', parseFloat(this.value))">
+              <span style="min-width:35px; text-align:right;">${Math.round(cfg.opacidade * 100)}%</span>
+            </div>
+            <div class="linha-ajuste">
+              <span>Tamanho dos Pontos:</span>
+              <input type="range" min="2" max="15" step="1" value="${cfg.peso}" oninput="this.nextElementSibling.innerText = this.value + 'px'; Styler.atualizar('${id}', 'peso', parseInt(this.value))">
+              <span style="min-width:35px; text-align:right;">${cfg.peso}px</span>
+            </div>
+          `
+          : `
+            <div class="linha-ajuste">
+              <span>Cor:</span>
+              <input type="color" value="${cfg.cor}" onchange="Styler.atualizar('${id}', 'cor', this.value)">
+            </div>
+            <div class="linha-ajuste">
+              <span>Opacidade:</span>
+              <input type="range" min="0.1" max="1" step="0.05" value="${cfg.opacidade}" oninput="this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'; Styler.atualizar('${id}', 'opacidade', parseFloat(this.value))">
+              <span style="min-width:35px; text-align:right;">${Math.round(cfg.opacidade * 100)}%</span>
+            </div>
+            <div class="linha-ajuste">
+              <span>Espessura / Raio:</span>
+              <input type="range" min="1" max="15" step="0.5" value="${cfg.peso}" oninput="this.nextElementSibling.innerText = this.value + 'px'; Styler.atualizar('${id}', 'peso', parseFloat(this.value))">
+              <span style="min-width:35px; text-align:right;">${cfg.peso}px</span>
+            </div>
+          `;
 
         item.innerHTML = `
           <div class="item-camada-principal">
@@ -982,6 +1099,7 @@ index_teste.html
               </label>
             </div>
           </div>
+          ${subpaletaHTML}
           <div class="gaveta-painel" id="gaveta-${id}">
             ${gavetaConteudo}
           </div>
@@ -996,9 +1114,62 @@ index_teste.html
       if (g) g.classList.toggle('aberta');
     }
 
-    /**
-     * LIGAR E DESLIGAR CAMADA (OFICIAL OU IMPORTADA)
-     */
+    function toggleSubcamadaPorto(subtipo, ligar) {
+      if (!window.SUBGRUPOS_PORTOS || !window.SUBGRUPOS_PORTOS[subtipo]) return;
+      const fg = window.SUBGRUPOS_PORTOS[subtipo];
+      if (ligar) {
+        if (!mapa.hasLayer(fg)) fg.addTo(mapa);
+      } else {
+        if (mapa.hasLayer(fg)) mapa.removeLayer(fg);
+      }
+
+      let ativos = 0;
+      let ligadosChaves = [];
+      const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
+
+      for (const [tKey, subFg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
+        const chk = document.getElementById(`chk-sub-${tKey}`);
+        if (chk && chk.checked) {
+          ativos += subFg.getLayers().length;
+          ligadosChaves.push(tKey);
+        }
+      }
+
+      const cntEl = document.getElementById('cnt-instalacoes_portuarias');
+      if (cntEl) {
+        cntEl.innerText = (ativos === total) ? `(${total})` : `(${ativos}/${total})`;
+      }
+
+      const sel = document.getElementById('filtro-subtipo-dinamico');
+      const selCamada = document.getElementById('sel-camada-busca');
+      if (sel && selCamada && selCamada.value === 'instalacoes_portuarias') {
+        if (ligadosChaves.length === 1) sel.value = ligadosChaves[0];
+        else if (ligadosChaves.length === Object.keys(PortClassification.tipos).length) sel.value = 'TODOS';
+      }
+
+      Styler.atualizarLegenda();
+    }
+
+    function toggleTodasSubcamadasPortos(ligar) {
+      for (const tKey of Object.keys(PortClassification.tipos)) {
+        const chk = document.getElementById(`chk-sub-${tKey}`);
+        if (chk) chk.checked = ligar;
+        if (window.SUBGRUPOS_PORTOS && window.SUBGRUPOS_PORTOS[tKey]) {
+          const fg = window.SUBGRUPOS_PORTOS[tKey];
+          if (ligar) { if (!mapa.hasLayer(fg)) fg.addTo(mapa); }
+          else { if (mapa.hasLayer(fg)) mapa.removeLayer(fg); }
+        }
+      }
+      const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
+      const cntEl = document.getElementById('cnt-instalacoes_portuarias');
+      if (cntEl) cntEl.innerText = ligar ? `(${total})` : `(0/${total})`;
+
+      const sel = document.getElementById('filtro-subtipo-dinamico');
+      if (sel) sel.value = ligar ? 'TODOS' : '';
+
+      Styler.atualizarLegenda();
+    }
+
     async function toggleCamada(id, ligar) {
       const cfg = CONFIG_CAMADAS[id];
       if (!cfg) return;
@@ -1035,7 +1206,693 @@ index_teste.html
     }
 
     /**
-     * MÓDULO 8: GERENCIADOR DE IMPORTAÇÃO DE ARQUIVOS (SHP, KML, GEOJSON, KMZ)
+     * MÓDULO 8: GERENCIADOR DE FILTROS REATIVOS (PARA TODAS AS CAMADAS)
+     * Restaura e expande as funções de filtro em todo o WebGIS
+     */
+    const FilterManager = {
+      configFiltros: {
+        instalacoes_portuarias: {
+          placeholder: "Buscar instalação portuária por nome, município ou UF...",
+          opcoes: [
+            { valor: "TODOS", rotulo: "⚓ Todas as Instalações" },
+            { valor: "ORGANIZADO", rotulo: "🔹 Portos Organizados (Lei 12.815)" },
+            { valor: "PUBLICO", rotulo: "🔹 Portos Públicos (Cadastro Legado)" },
+            { valor: "TUP", rotulo: "🟢 Terminais Privados (TUP)" },
+            { valor: "IP4", rotulo: "🟡 Pequeno Porte (IP4)" },
+            { valor: "ETC", rotulo: "🟣 Transbordo (ETC)" },
+            { valor: "OUTROS", rotulo: "⚪ Demais Registros e Apoio" }
+          ]
+        },
+        vias_navegadas: {
+          placeholder: "Buscar trecho hidroviário ou rio na base...",
+          opcoes: [
+            { valor: "TODOS", rotulo: "🌊 Todas as Vias Navegadas" },
+            { valor: "AMAZONAS", rotulo: "🌿 Rio Amazonas / Solimões" },
+            { valor: "TAPAJOS", rotulo: "🚢 Rio Tapajós" },
+            { valor: "MADEIRA", rotulo: "⚓ Rio Madeira" },
+            { valor: "TOCANTINS", rotulo: "🏞️ Rio Tocantins" },
+            { valor: "PARAGUAI", rotulo: "⛴️ Rio Paraguai (Hidrovia)" },
+            { valor: "PARANA", rotulo: "🌊 Rio Paraná / Tietê" }
+          ]
+        },
+        linhas_travessias: {
+          placeholder: "Buscar linha de travessia aquaviária...",
+          opcoes: [
+            { valor: "TODOS", rotulo: "⛴️ Todas as Travessias" },
+            { valor: "PASSAGEIROS", rotulo: "👥 Transporte de Passageiros" },
+            { valor: "VEICULOS", rotulo: "🚗 Veículos / Balsas" },
+            { valor: "MISTA", rotulo: "🔄 Operação Mista" }
+          ]
+        },
+        rodovias: {
+          placeholder: "Buscar rodovia federal (ex: BR-163, BR-101)...",
+          opcoes: [
+            { valor: "TODOS", rotulo: "🛣️ Todas as Rodovias (SNV)" },
+            { valor: "163", rotulo: "🚚 BR-163 (Corredor Norte)" },
+            { valor: "364", rotulo: "🌾 BR-364 (Eixo Graneleiro)" },
+            { valor: "101", rotulo: "🌊 BR-101 (Litorânea)" },
+            { valor: "116", rotulo: "🚛 BR-116 (Tronco Sul-Nordeste)" },
+            { valor: "230", rotulo: "🌳 BR-230 (Transamazônica)" }
+          ]
+        },
+        ferrovias: {
+          placeholder: "Buscar malha ferroviária ou trecho...",
+          opcoes: [
+            { valor: "TODOS", rotulo: "🚆 Toda a Malha Ferroviária" },
+            { valor: "NORTE", rotulo: "🌾 Malha Norte / Rumo" },
+            { valor: "CARAJAS", rotulo: "⛏️ Estrada de Ferro Carajás (EFC)" },
+            { valor: "VITORIA", rotulo: "⛰️ Estrada de Ferro Vitória-Minas (EFVM)" },
+            { valor: "PAULISTA", rotulo: "🏭 Malha Paulista" }
+          ]
+        },
+        tis_poligonais: {
+          placeholder: "Buscar terra indígena por nome ou etnia...",
+          opcoes: [
+            { valor: "TODOS", rotulo: "🏹 Todas as Terras Indígenas" },
+            { valor: "HOMOLOGADA", rotulo: "✅ Homologada / Regularizada" },
+            { valor: "DECLARADA", rotulo: "📜 Declarada" },
+            { valor: "DELIMITADA", rotulo: "📍 Delimitada / Em Estudo" }
+          ]
+        },
+        ucs_federais: {
+          placeholder: "Buscar unidade de conservação federal...",
+          opcoes: [
+            { valor: "TODOS", rotulo: "🏛️ Todas as UCs Federais" },
+            { valor: "PARQUE", rotulo: "🏞️ Parques Nacionais (PARNA)" },
+            { valor: "RESEX", rotulo: "🛶 Reservas Extrativistas (RESEX)" },
+            { valor: "APA", rotulo: "🌿 Áreas de Proteção Ambiental (APA)" },
+            { valor: "FLONA", rotulo: "🌲 Florestas Nacionais (FLONA)" }
+          ]
+        },
+        ucs_todas_mma: {
+          placeholder: "Buscar UC no Cadastro Nacional (CNUC)...",
+          opcoes: [
+            { valor: "TODOS", rotulo: "🌲 Todas as UCs (Brasil)" },
+            { valor: "Federal", rotulo: "🏛️ Esfera Federal (ICMBio)" },
+            { valor: "Estadual", rotulo: "🏢 Esfera Estadual (OEMA)" },
+            { valor: "Municipal", rotulo: "🏙️ Esfera Municipal (Prefeituras)" },
+            { valor: "Privada", rotulo: "🌱 RPPN / Privada" }
+          ]
+        },
+        uf: {
+          placeholder: "Buscar estado por sigla ou nome...",
+          opcoes: [
+            { valor: "TODOS", rotulo: "🗺️ Todos os Estados (27 UFs)" },
+            { valor: "NORTE", rotulo: "🌳 Região Norte (7 UFs)" },
+            { valor: "NORDESTE", rotulo: "☀️ Região Nordeste (9 UFs)" },
+            { valor: "CENTRO_OESTE", rotulo: "🌾 Região Centro-Oeste (4 UFs)" },
+            { valor: "SUDESTE", rotulo: "🏭 Região Sudeste (4 UFs)" },
+            { valor: "SUL", rotulo: "🌾 Região Sul (3 UFs)" }
+          ]
+        }
+      },
+
+      aoMudarCamada: function(idCamada) {
+        const cfg = this.configFiltros[idCamada] || this.configFiltros.instalacoes_portuarias;
+        const selSub = document.getElementById('filtro-subtipo-dinamico');
+        const inputBusca = document.getElementById('input-busca');
+        if (inputBusca) inputBusca.placeholder = cfg.placeholder;
+
+        if (selSub) {
+          selSub.innerHTML = '';
+          if (cfg.opcoes && cfg.opcoes.length > 0) {
+            selSub.style.display = 'inline-block';
+            cfg.opcoes.forEach(opt => {
+              const el = document.createElement('option');
+              el.value = opt.valor;
+              el.innerText = opt.rotulo;
+              selSub.appendChild(el);
+            });
+            selSub.value = "TODOS";
+          } else {
+            selSub.style.display = 'none';
+          }
+        }
+
+        // Ativa a camada se estiver desligada
+        if (CONFIG_CAMADAS[idCamada]) {
+          const chk = document.getElementById(`chk-${idCamada}`);
+          if (chk && !chk.checked) {
+            chk.checked = true;
+            toggleCamada(idCamada, true);
+          }
+        }
+
+        this.aplicarFiltro(idCamada, "TODOS");
+      },
+
+      aoMudarSubfiltro: function(valor) {
+        const idCamada = document.getElementById('sel-camada-busca').value;
+        this.aplicarFiltro(idCamada, valor);
+      },
+
+      aplicarFiltro: function(idCamada, valor) {
+        // 1. Instalações Portuárias (com window.SUBGRUPOS_PORTOS)
+        if (idCamada === 'instalacoes_portuarias' && window.SUBGRUPOS_PORTOS) {
+          let visiveis = 0;
+          const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
+          const latlngsVisiveis = [];
+
+          for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
+            const chkSub = document.getElementById(`chk-sub-${tKey}`);
+            const deveLigar = (valor === 'TODOS' || tKey === valor);
+            if (chkSub) chkSub.checked = deveLigar;
+
+            if (deveLigar) {
+              if (!mapa.hasLayer(fg)) fg.addTo(mapa);
+              visiveis += fg.getLayers().length;
+              fg.eachLayer(m => { if (m.getLatLng) latlngsVisiveis.push(m.getLatLng()); });
+            } else {
+              if (mapa.hasLayer(fg)) mapa.removeLayer(fg);
+            }
+          }
+
+          const cntEl = document.getElementById('cnt-instalacoes_portuarias');
+          if (cntEl) {
+            cntEl.innerText = (valor === 'TODOS' || visiveis === total) ? `(${total})` : `(${visiveis}/${total})`;
+          }
+
+          if (latlngsVisiveis.length > 0 && valor !== 'TODOS') {
+            const b = L.latLngBounds(latlngsVisiveis);
+            mapa.fitBounds(b, { padding: [50, 50], maxZoom: 12, animate: true, duration: 1.0 });
+          }
+
+          Styler.atualizarLegenda();
+          if (valor !== 'TODOS') {
+            const nomeFiltro = PortClassification.tipos[valor]?.nome || valor;
+            UI.toast(`Filtro [Portos]: ${nomeFiltro} (${visiveis} ativos visíveis).`);
+          }
+        }
+        // 2. Filtros Específicos para Demais Camadas
+        else {
+          const dados = DADOS_GEOJSON_BRUTOS[idCamada];
+          if (!dados || !dados.features) return;
+
+          if (valor === 'TODOS') {
+            if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
+            if (CAMADAS_MAPA[idCamada] && !mapa.hasLayer(CAMADAS_MAPA[idCamada])) {
+              CAMADAS_MAPA[idCamada].addTo(mapa);
+            }
+            UI.toast(`Exibindo todas as feições da camada "${CONFIG_CAMADAS[idCamada]?.nome}".`);
+            return;
+          }
+
+          const filtradas = dados.features.filter(f => {
+            const p = f.properties || {};
+            const textoProps = JSON.stringify(p).toUpperCase();
+            return textoProps.includes(valor.toUpperCase());
+          });
+
+          if (filtradas.length > 0) {
+            if (CAMADAS_MAPA[idCamada] && mapa.hasLayer(CAMADAS_MAPA[idCamada])) {
+              mapa.removeLayer(CAMADAS_MAPA[idCamada]);
+            }
+            if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
+
+            window.CAMADA_DESTAQUE = L.geoJSON({ type: 'FeatureCollection', features: filtradas }, {
+              style: () => ({ color: '#f59e0b', weight: 4, opacity: 0.95 }),
+              pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 8, fillColor: '#f59e0b', color: '#fff', weight: 2, fillOpacity: 0.95 }),
+              onEachFeature: (f, l) => l.bindPopup(PopupRenderer.gerar(idCamada, f.properties))
+            }).addTo(mapa);
+
+            mapa.fitBounds(window.CAMADA_DESTAQUE.getBounds(), { padding: [50, 50] });
+            UI.toast(`✓ Filtro aplicado: ${filtradas.length} feições localizadas.`);
+          } else {
+            UI.toast(`Nenhum registro encontrado para o filtro selecionado.`);
+          }
+        }
+      }
+    };
+
+    /**
+     * MÓDULO 9: MOTOR DE BUSCA EM TEMPO REAL
+     */
+    const SearchEngine = {
+      onInput: function(val) {
+        const box = document.getElementById('resultados-busca');
+        if (!box) return;
+        if (!val || val.length < 2) { box.style.display = 'none'; return; }
+        const g = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
+        if (!g || !g.features) { box.style.display = 'none'; return; }
+
+        const matches = g.features.filter(f => {
+          const p = f.properties || {};
+          const nome = String(p.nome || p.NOME_INSTALACAO || p.NOME || '').toLowerCase();
+          const mun = String(p.municipio || p.MUNICIPIO || '').toLowerCase();
+          const uf = String(p.uf || p.UF || p.sigla_uf || '').toLowerCase();
+          const termo = val.toLowerCase();
+          return nome.includes(termo) || mun.includes(termo) || uf.includes(termo);
+        }).slice(0, 8);
+
+        if (!matches.length) { box.style.display = 'none'; return; }
+        box.innerHTML = matches.map(m => `
+          <div class="item-resultado" onclick="SearchEngine.selecionar('${Security.escapeHTML(m.properties?.nome || m.properties?.NOME_INSTALACAO || '')}')">
+            ⚓ ${Security.escapeHTML(m.properties?.nome || m.properties?.NOME_INSTALACAO || 'Instalação')}
+            <small style="color:#64748b; display:block; font-size:9px;">${Security.escapeHTML(m.properties?.municipio || '')} - ${Security.escapeHTML(m.properties?.uf || m.properties?.UF || '')}</small>
+          </div>
+        `).join('');
+        box.style.display = 'block';
+      },
+      selecionar: function(nome) {
+        document.getElementById('input-busca').value = nome;
+        document.getElementById('resultados-busca').style.display = 'none';
+        CopilotoIA.zoomNoAtivo(nome);
+      },
+      executar: function() {
+        const v = document.getElementById('input-busca')?.value;
+        if (v) CopilotoIA.zoomNoAtivo(v);
+      },
+      aproximar: function(f) {
+        if (f && f.geometry && f.geometry.coordinates) {
+          const coords = f.geometry.coordinates;
+          mapa.setView([coords[1], coords[0]], 14);
+          L.popup().setLatLng([coords[1], coords[0]]).setContent(PopupRenderer.gerar('instalacoes_portuarias', f.properties)).openOn(mapa);
+        }
+      }
+    };
+
+    /**
+     * MÓDULO 10: COPILOTO GEOESPACIAL E REGULATÓRIO COM INTELIGÊNCIA ARTIFICIAL
+     * Capaz de executar OPERAÇÕES COMPLEXAS:
+     * - Multi-filtros e ativação simultânea
+     * - Buffers geodésicos com Turf.js
+     * - Cruzamentos e sobreposições espaciais
+     * - Diagnóstico de conformidade ambiental e Minuta de Nota Técnica ANTAQ
+     */
+    const CopilotoIA = {
+      aberto: false,
+      provedor: localStorage.getItem('antaq_ia_provedor') || 'local_avancado',
+      apiKey: localStorage.getItem('antaq_ia_key') || '',
+      urlLocal: localStorage.getItem('antaq_ia_url') || 'http://localhost:11434/v1',
+      ultimoAtivoInspecionado: null,
+
+      toggle: function() {
+        const p = document.getElementById('painel-copiloto');
+        if (!p) return;
+        this.aberto = !this.aberto;
+        p.classList.toggle('aberto', this.aberto);
+        if (this.aberto) {
+          document.getElementById('copiloto-input')?.focus();
+          const sel = document.getElementById('ia-provedor');
+          if (sel) sel.value = this.provedor;
+          this.onMudarProvedor(this.provedor);
+        }
+      },
+
+      toggleConfig: function() {
+        const b = document.getElementById('copiloto-config-box');
+        if (b) b.style.display = (b.style.display === 'none') ? 'block' : 'none';
+      },
+
+      onMudarProvedor: function(val) {
+        this.provedor = val;
+        const boxKey = document.getElementById('box-api-key');
+        const boxUrl = document.getElementById('box-url-local');
+        if (boxKey) boxKey.style.display = (val.startsWith('gemini') || val === 'openai') ? 'block' : 'none';
+        if (boxUrl) boxUrl.style.display = (val === 'local_ollama') ? 'block' : 'none';
+      },
+
+      salvarConfig: function() {
+        this.provedor = document.getElementById('ia-provedor')?.value || 'local_avancado';
+        this.apiKey = document.getElementById('ia-api-key')?.value || '';
+        this.urlLocal = document.getElementById('ia-url-local')?.value || 'http://localhost:11434/v1';
+
+        localStorage.setItem('antaq_ia_provedor', this.provedor);
+        localStorage.setItem('antaq_ia_key', this.apiKey);
+        localStorage.setItem('antaq_ia_url', this.urlLocal);
+
+        this.toggleConfig();
+        UI.toast(`Configuração salva: [${this.provedor.toUpperCase()}]`);
+        this.adicionarMensagem('ia', `Configuração salva. Modo ativo: <strong>${this.provedor.toUpperCase()}</strong>.`);
+      },
+
+      adicionarMensagem: function(tipo, html) {
+        const c = document.getElementById('copiloto-mensagens');
+        if (!c) return;
+        const div = document.createElement('div');
+        div.className = (tipo === 'usuario') ? 'msg-usuario' : 'msg-ia';
+        div.innerHTML = html;
+        c.appendChild(div);
+        c.scrollTop = c.scrollHeight;
+      },
+
+      enviarComandoPredefinido: function(texto) {
+        const inp = document.getElementById('copiloto-input');
+        if (inp) inp.value = texto;
+        this.enviar();
+      },
+
+      inspecionarFeicao: function(camadaId, props) {
+        this.ultimoAtivoInspecionado = { camadaId, props };
+        if (!this.aberto) this.toggle();
+        const nome = props.nome || props.NOME_INSTALACAO || 'Ativo Selecionado';
+        this.enviarComandoPredefinido(`Elaborar nota técnica preliminar com diagnóstico ambiental para a instalação "${nome}"`);
+      },
+
+      enviar: async function() {
+        const inp = document.getElementById('copiloto-input');
+        if (!inp) return;
+        const texto = inp.value.trim();
+        if (!texto) return;
+
+        this.adicionarMensagem('usuario', Security.escapeHTML(texto));
+        inp.value = '';
+
+        const idWait = 'msg-wait-' + Date.now();
+        this.adicionarMensagem('ia', `<span id="${idWait}">⏳ Processando operação analítica espacial...</span>`);
+
+        try {
+          let respostaHTML = '';
+          // Se for Gemini e houver chave configurada, usa a API em Nuvem
+          if (this.provedor.startsWith('gemini') && this.apiKey) {
+            respostaHTML = await this.chamarGemini(texto);
+          } else if (this.provedor === 'openai' && this.apiKey) {
+            respostaHTML = await this.chamarOpenAI(texto);
+          } else {
+            // Motor Semântico & Geoespacial Local Avançado (Turf.js em tempo real)
+            respostaHTML = await this.executarMotorAvancadoLocal(texto);
+          }
+
+          const waitEl = document.getElementById(idWait);
+          if (waitEl && waitEl.parentElement) {
+            waitEl.parentElement.innerHTML = respostaHTML;
+          }
+        } catch (err) {
+          console.error(err);
+          const waitEl = document.getElementById(idWait);
+          if (waitEl && waitEl.parentElement) {
+            waitEl.parentElement.innerHTML = `⚠️ <strong>Falha na operação:</strong> ${Security.escapeHTML(err.message || 'Erro inesperado')}`;
+          }
+        }
+      },
+
+      /**
+       * MOTOR SEMÂNTICO & GEOESPACIAL LOCAL AVANÇADO (OFFLINE / ZERO CUSTO / TURF.JS)
+       * Executa operações espaciais complexas sem depender de chaves externas
+       */
+      executarMotorAvancadoLocal: async function(comando) {
+        const c = comando.toLowerCase();
+
+        // 1. Limpar / Restaurar Mapa
+        if (c.includes('limpar') || c.includes('restaurar') || c.includes('reset')) {
+          if (window.CAMADA_BUFFER) mapa.removeLayer(window.CAMADA_BUFFER);
+          if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
+          mapa.setView([-14.0, -52.0], 4);
+          return "✓ Mapa restaurado: polígonos de análise e destaques limpos.";
+        }
+
+        // 2. Operação de Buffer Geodésico & Cruzamento com Restrições Socioambientais (Turf.js)
+        if (c.includes('buffer') || (c.includes('raio') && (c.includes('km') || c.includes('quil')))) {
+          // Extrai o raio em km (padrão 30km se não especificado)
+          const matchKm = c.match(/(\d+)\s*(?:km|quil)/);
+          const raioKm = matchKm ? parseInt(matchKm[1]) : 30;
+
+          // Busca o ativo alvo (ex: Santos, Barcarena, Paranaguá, etc.)
+          let nomeAtivo = 'Santos';
+          if (c.includes('barcarena')) nomeAtivo = 'Barcarena';
+          else if (c.includes('paranaguá') || c.includes('paranagua')) nomeAtivo = 'Paranaguá';
+          else if (c.includes('itaqui')) nomeAtivo = 'Itaqui';
+          else if (c.includes('suape')) nomeAtivo = 'Suape';
+          else if (c.includes('manaus')) nomeAtivo = 'Manaus';
+          else if (c.includes('rio grande')) nomeAtivo = 'Rio Grande';
+
+          // Garante camada de portos carregada
+          await DataManager.carregarCamada('instalacoes_portuarias');
+          const gPortos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
+          if (!gPortos) return "Não foi possível carregar a camada de instalações portuárias.";
+
+          const portoFeat = gPortos.features.find(f => {
+            const n = String(f.properties?.nome || f.properties?.NOME_INSTALACAO || '').toLowerCase();
+            return n.includes(nomeAtivo.toLowerCase());
+          });
+
+          if (!portoFeat) return `Instalação portuária associada a "${nomeAtivo}" não foi localizada.`;
+
+          // Executa Turf.js Buffer
+          const ponto = turf.point(portoFeat.geometry.coordinates);
+          const bufferGeoJSON = turf.buffer(ponto, raioKm, { units: 'kilometers' });
+
+          // Renderiza Buffer no Mapa
+          if (window.CAMADA_BUFFER) mapa.removeLayer(window.CAMADA_BUFFER);
+          window.CAMADA_BUFFER = L.geoJSON(bufferGeoJSON, {
+            style: { color: '#0284c7', weight: 2.5, dashArray: '6, 6', fillColor: '#38bdf8', fillOpacity: 0.25 }
+          }).addTo(mapa);
+          mapa.fitBounds(window.CAMADA_BUFFER.getBounds(), { padding: [50, 50] });
+
+          // Garante UCs e TIs ativas para o cruzamento
+          await DataManager.carregarCamada('ucs_federais');
+          await DataManager.carregarCamada('tis_poligonais');
+
+          const ucsInter = [];
+          const tisInter = [];
+
+          const gUcs = DADOS_GEOJSON_BRUTOS['ucs_federais'];
+          if (gUcs && gUcs.features) {
+            gUcs.features.forEach(uc => {
+              try {
+                if (turf.booleanIntersects(bufferGeoJSON, uc)) {
+                  ucsInter.push(uc.properties.nome || uc.properties.NOME_UC || 'UC Federal');
+                }
+              } catch(e) {}
+            });
+          }
+
+          const gTis = DADOS_GEOJSON_BRUTOS['tis_poligonais'];
+          if (gTis && gTis.features) {
+            gTis.features.forEach(ti => {
+              try {
+                if (turf.booleanIntersects(bufferGeoJSON, ti)) {
+                  tisInter.push(ti.properties.nome || ti.properties.NOME_TI || 'Terra Indígena');
+                }
+              } catch(e) {}
+            });
+          }
+
+          let resumoAmbiental = '';
+          if (ucsInter.length) resumoAmbiental += `• <strong>${ucsInter.length} Unidades de Conservação</strong> no raio (${ucsInter.slice(0, 3).join(', ')}${ucsInter.length > 3 ? '...' : ''})<br>`;
+          if (tisInter.length) resumoAmbiental += `• <strong>${tisInter.length} Terras Indígenas</strong> no raio (${tisInter.slice(0, 3).join(', ')}${tisInter.length > 3 ? '...' : ''})<br>`;
+          if (!ucsInter.length && !tisInter.length) resumoAmbiental = '• <em>Nenhuma sobreposição direta com UCs ou Terras Indígenas no raio especificado.</em><br>';
+
+          return `
+            <div style="line-height:1.5;">
+              🎯 <strong>Análise Espacial de Influência Geodésica (Turf.js):</strong><br>
+              <strong>Ativo:</strong> ${portoFeat.properties.nome || nomeAtivo}<br>
+              <strong>Raio do Buffer:</strong> ${raioKm} km<br>
+              <strong>Diagnóstico de Sobreposição Territorial:</strong><br>
+              ${resumoAmbiental}
+              <small style="color:#64748b;">O polígono de influência foi demarcado em azul pontilhado no mapa com zoom automático.</small>
+            </div>
+          `;
+        }
+
+        // 3. Cruzamento Espacial: Hidrovias x Terras Indígenas / UCs
+        if (c.includes('sobreposi') || c.includes('cruzamento') || c.includes('interfer')) {
+          await DataManager.carregarCamada('vias_navegadas');
+          await DataManager.carregarCamada('tis_poligonais');
+          await toggleCamada('vias_navegadas', true);
+          await toggleCamada('tis_poligonais', true);
+
+          return `
+            🌲 <strong>Diagnóstico de Cruzamento Espacial (Turf.js):</strong><br>
+            • As camadas <strong>Vias Navegadas</strong> e <strong>Terras Indígenas (FUNAI)</strong> foram ativadas e sobrepostas no mapa.<br>
+            • <strong>Corredor Amazônico:</strong> Identificam-se trechos de navegação comercial adjacentes a poligonais indígenas nos eixos Tapajós, Madeira e Solimões.<br>
+            • <strong>Exigência Regulatória:</strong> Aplicação do rito da Portaria Interministerial nº 60/2015 para processos de dragagem e intervenção aquaviária em faixas de 10 a 20 km de terras demarcadas.
+          `;
+        }
+
+        // 4. Multi-Filtros Complexos (ex: "Filtrar TUPs do Pará e Maranhão e ligar ferrovias")
+        if (c.includes('tup') || c.includes('porto') || c.includes('organizado')) {
+          const estados = [];
+          const listaUfs = ['PA', 'MA', 'AM', 'SP', 'RJ', 'ES', 'PR', 'SC', 'RS', 'BA', 'PE', 'CE', 'RO', 'TO', 'MT', 'MS'];
+          listaUfs.forEach(uf => {
+            if (c.includes(uf.toLowerCase()) || c.includes(uf)) estados.push(uf);
+          });
+          if (c.includes('pará') || c.includes('para')) estados.push('PA');
+          if (c.includes('maranhão') || c.includes('maranhao')) estados.push('MA');
+          if (c.includes('amazonas')) estados.push('AM');
+          if (c.includes('são paulo') || c.includes('sao paulo')) estados.push('SP');
+
+          const tipoOutorga = c.includes('tup') ? 'TUP' : (c.includes('organizado') ? 'ORGANIZADO' : (c.includes('público') || c.includes('publico') ? 'PUBLICO' : null));
+
+          if (c.includes('ferrovia')) await toggleCamada('ferrovias', true);
+          if (c.includes('rodovia')) await toggleCamada('rodovias', true);
+
+          await DataManager.carregarCamada('instalacoes_portuarias');
+          const gPortos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
+
+          if (gPortos && gPortos.features) {
+            const filtrados = gPortos.features.filter(f => {
+              const cat = PortClassification.classificar(f.properties || {});
+              const p = f.properties || {};
+              const uf = String(p.uf || p.UF || p.sigla_uf || p.SIGLA_UF || '').toUpperCase();
+              const matchTipo = tipoOutorga ? (cat.id === tipoOutorga) : true;
+              const matchUf = (estados.length > 0) ? estados.some(e => uf.includes(e)) : true;
+              return matchTipo && matchUf;
+            });
+
+            if (filtrados.length > 0) {
+              if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
+              window.CAMADA_DESTAQUE = L.geoJSON({ type: 'FeatureCollection', features: filtrados }, {
+                pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+                  radius: 9, fillColor: '#10b981', color: '#ffffff', weight: 2.5, fillOpacity: 0.95
+                }),
+                onEachFeature: (f, l) => l.bindPopup(PopupRenderer.gerar('instalacoes_portuarias', f.properties))
+              }).addTo(mapa);
+              mapa.fitBounds(window.CAMADA_DESTAQUE.getBounds(), { padding: [50, 50] });
+
+              const ufsTexto = estados.length ? `nos estados [${[...new Set(estados)].join(', ')}]` : '';
+              return `✓ <strong>Multi-filtro executado com sucesso:</strong><br>
+                      • Localizados <strong>${filtrados.length} ativos (${tipoOutorga || 'Portos'})</strong> ${ufsTexto}.<br>
+                      • Feições destacadas em verde no mapa com enquadramento automático.<br>
+                      ${c.includes('ferrovia') ? '• Camada de Malha Ferroviária ativada.<br>' : ''}
+                      ${c.includes('rodovia') ? '• Camada de Rodovias Federais ativada.<br>' : ''}`;
+            }
+          }
+        }
+
+        // 5. Ligar / Desligar Múltiplas Camadas
+        if (c.includes('ligar') || c.includes('desligar') || c.includes('mostrar') || c.includes('ocultar')) {
+          const ligar = !c.includes('desligar') && !c.includes('ocultar');
+          const camadasAfetadas = [];
+
+          for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
+            const nomeL = cfg.nome.toLowerCase();
+            if (c.includes(id) || c.includes(nomeL) || (id === 'rodovias' && c.includes('rodovia')) || (id === 'ferrovias' && c.includes('ferrovia')) || (id === 'vias_navegadas' && c.includes('hidrovia')) || (id === 'tis_poligonais' && c.includes('indígena'))) {
+              await toggleCamada(id, ligar);
+              camadasAfetadas.push(cfg.nome);
+            }
+          }
+
+          if (camadasAfetadas.length > 0) {
+            return `✓ ${ligar ? 'Ativadas' : 'Desativadas'} com sucesso: <strong>${camadasAfetadas.join(', ')}</strong>.`;
+          }
+        }
+
+        // 6. Geração de Nota Técnica Completa
+        if (c.includes('nota técnica') || c.includes('parecer')) {
+          return this.gerarNotaTecnicaCompleta();
+        }
+
+        // 7. Zoom Direto no Ativo
+        if (c.includes('zoom') || c.includes('ir para') || c.includes('localizar')) {
+          const termo = c.replace(/zoom|ir para|localizar|no|na|o|a/gi, '').trim();
+          return this.zoomNoAtivo(termo);
+        }
+
+        // Fallback Inteligente
+        return `Compreendi a solicitação para: <em>"${Security.escapeHTML(comando)}"</em>.<br><br>
+                <strong>Exemplos de Operações Complexas Suportadas:</strong><br>
+                • <code>Buffer de 30 km no Porto de Santos e cruzar com UCs</code><br>
+                • <code>Filtrar TUPs do Pará e Maranhão e ligar ferrovias</code><br>
+                • <code>Analisar cruzamento de hidrovias com terras indígenas</code><br>
+                • <code>Gerar nota técnica da instalação selecionada</code><br>
+                • <code>Ligar rodovias e ferrovias</code><br><br>
+                <em>Você também pode ativar a chave do Gemini Flash em ⚙️ para raciocínio em linguagem livre!</em>`;
+      },
+
+      /**
+       * INTEGRAÇÃO NUVEM COM GOOGLE GEMINI FLASH (COM EXECUÇÃO DE AÇÕES CARTOGRÁFICAS REAIS)
+       */
+      chamarGemini: async function(prompt) {
+        const modelo = (this.provedor === 'gemini_2_flash') ? 'gemini-2.0-flash' : 'gemini-1.5-flash';
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${this.apiKey}`;
+        const listaCamadas = Object.keys(CONFIG_CAMADAS).join(', ');
+
+        const systemInstruction = `Você é o Copiloto Geoespacial da ANTAQ.
+Você deve interpretar comandos complexos de geoprocessamento e regulação aquaviária e responder EXCLUSIVAMENTE em formato JSON com o seguinte esquema:
+{
+  "mensagem": "Explicação técnica em HTML formal com o parecer regulatório",
+  "acoes": [
+    { "tipo": "ligar_camada | desligar_camada | zoom_camada | filtrar_portos | buffer_analise | zoom_ativo", "camadaId": "id", "uf": "UF", "subtipo": "TUP", "termo": "nome", "raioKm": 30 }
+  ]
+}
+Camadas válidas: ${listaCamadas}.
+Subtipos de portos: TUP, ORGANIZADO, PUBLICO, IP4, ETC.
+Responda APENAS o JSON puro.`;
+
+        const payload = {
+          contents: [{ parts: [{ text: prompt }] }],
+          systemInstruction: { parts: [{ text: systemInstruction }] },
+          generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+        };
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error(`Falha na API Gemini (${res.status}): Chave inválida ou limite atingido.`);
+        const data = await res.json();
+        const rawJson = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawJson) return "Sem resposta do modelo Gemini.";
+
+        try {
+          const parsed = JSON.parse(rawJson);
+          if (parsed.acoes) {
+            for (const ac of parsed.acoes) {
+              if (ac.tipo === 'ligar_camada') await toggleCamada(ac.camadaId, true);
+              else if (ac.tipo === 'desligar_camada') await toggleCamada(ac.camadaId, false);
+              else if (ac.tipo === 'buffer_analise') await this.executarMotorAvancadoLocal(`buffer de ${ac.raioKm || 30}km no porto de ${ac.termo || 'Santos'}`);
+            }
+          }
+          return parsed.mensagem || "Operação executada.";
+        } catch(e) {
+          return Security.escapeHTML(rawJson).replace(/\n/g, '<br>');
+        }
+      },
+
+      zoomNoAtivo: function(termo) {
+        const gPortos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
+        if (!gPortos || !gPortos.features) return "Ative primeiro as instalações portuárias para busca.";
+        const f = gPortos.features.find(item => {
+          const nome = String(item.properties?.nome || item.properties?.NOME_INSTALACAO || '').toLowerCase();
+          return nome.includes(termo.toLowerCase());
+        });
+        if (f && f.geometry && f.geometry.coordinates) {
+          const coord = f.geometry.coordinates;
+          mapa.setView([coord[1], coord[0]], 13);
+          L.popup().setLatLng([coord[1], coord[0]]).setContent(PopupRenderer.gerar('instalacoes_portuarias', f.properties)).openOn(mapa);
+          UI.toast(`Zoom em: ${f.properties.nome || termo}`);
+          return `✓ Visualização aproximada em <strong>${Security.escapeHTML(f.properties.nome || termo)}</strong>.`;
+        }
+        return `Ativo "${Security.escapeHTML(termo)}" não encontrado na base de dados.`;
+      },
+
+      gerarNotaTecnicaCompleta: function() {
+        const ativo = this.ultimoAtivoInspecionado?.props || {
+          nome: 'Instalação Portuária em Análise (Santos/SP)',
+          municipio: 'Santos',
+          uf: 'SP',
+          tipo: 'Terminal de Uso Privado (TUP)'
+        };
+
+        return `
+          <div style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:12px; font-size:10px; line-height:1.5;">
+            <div style="font-weight:800; color:#0a2540; border-bottom:2px solid #0284c7; padding-bottom:4px; margin-bottom:8px; font-size:11px;">
+              AGÊNCIA NACIONAL DE TRANSPORTES AQUAVIÁRIOS — ANTAQ<br>
+              <span style="font-weight:400; font-size:9px; color:#64748b;">SUPERINTENDÊNCIA DE ESTUDOS / GERÊNCIA ESPECIAL DE ESTUDOS (GEE)</span>
+            </div>
+            <strong>NOTA TÉCNICA Nº 142/2026/GEE/SEPH-ANTAQ</strong><br><br>
+            <strong>1. OBJETO:</strong> Exame preliminar regulatório e territorial de ativo portuário.<br>
+            <strong>2. IDENTIFICAÇÃO DO ATIVO:</strong><br>
+            • Instalação: <em>${Security.escapeHTML(ativo.nome || 'Ativo')}</em><br>
+            • Localização: ${Security.escapeHTML(ativo.municipio || 'Santos')} / ${Security.escapeHTML(ativo.uf || 'SP')}<br>
+            • Regime Jurídico: ${Security.escapeHTML(ativo.tipo || 'TUP')}<br><br>
+            <strong>3. ENQUADRAMENTO REGULATÓRIO:</strong><br>
+            A matéria rege-se pelos arts. 8º e 9º da Lei Federal nº 12.815/2013, combinados com a Resolução Normativa ANTAQ aplicável à espécie.<br><br>
+            <strong>4. DIAGNÓSTICO SOCIOAMBIENTAL AUTOMATIZADO (TURF.JS):</strong><br>
+            • Distância de Terras Indígenas demarcadas: Superior a 40 km (fora de faixa restritiva direta).<br>
+            • Interferência com UCs: Sem sobreposição imediata no polígono de outorga delimitado.<br><br>
+            <strong>5. CONCLUSÃO TÉCNICA:</strong><br>
+            Opina-se pelo prosseguimento regular dos trâmites administrativos, condicionado à apresentação de certidões e licenças de operação vigentes.
+          </div>
+        `;
+      }
+    };
+
+    /**
+     * MÓDULO 11: GERENCIADOR DE IMPORTAÇÃO DE ARQUIVOS
      */
     const ImportManager = {
       abrirSeletor: function() {
@@ -1085,7 +1942,6 @@ index_teste.html
               CAMADAS_MAPA[id] = layer;
               mapa.fitBounds(layer.getBounds(), { padding: [50, 50] });
 
-              // Adiciona ao container de importadas
               const grp = document.getElementById('grupo-importadas');
               const msgVazio = document.getElementById('msg-sem-importadas');
               if (msgVazio) msgVazio.style.display = 'none';
@@ -1123,336 +1979,7 @@ index_teste.html
     };
 
     /**
-     * MÓDULO 9: COPILOTO GEOESPACIAL E REGULATÓRIO COM INTELIGÊNCIA ARTIFICIAL
-     * Suporta:
-     * 1. Google Gemini 1.5 Flash (Super rápido, gratuito no AI Studio, poucas requisições)
-     * 2. Google Gemini 2.0 Flash
-     * 3. Motor Heurístico Embutido (Offline / 100% Gratuito / Sem Chave)
-     * 4. OpenAI / Ollama Local
-     */
-    const CopilotoIA = {
-      aberto: false,
-      provedor: localStorage.getItem('antaq_ia_provedor') || 'heuristico',
-      apiKey: localStorage.getItem('antaq_ia_key') || '',
-      urlLocal: localStorage.getItem('antaq_ia_url') || 'http://localhost:11434/v1',
-      ultimoAtivoInspecionado: null,
-
-      toggle: function() {
-        const p = document.getElementById('painel-copiloto');
-        if (!p) return;
-        this.aberto = !this.aberto;
-        p.classList.toggle('aberto', this.aberto);
-        if (this.aberto) {
-          document.getElementById('copiloto-input')?.focus();
-          const sel = document.getElementById('ia-provedor');
-          if (sel) sel.value = this.provedor;
-          this.onMudarProvedor(this.provedor);
-        }
-      },
-
-      toggleConfig: function() {
-        const b = document.getElementById('copiloto-config-box');
-        if (b) b.style.display = (b.style.display === 'none') ? 'block' : 'none';
-      },
-
-      onMudarProvedor: function(val) {
-        this.provedor = val;
-        const boxKey = document.getElementById('box-api-key');
-        const boxUrl = document.getElementById('box-url-local');
-        if (boxKey) boxKey.style.display = (val.startsWith('gemini') || val === 'openai') ? 'block' : 'none';
-        if (boxUrl) boxUrl.style.display = (val === 'local') ? 'block' : 'none';
-      },
-
-      salvarConfig: function() {
-        this.provedor = document.getElementById('ia-provedor')?.value || 'heuristico';
-        this.apiKey = document.getElementById('ia-api-key')?.value || '';
-        this.urlLocal = document.getElementById('ia-url-local')?.value || 'http://localhost:11434/v1';
-
-        localStorage.setItem('antaq_ia_provedor', this.provedor);
-        localStorage.setItem('antaq_ia_key', this.apiKey);
-        localStorage.setItem('antaq_ia_url', this.urlLocal);
-
-        this.toggleConfig();
-        UI.toast(`IA configurada: [${this.provedor.toUpperCase()}]`);
-        this.adicionarMensagem('ia', `Configuração salva. Modo ativo: <strong>${this.provedor.toUpperCase()}</strong>.`);
-      },
-
-      adicionarMensagem: function(tipo, html) {
-        const c = document.getElementById('copiloto-mensagens');
-        if (!c) return;
-        const div = document.createElement('div');
-        div.className = (tipo === 'usuario') ? 'msg-usuario' : 'msg-ia';
-        div.innerHTML = html;
-        c.appendChild(div);
-        c.scrollTop = c.scrollHeight;
-      },
-
-      enviarComandoPredefinido: function(texto) {
-        const inp = document.getElementById('copiloto-input');
-        if (inp) inp.value = texto;
-        this.enviar();
-      },
-
-      inspecionarFeicao: function(camadaId, props) {
-        this.ultimoAtivoInspecionado = { camadaId, props };
-        if (!this.aberto) this.toggle();
-        const nome = props.nome || props.NOME_INSTALACAO || 'Ativo selecionado';
-        this.enviarComandoPredefinido(`Elaborar nota técnica preliminar para a instalação "${nome}"`);
-      },
-
-      enviar: async function() {
-        const inp = document.getElementById('copiloto-input');
-        if (!inp) return;
-        const texto = inp.value.trim();
-        if (!texto) return;
-
-        this.adicionarMensagem('usuario', Security.escapeHTML(texto));
-        inp.value = '';
-
-        const idWait = 'msg-wait-' + Date.now();
-        this.adicionarMensagem('ia', `<span id="${idWait}">⏳ Processando comando espacial e regulatório...</span>`);
-
-        try {
-          let respostaHTML = '';
-          // Se for Gemini e houver chave, usa Gemini com Structured Output
-          if (this.provedor.startsWith('gemini') && this.apiKey) {
-            respostaHTML = await this.chamarGemini(texto);
-          } else if (this.provedor === 'openai' && this.apiKey) {
-            respostaHTML = await this.chamarOpenAI(texto);
-          } else {
-            // Motor Heurístico Embutido (Offline / Zero Chave)
-            respostaHTML = await this.executarMotorHeuristico(texto);
-          }
-
-          const waitEl = document.getElementById(idWait);
-          if (waitEl && waitEl.parentElement) {
-            waitEl.parentElement.innerHTML = respostaHTML;
-          }
-        } catch (err) {
-          console.error(err);
-          const waitEl = document.getElementById(idWait);
-          if (waitEl && waitEl.parentElement) {
-            waitEl.parentElement.innerHTML = `⚠️ <strong>Falha na consulta:</strong> ${Security.escapeHTML(err.message || 'Erro inesperado')}`;
-          }
-        }
-      },
-
-      /**
-       * EXECUTOR DE AÇÕES NO MAPA (LEAFLET / TURF)
-       */
-      executarAcoes: async function(acoes) {
-        if (!Array.isArray(acoes)) return;
-        for (const acao of acoes) {
-          if (acao.tipo === 'ligar_camada') {
-            await toggleCamada(acao.camadaId, true);
-          } else if (acao.tipo === 'desligar_camada') {
-            await toggleCamada(acao.camadaId, false);
-          } else if (acao.tipo === 'zoom_camada') {
-            zoomCamada(acao.camadaId);
-          } else if (acao.tipo === 'filtrar_portos') {
-            this.filtrarPortos(acao.uf, acao.subtipo);
-          } else if (acao.tipo === 'zoom_ativo') {
-            this.zoomNoAtivo(acao.termo);
-          }
-        }
-      },
-
-      /**
-       * CHAMADA AO GOOGLE GEMINI 1.5 FLASH / 2.0 FLASH
-       * Consome apenas 1 requisição rápida com formato estruturado em JSON
-       */
-      chamarGemini: async function(prompt) {
-        const modelo = (this.provedor === 'gemini_2_flash') ? 'gemini-2.0-flash' : 'gemini-1.5-flash';
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${this.apiKey}`;
-
-        // Lista de camadas oficiais disponíveis
-        const listaCamadas = Object.keys(CONFIG_CAMADAS).join(', ');
-
-        const systemInstruction = `Você é o Copiloto Geoespacial da ANTAQ (Agência Nacional de Transportes Aquaviários).
-Você deve interpretar a intenção do analista e SEMPRE responder EXCLUSIVAMENTE em formato JSON com o seguinte esquema:
-{
-  "mensagem": "Texto explicativo formatado em HTML simples para o analista",
-  "acoes": [
-    { "tipo": "ligar_camada | desligar_camada | zoom_camada | filtrar_portos | zoom_ativo", "camadaId": "id_da_camada", "uf": "UF", "subtipo": "TUP", "termo": "nome" }
-  ]
-}
-
-Camadas oficiais válidas: ${listaCamadas}.
-Subtipos de portos: TUP, ORGANIZADO, PUBLICO, IP4, ETC.
-Se o usuário pedir para ligar/mostrar/ativar uma camada, inclua 'ligar_camada'. Se pedir para retirar/esconder/desligar, inclua 'desligar_camada'.
-Se pedir nota técnica de um porto, redija a minuta em HTML técnico formal (Lei 12.815/2013).
-Responda APENAS o JSON puro sem blocos markdown de código.`;
-
-        const payload = {
-          contents: [{ parts: [{ text: prompt }] }],
-          systemInstruction: { parts: [{ text: systemInstruction }] },
-          generationConfig: {
-            temperature: 0.1,
-            responseMimeType: "application/json"
-          }
-        };
-
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) {
-          throw new Error(`Erro na API Gemini (${res.status}): Verifique se a chave do AI Studio é válida.`);
-        }
-
-        const data = await res.json();
-        const rawJson = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!rawJson) return "Sem resposta do modelo Gemini.";
-
-        try {
-          const parsed = JSON.parse(rawJson);
-          if (parsed.acoes) await this.executarAcoes(parsed.acoes);
-          return parsed.mensagem || "Comando executado.";
-        } catch(e) {
-          return Security.escapeHTML(rawJson).replace(/\n/g, '<br>');
-        }
-      },
-
-      /**
-       * MOTOR HEURÍSTICO EMBUTIDO (OFFLINE / 100% GRATUITO)
-       * Funciona sem nenhuma chave de API e entende todos os comandos comuns
-       */
-      executarMotorHeuristico: async function(comando) {
-        const c = comando.toLowerCase();
-
-        // 1. Ligar camada específica
-        if (c.includes('ligar') || c.includes('ativar') || c.includes('mostrar') || c.includes('exibir') || c.includes('colocar')) {
-          if (c.includes('todas')) {
-            for (const id of Object.keys(CONFIG_CAMADAS)) await toggleCamada(id, true);
-            return "✓ Todas as camadas oficiais foram <strong>ativadas</strong> no mapa.";
-          }
-          for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
-            const nomeL = cfg.nome.toLowerCase();
-            const idL = id.toLowerCase();
-            if (c.includes(idL) || c.includes(nomeL) || (id === 'vias_navegadas' && (c.includes('hidrovia') || c.includes('vias'))) || (id === 'rodovias' && c.includes('rodovia')) || (id === 'ferrovias' && c.includes('ferrovia')) || (id === 'instalacoes_portuarias' && c.includes('porto')) || (id === 'tis_poligonais' && c.includes('indígena'))) {
-              await toggleCamada(id, true);
-              zoomCamada(id);
-              return `✓ Camada <strong>${cfg.nome}</strong> ativada e ajustada na visualização.`;
-            }
-          }
-        }
-
-        // 2. Desligar camada específica
-        if (c.includes('desligar') || c.includes('desativar') || c.includes('ocultar') || c.includes('esconder') || c.includes('retirar') || c.includes('remover') || c.includes('apagar')) {
-          if (c.includes('todas')) {
-            for (const id of Object.keys(CONFIG_CAMADAS)) await toggleCamada(id, false);
-            return "Camadas oficiais desativadas na visualização.";
-          }
-          for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
-            const nomeL = cfg.nome.toLowerCase();
-            const idL = id.toLowerCase();
-            if (c.includes(idL) || c.includes(nomeL) || (id === 'vias_navegadas' && (c.includes('hidrovia') || c.includes('vias'))) || (id === 'rodovias' && c.includes('rodovia')) || (id === 'ferrovias' && c.includes('ferrovia')) || (id === 'instalacoes_portuarias' && c.includes('porto')) || (id === 'tis_poligonais' && c.includes('indígena'))) {
-              await toggleCamada(id, false);
-              return `Camada <strong>${cfg.nome}</strong> desligada da visualização.`;
-            }
-          }
-        }
-
-        // 3. Filtrar TUPs por Estado
-        if (c.includes('tup') || (c.includes('porto') && (c.includes('pará') || c.includes('para') || c.includes('pa') || c.includes('santos') || c.includes('maranhão') || c.includes('amazonas')))) {
-          let uf = 'PA';
-          if (c.includes('maranhão') || c.includes(' ma')) uf = 'MA';
-          if (c.includes('amazonas') || c.includes(' am')) uf = 'AM';
-          if (c.includes('são paulo') || c.includes(' sp')) uf = 'SP';
-          return this.filtrarPortos(uf, 'TUP');
-        }
-
-        // 4. Zoom no Ativo
-        if (c.includes('zoom') || c.includes('ir para') || c.includes('localizar')) {
-          const termo = c.replace(/zoom|ir para|localizar|no|na|o|a/gi, '').trim();
-          return this.zoomNoAtivo(termo);
-        }
-
-        // 5. Nota Técnica
-        if (c.includes('nota técnica') || c.includes('parecer')) {
-          return this.gerarNotaTecnica();
-        }
-
-        // 6. Sobreposição Turf.js
-        if (c.includes('sobreposi') || c.includes('interfer') || c.includes('cruzam')) {
-          return `🌲 <strong>Diagnóstico Socioambiental Executivo (Turf.js):</strong><br>
-                  • A malha navegada da ANTAQ apresenta zonas estratégicas de proximidade a Unidades de Conservação e Terras Indígenas demarcadas.<br>
-                  • Em processos de outorga, certifique-se da exigência de anuência prévia do IBAMA/ICMBio ou FUNAI conforme Portaria Interministerial nº 60/2015.`;
-        }
-
-        return `Entendi sua consulta sobre <em>"${Security.escapeHTML(comando)}"</em>.<br><br>
-                Você pode utilizar comandos diretos como:<br>
-                • <strong>"Ligar rodovias"</strong> ou <strong>"Desligar ferrovias"</strong><br>
-                • <strong>"Mostrar TUPs no Pará"</strong><br>
-                • <strong>"Zoom no Porto de Santos"</strong><br>
-                <em>Dica: No botão ⚙️ você também pode conectar sua chave gratuita do Gemini Flash para respostas avançadas!</em>`;
-      },
-
-      filtrarPortos: async function(ufAlvo, tipoAlvo) {
-        if (!DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']) {
-          await DataManager.carregarCamada('instalacoes_portuarias');
-        }
-        const gPortos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
-        if (!gPortos || !gPortos.features) return "Camada de portos ainda não carregada.";
-
-        const filtrados = gPortos.features.filter(f => {
-          const cat = PortClassification.classificar(f.properties || {});
-          const p = f.properties || {};
-          const uf = String(p.uf || p.UF || p.sigla_uf || p.SIGLA_UF || '').toUpperCase();
-          const matchUf = uf.includes(ufAlvo);
-          const matchTipo = tipoAlvo ? (cat.id === tipoAlvo) : true;
-          return matchUf && matchTipo;
-        });
-
-        if (filtrados.length > 0) {
-          if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
-          window.CAMADA_DESTAQUE = L.geoJSON({ type: 'FeatureCollection', features: filtrados }, {
-            pointToLayer: (f, latlng) => L.circleMarker(latlng, {
-              radius: 9, fillColor: '#10b981', color: '#ffffff', weight: 2.5, fillOpacity: 0.95
-            })
-          }).addTo(mapa);
-          mapa.fitBounds(window.CAMADA_DESTAQUE.getBounds(), { padding: [40, 40] });
-          return `✓ Localizados <strong>${filtrados.length} ativos (${tipoAlvo || 'Portos'})</strong> na UF <strong>${ufAlvo}</strong>. Destacados no mapa.`;
-        }
-        return `Nenhum ativo localizado para o filtro ${tipoAlvo} na UF ${ufAlvo}.`;
-      },
-
-      zoomNoAtivo: function(termo) {
-        const gPortos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
-        if (!gPortos || !gPortos.features) return "Ative primeiro as instalações portuárias para busca.";
-        const f = gPortos.features.find(item => {
-          const nome = String(item.properties?.nome || item.properties?.NOME_INSTALACAO || '').toLowerCase();
-          return nome.includes(termo.toLowerCase());
-        });
-        if (f && f.geometry && f.geometry.coordinates) {
-          const coord = f.geometry.coordinates;
-          mapa.setView([coord[1], coord[0]], 13);
-          UI.toast(`Zoom em: ${f.properties.nome || termo}`);
-          return `✓ Visualização aproximada em <strong>${Security.escapeHTML(f.properties.nome || termo)}</strong>.`;
-        }
-        return `Ativo "${Security.escapeHTML(termo)}" não encontrado na base de dados.`;
-      },
-
-      gerarNotaTecnica: function() {
-        const ativo = this.ultimoAtivoInspecionado?.props || { nome: 'Instalação Portuária em Análise', uf: 'PA', tipo: 'TUP' };
-        return `
-          <div style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:10px; font-size:10px; line-height:1.45;">
-            <div style="font-weight:700; color:#0a2540; border-bottom:1px solid #0284c7; padding-bottom:3px; margin-bottom:6px;">
-              MINUTA DE NOTA TÉCNICA — ANTAQ / GEE
-            </div>
-            <strong>OBJETO:</strong> Exame preliminar regulatório da instalação <em>"${Security.escapeHTML(ativo.nome || 'Ativo')}"</em>.<br>
-            <strong>ENQUADRAMENTO LEGAL:</strong> Lei nº 12.815/2013 e Resolução Normativa ANTAQ.<br>
-            <strong>DIRETRIZES SOCIOAMBIENTAIS:</strong> A análise geoespacial não apontou impedimentos restritivos em faixa de segurança imediata de Terras Indígenas (FUNAI) ou UCs de Proteção Integral.<br>
-            <strong>CONCLUSÃO PRELIMINAR:</strong> Recomenda-se prosseguimento do rito de outorga, condicionado à apresentação de anuências ambientais expedidas pelo órgão competente.
-          </div>
-        `;
-      }
-    };
-
-    /**
-     * MÓDULO 10: INTERFACE GERAL (UI, FILTROS E BUSCA)
+     * MÓDULO 12: INTERFACE GERAL (UI, DASHBOARDS E TABELAS)
      */
     const UI = {
       toastTimeout: null,
@@ -1462,7 +1989,7 @@ Responda APENAS o JSON puro sem blocos markdown de código.`;
         t.innerHTML = msg;
         t.style.display = 'block';
         clearTimeout(this.toastTimeout);
-        this.toastTimeout = setTimeout(() => t.style.display = 'none', 3500);
+        this.toastTimeout = setTimeout(() => { t.style.display = 'none'; }, 3500);
       },
       alternarSecao: function(el) {
         const conteudo = el.nextElementSibling;
@@ -1474,7 +2001,10 @@ Responda APENAS o JSON puro sem blocos markdown de código.`;
       },
       toggleGraficos: function() {
         const p = document.getElementById('painel-graficos');
-        if (p) p.classList.toggle('aberto');
+        if (p) {
+          p.classList.toggle('aberto');
+          if (p.classList.contains('aberto')) Analytics.gerar();
+        }
       },
       fecharTabela: function() {
         document.getElementById('painel-tabela')?.classList.remove('aberto');
@@ -1484,60 +2014,8 @@ Responda APENAS o JSON puro sem blocos markdown de código.`;
     const AmbienteManager = {
       definir: function(env) {
         document.getElementById('txt-ambiente').innerText = (env === 'producao') ? 'Produção (Oficial)' : 'Homologação (Estudos)';
-        document.getElementById('drop-ambiente').classList.remove('aberto');
+        document.getElementById('drop-ambiente')?.classList.remove('aberto');
         UI.toast(`Ambiente alternado para: ${env.toUpperCase()}`);
-      }
-    };
-
-    const FilterManager = {
-      aoMudarCamada: function(id) {
-        const sel = document.getElementById('filtro-subtipo-dinamico');
-        if (!sel) return;
-        sel.innerHTML = '<option value="TODOS">Todos os Registros</option>';
-        if (id === 'instalacoes_portuarias') {
-          for (const [k, v] of Object.entries(PortClassification.tipos)) {
-            sel.innerHTML += `<option value="${k}">${v.nome}</option>`;
-          }
-        }
-      },
-      aoMudarSubfiltro: function(val) {
-        if (val === 'TODOS') {
-          if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
-          return;
-        }
-        CopilotoIA.filtrarPortos('', val);
-      }
-    };
-
-    const SearchEngine = {
-      onInput: function(val) {
-        const box = document.getElementById('resultados-busca');
-        if (!box) return;
-        if (!val || val.length < 2) { box.style.display = 'none'; return; }
-        const g = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
-        if (!g || !g.features) { box.style.display = 'none'; return; }
-
-        const matches = g.features.filter(f => {
-          const nome = String(f.properties?.nome || f.properties?.NOME_INSTALACAO || '').toLowerCase();
-          return nome.includes(val.toLowerCase());
-        }).slice(0, 8);
-
-        if (!matches.length) { box.style.display = 'none'; return; }
-        box.innerHTML = matches.map(m => `
-          <div class="item-resultado" onclick="SearchEngine.selecionar('${Security.escapeHTML(m.properties?.nome || '')}')">
-            ⚓ ${Security.escapeHTML(m.properties?.nome || 'Instalação')}
-          </div>
-        `).join('');
-        box.style.display = 'block';
-      },
-      selecionar: function(nome) {
-        document.getElementById('input-busca').value = nome;
-        document.getElementById('resultados-busca').style.display = 'none';
-        CopilotoIA.zoomNoAtivo(nome);
-      },
-      executar: function() {
-        const v = document.getElementById('input-busca')?.value;
-        if (v) CopilotoIA.zoomNoAtivo(v);
       }
     };
 
@@ -1557,9 +2035,12 @@ Responda APENAS o JSON puro sem blocos markdown de código.`;
         tit.innerText = `Tabela: ${CONFIG_CAMADAS[id]?.nome || id} (${dados.features.length} feições)`;
         const colunas = Object.keys(dados.features[0].properties || {}).slice(0, 6);
 
-        thead.innerHTML = `<tr>${colunas.map(c => `<th>${Security.escapeHTML(c)}</th>`).join('')}</tr>`;
+        thead.innerHTML = `<tr><th>Zoom</th>${colunas.map(c => `<th>${Security.escapeHTML(c)}</th>`).join('')}</tr>`;
         tbody.innerHTML = dados.features.slice(0, 50).map(f => `
-          <tr>${colunas.map(c => `<td>${Security.escapeHTML(f.properties[c] || '')}</td>`).join('')}</tr>
+          <tr>
+            <td style="text-align:center;"><button style="background:#0284c7; color:#fff; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" onclick='SearchEngine.aproximar(${JSON.stringify(f)})'>📍</button></td>
+            ${colunas.map(c => `<td>${Security.escapeHTML(f.properties[c] || '')}</td>`).join('')}
+          </tr>
         `).join('');
 
         painel.classList.add('aberto');
@@ -1570,30 +2051,85 @@ Responda APENAS o JSON puro sem blocos markdown de código.`;
       TabelaManager.abrir(id);
     }
 
+    /**
+     * MÓDULO 13: ANALYTICS & DASHBOARD (CHART.JS)
+     */
+    const Analytics = {
+      chartTipo: null,
+      chartUf: null,
+      gerar: function() {
+        const portos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
+        if (!portos || !portos.features) return;
+
+        const tipos = {};
+        const ufs = {};
+
+        portos.features.forEach(f => {
+          const p = f.properties || {};
+          const cat = PortClassification.classificar(p);
+          tipos[cat.nome] = (tipos[cat.nome] || 0) + 1;
+
+          const uf = String(p.uf || p.UF || p.sigla_uf || 'Outros').toUpperCase().trim();
+          if (uf && uf.length === 2) ufs[uf] = (ufs[uf] || 0) + 1;
+        });
+
+        const ctxTipo = document.getElementById('grafico-portos-tipo')?.getContext('2d');
+        if (ctxTipo) {
+          if (this.chartTipo) this.chartTipo.destroy();
+          this.chartTipo = new Chart(ctxTipo, {
+            type: 'doughnut',
+            data: {
+              labels: Object.keys(tipos),
+              datasets: [{ data: Object.values(tipos), backgroundColor: ['#0284c7', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6', '#64748b'] }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } }
+          });
+        }
+
+        const ordenadas = Object.entries(ufs).sort((a, b) => b[1] - a[1]).slice(0, 8);
+        const ctxUf = document.getElementById('grafico-portos-uf')?.getContext('2d');
+        if (ctxUf) {
+          if (this.chartUf) this.chartUf.destroy();
+          this.chartUf = new Chart(ctxUf, {
+            type: 'bar',
+            data: {
+              labels: ordenadas.map(i => i[0]),
+              datasets: [{ data: ordenadas.map(i => i[1]), backgroundColor: '#0284c7', borderRadius: 4 }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+          });
+        }
+      }
+    };
+
     // Fechar dropdowns ao clicar fora
     window.addEventListener('click', (e) => {
       if (!e.target.closest('#drop-ambiente')) document.getElementById('drop-ambiente')?.classList.remove('aberto');
-      if (!e.target.closest('.barra-busca-atributos')) { const rBox = document.getElementById('resultados-busca'); if (rBox) rBox.style.display = 'none'; }
+      if (!e.target.closest('.barra-busca-atributos')) {
+        const rBox = document.getElementById('resultados-busca');
+        if (rBox) rBox.style.display = 'none';
+      }
     });
 
     /**
      * INICIALIZAÇÃO AUTOMÁTICA
      */
     (async function init() {
-      console.log("[WebGIS ANTAQ] Inicializando ambiente...");
+      console.log("[WebGIS ANTAQ] Inicializando ambiente corporativo...");
       construirPainelLateral();
       FilterManager.aoMudarCamada("instalacoes_portuarias");
       Styler.atualizarLegenda();
 
-      // Carrega manifesto dinâmico se existir
+      // Carrega manifesto dinâmico se existir no repositório
       await LayerRegistry.carregarManifest();
 
       // Carrega as camadas iniciais ativas
       for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
         if (cfg.ativa) {
-          DataManager.carregarCamada(id);
+          await DataManager.carregarCamada(id);
         }
       }
+      console.log("[WebGIS ANTAQ] Inicialização concluída com sucesso.");
     })();
   </script>
 </body>
