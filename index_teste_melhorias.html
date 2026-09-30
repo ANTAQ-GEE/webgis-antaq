@@ -1152,9 +1152,14 @@
 
           <input type="text" id="matriz-busca-texto" placeholder="Buscar por município ou trecho..." oninput="MatrizVENManager.aplicarFiltros()" style="min-width:220px; margin-left:auto;">
           
-          <button class="btn-acao-localizar" onclick="MatrizVENManager.exportarCSV()" title="Exportar tabela atual em CSV" style="background:#059669; border-color:#10b981; padding:6px 10px;">
-            📥 Exportar Matriz CSV
-          </button>
+          <div style="display:flex; gap:6px; margin-left:auto; align-items:center;">
+            <button class="btn-acao-localizar" onclick="MatrizVENManager.baixarPlanilhaExcel()" title="Baixar Planilha Oficial do VEN formatada para Excel (.csv/.xlsx)" style="background:#059669; border-color:#10b981; padding:6px 11px; display:inline-flex; align-items:center; gap:5px;">
+              📊 Baixar Planilha Excel
+            </button>
+            <button class="btn-acao-localizar" onclick="MatrizVENManager.exportarCSV()" title="Exportar trechos filtrados em CSV" style="background:#0284c7; border-color:#38bdf8; padding:6px 10px;">
+              📥 CSV
+            </button>
+          </div>
         </div>
 
         <!-- Tabela Dinâmica -->
@@ -2138,53 +2143,6 @@
         ativa: true, 
         camposVisiveis: [] 
       },
-      br_municipios_2025: { 
-        nome: "Municípios do Brasil (IBGE 2025)", 
-        grupo: "limites", 
-        arquivos: [
-          "dados/br_municipios_2025.geojson", 
-          "./dados/br_municipios_2025.geojson", 
-          "../dados/br_municipios_2025.geojson",
-          "dados/municipios_simplificados.geojson"
-        ], 
-        cor: "#64748b", 
-        opacidade: 0.35, 
-        peso: 0.8, 
-        tipoGeo: "poligono_linha", 
-        ativa: false, 
-        minZoom: 6, 
-        camposVisiveis: ["CD_MUN", "NM_MUN", "SIGLA_UF", "AREA_KM2"] 
-      },
-      bacias_nivel_2: { 
-        nome: "Bacias Hidrográficas - Nível 2 (Macro)", 
-        grupo: "limites", 
-        arquivos: ["dados/bacias_nivel_2.geojson", "./dados/bacias_nivel_2.geojson", "../dados/bacias_nivel_2.geojson"], 
-        cor: "#0284c7", opacidade: 0.40, peso: 1.4, tipoGeo: "poligono_linha", ativa: false, camposVisiveis: [] 
-      },
-      bacias_nivel_3: { 
-        nome: "Bacias Hidrográficas - Nível 3", 
-        grupo: "limites", 
-        arquivos: ["dados/bacias_nivel_3.geojson", "./dados/bacias_nivel_3.geojson", "../dados/bacias_nivel_3.geojson"], 
-        cor: "#0ea5e9", opacidade: 0.35, peso: 1.2, tipoGeo: "poligono_linha", ativa: false, camposVisiveis: [] 
-      },
-      bacias_nivel_4: { 
-        nome: "Bacias Hidrográficas - Nível 4", 
-        grupo: "limites", 
-        arquivos: ["dados/bacias_nivel_4.geojson", "./dados/bacias_nivel_4.geojson", "../dados/bacias_nivel_4.geojson"], 
-        cor: "#38bdf8", opacidade: 0.30, peso: 1.0, tipoGeo: "poligono_linha", ativa: false, camposVisiveis: [] 
-      },
-      bacias_nivel_5: { 
-        nome: "Bacias Hidrográficas - Nível 5", 
-        grupo: "limites", 
-        arquivos: ["dados/bacias_nivel_5.geojson", "./dados/bacias_nivel_5.geojson", "../dados/bacias_nivel_5.geojson"], 
-        cor: "#7dd3fc", opacidade: 0.25, peso: 0.8, tipoGeo: "poligono_linha", ativa: false, camposVisiveis: [] 
-      },
-      bacias_nivel_6: { 
-        nome: "Bacias Hidrográficas - Nível 6 (Micro)", 
-        grupo: "limites", 
-        arquivos: ["dados/bacias_nivel_6.geojson", "./dados/bacias_nivel_6.geojson", "../dados/bacias_nivel_6.geojson"], 
-        cor: "#bae6fd", opacidade: 0.20, peso: 0.6, tipoGeo: "poligono_linha", ativa: false, camposVisiveis: [] 
-      },
       rodovias: { 
         nome: "Rodovias Federais (SNV)", 
         grupo: "multimodal", 
@@ -2203,41 +2161,17 @@
         arquivos: ["dados/uf.geojson", "./dados/uf.geojson", "../dados/uf.geojson"], 
         cor: "#60a5fa", opacidade: 0.80, peso: 1.2, tipoGeo: "poligono_linha", ativa: true, camposVisiveis: [] 
       },
-      regioes: { 
-        nome: "Regiões do Brasil", 
-        grupo: "limites", 
-        arquivos: ["dados/regioes.geojson", "./dados/regioes.geojson", "../dados/regioes.geojson"], 
-        cor: "#818cf8", opacidade: 0.70, peso: 1.5, tipoGeo: "poligono_linha", ativa: false, camposVisiveis: [] 
-      },
-      pais: { 
-        nome: "Limite Nacional", 
-        grupo: "limites", 
-        arquivos: ["dados/pais.geojson", "./dados/pais.geojson", "../dados/pais.geojson"], 
-        cor: "#cbd5e1", opacidade: 0.50, peso: 2, tipoGeo: "poligono_linha", ativa: false, camposVisiveis: [] 
-      },
       tis_poligonais: { 
         nome: "Terras Indígenas (FUNAI)", 
         grupo: "restricoes", 
         arquivos: ["dados/tis_poligonais.geojson", "./dados/tis_poligonais.geojson", "../dados/tis_poligonais.geojson"], 
         cor: "#ef4444", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: [] 
       },
-      estados_amazonia_legal: { 
-        nome: "Estados da Amazônia Legal", 
-        grupo: "restricoes", 
-        arquivos: ["dados/estados_amazonia_legal.geojson", "./dados/estados_amazonia_legal.geojson", "../dados/estados_amazonia_legal.geojson"], 
-        cor: "#059669", opacidade: 0.10, peso: 2, tipoGeo: "poligono_tracejado", ativa: false, camposVisiveis: [] 
-      },
       ucs_federais: { 
         nome: "Unidades de Conservação Federais (ICMBio)", 
         grupo: "restricoes", 
         arquivos: ["dados/ucs_federais.geojson", "./dados/ucs_federais.geojson", "../dados/ucs_federais.geojson"], 
         cor: "#15803d", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: [] 
-      },
-      ucs_todas_mma: { 
-        nome: "Todas as UCs do Brasil (CNUC / MMA)", 
-        grupo: "restricoes", 
-        arquivos: ["dados/ucs_todas_mma.geojson", "./dados/ucs_todas_mma.geojson", "../dados/ucs_todas_mma.geojson"], 
-        cor: "#047857", opacidade: 0.30, peso: 1.2, tipoGeo: "poligono", ativa: false, camposVisiveis: [] 
       }
     };
 
@@ -4058,6 +3992,28 @@
         URL.revokeObjectURL(url);
         UI.toast(`💾 Camada exportada: ${nomeArquivo}`);
       },
+            baixarPlanilhaExcel: function() {
+        if (!this.dadosCompletos.length) {
+          UI.toast("⚠️ Nenhum dado carregado para a safra selecionada.");
+          return;
+        }
+        // Gera arquivo CSV delimitado por ponto-e-vírgula com BOM para abertura direta no Microsoft Excel
+        let csv = "﻿ID_HIDROVIA;NOME_HIDROVIA;RIO;MUNICIPIO_ORIGEM;UF_ORIGEM;MUNICIPIO_DESTINO;UF_DESTINO;EXTENSAO_KM;VELOCIDADE_KMH;TEMPO_ESTIMADO;TIPO_VIA;ECLUSA\n";
+        this.dadosCompletos.forEach(d => {
+          csv += `"${d.idhidrovia}";"${d.nome}";"${d.rio}";"${d.mun_orig}";"${d.est_orig}";"${d.mun_dest}";"${d.est_dest}";"${d.extensao}";"${d.velocidade}";"${d.tempo}";"${d.tipo}";"${d.eclusa}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ANTAQ_Planilha_Oficial_${this.anoAtual.toUpperCase()}_Caminhos_Minimos.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        UI.toast(`💾 Planilha Oficial do ${this.anoAtual.toUpperCase()} gerada com sucesso para o Excel!`);
+      },
+
       exportarCSV: function() {
         if (!TabelaManager.camadaAtualId || !TabelaManager.filtradas.length) {
           UI.toast("⚠️ Nenhum dado na tabela para exportar.");
