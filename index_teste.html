@@ -4401,6 +4401,10 @@
       _finalizar: function() {
         if (!this.modo) return;
 
+        // Limpa rastro de duplo-clique
+        this._ultimoClickTempo = 0;
+        this._ultimoClickScreen = null;
+
         if (this.modo === 'raio') {
           if (this.pontos.length < 1 || !this.circuloTemp) { this.desativar(); return; }
           const centro = this.pontos[0];
