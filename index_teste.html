@@ -611,9 +611,266 @@
       stroke-width: 2 !important;
       stroke-dasharray: 3,3;
     }
+
+    /* ============================================================
+       M1 — FERRAMENTA DE MEDIÇÃO
+       ============================================================ */
+    .toolbar-medicao {
+      position: absolute;
+      bottom: 90px;
+      right: 16px;
+      z-index: 1300;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+      padding: 6px;
+      transition: all 0.2s ease;
+    }
+    .toolbar-medicao.recolhida .toolbar-medicao-corpo { display: none; }
+    .toolbar-medicao-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #0a2540;
+      cursor: pointer;
+      user-select: none;
+    }
+    .toolbar-medicao-header .toggle-icon { font-size: 12px; color: #64748b; }
+    .toolbar-medicao-corpo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+    .btn-medicao {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      padding: 6px 8px;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-medicao:hover {
+      background: #e0f2fe;
+      border-color: #0284c7;
+      color: #0284c7;
+    }
+    .btn-medicao.ativo {
+      background: #0284c7;
+      border-color: #0369a1;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(2,132,199,0.35);
+    }
+    .btn-medicao.limpar { color: #dc2626; }
+    .btn-medicao.limpar:hover { background: #fee2e2; border-color: #ef4444; color: #b91c1c; }
+
+    /* Painel de resultados de medição */
+    .painel-medicao-resultados {
+      position: absolute;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1300;
+      background: rgba(10, 37, 64, 0.96);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      display: none;
+      border: 1px solid #38bdf8;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-width: 260px;
+      text-align: center;
+    }
+    .painel-medicao-resultados.aberto { display: block; }
+    .painel-medicao-resultados .valor {
+      display: block;
+      font-size: 18px;
+      color: #38bdf8;
+      margin: 4px 0;
+      font-family: monospace;
+    }
+    .painel-medicao-resultados .dica {
+      display: block;
+      font-size: 10px;
+      color: #94a3b8;
+      font-weight: 400;
+      margin-top: 4px;
+    }
+
+    /* Labels de medição no mapa */
+    .label-medicao {
+      background: rgba(10, 37, 64, 0.95) !important;
+      color: #ffffff !important;
+      border: 1px solid #38bdf8 !important;
+      border-radius: 4px !important;
+      font-size: 10.5px !important;
+      font-weight: 700 !important;
+      padding: 2px 6px !important;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35) !important;
+      font-family: 'Segoe UI', system-ui, sans-serif !important;
+      white-space: nowrap !important;
+    }
+    .label-medicao::before { display: none !important; }
+
+    /* ============================================================
+       M3 — CARD DE METADADOS
+       ============================================================ */
+    .btn-meta-camada {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 11px;
+      padding: 0 3px;
+      color: #64748b;
+      transition: color 0.15s ease;
+    }
+    .btn-meta-camada:hover { color: #0284c7; }
+
+    .modal-metadados {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 25, 47, 0.85);
+      backdrop-filter: blur(6px);
+      z-index: 999999;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .modal-metadados.aberto { display: flex; }
+    .modal-metadados-card {
+      background: #0f172a;
+      border: 1px solid #0284c7;
+      border-radius: 12px;
+      width: 95%;
+      max-width: 720px;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+      overflow: hidden;
+      color: #f8fafc;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+    .modal-metadados-header {
+      background: #061426;
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(2,132,199,0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-metadados-header h3 {
+      font-size: 14px;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+    }
+    .modal-metadados-body {
+      padding: 18px 22px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .meta-bloco {
+      margin-bottom: 16px;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 14px;
+    }
+    .meta-bloco:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .meta-titulo {
+      font-size: 10.5px;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .meta-linha {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      font-size: 12px;
+      border-bottom: 1px dashed #1e293b;
+    }
+    .meta-linha:last-child { border-bottom: none; }
+    .meta-linha .rotulo { color: #94a3b8; font-weight: 600; }
+    .meta-linha .valor { color: #f1f5f9; font-weight: 500; text-align: right; max-width: 60%; }
+    .meta-linha .valor.mono { font-family: monospace; font-size: 11px; }
+    .meta-descricao {
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.5;
+      text-align: justify;
+    }
+    .meta-changelog {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .meta-changelog li {
+      font-size: 11.5px;
+      color: #cbd5e1;
+      padding: 6px 0 6px 18px;
+      position: relative;
+      border-bottom: 1px dashed #1e293b;
+    }
+    .meta-changelog li:last-child { border-bottom: none; }
+    .meta-changelog li::before {
+      content: '▸';
+      position: absolute;
+      left: 4px;
+      color: #38bdf8;
+      font-weight: 700;
+    }
+    .meta-hash {
+      background: #061426;
+      border: 1px solid #1e4976;
+      border-radius: 5px;
+      padding: 8px 10px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #93c5fd;
+      word-break: break-all;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .meta-hash button {
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .meta-hash button:hover { background: #0369a1; }
   </style>
-</head>
-<body>
 
   <!-- CABEÇALHO -->
   <header class="top-header">
