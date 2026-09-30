@@ -1,6 +1,7 @@
 {
   "versao": "3.0",
   "projeto": "WebGIS Corporativo ANTAQ - Inteligência e Gestão Aquaviária",
+  "descricao": "Catálogo regulatório oficial focado na infraestrutura aquaviária, navegação interior e intermodalidade",
   "camadas": [
     {
       "id": "instalacoes_portuarias",
@@ -14,17 +15,6 @@
       "ativa": true
     },
     {
-      "id": "ven_2024",
-      "arquivo": "dados/ven_2024.geojson",
-      "nome": "Vias Navegadas (VEN 2024 - Oficial V4)",
-      "grupo": "infra",
-      "cor": "#00e5ff",
-      "peso": 3.0,
-      "opacidade": 0.95,
-      "tipoGeo": "linha",
-      "ativa": false
-    },
-    {
       "id": "ven_2022",
       "arquivo": "dados/ven_2022.geojson",
       "nome": "Vias Navegadas (VEN 2022)",
@@ -34,6 +24,17 @@
       "opacidade": 0.85,
       "tipoGeo": "linha",
       "ativa": true
+    },
+    {
+      "id": "ven_2024",
+      "arquivo": "dados/ven_2024.geojson",
+      "nome": "Vias Navegadas (VEN 2024 - Oficial V4)",
+      "grupo": "infra",
+      "cor": "#00e5ff",
+      "peso": 3.0,
+      "opacidade": 0.95,
+      "tipoGeo": "linha",
+      "ativa": false
     },
     {
       "id": "ven_2020",
@@ -71,7 +72,7 @@
     {
       "id": "linhas_travessias",
       "arquivo": "dados/linhas_travessias.geojson",
-      "nome": "Linhas de Travessias",
+      "nome": "Linhas de Travessias (93)",
       "grupo": "infra",
       "cor": "#f59e0b",
       "peso": 2.0,
@@ -100,72 +101,6 @@
       "opacidade": 0.8,
       "tipoGeo": "ponto",
       "ativa": true
-    },
-    {
-      "id": "br_municipios_2025",
-      "arquivo": "dados/br_municipios_2025.geojson",
-      "nome": "Municípios do Brasil (IBGE 2025)",
-      "grupo": "limites",
-      "cor": "#64748b",
-      "peso": 0.8,
-      "opacidade": 0.35,
-      "tipoGeo": "poligono_linha",
-      "ativa": false
-    },
-    {
-      "id": "bacias_nivel_2",
-      "arquivo": "dados/bacias_nivel_2.geojson",
-      "nome": "Bacias Hidrográficas - Nível 2 (Macro)",
-      "grupo": "limites",
-      "cor": "#0284c7",
-      "peso": 1.4,
-      "opacidade": 0.4,
-      "tipoGeo": "poligono_linha",
-      "ativa": false
-    },
-    {
-      "id": "bacias_nivel_3",
-      "arquivo": "dados/bacias_nivel_3.geojson",
-      "nome": "Bacias Hidrográficas - Nível 3",
-      "grupo": "limites",
-      "cor": "#0ea5e9",
-      "peso": 1.2,
-      "opacidade": 0.35,
-      "tipoGeo": "poligono_linha",
-      "ativa": false
-    },
-    {
-      "id": "bacias_nivel_4",
-      "arquivo": "dados/bacias_nivel_4.geojson",
-      "nome": "Bacias Hidrográficas - Nível 4",
-      "grupo": "limites",
-      "cor": "#38bdf8",
-      "peso": 1.0,
-      "opacidade": 0.3,
-      "tipoGeo": "poligono_linha",
-      "ativa": false
-    },
-    {
-      "id": "bacias_nivel_5",
-      "arquivo": "dados/bacias_nivel_5.geojson",
-      "nome": "Bacias Hidrográficas - Nível 5",
-      "grupo": "limites",
-      "cor": "#7dd3fc",
-      "peso": 0.8,
-      "opacidade": 0.25,
-      "tipoGeo": "poligono_linha",
-      "ativa": false
-    },
-    {
-      "id": "bacias_nivel_6",
-      "arquivo": "dados/bacias_nivel_6.geojson",
-      "nome": "Bacias Hidrográficas - Nível 6 (Micro)",
-      "grupo": "limites",
-      "cor": "#bae6fd",
-      "peso": 0.6,
-      "opacidade": 0.2,
-      "tipoGeo": "poligono_linha",
-      "ativa": false
     },
     {
       "id": "rodovias",
@@ -201,32 +136,10 @@
       "ativa": true
     },
     {
-      "id": "regioes",
-      "arquivo": "dados/regioes.geojson",
-      "nome": "Regiões do Brasil",
-      "grupo": "limites",
-      "cor": "#0284c7",
-      "peso": 2.0,
-      "opacidade": 0.85,
-      "tipoGeo": "poligono",
-      "ativa": false
-    },
-    {
-      "id": "pais",
-      "arquivo": "dados/pais.geojson",
-      "nome": "Limite Nacional",
-      "grupo": "infra",
-      "cor": "#0284c7",
-      "peso": 2.0,
-      "opacidade": 0.85,
-      "tipoGeo": "poligono",
-      "ativa": false
-    },
-    {
       "id": "tis_poligonais",
       "arquivo": "dados/tis_poligonais.geojson",
       "nome": "Terras Indígenas (FUNAI)",
-      "grupo": "infra",
+      "grupo": "restricoes",
       "cor": "#ef4444",
       "peso": 1.5,
       "opacidade": 0.35,
@@ -234,37 +147,15 @@
       "ativa": true
     },
     {
-      "id": "estados_amazonia_legal",
-      "arquivo": "dados/estados_amazonia_legal.geojson",
-      "nome": "Estados da Amazônia Legal",
-      "grupo": "restricoes",
-      "cor": "#059669",
-      "peso": 2.0,
-      "opacidade": 0.1,
-      "tipoGeo": "poligono_tracejado",
-      "ativa": true
-    },
-    {
       "id": "ucs_federais",
       "arquivo": "dados/ucs_federais.geojson",
       "nome": "Unidades de Conservação Federais (ICMBio)",
-      "grupo": "infra",
+      "grupo": "restricoes",
       "cor": "#15803d",
       "peso": 1.5,
       "opacidade": 0.35,
       "tipoGeo": "poligono",
       "ativa": true
-    },
-    {
-      "id": "ucs_todas_mma",
-      "arquivo": "dados/ucs_todas_mma.geojson",
-      "nome": "Todas as UCs do Brasil (CNUC / MMA)",
-      "grupo": "restricoes",
-      "cor": "#047857",
-      "peso": 1.2,
-      "opacidade": 0.3,
-      "tipoGeo": "poligono",
-      "ativa": false
     }
   ]
 }
