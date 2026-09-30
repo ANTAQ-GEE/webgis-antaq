@@ -753,47 +753,7 @@
       }
     };
 
-    /**
-     * MÓDULO 1.1: CLASSIFICAÇÃO REGULATÓRIA DE INSTALAÇÕES PORTUÁRIAS
-     * Corrigida para garantir que Portos Públicos (Cadastro Legado, Delegação, Estatal, Docas)
-     * sejam devidamente categorizados e não caiam em "Demais Registros e Apoio".
-     */
-    const PortClassification = {
-      tipos: {
-        ORGANIZADO: { id: 'ORGANIZADO', nome: 'Porto Organizado (Lei 12.815)', cor: '#0284c7', raio: 7.5, peso: 2 },
-        PUBLICO: { id: 'PUBLICO', nome: 'Porto Público (Cadastro Legado)', cor: '#06b6d4', raio: 6.5, peso: 1.5 },
-        TUP: { id: 'TUP', nome: 'Terminal de Uso Privado (TUP)', cor: '#10b981', raio: 6, peso: 1.5 },
-        IP4: { id: 'IP4', nome: 'Pequeno Porte (IP4)', cor: '#f59e0b', raio: 5.5, peso: 1.5 },
-        ETC: { id: 'ETC', nome: 'Estação de Transbordo (ETC)', cor: '#8b5cf6', raio: 5.5, peso: 1.5 },
-        OUTROS: { id: 'OUTROS', nome: 'Demais Registros e Apoio', cor: '#64748b', raio: 4.5, peso: 1 }
-      },
-      classificar: function(props) {
-        if (!props) return this.tipos.OUTROS;
-        // Avaliação fiel dos campos de tipologia oficiais da ANTAQ (padrão homologado)
-        const raw = String(
-          props.tipo || props.TIPO || props.TIPO_INSTALACAO || props.tipo_instalacao ||
-          props.ds_tipo || props.perfil || props.PERFIL || props.subtipo || props.SUBTIPO ||
-          props.descricao || props.DESCRICAO || ''
-        );
-        const limpo = Security.repararTexto(raw).toUpperCase();
-        if (limpo.includes('ORGANIZADO') || limpo.includes('AUTORIDADE PORTUÁRIA') || limpo.includes('AUTORIDADE PORTUARIA') || limpo.includes('DOCAS')) {
-          return this.tipos.ORGANIZADO;
-        }
-        if (limpo.includes('TERMINAL DE USO PRIVADO') || limpo.includes('TUP') || limpo.includes('USO PRIVADO')) {
-          return this.tipos.TUP;
-        }
-        if (limpo.includes('PÚBLICO') || limpo.includes('PUBLICO') || limpo.includes('PORTUÁRIA PÚBLICA') || limpo.includes('PORTUARIA PUBLICA') || limpo.includes('INTERNACIONAL')) {
-          return this.tipos.PUBLICO;
-        }
-        if (limpo.includes('IP4') || limpo.includes('PEQUENO PORTE')) {
-          return this.tipos.IP4;
-        }
-        if (limpo.includes('TRANSBORDO') || limpo.includes('ETC')) {
-          return this.tipos.ETC;
-        }
-        return this.tipos.OUTROS;
-      }
-    };
+    // Módulo de classificação sintética removido para garantir 100% de rastreabilidade aos atributos reais da camada.
 
     /**
      * MÓDULO 2: CATÁLOGO OFICIAL DE CAMADAS (CONFIG_CAMADAS)
@@ -822,7 +782,6 @@
 
     const CAMADAS_MAPA = {};
     const DADOS_GEOJSON_BRUTOS = {};
-    window.SUBGRUPOS_PORTOS = {};
     window.SUBGRUPOS_UCS = {};
     window.CAMADA_DESTAQUE = null;
     window.CAMADA_BUFFER = null;
@@ -900,52 +859,24 @@
         CONFIG_CAMADAS[id][prop] = valor;
         const layer = CAMADAS_MAPA[id];
         if (layer) {
-          if (id === 'instalacoes_portuarias') {
-            for (const fg of Object.values(window.SUBGRUPOS_PORTOS)) {
-              fg.eachLayer(l => {
-                if (prop === 'peso' && l.setRadius) l.setRadius(valor);
-                else if (prop === 'opacidade' && l.setStyle) l.setStyle({ fillOpacity: valor });
-              });
-            }
-          } else if (layer.setStyle) {
+          if (layer.setStyle) {
             const opts = this.obterOpcoes(id);
             layer.setStyle(opts);
           }
         }
         this.atualizarLegenda();
       },
-      atualizarSubcamadaPorto: function(tKey, cor) {
-        if (PortClassification.tipos[tKey]) {
-          PortClassification.tipos[tKey].cor = cor;
-          const inputColor = document.getElementById(`subcolor-${tKey}`);
-          if (inputColor) inputColor.value = cor;
-          if (window.SUBGRUPOS_PORTOS && window.SUBGRUPOS_PORTOS[tKey]) {
-            window.SUBGRUPOS_PORTOS[tKey].eachLayer(m => {
-              if (m.setStyle) m.setStyle({ fillColor: cor, color: '#ffffff' });
-            });
-          }
-        }
-        this.atualizarLegenda();
-      },
+      
       atualizarLegenda: function() {
         const el = document.getElementById('corpo-legenda');
         if (!el) return;
         let html = '';
         for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
           if (!cfg.ativa) continue;
-          if (id === 'instalacoes_portuarias') {
-            for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
-              const chk = document.getElementById(`chk-sub-${tKey}`);
-              if (!chk || chk.checked) {
-                html += `<div class="item-legenda-linha"><span class="simbolo-ponto" style="background:${cat.cor};"></span> <span>${cat.nome}</span></div>`;
-              }
-            }
-          } else {
-            let icone = `<span class="simbolo-linha" style="background:${cfg.cor};"></span>`;
-            if (cfg.tipoGeo === 'ponto') icone = `<span class="simbolo-ponto" style="background:${cfg.cor};"></span>`;
-            else if (cfg.tipoGeo === 'poligono') icone = `<span class="simbolo-poligono" style="background:${cfg.cor};"></span>`;
-            html += `<div class="item-legenda-linha">${icone} <span>${cfg.nome}</span></div>`;
-          }
+          let icone = `<span class="simbolo-linha" style="background:${cfg.cor};"></span>`;
+          if (cfg.tipoGeo === 'ponto') icone = `<span class="simbolo-ponto" style="background:${cfg.cor};"></span>`;
+          else if (cfg.tipoGeo === 'poligono' || cfg.tipoGeo === 'poligono_linha' || cfg.tipoGeo === 'poligono_tracejado') icone = `<span class="simbolo-poligono" style="background:${cfg.cor}; opacity:${cfg.opacidade};"></span>`;
+          html += `<div class="item-legenda-linha">${icone} <span>${cfg.nome}</span></div>`;
         }
         el.innerHTML = html || '<span style="color:#94a3b8; font-size:10px;">Nenhuma camada ativa.</span>';
       },
@@ -999,41 +930,7 @@
 
             const opcoes = Styler.obterOpcoes(id);
 
-            // 1. Instalações Portuárias com Classificação Fiel e Subgrupos
-            if (id === 'instalacoes_portuarias') {
-              if (!window.SUBGRUPOS_PORTOS) window.SUBGRUPOS_PORTOS = {};
-              for (const tKey of Object.keys(PortClassification.tipos)) {
-                if (window.SUBGRUPOS_PORTOS[tKey]) mapa.removeLayer(window.SUBGRUPOS_PORTOS[tKey]);
-                window.SUBGRUPOS_PORTOS[tKey] = L.featureGroup();
-              }
-
-              dados.features.forEach(f => {
-                const cat = PortClassification.classificar(f.properties || {});
-                const coords = f.geometry?.coordinates;
-                if (coords && coords.length >= 2) {
-                  const lat = coords[1], lng = coords[0];
-                  const m = L.circleMarker([lat, lng], {
-                    radius: cat.raio, fillColor: cat.cor, color: '#ffffff', weight: cat.peso, fillOpacity: cfg.opacidade
-                  });
-                  m.feature = f;
-                  m.bindPopup(PopupRenderer.gerar('instalacoes_portuarias', f.properties));
-                  if (window.SUBGRUPOS_PORTOS[cat.id]) {
-                    window.SUBGRUPOS_PORTOS[cat.id].addLayer(m);
-                  }
-                }
-              });
-
-              CAMADAS_MAPA[id] = L.featureGroup();
-              for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
-                CAMADAS_MAPA[id].addLayer(fg);
-                const cntBadge = document.getElementById(`subcnt-${tKey}`);
-                if (cntBadge) cntBadge.innerText = `(${fg.getLayers().length})`;
-              }
-
-              if (cfg.ativa) CAMADAS_MAPA[id].addTo(mapa);
-            }
-            // 2. Demais Camadas Vetoriais
-            else {
+            
               const layerLeaflet = L.geoJSON(dados, {
                 style: () => opcoes,
                 pointToLayer: (f, latlng) => L.circleMarker(latlng, opcoes),
@@ -1048,7 +945,6 @@
 
               CAMADAS_MAPA[id] = layerLeaflet;
               if (cfg.ativa) layerLeaflet.addTo(mapa);
-            }
 
             if (cntEl) cntEl.innerText = `(${dados.features.length})`;
             if (errEl) errEl.innerText = '';
@@ -1140,56 +1036,8 @@
         item.className = 'item-camada';
         item.id = `item-camada-${id}`;
 
-        let subpaletaHTML = '';
-
-        // Subpaleta de Outorgas da ANTAQ
-        if (id === 'instalacoes_portuarias') {
-          let listaSubHTML = '';
-          for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
-            listaSubHTML += `
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:3px 0;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <input type="color" id="subcolor-${tKey}" value="${cat.cor}" onchange="Styler.atualizarSubcamadaPorto('${tKey}', this.value)" style="width:16px; height:16px; border:none; padding:0; background:transparent; cursor:pointer;" title="Personalizar cor de ${cat.nome}">
-                  <span>${cat.nome}</span>
-                  <span class="badge-contador" id="subcnt-${tKey}"></span>
-                </div>
-                <input type="checkbox" id="chk-sub-${tKey}" checked onchange="toggleSubcamadaPorto('${tKey}', this.checked)">
-              </div>
-            `;
-          }
-          subpaletaHTML = `
-            <div style="margin-top:6px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; font-size:10px; display:flex; flex-direction:column; gap:4px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
-                <span style="font-weight:700; color:#0a2540;">Subcamadas de Outorga (ANTAQ):</span>
-                <span style="font-size:9px; color:#0284c7; cursor:pointer; font-weight:700;" onclick="toggleTodasSubcamadasPortos(true)">Marcar Todas</span>
-              </div>
-              ${listaSubHTML}
-            </div>
-          `;
-        }
-
-        const ehPorto = (id === 'instalacoes_portuarias');
-        const indicadorHTML = ehPorto
-          ? `<span class="legenda-cor" id="indicador-cor-${id}" style="display:inline-flex; align-items:center; justify-content:center; background:#0a2540; color:#38bdf8; font-size:11px;" onclick="toggleGavetaEstilo('${id}')" title="Camada Multicategórica - Clique para ajustar estilo">⚓</span>`
-          : `<span class="legenda-cor" id="indicador-cor-${id}" style="background:${cfg.cor};" onclick="toggleGavetaEstilo('${id}')" title="Clique para personalizar estilo"></span>`;
-
-        const gavetaConteudo = ehPorto
-          ? `
-            <div style="font-size:10px; color:#64748b; margin-bottom:6px; line-height:1.3;">
-              💡 <i>Camada multicategórica: as cores são definidas individualmente nos seletores de cor de cada outorga acima.</i>
-            </div>
-            <div class="linha-ajuste">
-              <span>Opacidade Geral:</span>
-              <input type="range" min="0.1" max="1" step="0.05" value="${cfg.opacidade}" oninput="this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'; Styler.atualizar('${id}', 'opacidade', parseFloat(this.value))">
-              <span style="min-width:35px; text-align:right;">${Math.round(cfg.opacidade * 100)}%</span>
-            </div>
-            <div class="linha-ajuste">
-              <span>Tamanho dos Pontos:</span>
-              <input type="range" min="2" max="15" step="1" value="${cfg.peso}" oninput="this.nextElementSibling.innerText = this.value + 'px'; Styler.atualizar('${id}', 'peso', parseInt(this.value))">
-              <span style="min-width:35px; text-align:right;">${cfg.peso}px</span>
-            </div>
-          `
-          : `
+        const indicadorHTML = `<span class="legenda-cor" id="indicador-cor-${id}" style="background:${cfg.cor};" onclick="toggleGavetaEstilo('${id}')" title="Clique para personalizar estilo"></span>`;
+        const gavetaConteudo = `
             <div class="linha-ajuste">
               <span>Cor:</span>
               <input type="color" value="${cfg.cor}" onchange="Styler.atualizar('${id}', 'cor', this.value)">
@@ -1225,7 +1073,6 @@
               </label>
             </div>
           </div>
-          ${subpaletaHTML}
           <div class="gaveta-painel" id="gaveta-${id}">
             ${gavetaConteudo}
           </div>
@@ -1248,11 +1095,7 @@
       if (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) {
         mapa.removeLayer(CAMADAS_MAPA[id]);
       }
-      if (id === 'instalacoes_portuarias' && window.SUBGRUPOS_PORTOS) {
-        for (const fg of Object.values(window.SUBGRUPOS_PORTOS)) {
-          if (mapa.hasLayer(fg)) mapa.removeLayer(fg);
-        }
-      }
+
 
       const itemEl = document.getElementById(`item-camada-${id}`);
       if (itemEl) itemEl.remove();
@@ -1345,63 +1188,7 @@
       UI.toast("💾 manifest.json baixado com sucesso!");
     }
 
-    function toggleSubcamadaPorto(subtipo, ligar) {
-      if (!window.SUBGRUPOS_PORTOS || !window.SUBGRUPOS_PORTOS[subtipo]) return;
-      const fg = window.SUBGRUPOS_PORTOS[subtipo];
-      if (ligar) {
-        if (!mapa.hasLayer(fg)) fg.addTo(mapa);
-      } else {
-        if (mapa.hasLayer(fg)) mapa.removeLayer(fg);
-      }
-
-      let ativos = 0;
-      let ligadosChaves = [];
-      const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
-
-      for (const [tKey, subFg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
-        const chk = document.getElementById(`chk-sub-${tKey}`);
-        if (chk && chk.checked) {
-          ativos += subFg.getLayers().length;
-          ligadosChaves.push(tKey);
-        }
-      }
-
-      const cntEl = document.getElementById('cnt-instalacoes_portuarias');
-      if (cntEl) {
-        cntEl.innerText = (ativos === total) ? `(${total})` : `(${ativos}/${total})`;
-      }
-
-      const sel = document.getElementById('filtro-subtipo-dinamico');
-      const selCamada = document.getElementById('sel-camada-busca');
-      if (sel && selCamada && selCamada.value === 'instalacoes_portuarias') {
-        if (ligadosChaves.length === 1) sel.value = ligadosChaves[0];
-        else if (ligadosChaves.length === Object.keys(PortClassification.tipos).length) sel.value = 'TODOS';
-      }
-
-      Styler.atualizarLegenda();
-    }
-
-    function toggleTodasSubcamadasPortos(ligar) {
-      for (const tKey of Object.keys(PortClassification.tipos)) {
-        const chk = document.getElementById(`chk-sub-${tKey}`);
-        if (chk) chk.checked = ligar;
-        if (window.SUBGRUPOS_PORTOS && window.SUBGRUPOS_PORTOS[tKey]) {
-          const fg = window.SUBGRUPOS_PORTOS[tKey];
-          if (ligar) { if (!mapa.hasLayer(fg)) fg.addTo(mapa); }
-          else { if (mapa.hasLayer(fg)) mapa.removeLayer(fg); }
-        }
-      }
-      const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
-      const cntEl = document.getElementById('cnt-instalacoes_portuarias');
-      if (cntEl) cntEl.innerText = ligar ? `(${total})` : `(0/${total})`;
-
-      const sel = document.getElementById('filtro-subtipo-dinamico');
-      if (sel) sel.value = ligar ? 'TODOS' : '';
-
-      Styler.atualizarLegenda();
-    }
-
-    async function toggleCamada(id, ligar) {
+async function toggleCamada(id, ligar) {
       const cfg = CONFIG_CAMADAS[id];
       if (!cfg) return;
       cfg.ativa = ligar;
@@ -1440,7 +1227,7 @@
      * MÓDULO 8: GERENCIADOR DE FILTROS REATIVOS
      */
     const FilterManager = {
-      // Metadados de busca e campos ativos por camada (opções geradas 100% dinamicamente dos dados brutos)
+      // Metadados de busca e campos ativos por camada (100% dinâmicos a partir dos dados reais)
       configFiltros: {
         instalacoes_portuarias: { placeholder: "Buscar instalação portuária por nome, município ou UF...", campoAtivo: null, opcoes: [] },
         vias_navegadas: { placeholder: "Buscar trecho hidroviário ou rio na base...", campoAtivo: null, opcoes: [] },
@@ -1470,12 +1257,12 @@
         const chaves = Object.keys(features[0].properties || {});
         if (!chaves.length) return null;
 
-        // Prioridades temáticas oficiais
+        // Prioridades temáticas oficiais baseadas nos campos reais das bases da ANTAQ/Governo
         const prioridades = {
-          instalacoes_portuarias: ['tipo', 'TIPO_INSTALACAO', 'TIPO', 'tipo_instalacao', 'perfil'],
+          instalacoes_portuarias: ['tipo', 'TIPO_INSTALACAO', 'TIPO', 'tipo_instalacao', 'perfil', 'PERFIL'],
+          linhas_travessias: ['tipo_travessia', 'tp_travessia', 'modalidade', 'tipo', 'categoria', 'nm_empresa', 'OPERADOR'],
           ferrovias: ['concessionaria', 'concessao', 'ferrovia', 'operadora', 'sigla', 'cod_ferrovia', 'nome', 'tipo', 'administracao', 'empresa', 'NM_CONCESS', 'CONCESSIONARIA'],
           vias_navegadas: ['nm_rio', 'nome_rio', 'rio', 'bacia', 'trecho', 'tipo', 'hidrovia', 'NM_RIO'],
-          linhas_travessias: ['tipo_travessia', 'modalidade', 'tipo', 'categoria', 'nm_empresa', 'OPERADOR'],
           rodovias: ['jurisdicao', 'superficie', 'tipo', 'sg_rodovia', 'cod_rodovia', 'uf', 'SG_RODOVIA', 'DS_SUPERF'],
           tis_poligonais: ['fase', 'etnia', 'modalidade', 'fase_ti', 'FASE_TI', 'ETNIA'],
           ucs_federais: ['categoria', 'grupo', 'esfera', 'bioma', 'CATEGORIA', 'GRUPO'],
@@ -1499,7 +1286,7 @@
           }
         }
 
-        // Descoberta estatística automática nas propriedades da feição
+        // Descoberta estatística automática nas propriedades reais da feição
         let melhorCampo = null;
         let melhorScore = -1;
         for (const chave of chaves) {
@@ -1543,58 +1330,37 @@
           };
         }
 
-        // Se for instalações portuárias com subgrupos configurados
-        if (idCamada === 'instalacoes_portuarias' && typeof PortClassification !== 'undefined' && PortClassification.tipos) {
-          this.configFiltros[idCamada].campoAtivo = 'tipo';
-          const opcoes = [
-            { valor: 'TODOS', rotulo: `⚓ Todas as Instalações (${total})` }
+        const campo = this.descobrirCampoCategorico(features, idCamada);
+        this.configFiltros[idCamada].campoAtivo = campo;
+
+        if (!campo) {
+          this.configFiltros[idCamada].opcoes = [
+            { valor: 'TODOS', rotulo: `Todos os Registros (${total})` }
           ];
-          for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
-            // Contagem real das feições que atendem a este tipo
-            let count = 0;
-            features.forEach(f => {
-              const c = PortClassification.classificar(f.properties || {});
-              if (c.id === tKey) count++;
-            });
-            opcoes.push({
-              valor: tKey,
-              rotulo: `${cat.nome} (${count})`
-            });
-          }
-          this.configFiltros[idCamada].opcoes = opcoes;
         } else {
-          const campo = this.descobrirCampoCategorico(features, idCamada);
-          this.configFiltros[idCamada].campoAtivo = campo;
+          const contagens = {};
+          features.forEach(f => {
+            const p = f.properties || {};
+            let val = p[campo];
+            if (val === null || val === undefined || String(val).trim() === '') {
+              val = 'Não Informado';
+            } else {
+              val = Security.repararTexto(String(val)).trim();
+            }
+            contagens[val] = (contagens[val] || 0) + 1;
+          });
 
-          if (!campo) {
-            this.configFiltros[idCamada].opcoes = [
-              { valor: 'TODOS', rotulo: `Todos os Registros (${total})` }
-            ];
-          } else {
-            const contagens = {};
-            features.forEach(f => {
-              const p = f.properties || {};
-              let val = p[campo];
-              if (val === null || val === undefined || String(val).trim() === '') {
-                val = 'Não Informado';
-              } else {
-                val = Security.repararTexto(String(val)).trim();
-              }
-              contagens[val] = (contagens[val] || 0) + 1;
+          const ordenados = Object.keys(contagens).sort((a, b) => contagens[b] - contagens[a]);
+          const opcoes = [
+            { valor: 'TODOS', rotulo: `Todos os Registros (${total})` }
+          ];
+          ordenados.forEach(val => {
+            opcoes.push({
+              valor: val,
+              rotulo: `${val} (${contagens[val]})`
             });
-
-            const ordenados = Object.keys(contagens).sort((a, b) => contagens[b] - contagens[a]);
-            const opcoes = [
-              { valor: 'TODOS', rotulo: `Todos os Registros (${total})` }
-            ];
-            ordenados.forEach(val => {
-              opcoes.push({
-                valor: val,
-                rotulo: `${val} (${contagens[val]})`
-              });
-            });
-            this.configFiltros[idCamada].opcoes = opcoes;
-          }
+          });
+          this.configFiltros[idCamada].opcoes = opcoes;
         }
 
         const selAtual = document.getElementById('sel-camada-busca');
@@ -1672,88 +1438,56 @@
       },
 
       aplicarFiltro: function(idCamada, valor) {
-        if (idCamada === 'instalacoes_portuarias' && window.SUBGRUPOS_PORTOS) {
-          let visiveis = 0;
-          const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 0;
-          const latlngsVisiveis = [];
+        const dados = DADOS_GEOJSON_BRUTOS[idCamada];
+        if (!dados || !dados.features) return;
+        const cfgFiltro = this.configFiltros[idCamada];
+        const campo = cfgFiltro?.campoAtivo;
 
-          for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
-            const chkSub = document.getElementById(`chk-sub-${tKey}`);
-            const deveLigar = (valor === 'TODOS' || tKey === valor);
-            if (chkSub) chkSub.checked = deveLigar;
-
-            if (deveLigar) {
-              if (!mapa.hasLayer(fg)) fg.addTo(mapa);
-              visiveis += fg.getLayers().length;
-              fg.eachLayer(m => { if (m.getLatLng) latlngsVisiveis.push(m.getLatLng()); });
-            } else {
-              if (mapa.hasLayer(fg)) mapa.removeLayer(fg);
-            }
+        if (valor === 'TODOS') {
+          if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
+          if (CAMADAS_MAPA[idCamada] && !mapa.hasLayer(CAMADAS_MAPA[idCamada])) {
+            CAMADAS_MAPA[idCamada].addTo(mapa);
           }
+          const cntEl = document.getElementById(`cnt-${idCamada}`);
+          if (cntEl) cntEl.innerText = `(${dados.features.length})`;
+          UI.toast(`Exibindo todas as feições da camada "${CONFIG_CAMADAS[idCamada]?.nome}" (${dados.features.length}).`);
+          return;
+        }
 
-          const cntEl = document.getElementById('cnt-instalacoes_portuarias');
-          if (cntEl) {
-            cntEl.innerText = (valor === 'TODOS' || visiveis === total) ? `(${total})` : `(${visiveis}/${total})`;
-          }
-
-          if (latlngsVisiveis.length > 0 && valor !== 'TODOS') {
-            const b = L.latLngBounds(latlngsVisiveis);
-            mapa.fitBounds(b, { padding: [50, 50], maxZoom: 12, animate: true, duration: 1.0 });
-          }
-
-          Styler.atualizarLegenda();
-          if (valor !== 'TODOS') {
-            const nomeFiltro = PortClassification.tipos[valor]?.nome || valor;
-            UI.toast(`Filtro [Portos]: ${nomeFiltro} (${visiveis} ativos visíveis).`);
-          }
-        } else {
-          const dados = DADOS_GEOJSON_BRUTOS[idCamada];
-          if (!dados || !dados.features) return;
-          const cfgFiltro = this.configFiltros[idCamada];
-          const campo = cfgFiltro?.campoAtivo;
-
-          if (valor === 'TODOS') {
-            if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
-            if (CAMADAS_MAPA[idCamada] && !mapa.hasLayer(CAMADAS_MAPA[idCamada])) {
-              CAMADAS_MAPA[idCamada].addTo(mapa);
-            }
-            UI.toast(`Exibindo todas as feições da camada "${CONFIG_CAMADAS[idCamada]?.nome}" (${dados.features.length}).`);
-            return;
-          }
-
-          // Filtro estrito por igualdade exata de atributo
-          const filtradas = dados.features.filter(f => {
-            const p = f.properties || {};
-            if (!campo) return false;
-            let valProp = p[campo];
-            if (valProp === null || valProp === undefined || String(valProp).trim() === '') {
-              valProp = 'Não Informado';
-            } else {
-              valProp = Security.repararTexto(String(valProp)).trim();
-            }
-            return valProp.toLowerCase() === valor.toLowerCase();
-          });
-
-          if (filtradas.length > 0) {
-            if (CAMADAS_MAPA[idCamada] && mapa.hasLayer(CAMADAS_MAPA[idCamada])) {
-              mapa.removeLayer(CAMADAS_MAPA[idCamada]);
-            }
-            if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
-
-            const cfg = CONFIG_CAMADAS[idCamada] || { cor: '#f59e0b', peso: 3, opacidade: 0.95 };
-            window.CAMADA_DESTAQUE = L.geoJSON({ type: 'FeatureCollection', features: filtradas }, {
-              style: () => ({ color: '#f59e0b', weight: (cfg.peso || 3) + 1.5, opacity: 0.95 }),
-              pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 8, fillColor: '#f59e0b', color: '#fff', weight: 2, fillOpacity: 0.95 }),
-              onEachFeature: (f, l) => l.bindPopup(PopupRenderer.gerar(idCamada, f.properties))
-            }).addTo(mapa);
-
-            if (window.CAMADA_DESTAQUE.getBounds && window.CAMADA_DESTAQUE.getBounds().isValid()) {
-              mapa.fitBounds(window.CAMADA_DESTAQUE.getBounds(), { padding: [50, 50] });
-            }
-            UI.toast(`✓ Filtro [${campo}: ${valor}]: ${filtradas.length} feições localizadas.`);
+        // Filtro estrito: compara 1:1 o valor do atributo na feição
+        const filtradas = dados.features.filter(f => {
+          const p = f.properties || {};
+          if (!campo) return false;
+          let valProp = p[campo];
+          if (valProp === null || valProp === undefined || String(valProp).trim() === '') {
+            valProp = 'Não Informado';
           } else {
-            UI.toast(`Nenhum registro encontrado para o filtro selecionado.`);
+            valProp = Security.repararTexto(String(valProp)).trim();
           }
+          return valProp.toLowerCase() === valor.toLowerCase();
+        });
+
+        if (filtradas.length > 0) {
+          if (CAMADAS_MAPA[idCamada] && mapa.hasLayer(CAMADAS_MAPA[idCamada])) {
+            mapa.removeLayer(CAMADAS_MAPA[idCamada]);
+          }
+          if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
+
+          const cfg = CONFIG_CAMADAS[idCamada] || { cor: '#f59e0b', peso: 3, opacidade: 0.95 };
+          window.CAMADA_DESTAQUE = L.geoJSON({ type: 'FeatureCollection', features: filtradas }, {
+            style: () => ({ color: '#f59e0b', weight: (cfg.peso || 3) + 1.5, opacity: 0.95 }),
+            pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 8, fillColor: '#f59e0b', color: '#fff', weight: 2, fillOpacity: 0.95 }),
+            onEachFeature: (f, l) => l.bindPopup(PopupRenderer.gerar(idCamada, f.properties))
+          }).addTo(mapa);
+
+          if (window.CAMADA_DESTAQUE.getBounds && window.CAMADA_DESTAQUE.getBounds().isValid()) {
+            mapa.fitBounds(window.CAMADA_DESTAQUE.getBounds(), { padding: [50, 50] });
+          }
+          const cntEl = document.getElementById(`cnt-${idCamada}`);
+          if (cntEl) cntEl.innerText = `(${filtradas.length}/${dados.features.length})`;
+          UI.toast(`✓ Filtro [${campo}: ${valor}]: ${filtradas.length} feições localizadas.`);
+        } else {
+          UI.toast(`Nenhum registro encontrado para o filtro selecionado.`);
         }
       }
     };
@@ -2184,10 +1918,10 @@
 
           if (gPortos && gPortos.features) {
             const filtrados = gPortos.features.filter(f => {
-              const cat = PortClassification.classificar(f.properties || {});
               const p = f.properties || {};
+              const tipo = String(p.tipo || p.TIPO_INSTALACAO || p.tipo_instalacao || '').toUpperCase();
               const uf = String(p.uf || p.UF || p.sigla_uf || p.SIGLA_UF || '').toUpperCase();
-              const matchTipo = tipoOutorga ? (cat.id === tipoOutorga) : true;
+              const matchTipo = tipoOutorga ? tipo.includes(tipoOutorga.toUpperCase()) : true;
               const matchUf = (estados.length > 0) ? estados.some(e => uf.includes(e)) : true;
               return matchTipo && matchUf;
             });
@@ -2542,8 +2276,8 @@ Responda APENAS o JSON puro.`;
 
         portos.features.forEach(f => {
           const p = f.properties || {};
-          const cat = PortClassification.classificar(p);
-          tipos[cat.nome] = (tipos[cat.nome] || 0) + 1;
+          const t = Security.repararTexto(String(p.tipo || p.TIPO_INSTALACAO || p.tipo_instalacao || 'Outros')).trim();
+          tipos[t] = (tipos[t] || 0) + 1;
 
           const uf = String(p.uf || p.UF || p.sigla_uf || 'Outros').toUpperCase().trim();
           if (uf && uf.length === 2) ufs[uf] = (ufs[uf] || 0) + 1;
