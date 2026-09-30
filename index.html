@@ -1160,7 +1160,10 @@
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <script>
+  <!-- ============================================================ -->
+  <!-- PARTE 2 do arquivo: JavaScript (vem na próxima resposta)     -->
+  <!-- ============================================================ -->
+    <script>
     /* ============================================================
        MÓDULO 1: SEGURANÇA E HIGIENIZAÇÃO DE DADOS (OWASP / CGU)
        ============================================================ */
@@ -3223,3 +3226,600 @@
         if (chk) chk.checked = ligar;
         if (window.SUBGRUPOS_PORTOS && window.SUBGRUPOS_PORTOS[tKey]) {
           const fg = window.SUBGRUPOS_PORTOS[tKey];
+          if (ligar) { if (!mapa.hasLayer(fg)) fg.addTo(mapa); }
+          else { if (mapa.hasLayer(fg)) mapa.removeLayer(fg); }
+        }
+      }
+      const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
+      const cntEl = document.getElementById('cnt-instalacoes_portuarias');
+      if (cntEl) cntEl.innerText = ligar ? `(${total})` : `(0/${total})`;
+      const sel = document.getElementById('filtro-subtipo-dinamico');
+      if (sel) sel.value = ligar ? 'TODOS' : '';
+      Styler.atualizarLegenda();
+    }
+
+    async function toggleCamada(id, ligar) {
+      if (!CAMADAS_MAPA[id] || !DADOS_GEOJSON_BRUTOS[id]) {
+        UI.toast(`Carregando camada "${CONFIG_CAMADAS[id]?.nome || id}"...`);
+        try { await DataManager.carregarCamada(id); }
+        catch (e) { UI.toast(`⚠️ Falha ao carregar ${CONFIG_CAMADAS[id]?.nome || id}`); return; }
+      }
+      if (ligar) {
+        if (!mapa.hasLayer(CAMADAS_MAPA[id])) CAMADAS_MAPA[id].addTo(mapa);
+        const grupo = document.getElementById(`grupo-${CONFIG_CAMADAS[id]?.grupo}`);
+        if (grupo) LayerOrderManager.sincronizarOrdemMapa(grupo);
+      } else {
+        if (mapa.hasLayer(CAMADAS_MAPA[id])) mapa.removeLayer(CAMADAS_MAPA[id]);
+      }
+      Styler.atualizarLegenda();
+    }
+
+    function zoomCamada(id) {
+      if (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) {
+        try { mapa.fitBounds(CAMADAS_MAPA[id].getBounds(), { padding: [40, 40], maxZoom: 14 }); }
+        catch(e) { UI.toast("Não foi possível calcular os limites da camada."); }
+      } else UI.toast("Ative a camada para aproximar.");
+    }
+
+    /* ============================================================
+       TABELA DE ATRIBUTOS
+       ============================================================ */
+    const TabelaManager = {
+      camadaAtualId: null, features: [], filtradas: [], colunas: [],
+      pagina: 1, porPagina: 50, filtroPorto: 'TODOS', termoBusca: '',
+
+      abrir: function(id) {
+        const g = DADOS_GEOJSON_BRUTOS[id];
+        if (!g || !g.features || !g.features.length) { UI.toast("Nenhum dado carregado para esta camada."); return; }
+        this.camadaAtualId = id;
+        this.features = g.features;
+        this.pagina = 1;
+        this.termoBusca = '';
+        const inp = document.getElementById('filtro-busca-tabela');
+        if (inp) inp.value = '';
+        const selPorto = document.getElementById('filtro-porto-tabela');
+        if (id === 'instalacoes_portuarias') {
+          if (selPorto) {
+            selPorto.style.display = 'inline-block';
+            const valAtual = window.FILTRO_PORTO_ATUAL || document.getElementById('filtro-subtipo-dinamico')?.value || 'TODOS';
+            selPorto.value = valAtual;
+            this.filtroPorto = valAtual;
+          }
+        } else {
+          if (selPorto) selPorto.style.display = 'none';
+          this.filtroPorto = 'TODOS';
+        }
+        const amostra = g.features[0].properties || {};
+        this.colunas = Object.keys(amostra).filter(c => !['geom', 'geometry', 'id', '_gpkgtable'].includes(c.toLowerCase())).slice(0, 15);
+        this.aplicarFiltrosInternos();
+        document.getElementById('painel-tabela').classList.add('aberto');
+        this.renderizar();
+      },
+      aoMudarFiltroPorto: function(tipo) {
+        this.filtroPorto = tipo; this.pagina = 1;
+        const selSub = document.getElementById('filtro-subtipo-dinamico');
+        if (selSub && selSub.value !== tipo) { selSub.value = tipo; FilterManager.aoMudarSubfiltro(tipo); }
+        this.aplicarFiltrosInternos();
+        this.renderizar();
+      },
+      filtrar: function(termo) {
+        this.termoBusca = (termo || '').toLowerCase().trim();
+        this.pagina = 1;
+        this.aplicarFiltrosInternos();
+        this.renderizar();
+      },
+      aplicarFiltrosInternos: function() {
+        let base = this.features;
+        if (this.camadaAtualId === 'instalacoes_portuarias' && this.filtroPorto && this.filtroPorto !== 'TODOS') {
+          base = base.filter(f => PortClassification.classificar(f.properties || {}).id === this.filtroPorto);
+        }
+        if (this.termoBusca) {
+          base = base.filter(f => {
+            const p = f.properties || {};
+            for (const c of this.colunas) if (String(p[c] || '').toLowerCase().includes(this.termoBusca)) return true;
+            return false;
+          });
+        }
+        this.filtradas = base;
+      },
+      anterior: function() { if (this.pagina > 1) { this.pagina--; this.renderizar(); } },
+      proximo: function() {
+        const totalPag = Math.max(1, Math.ceil(this.filtradas.length / this.porPagina));
+        if (this.pagina < totalPag) { this.pagina++; this.renderizar(); }
+      },
+      renderizar: function() {
+        const nomeCamada = CONFIG_CAMADAS[this.camadaAtualId]?.nome || this.camadaAtualId;
+        const total = this.filtradas.length;
+        const totalGeral = this.features.length;
+        const totalPag = Math.max(1, Math.ceil(total / this.porPagina));
+        if (this.pagina > totalPag) this.pagina = totalPag;
+        const inicio = (this.pagina - 1) * this.porPagina;
+        const fim = Math.min(inicio + this.porPagina, total);
+        const dadosPagina = this.filtradas.slice(inicio, fim);
+        const titEl = document.getElementById('titulo-tabela-camada');
+        if (titEl) {
+          let extra = '';
+          if (this.camadaAtualId === 'instalacoes_portuarias' && this.filtroPorto !== 'TODOS') extra = ` [${PortClassification.tipos[this.filtroPorto]?.nome || this.filtroPorto}]`;
+          titEl.innerText = total !== totalGeral
+            ? `Tabela: ${nomeCamada}${extra} (${total} de ${totalGeral} itens)`
+            : `Tabela: ${nomeCamada}${extra} (${totalGeral} itens)`;
+        }
+        const infoEl = document.getElementById('info-paginacao-tabela');
+        if (infoEl) infoEl.innerText = total > 0 ? `${inicio + 1}–${fim} de ${total} (Pág ${this.pagina}/${totalPag})` : `0 de 0`;
+        const thead = document.getElementById('thead-atributos');
+        let th = '<tr><th style="width:50px; text-align:center;">Zoom</th>';
+        this.colunas.forEach(c => th += `<th>${Security.escapeHTML(c)}</th>`);
+        thead.innerHTML = th + '</tr>';
+        const tbody = document.getElementById('tbody-atributos');
+        if (!dadosPagina.length) {
+          tbody.innerHTML = `<tr><td colspan="${this.colunas.length + 1}" style="text-align:center; padding:18px; color:#64748b;">Nenhum registro.</td></tr>`;
+          return;
+        }
+        let linhasHTML = '';
+        dadosPagina.forEach((f, idx) => {
+          const globalIdx = inicio + idx;
+          linhasHTML += `<tr><td style="text-align:center;"><button style="background:#0284c7; color:#fff; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" onclick="TabelaManager.aproximar(${globalIdx})">📍</button></td>`;
+          this.colunas.forEach(c => { linhasHTML += `<td>${Security.escapeHTML(f.properties ? f.properties[c] : '')}</td>`; });
+          linhasHTML += '</tr>';
+        });
+        tbody.innerHTML = linhasHTML;
+      },
+      aproximar: function(idx) { const f = this.filtradas[idx]; if (f) SearchEngine.aproximar(f); }
+    };
+
+    function abrirTabela(id) { TabelaManager.abrir(id); }
+
+    /* Fecha dropdowns ao clicar fora */
+    window.addEventListener('click', (e) => {
+      const dropAmb = document.getElementById('drop-ambiente');
+      if (dropAmb && !e.target.closest('#drop-ambiente')) dropAmb.classList.remove('aberto');
+      const resBusca = document.getElementById('resultados-busca');
+      if (resBusca && !e.target.closest('.barra-busca-atributos')) resBusca.style.display = 'none';
+    });
+
+    /* ============================================================
+       CATÁLOGO DE CAMADAS
+       ============================================================ */
+    const CatalogoManager = {
+      storageKey: 'antaq_webgis_camadas_ocultas',
+      obterOcultas: function() {
+        try { const s = localStorage.getItem(this.storageKey); return s ? JSON.parse(s) : []; }
+        catch(e) { return []; }
+      },
+      salvarOcultas: function(lista) {
+        try { localStorage.setItem(this.storageKey, JSON.stringify(lista)); } catch(e) {}
+      },
+      ocultarCamada: function(id) {
+        const cfg = CONFIG_CAMADAS[id];
+        const nome = cfg ? cfg.nome : id;
+        const chk = document.getElementById(`chk-${id}`);
+        if (chk && chk.checked) { chk.checked = false; toggleCamada(id, false); }
+        const el = document.getElementById(`item-camada-${id}`);
+        if (el) el.style.display = 'none';
+        const ocultas = this.obterOcultas();
+        if (!ocultas.includes(id)) { ocultas.push(id); this.salvarOcultas(ocultas); }
+        UI.toast(`Camada "${nome}" retirada. Readicione em "➕ Adicionar".`);
+      },
+      adicionarCamadaAoPainel: function(id) {
+        const el = document.getElementById(`item-camada-${id}`);
+        if (el) el.style.display = 'flex';
+        const ocultas = this.obterOcultas().filter(x => x !== id);
+        this.salvarOcultas(ocultas);
+        this.renderizarCatalogo();
+        UI.toast('Camada readicionada ao painel!');
+      },
+      mostrarTodas: function() {
+        this.salvarOcultas([]);
+        for (const id of Object.keys(CONFIG_CAMADAS)) {
+          const el = document.getElementById(`item-camada-${id}`);
+          if (el) el.style.display = 'flex';
+        }
+        this.renderizarCatalogo();
+        UI.toast('Todas as camadas visíveis!');
+      },
+      abrirModal: function() {
+        const m = document.getElementById('modal-catalogo-camadas');
+        if (!m) return;
+        m.classList.add('aberto');
+        this.renderizarCatalogo();
+      },
+      fecharModal: function() {
+        const m = document.getElementById('modal-catalogo-camadas');
+        if (m) m.classList.remove('aberto');
+      },
+      renderizarCatalogo: function() {
+        const container = document.getElementById('catalogo-conteudo-grupos');
+        if (!container) return;
+        const gruposInfo = {
+          infra: { titulo: "⚓ Infraestrutura Aquaviária & Portuária" },
+          multimodal: { titulo: "🚚 Transporte Multimodal (Ferrovias & Rodovias)" },
+          limites: { titulo: "🗺️ Limites Territoriais & Bacias" },
+          restricoes: { titulo: "🌿 Restrições Socioambientais & Territoriais" },
+          importadas: { titulo: "📁 Camadas Importadas / Personalizadas" }
+        };
+        const ocultas = this.obterOcultas();
+        let htmlGrupos = '';
+        for (const [grpId, grpMeta] of Object.entries(gruposInfo)) {
+          const camadasGrupo = Object.entries(CONFIG_CAMADAS).filter(([_, c]) => c.grupo === grpId && !_.startsWith('ven_'));
+          if (!camadasGrupo.length) continue;
+          let itensHTML = '';
+          for (const [id, cfg] of camadasGrupo) {
+            const estaOculta = ocultas.includes(id);
+            const statusBadge = estaOculta
+              ? '<span style="font-size:9px; color:#94a3b8; background:#334155; padding:2px 6px; border-radius:4px;">Oculta do Painel</span>'
+              : '<span style="font-size:9px; color:#34d399; background:rgba(16,185,129,0.2); padding:2px 6px; border-radius:4px;">No Painel</span>';
+            const botaoAcao = estaOculta
+              ? `<button class="btn-catalogo-acao btn-catalogo-add" onclick="CatalogoManager.adicionarCamadaAoPainel('${id}')">+ Adicionar</button>`
+              : `<button class="btn-catalogo-acao btn-catalogo-rem" onclick="CatalogoManager.ocultarCamada('${id}'); CatalogoManager.renderizarCatalogo();">✕ Retirar</button>`;
+            itensHTML += `
+              <div class="catalogo-item">
+                <div style="display:flex; flex-direction:column; gap:3px;">
+                  <div class="catalogo-item-nome">
+                    <span style="width:10px; height:10px; border-radius:2px; background:${cfg.cor}; display:inline-block;"></span>
+                    <span>${cfg.nome}</span>
+                  </div>
+                  <div>${statusBadge}</div>
+                </div>
+                ${botaoAcao}
+              </div>`;
+          }
+          htmlGrupos += `
+            <div class="catalogo-grupo-bloco">
+              <div class="catalogo-grupo-header">${grpMeta.titulo}</div>
+              <div class="catalogo-grid">${itensHTML}</div>
+            </div>`;
+        }
+        container.innerHTML = htmlGrupos;
+      }
+    };
+
+    /* ============================================================
+       MATRIZ VEN
+       ============================================================ */
+    const MatrizVENManager = {
+      anoAtual: 'ven_2022',
+      dadosCompletos: [],
+      dadosFiltrados: [],
+
+      abrirModal: async function() {
+        const modal = document.getElementById('modal-matriz-ven');
+        if (!modal) return;
+        modal.classList.add('aberto');
+        if (!DADOS_GEOJSON_BRUTOS[this.anoAtual]) {
+          try { await DataManager.carregarCamada(this.anoAtual); }
+          catch(e) {
+            this.anoAtual = 'ven_2022';
+            if (!DADOS_GEOJSON_BRUTOS[this.anoAtual]) { try { await DataManager.carregarCamada(this.anoAtual); } catch(err) {} }
+          }
+        }
+        this.popularFiltrosAno();
+        this.atualizarDados();
+      },
+      fecharModal: function() {
+        const modal = document.getElementById('modal-matriz-ven');
+        if (modal) modal.classList.remove('aberto');
+      },
+      popularFiltrosAno: function() {
+        const selAno = document.getElementById('matriz-filtro-ano');
+        if (selAno) selAno.value = this.anoAtual;
+      },
+      mudarAno: async function(novoAno) {
+        this.anoAtual = novoAno;
+        const lblAno = document.getElementById('kpi-matriz-ano');
+        if (lblAno) lblAno.innerText = novoAno.replace('ven_', '');
+        if (!DADOS_GEOJSON_BRUTOS[novoAno]) {
+          UI.toast(`Carregando malha ${novoAno}...`);
+          try { await DataManager.carregarCamada(novoAno); }
+          catch(e) { UI.toast(`⚠️ Malha ${novoAno} não disponível.`); return; }
+        }
+        this.atualizarDados();
+      },
+      atualizarDados: function() {
+        const dadosGeo = DADOS_GEOJSON_BRUTOS[this.anoAtual];
+        if (!dadosGeo || !dadosGeo.features) {
+          const corpo = document.getElementById('tabela-matriz-corpo');
+          if (corpo) corpo.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px; color:#ef4444;">Nenhuma feição para esta safra.</td></tr>';
+          return;
+        }
+        this.dadosCompletos = dadosGeo.features.map((f, idx) => ({
+          index: idx, feature: f,
+          idhidrovia: f.properties.idhidrovia || idx,
+          nome: f.properties.nome || f.properties.NOME || 'Hidrovia Sem Denominação',
+          rio: f.properties.nome_rio || f.properties.NOME_RIO || f.properties.rio || '-',
+          mun_orig: f.properties.mun_origem || f.properties.MUN_ORIGEM || '-',
+          est_orig: f.properties.est_origem || f.properties.EST_ORIGEM || '',
+          mun_dest: f.properties.mun_estino || f.properties.MUN_DESTINO || '-',
+          est_dest: f.properties.est_estino || f.properties.EST_DESTINO || '',
+          extensao: Number(f.properties.extensao || f.properties.EXTENSAO || 0),
+          velocidade: Number(f.properties.vel_cional || f.properties.VELOCIDADE || 0),
+          tempo: f.properties.tempo || f.properties.TEMPO || '-',
+          tipo: f.properties.tipo || f.properties.TIPO || 'Trecho',
+          eclusa: f.properties.nom_eclusa || f.properties.NOM_ECLUSA || ''
+        }));
+        this.popularDropdownsFiltro();
+        this.aplicarFiltros();
+      },
+      popularDropdownsFiltro: function() {
+        const selHidro = document.getElementById('matriz-filtro-hidrovia');
+        const selRio = document.getElementById('matriz-filtro-rio');
+        if (selHidro) {
+          const hidrovias = [...new Set(this.dadosCompletos.map(d => d.nome).filter(Boolean))].sort();
+          selHidro.innerHTML = '<option value="">Todas as Hidrovias</option>' + hidrovias.map(h => `<option value="${Security.escapeHTML(h)}">${Security.escapeHTML(h)}</option>`).join('');
+        }
+        if (selRio) {
+          const rios = [...new Set(this.dadosCompletos.map(d => d.rio).filter(r => r && r !== '-'))].sort();
+          selRio.innerHTML = '<option value="">Todos os Rios</option>' + rios.map(r => `<option value="${Security.escapeHTML(r)}">${Security.escapeHTML(r)}</option>`).join('');
+        }
+      },
+      aplicarFiltros: function() {
+        const selHidro = document.getElementById('matriz-filtro-hidrovia');
+        const selRio = document.getElementById('matriz-filtro-rio');
+        const inputBusca = document.getElementById('matriz-busca-texto');
+        const fHidro = selHidro ? selHidro.value.trim().toLowerCase() : '';
+        const fRio = selRio ? selRio.value.trim().toLowerCase() : '';
+        const fBusca = inputBusca ? inputBusca.value.trim().toLowerCase() : '';
+        this.dadosFiltrados = this.dadosCompletos.filter(d => {
+          if (fHidro && d.nome.toLowerCase() !== fHidro) return false;
+          if (fRio && d.rio.toLowerCase() !== fRio) return false;
+          if (fBusca) {
+            const matchBusca = d.nome.toLowerCase().includes(fBusca) || d.rio.toLowerCase().includes(fBusca) ||
+                               d.mun_orig.toLowerCase().includes(fBusca) || d.mun_dest.toLowerCase().includes(fBusca) ||
+                               d.tipo.toLowerCase().includes(fBusca);
+            if (!matchBusca) return false;
+          }
+          return true;
+        });
+        this.atualizarKPIs();
+        this.renderizarTabela();
+      },
+      atualizarKPIs: function() {
+        const elTrechos = document.getElementById('kpi-matriz-trechos');
+        const elExt = document.getElementById('kpi-matriz-extensao');
+        const elVel = document.getElementById('kpi-matriz-vel');
+        const totalTrechos = this.dadosFiltrados.length;
+        const totalExt = this.dadosFiltrados.reduce((acc, d) => acc + (d.extensao || 0), 0);
+        const velMedia = totalTrechos > 0 ? (this.dadosFiltrados.reduce((acc, d) => acc + (d.velocidade || 0), 0) / totalTrechos) : 0;
+        if (elTrechos) elTrechos.innerText = totalTrechos.toLocaleString('pt-BR');
+        if (elExt) elExt.innerText = totalExt.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' km';
+        if (elVel) elVel.innerText = velMedia.toFixed(1) + ' km/h';
+      },
+      renderizarTabela: function() {
+        const corpo = document.getElementById('tabela-matriz-corpo');
+        if (!corpo) return;
+        if (!this.dadosFiltrados.length) {
+          corpo.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px; color:#94a3b8;">Nenhum trecho atende aos filtros.</td></tr>';
+          return;
+        }
+        let html = '';
+        const maxLinhas = Math.min(this.dadosFiltrados.length, 300);
+        for (let i = 0; i < maxLinhas; i++) {
+          const d = this.dadosFiltrados[i];
+          const orig = d.mun_orig + (d.est_orig ? `/${d.est_orig}` : '');
+          const dest = d.mun_dest + (d.est_dest ? `/${d.est_dest}` : '');
+          let classeBadge = 'badge-tempo-medio';
+          if (d.tempo.includes('0d 0h') || d.tempo.includes('0d 1h') || d.tempo.includes('0d 2h') || d.tempo.includes('0d 3h') || d.tempo.includes('0d 4h')) classeBadge = 'badge-tempo-rapido';
+          else if (d.tempo.includes('1d') || d.tempo.includes('2d') || d.tempo.includes('3d')) classeBadge = 'badge-tempo-longo';
+          html += `
+            <tr>
+              <td style="font-weight:600; color:#f8fafc;">${Security.escapeHTML(d.nome)}</td>
+              <td style="color:#38bdf8;">${Security.escapeHTML(d.rio)}</td>
+              <td>${Security.escapeHTML(orig)}</td>
+              <td>${Security.escapeHTML(dest)}</td>
+              <td>${d.extensao ? d.extensao.toFixed(1) + ' km' : '-'}</td>
+              <td>${d.velocidade ? d.velocidade + ' km/h' : '-'}</td>
+              <td><span class="badge-tempo-destaque ${classeBadge}">${Security.escapeHTML(d.tempo)}</span></td>
+              <td>${Security.escapeHTML(d.eclusa || d.tipo)}</td>
+              <td style="text-align:center;"><button class="btn-acao-localizar" onclick="MatrizVENManager.localizarNoMapa(${d.index})">📍 Localizar</button></td>
+            </tr>`;
+        }
+        if (this.dadosFiltrados.length > maxLinhas) {
+          html += `<tr><td colspan="9" style="text-align:center; padding:10px; color:#f59e0b; background:#081728;">Exibindo primeiros 300 de ${this.dadosFiltrados.length}.</td></tr>`;
+        }
+        corpo.innerHTML = html;
+      },
+      /* ✅ CORRIGIDO: DataManager.alternarCamada → toggleCamada */
+      localizarNoMapa: function(index) {
+        const item = this.dadosCompletos.find(d => d.index === index);
+        if (!item || !item.feature) return;
+        this.fecharModal();
+        const idCamada = this.anoAtual;
+        const chkEl = document.getElementById(`chk-${idCamada}`);
+        if (chkEl && !chkEl.checked) {
+          chkEl.checked = true;
+          toggleCamada(idCamada, true);
+        }
+        try {
+          const tempLayer = L.geoJSON(item.feature);
+          const bounds = tempLayer.getBounds();
+          if (bounds && bounds.isValid()) {
+            mapa.fitBounds(bounds, { padding: [60, 60], maxZoom: 12 });
+            setTimeout(() => {
+              const popupContent = PopupRenderer.gerar(idCamada, item.feature.properties);
+              L.popup().setLatLng(bounds.getCenter()).setContent(popupContent).openOn(mapa);
+              UI.toast(`📍 Trecho: ${item.nome} (${item.tempo})`);
+            }, 350);
+          }
+        } catch(e) { console.error("Erro ao localizar:", e); }
+      },
+      exportarCSV: function() {
+        if (!this.dadosFiltrados.length) { UI.toast("⚠️ Nenhum trecho filtrado."); return; }
+        let csv = "Hidrovia;Rio;Municipio_Origem;UF_Origem;Municipio_Destino;UF_Destino;Extensao_km;Velocidade_kmh;Tempo_Percurso;Tipo;Eclusa\n";
+        this.dadosFiltrados.forEach(d => {
+          csv += `"${d.nome}";"${d.rio}";"${d.mun_orig}";"${d.est_orig}";"${d.mun_dest}";"${d.est_dest}";"${d.extensao}";"${d.velocidade}";"${d.tempo}";"${d.tipo}";"${d.eclusa}"\n`;
+        });
+        const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Matriz_VEN_Tempos_${this.anoAtual}_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        UI.toast("💾 Matriz exportada em CSV!");
+      }
+    };
+
+    /* ============================================================
+       VEN UNIFICADO (Card unificado com seletor de safra)
+       ============================================================ */
+    const VENUnifiedManager = {
+      anoAtivo: 'ven_2022',
+      ligado: true,
+
+      construirCard: function(container) {
+        if (!container) return;
+        let card = document.getElementById('item-camada-ven-unificado');
+        if (card) card.remove();
+        card = document.createElement('div');
+        card.className = 'item-camada item-camada-pasta';
+        card.id = 'item-camada-ven-unificado';
+        card.style.border = '1px solid #bae6fd';
+        card.style.background = '#f0f9ff';
+        card.innerHTML = `
+          <div class="item-camada-linha-topo">
+            <div class="camada-info-bloco">
+              <span class="legenda-cor" style="background:#00e5ff; box-shadow:0 0 4px #00e5ff;"></span>
+              <span class="camada-titulo-txt" style="color:#0369a1; font-weight:700;">Vias Navegadas (VEN)</span>
+              <span class="badge-contador" id="cnt-ven-unificado">(carregando...)</span>
+            </div>
+            <label class="switch" title="Ligar/Desligar Malha Hidroviária">
+              <input type="checkbox" id="chk-ven-unificado" checked onchange="VENUnifiedManager.toggle(this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px; background:#e0f2fe; padding:4px 8px; border-radius:5px; font-size:10.5px;">
+            <span style="font-weight:700; color:#0369a1;">📁 Safra Selecionada:</span>
+            <select id="sel-safra-ven-painel" onchange="VENUnifiedManager.mudarSafra(this.value)" style="padding:2px 6px; font-size:11px; border:1px solid #0284c7; border-radius:4px; background:#fff; font-weight:700; color:#0284c7; cursor:pointer;">
+              <option value="ven_2024">2024 (Oficial V4)</option>
+              <option value="ven_2022" selected>2022 (Série Histórica)</option>
+              <option value="ven_2020">2020</option>
+              <option value="ven_2018">2018</option>
+              <option value="ven_2013">2013</option>
+            </select>
+          </div>
+          <div class="camada-acoes-barra" style="border-top-color:#bae6fd;">
+            <button class="btn-acao-chip" onclick="MatrizVENManager.abrirModal()" style="color:#0284c7; font-weight:700;">⏱️ Matriz VEN</button>
+            <button class="btn-acao-chip" onclick="zoomCamada(VENUnifiedManager.anoAtivo)">🔍 Zoom</button>
+            <button class="btn-acao-chip" onclick="toggleGavetaEstilo('ven-unificado')">🎨 Estilo</button>
+            <button class="btn-acao-chip" onclick="ExportManager.baixarPlanilhaExcel()">📊 Excel</button>
+            <button class="btn-acao-chip" onclick="ExportManager.exportarGeoJSON(VENUnifiedManager.anoAtivo)">💾 GeoJSON</button>
+          </div>
+          <div class="gaveta-painel" id="gaveta-ven-unificado" style="background:#f8fafc;">
+            <div class="linha-ajuste">
+              <span>Opacidade:</span>
+              <input type="range" min="0.1" max="1" step="0.05" value="0.9" oninput="VENUnifiedManager.atualizarOpacidade(parseFloat(this.value))">
+            </div>
+            <div class="linha-ajuste">
+              <span>Espessura:</span>
+              <input type="range" min="1" max="8" step="0.5" value="2.8" oninput="VENUnifiedManager.atualizarPeso(parseFloat(this.value))">
+            </div>
+          </div>`;
+        container.insertBefore(card, container.firstChild);
+      },
+
+      mudarSafra: async function(novoAno) {
+        const anoVelho = this.anoAtivo;
+        if (CAMADAS_MAPA[anoVelho] && mapa.hasLayer(CAMADAS_MAPA[anoVelho])) {
+          mapa.removeLayer(CAMADAS_MAPA[anoVelho]);
+        }
+        this.anoAtivo = novoAno;
+        const selP = document.getElementById('sel-safra-ven-painel');
+        if (selP) selP.value = novoAno;
+        const selB = document.getElementById('filtro-subtipo-dinamico');
+        const selCamadaB = document.getElementById('sel-camada-busca');
+        if (selB && selCamadaB && selCamadaB.value === 'ven') selB.value = novoAno;
+
+        if (this.ligado) {
+          UI.toast(`Carregando malha VEN ${novoAno.replace('ven_', '')}...`);
+          try {
+            await DataManager.carregarCamada(novoAno);
+            if (CAMADAS_MAPA[novoAno]) {
+              CAMADAS_MAPA[novoAno].addTo(mapa);
+              const qtd = DADOS_GEOJSON_BRUTOS[novoAno]?.features?.length || 0;
+              const cnt = document.getElementById('cnt-ven-unificado');
+              if (cnt) cnt.innerText = `(${qtd})`;
+              UI.toast(`✓ VEN ${novoAno.replace('ven_', '')}: ${qtd} trechos.`);
+            }
+          } catch(e) {
+            UI.toast(`⚠️ Base ${novoAno} não encontrada. Voltando para 2022.`);
+            this.anoAtivo = 'ven_2022';
+            if (CAMADAS_MAPA['ven_2022']) CAMADAS_MAPA['ven_2022'].addTo(mapa);
+            if (selP) selP.value = 'ven_2022';
+          }
+        }
+        Styler.atualizarLegenda();
+      },
+
+      toggle: function(ligar) {
+        this.ligado = ligar;
+        const ano = this.anoAtivo;
+        if (ligar) {
+          if (CAMADAS_MAPA[ano]) {
+            if (!mapa.hasLayer(CAMADAS_MAPA[ano])) CAMADAS_MAPA[ano].addTo(mapa);
+          } else {
+            DataManager.carregarCamada(ano).then(() => {
+              if (CAMADAS_MAPA[ano] && !mapa.hasLayer(CAMADAS_MAPA[ano])) CAMADAS_MAPA[ano].addTo(mapa);
+              const qtd = DADOS_GEOJSON_BRUTOS[ano]?.features?.length || 0;
+              const cnt = document.getElementById('cnt-ven-unificado');
+              if (cnt) cnt.innerText = `(${qtd})`;
+            });
+          }
+        } else {
+          for (const a of ['ven_2024', 'ven_2022', 'ven_2020', 'ven_2018', 'ven_2013']) {
+            if (CAMADAS_MAPA[a] && mapa.hasLayer(CAMADAS_MAPA[a])) mapa.removeLayer(CAMADAS_MAPA[a]);
+          }
+        }
+        Styler.atualizarLegenda();
+      },
+
+      atualizarOpacidade: function(val) {
+        const ano = this.anoAtivo;
+        if (CONFIG_CAMADAS[ano]) CONFIG_CAMADAS[ano].opacidade = val;
+        if (CAMADAS_MAPA[ano]) CAMADAS_MAPA[ano].setStyle({ opacity: val });
+      },
+      atualizarPeso: function(val) {
+        const ano = this.anoAtivo;
+        if (CONFIG_CAMADAS[ano]) CONFIG_CAMADAS[ano].peso = val;
+        if (CAMADAS_MAPA[ano]) CAMADAS_MAPA[ano].setStyle({ weight: val });
+      }
+    };
+
+    /* ============================================================
+       INICIALIZAÇÃO
+       ============================================================ */
+    (async function init() {
+      if (window.location.protocol === 'file:') {
+        console.warn('Execução em file:// detectada. Navegadores bloqueiam fetch local.');
+        setTimeout(() => {
+          UI.toast('⚠️ Abrindo como arquivo local. Use um servidor (Live Server / Python) para carregar as camadas.');
+        }, 1500);
+      }
+
+      try {
+        await LayerRegistry.carregarManifest();
+      } catch(e) { console.warn('Manifesto não carregado:', e); }
+
+      FilterManager.atualizarSeletorCamadas();
+      construirPainelLateral();
+      FilterManager.aoMudarCamada("instalacoes_portuarias");
+      Styler.atualizarLegenda();
+
+      // Carrega camadas ativas (exceto VEN individuais que são gerenciadas pelo VENUnifiedManager)
+      await DataManager.atualizarTodasCamadas(true);
+
+      // Inicializa VEN unificado (safra 2022 por padrão)
+      try {
+        await DataManager.carregarCamada('ven_2022');
+        if (CAMADAS_MAPA['ven_2022']) {
+          CAMADAS_MAPA['ven_2022'].addTo(mapa);
+          const qtd = DADOS_GEOJSON_BRUTOS['ven_2022']?.features?.length || 0;
+          const cnt = document.getElementById('cnt-ven-unificado');
+          if (cnt) cnt.innerText = qtd > 0 ? `(${qtd})` : '';
+          VENUnifiedManager.anoAtivo = 'ven_2022';
+        }
+      } catch(e) { console.warn('VEN 2022 indisponível:', e); }
+
+      console.info('✓ WebGIS ANTAQ inicializado com sucesso.');
+    })();
+  </script>
+</body>
+</html>
