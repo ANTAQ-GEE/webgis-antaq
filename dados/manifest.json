@@ -1,5 +1,5 @@
 {
-  "versao": "2.1",
+  "versao": "3.0",
   "projeto": "WebGIS Corporativo ANTAQ - Inteligência e Gestão Aquaviária",
   "camadas": [
     {
@@ -14,17 +14,6 @@
       "ativa": true
     },
     {
-      "id": "ven_2024",
-      "arquivo": "dados/ven_2024.geojson",
-      "nome": "Vias Navegadas (VEN 2024 - Oficial V4)",
-      "grupo": "infra",
-      "cor": "#00e5ff",
-      "peso": 3.0,
-      "opacidade": 0.95,
-      "tipoGeo": "linha",
-      "ativa": false
-    },
-    {
       "id": "ven_2022",
       "arquivo": "dados/ven_2022.geojson",
       "nome": "Vias Navegadas (VEN 2022)",
@@ -34,6 +23,17 @@
       "opacidade": 0.85,
       "tipoGeo": "linha",
       "ativa": true
+    },
+    {
+      "id": "ven_2024",
+      "arquivo": "dados/ven_2024.geojson",
+      "nome": "Vias Navegadas (VEN 2024 - Oficial V4)",
+      "grupo": "infra",
+      "cor": "#00e5ff",
+      "peso": 3.0,
+      "opacidade": 0.95,
+      "tipoGeo": "linha",
+      "ativa": false
     },
     {
       "id": "ven_2020",
@@ -71,7 +71,7 @@
     {
       "id": "linhas_travessias",
       "arquivo": "dados/linhas_travessias.geojson",
-      "nome": "Linhas de Travessias",
+      "nome": "Linhas de Travessias (93)",
       "grupo": "infra",
       "cor": "#f59e0b",
       "peso": 2.0,
@@ -201,32 +201,10 @@
       "ativa": true
     },
     {
-      "id": "regioes",
-      "arquivo": "dados/regioes.geojson",
-      "nome": "Regiões do Brasil",
-      "grupo": "limites",
-      "cor": "#0284c7",
-      "peso": 2.0,
-      "opacidade": 0.85,
-      "tipoGeo": "poligono",
-      "ativa": false
-    },
-    {
-      "id": "pais",
-      "arquivo": "dados/pais.geojson",
-      "nome": "Limite Nacional",
-      "grupo": "infra",
-      "cor": "#0284c7",
-      "peso": 2.0,
-      "opacidade": 0.85,
-      "tipoGeo": "poligono",
-      "ativa": false
-    },
-    {
       "id": "tis_poligonais",
       "arquivo": "dados/tis_poligonais.geojson",
       "nome": "Terras Indígenas (FUNAI)",
-      "grupo": "infra",
+      "grupo": "restricoes",
       "cor": "#ef4444",
       "peso": 1.5,
       "opacidade": 0.35,
@@ -248,7 +226,7 @@
       "id": "ucs_federais",
       "arquivo": "dados/ucs_federais.geojson",
       "nome": "Unidades de Conservação Federais (ICMBio)",
-      "grupo": "infra",
+      "grupo": "restricoes",
       "cor": "#15803d",
       "peso": 1.5,
       "opacidade": 0.35,
