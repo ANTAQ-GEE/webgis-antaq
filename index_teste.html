@@ -3855,16 +3855,29 @@
        - Restaurar automaticamente ao abrir um link compartilhado.
        - Debounce de 400ms para não poluir o histórico durante pan/zoom.
        ============================================================ */
-    const URLState = {
+      const URLState = {
       _timer: null,
       _restaurando: false,
+      _inicializado: false,
 
       init: async function() {
+        if (this._inicializado) {
+          console.warn('[URLState] init() já foi chamado — ignorando.');
+          return;
+        }
+        this._inicializado = true;
+        console.info('[URLState] Inicializando…');
+
         this._configurarListeners();
+        console.info('[URLState] Listeners instalados.');
+
         await this._restaurar();
+
+        // Sincroniza a URL imediatamente com o estado atual
+        this._salvarAgora();
+        console.info('[URLState] Estado inicial gravado na URL.');
       },
 
-      /* Salva o estado atual na URL (com debounce) */
       salvar: function() {
         if (this._restaurando) return;
         clearTimeout(this._timer);
@@ -3876,60 +3889,74 @@
           const centro = mapa.getCenter();
           const p = new URLSearchParams();
 
-          // 1. Posição do mapa
           p.set('lat', centro.lat.toFixed(5));
           p.set('lng', centro.lng.toFixed(5));
           p.set('z', String(mapa.getZoom()));
 
-          // 2. Camada ativa
           const selCamada = document.getElementById('sel-camada-busca');
           if (selCamada && selCamada.value) p.set('camada', selCamada.value);
 
-          // 3. Safra VEN (se for a camada ativa)
           if (selCamada && selCamada.value === 'ven' && window.VENUnifiedManager) {
             p.set('safra', VENUnifiedManager.anoAtivo);
           }
 
-          // 4. Filtro secundário (regime portuário / esfera / etc.)
           const selSub = document.getElementById('filtro-subtipo-dinamico');
           if (selSub && selSub.value && selSub.value !== 'TODOS' && selCamada && selCamada.value !== 'ven') {
             p.set('filtro', selSub.value);
           }
 
-          // 5. Basemap
           const radioBase = document.querySelector('input[name="basemap"]:checked');
           if (radioBase && radioBase.value === 'escuro') p.set('base', 'escuro');
 
           const qs = p.toString();
           const novaURL = location.pathname + (qs ? '?' + qs : '');
-          history.replaceState(null, '', novaURL);
+
+          // Tenta replaceState; se falhar (iframe, sandbox, etc.), tenta pushState
+          try {
+            history.replaceState(null, '', novaURL);
+          } catch (errReplace) {
+            console.warn('[URLState] replaceState falhou, tentando pushState…', errReplace);
+            try { history.pushState(null, '', novaURL); }
+            catch (errPush) {
+              console.error('[URLState] Não foi possível atualizar a URL neste ambiente.', errPush);
+            }
+          }
         } catch (e) {
-          console.warn('[URLState] Erro ao salvar:', e);
+          console.warn('[URLState] Erro ao salvar estado:', e);
         }
       },
 
-      /* Restaura o estado a partir dos parâmetros da URL */
       _restaurar: async function() {
         const params = new URLSearchParams(location.search);
-        if (![...params.keys()].length) return; // nada para restaurar
+        const keys = [...params.keys()];
 
+        if (!keys.length) {
+          console.info('[URLState] Sem parâmetros na URL — nada a restaurar.');
+          this._restaurando = false;
+          return; // ← não esquece de resetar!
+        }
+
+        console.info('[URLState] Restaurando estado da URL:', params.toString());
         this._restaurando = true;
+
         try {
-          // 1. Posição do mapa
           const lat = parseFloat(params.get('lat'));
           const lng = parseFloat(params.get('lng'));
           const z = parseInt(params.get('z'), 10);
           if (!isNaN(lat) && !isNaN(lng) && !isNaN(z) && z >= 1 && z <= 18) {
             mapa.setView([lat, lng], z);
+            console.info(`[URLState] Mapa posicionado em (${lat}, ${lng}) z=${z}`);
           }
 
-          // 2. Basemap
           if (params.get('base') === 'escuro') {
             const radio = document.querySelector('input[name="basemap"][value="escuro"]');
-            if (radio) { radio.checked = true; BasemapManager.trocar('escuro'); }
+            if (radio) {
+              radio.checked = true;
+              BasemapManager.trocar('escuro');
+              console.info('[URLState] Basemap restaurado para escuro.');
+            }
           }
 
-          // 3. Camada ativa + safra + filtro
           const camada = params.get('camada');
           const safra = params.get('safra');
           const filtro = params.get('filtro');
@@ -3940,29 +3967,29 @@
               selCamada.value = camada;
 
               if (camada === 'ven') {
-                // Aguarda o card VEN unificado estar pronto e muda a safra
-                await this._aguardar(300);
+                await this._aguardar(400);
                 if (safra && window.VENUnifiedManager) {
                   await VENUnifiedManager.mudarSafra(safra);
+                  console.info(`[URLState] Safra VEN restaurada: ${safra}`);
                 }
-                // Restaura o sub-filter (dropdown de safra)
                 const selSub = document.getElementById('filtro-subtipo-dinamico');
                 if (selSub && safra) selSub.value = safra;
               } else {
                 await FilterManager.aoMudarCamada(camada);
+                console.info(`[URLState] Camada restaurada: ${camada}`);
+
                 if (filtro) {
-                  await this._aguardar(300);
+                  await this._aguardar(400);
                   const selSub = document.getElementById('filtro-subtipo-dinamico');
                   if (selSub) {
                     selSub.value = filtro;
                     FilterManager.aoMudarSubfiltro(filtro);
+                    console.info(`[URLState] Filtro restaurado: ${filtro}`);
                   }
                 }
               }
             }
           }
-
-          console.info('[URLState] Estado restaurado da URL:', params.toString());
         } catch (e) {
           console.warn('[URLState] Falha ao restaurar:', e);
         } finally {
@@ -3971,33 +3998,44 @@
       },
 
       _configurarListeners: function() {
-        // Movimento do mapa
         mapa.on('moveend', () => this.salvar());
         mapa.on('zoomend', () => this.salvar());
 
-        // Mudança de camada principal
         const selCamada = document.getElementById('sel-camada-busca');
         if (selCamada) selCamada.addEventListener('change', () => this.salvar());
 
-        // Mudança de sub-filtro
         const selSub = document.getElementById('filtro-subtipo-dinamico');
         if (selSub) selSub.addEventListener('change', () => this.salvar());
 
-        // Basemap
         document.querySelectorAll('input[name="basemap"]').forEach(r => {
           r.addEventListener('change', () => this.salvar());
         });
       },
 
-      /* Atalho público: gera link compartilhável */
-      obterLinkAtual: function() {
-        return location.href;
-      },
+      obterLinkAtual: function() { return location.href; },
 
-      _aguardar: function(ms) {
-        return new Promise(res => setTimeout(res, ms));
-      }
+      _aguardar: function(ms) { return new Promise(res => setTimeout(res, ms)); }
     };
+
+    /* Rede de segurança: se o IIFE esquecer de chamar URLState.init(),
+       inicializa automaticamente quando o documento estiver pronto. */
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      setTimeout(() => {
+        if (!URLState._inicializado) {
+          console.warn('[URLState] Auto-init acionado (o init() principal não foi chamado).');
+          URLState.init();
+        }
+      }, 1500);
+    } else {
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          if (!URLState._inicializado) {
+            console.warn('[URLState] Auto-init acionado (o init() principal não foi chamado).');
+            URLState.init();
+          }
+        }, 1500);
+      });
+    }
 
     /* ============================================================
        INICIALIZAÇÃO
