@@ -169,7 +169,7 @@ def processar_pasta_dados():
             "peso": meta.get("peso", 2.0),
             "opacidade": meta.get("opacidade", 0.85),
             "tipoGeo": tipo_geo,
-            "ativa": slug in ["instalacoes_portuarias", "ven_2024", "linhas_travessias", "embarcacoes", "uf", "tis_poligonais", "estados_amazonia_legal", "ucs_federais"]
+            "ativa": slug in ["instalacoes_portuarias", "ven_2022", "linhas_travessias", "embarcacoes", "uf", "tis_poligonais", "estados_amazonia_legal", "ucs_federais"]
         })
 
     # 2. Adiciona camadas adicionais encontradas na pasta
@@ -197,7 +197,7 @@ def processar_pasta_dados():
         })
 
     manifesto_final = {
-        "versao": "2.1",
+        "versao": "3.0",
         "projeto": "WebGIS Corporativo ANTAQ - Inteligência e Gestão Aquaviária",
         "camadas": camadas_manifesto
     }
