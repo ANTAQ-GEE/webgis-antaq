@@ -97,8 +97,15 @@ def formatar_titulo(slug: str) -> str:
 def identificar_grupo(nome: str) -> str:
     """Classifica a camada no grupo cartográfico adequado."""
     n = nome.lower()
-    if any(k in n for k in ['porto', 'instalac', 'via', 'hidro', 'rodov', 'ferrov', 'snv', 'travess', 'embarcac', 'ais', 'duto']):
+    if any(k in n for k in ['rodov', 'ferrov', 'trilho', 'estrada', 'multimodal']):
+        return "multimodal"
+    elif any(k in n for k in ['porto', 'instalac', 'via', 'hidro', 'snv', 'travess', 'embarcac', 'ais', 'duto']):
         return "infra"
+    elif any(k in n for k in ['uc', 'conservacao', 'indig', 'tis', 'quilomb', 'amazonia', 'floresta', 'ambiental', 'manancial']):
+        return "restricoes"
+    elif any(k in n for k in ['uf', 'estado', 'municip', 'regio', 'pais', 'limite', 'fronteira', 'bacia']):
+        return "limites"
+    return "infra"""
     elif any(k in n for k in ['uc', 'conservacao', 'indig', 'tis', 'quilomb', 'amazonia', 'floresta', 'ambiental', 'manancial']):
         return "restricoes"
     elif any(k in n for k in ['uf', 'estado', 'municip', 'regio', 'pais', 'limite', 'fronteira', 'bacia']):
