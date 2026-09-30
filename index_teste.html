@@ -105,7 +105,7 @@
     .select-camada-busca, .input-busca-atributo {
       padding: 6px 10px; font-size: 11px; border-radius: 4px; border: 1px solid var(--borda);
     }
-    .select-camada-busca { width: 190px; font-weight: 600; background: #fff; color: #0f172a; }
+    .select-camada-busca { min-width: 200px; width: auto; font-weight: 600; background: #fff; color: #0f172a; }
     .input-busca-atributo { width: 220px; }
     .btn-exec-busca {
       background: var(--antaq-azul-claro); border: none; color: #fff; padding: 6px 12px;
@@ -549,7 +549,7 @@
     </div>
     <div class="graficos-corpo">
       <div class="card-grafico">
-        <h4>1. Instalações Portuárias por Tipologia (Atributo Oficial)</h4>
+        <h4>1. Instalações Portuárias por Tipo de Outorga (TUP vs Público)</h4>
         <canvas id="grafico-portos-tipo" height="150"></canvas>
       </div>
       <div class="card-grafico">
@@ -753,69 +753,45 @@
       }
     };
 
-        /**
-     * MÓDULO 1.1: CLASSIFICAÇÃO DE INSTALAÇÕES PORTUÁRIAS POR ATRIBUTO OFICIAL
-     * Totalmente orientado aos dados brutos da camada (100% de rastreabilidade).
-     * Os tipos, rótulos e quantitativos são extraídos dinamicamente dos valores distintos (DISTINCT)
-     * presentes na coluna de tipologia real da tabela de atributos (ex.: 'tipo' ou 'TIPO_INSTALACAO').
-     * Elimina classificações artificiais ou inferências por substring.
+    /**
+     * MÓDULO 1.1: CLASSIFICAÇÃO REGULATÓRIA DE INSTALAÇÕES PORTUÁRIAS
+     * Corrigida para garantir que Portos Públicos (Cadastro Legado, Delegação, Estatal, Docas)
+     * sejam devidamente categorizados e não caiam em "Demais Registros e Apoio".
      */
     const PortClassification = {
-      campoAtivo: 'tipo',
-      tipos: {},
-      paletaPadrao: ['#0284c7', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#f97316', '#64748b', '#14b8a6', '#6366f1'],
-
-      inicializarTipos: function(features) {
-        this.tipos = {};
-        if (!features || !features.length) return;
-
-        // Identifica o campo oficial de tipologia existente na feição
-        const primeira = features[0].properties || {};
-        const possiveisCampos = ['tipo', 'TIPO_INSTALACAO', 'TIPO', 'tipo_instalacao', 'perfil', 'PERFIL', 'ds_tipo'];
-        this.campoAtivo = possiveisCampos.find(k => k in primeira) || 'tipo';
-
-        const contagens = {};
-        features.forEach(f => {
-          const p = f.properties || {};
-          let val = p[this.campoAtivo];
-          if (val === null || val === undefined || String(val).trim() === '') {
-            val = 'Não Informado';
-          } else {
-            val = Security.repararTexto(String(val)).trim();
-          }
-          contagens[val] = (contagens[val] || 0) + 1;
-        });
-
-        // Ordena por contagem decrescente (valores com maior número de ativos primeiro)
-        const valoresOrdenados = Object.keys(contagens).sort((a, b) => contagens[b] - contagens[a]);
-
-        valoresOrdenados.forEach((val, idx) => {
-          const safeId = 'tipo_' + idx;
-          const cor = this.paletaPadrao[idx % this.paletaPadrao.length];
-          this.tipos[safeId] = {
-            id: safeId,
-            valorOriginal: val,
-            nome: val, // Valor exato do atributo oficial na camada
-            cor: cor,
-            raio: 6,
-            peso: 1.5,
-            qtd: contagens[val]
-          };
-        });
+      tipos: {
+        ORGANIZADO: { id: 'ORGANIZADO', nome: 'Porto Organizado (Lei 12.815)', cor: '#0284c7', raio: 7.5, peso: 2 },
+        PUBLICO: { id: 'PUBLICO', nome: 'Porto Público (Cadastro Legado)', cor: '#06b6d4', raio: 6.5, peso: 1.5 },
+        TUP: { id: 'TUP', nome: 'Terminal de Uso Privado (TUP)', cor: '#10b981', raio: 6, peso: 1.5 },
+        IP4: { id: 'IP4', nome: 'Pequeno Porte (IP4)', cor: '#f59e0b', raio: 5.5, peso: 1.5 },
+        ETC: { id: 'ETC', nome: 'Estação de Transbordo (ETC)', cor: '#8b5cf6', raio: 5.5, peso: 1.5 },
+        OUTROS: { id: 'OUTROS', nome: 'Demais Registros e Apoio', cor: '#64748b', raio: 4.5, peso: 1 }
       },
-
       classificar: function(props) {
-        if (!props) return { id: 'indefinido', valorOriginal: 'Não Informado', nome: 'Não Informado', cor: '#64748b', raio: 5, peso: 1 };
-        let val = props[this.campoAtivo];
-        if (val === null || val === undefined || String(val).trim() === '') {
-          val = 'Não Informado';
-        } else {
-          val = Security.repararTexto(String(val)).trim();
+        if (!props) return this.tipos.OUTROS;
+        // Avaliação fiel dos campos de tipologia oficiais da ANTAQ (padrão homologado)
+        const raw = String(
+          props.tipo || props.TIPO || props.TIPO_INSTALACAO || props.tipo_instalacao ||
+          props.ds_tipo || props.perfil || props.PERFIL || props.subtipo || props.SUBTIPO ||
+          props.descricao || props.DESCRICAO || ''
+        );
+        const limpo = Security.repararTexto(raw).toUpperCase();
+        if (limpo.includes('ORGANIZADO') || limpo.includes('AUTORIDADE PORTUÁRIA') || limpo.includes('AUTORIDADE PORTUARIA') || limpo.includes('DOCAS')) {
+          return this.tipos.ORGANIZADO;
         }
-        for (const [k, obj] of Object.entries(this.tipos)) {
-          if (obj.valorOriginal.toLowerCase() === val.toLowerCase()) return obj;
+        if (limpo.includes('TERMINAL DE USO PRIVADO') || limpo.includes('TUP') || limpo.includes('USO PRIVADO')) {
+          return this.tipos.TUP;
         }
-        return { id: 'outros', valorOriginal: val, nome: val, cor: '#64748b', raio: 5, peso: 1 };
+        if (limpo.includes('PÚBLICO') || limpo.includes('PUBLICO') || limpo.includes('PORTUÁRIA PÚBLICA') || limpo.includes('PORTUARIA PUBLICA') || limpo.includes('INTERNACIONAL')) {
+          return this.tipos.PUBLICO;
+        }
+        if (limpo.includes('IP4') || limpo.includes('PEQUENO PORTE')) {
+          return this.tipos.IP4;
+        }
+        if (limpo.includes('TRANSBORDO') || limpo.includes('ETC')) {
+          return this.tipos.ETC;
+        }
+        return this.tipos.OUTROS;
       }
     };
 
@@ -1019,35 +995,12 @@
               }
             });
             DADOS_GEOJSON_BRUTOS[id] = dados;
-
-            // Extrai dinamicamente os filtros reais a partir dos atributos da camada carregada
             FilterManager.atualizarFiltrosDaCamada(id, dados);
 
             const opcoes = Styler.obterOpcoes(id);
 
             // 1. Instalações Portuárias com Classificação Fiel e Subgrupos
             if (id === 'instalacoes_portuarias') {
-              // 1. Extração dinâmica e fidedigna dos valores do atributo oficial da camada
-              PortClassification.inicializarTipos(dados.features);
-              UI.renderizarSubpaletaPortos();
-
-              // 2. Atualiza opções do filtro dinâmico superior com os valores reais da tabela
-              if (FilterManager.configFiltros && FilterManager.configFiltros.instalacoes_portuarias) {
-                FilterManager.configFiltros.instalacoes_portuarias.opcoes = [
-                  { valor: 'TODOS', rotulo: '⚓ Todas as Instalações' }
-                ];
-                for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
-                  FilterManager.configFiltros.instalacoes_portuarias.opcoes.push({
-                    valor: tKey,
-                    rotulo: `${cat.nome} (${cat.qtd})`
-                  });
-                }
-                const selAtual = document.getElementById('sel-camada-busca');
-                if (selAtual && selAtual.value === 'instalacoes_portuarias') {
-                  FilterManager.aoMudarCamada('instalacoes_portuarias');
-                }
-              }
-
               if (!window.SUBGRUPOS_PORTOS) window.SUBGRUPOS_PORTOS = {};
               for (const tKey of Object.keys(PortClassification.tipos)) {
                 if (window.SUBGRUPOS_PORTOS[tKey]) mapa.removeLayer(window.SUBGRUPOS_PORTOS[tKey]);
@@ -1191,7 +1144,28 @@
 
         // Subpaleta de Outorgas da ANTAQ
         if (id === 'instalacoes_portuarias') {
-          subpaletaHTML = '<div id="container-subpaleta-portos"></div>';
+          let listaSubHTML = '';
+          for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
+            listaSubHTML += `
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:3px 0;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <input type="color" id="subcolor-${tKey}" value="${cat.cor}" onchange="Styler.atualizarSubcamadaPorto('${tKey}', this.value)" style="width:16px; height:16px; border:none; padding:0; background:transparent; cursor:pointer;" title="Personalizar cor de ${cat.nome}">
+                  <span>${cat.nome}</span>
+                  <span class="badge-contador" id="subcnt-${tKey}"></span>
+                </div>
+                <input type="checkbox" id="chk-sub-${tKey}" checked onchange="toggleSubcamadaPorto('${tKey}', this.checked)">
+              </div>
+            `;
+          }
+          subpaletaHTML = `
+            <div style="margin-top:6px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; font-size:10px; display:flex; flex-direction:column; gap:4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                <span style="font-weight:700; color:#0a2540;">Subcamadas de Outorga (ANTAQ):</span>
+                <span style="font-size:9px; color:#0284c7; cursor:pointer; font-weight:700;" onclick="toggleTodasSubcamadasPortos(true)">Marcar Todas</span>
+              </div>
+              ${listaSubHTML}
+            </div>
+          `;
         }
 
         const ehPorto = (id === 'instalacoes_portuarias');
@@ -1259,7 +1233,6 @@
 
         container.appendChild(item);
       }
-      UI.renderizarSubpaletaPortos();
     }
 
     function toggleGavetaEstilo(id) {
@@ -1467,7 +1440,7 @@
      * MÓDULO 8: GERENCIADOR DE FILTROS REATIVOS
      */
     const FilterManager = {
-      // Configurações de placeholder por camada (sem opções estáticas ou inventadas)
+      // Metadados de busca e campos ativos por camada (opções geradas 100% dinamicamente dos dados brutos)
       configFiltros: {
         instalacoes_portuarias: { placeholder: "Buscar instalação portuária por nome, município ou UF...", campoAtivo: null, opcoes: [] },
         vias_navegadas: { placeholder: "Buscar trecho hidroviário ou rio na base...", campoAtivo: null, opcoes: [] },
@@ -1497,7 +1470,7 @@
         const chaves = Object.keys(features[0].properties || {});
         if (!chaves.length) return null;
 
-        // Dicionário de campos prioritários oficiais por tema (caso existam na camada)
+        // Prioridades temáticas oficiais
         const prioridades = {
           instalacoes_portuarias: ['tipo', 'TIPO_INSTALACAO', 'TIPO', 'tipo_instalacao', 'perfil'],
           ferrovias: ['concessionaria', 'concessao', 'ferrovia', 'operadora', 'sigla', 'cod_ferrovia', 'nome', 'tipo', 'administracao', 'empresa', 'NM_CONCESS', 'CONCESSIONARIA'],
@@ -1510,7 +1483,6 @@
           uf: ['REGIAO', 'NM_REGIAO', 'regiao', 'nome_regiao']
         };
 
-        // 1. Tenta campo prioritário se existir e tiver variação válida (entre 2 e 50 categorias)
         if (prioridades[idCamada]) {
           for (const p of prioridades[idCamada]) {
             const match = chaves.find(k => k.toLowerCase() === p.toLowerCase());
@@ -1527,7 +1499,7 @@
           }
         }
 
-        // 2. Descoberta estatística automática sobre as colunas da tabela de atributos
+        // Descoberta estatística automática nas propriedades da feição
         let melhorCampo = null;
         let melhorScore = -1;
         for (const chave of chaves) {
@@ -1546,7 +1518,6 @@
           }
 
           const nUnicos = unicos.size;
-          // Categorias legítimas: entre 2 e 40 valores distintos, presentes em ao menos 20% das feições
           if (nUnicos >= 2 && nUnicos <= 40 && preenchidos >= (features.length * 0.2)) {
             let score = 100 - Math.abs(nUnicos - 8);
             if (score > melhorScore) {
@@ -1572,29 +1543,34 @@
           };
         }
 
-        // Caso especial de instalações portuárias que já alimenta PortClassification
-        if (idCamada === 'instalacoes_portuarias' && Object.keys(PortClassification.tipos).length > 0) {
-          this.configFiltros[idCamada].campoAtivo = PortClassification.campoAtivo;
-          this.configFiltros[idCamada].opcoes = [
+        // Se for instalações portuárias com subgrupos configurados
+        if (idCamada === 'instalacoes_portuarias' && typeof PortClassification !== 'undefined' && PortClassification.tipos) {
+          this.configFiltros[idCamada].campoAtivo = 'tipo';
+          const opcoes = [
             { valor: 'TODOS', rotulo: `⚓ Todas as Instalações (${total})` }
           ];
-          for (const [safeId, cat] of Object.entries(PortClassification.tipos)) {
-            this.configFiltros[idCamada].opcoes.push({
-              valor: safeId,
-              rotulo: `${cat.nome} (${cat.qtd})`
+          for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
+            // Contagem real das feições que atendem a este tipo
+            let count = 0;
+            features.forEach(f => {
+              const c = PortClassification.classificar(f.properties || {});
+              if (c.id === tKey) count++;
+            });
+            opcoes.push({
+              valor: tKey,
+              rotulo: `${cat.nome} (${count})`
             });
           }
+          this.configFiltros[idCamada].opcoes = opcoes;
         } else {
           const campo = this.descobrirCampoCategorico(features, idCamada);
           this.configFiltros[idCamada].campoAtivo = campo;
 
           if (!campo) {
-            // Nenhum campo categórico encontrado na tabela de atributos: apenas 'Todos os Registros'
             this.configFiltros[idCamada].opcoes = [
               { valor: 'TODOS', rotulo: `Todos os Registros (${total})` }
             ];
           } else {
-            // Contagem estrita 1:1 dos valores reais da base
             const contagens = {};
             features.forEach(f => {
               const p = f.properties || {};
@@ -1621,7 +1597,6 @@
           }
         }
 
-        // Se a camada for a atualmente visualizada no seletor de busca, atualiza o dropdown na tela
         const selAtual = document.getElementById('sel-camada-busca');
         if (selAtual && selAtual.value === idCamada) {
           this.popularSubseletorUI(idCamada);
@@ -1644,7 +1619,6 @@
           });
           selSub.value = 'TODOS';
         } else {
-          // Se a camada ainda não foi carregada, exibe status de carregamento
           if (!DADOS_GEOJSON_BRUTOS[idCamada]) {
             selSub.style.display = 'inline-block';
             selSub.innerHTML = '<option value="TODOS">Carregando atributos da camada...</option>';
@@ -1677,7 +1651,6 @@
 
         this.popularSubseletorUI(idCamada);
 
-        // Se a camada ainda não estiver carregada na memória, carrega agora para extrair os filtros dinamicamente
         if (!DADOS_GEOJSON_BRUTOS[idCamada]) {
           await DataManager.carregarCamada(idCamada);
         }
@@ -1699,7 +1672,6 @@
       },
 
       aplicarFiltro: function(idCamada, valor) {
-        // 1. Instalações Portuárias (comportamento de subcamadas em featureGroups)
         if (idCamada === 'instalacoes_portuarias' && window.SUBGRUPOS_PORTOS) {
           let visiveis = 0;
           const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 0;
@@ -1734,9 +1706,7 @@
             const nomeFiltro = PortClassification.tipos[valor]?.nome || valor;
             UI.toast(`Filtro [Portos]: ${nomeFiltro} (${visiveis} ativos visíveis).`);
           }
-        }
-        // 2. Demais Camadas Vetoriais (Ferrovias, Rodovias, Vias Navegadas, UCs, etc.)
-        else {
+        } else {
           const dados = DADOS_GEOJSON_BRUTOS[idCamada];
           if (!dados || !dados.features) return;
           const cfgFiltro = this.configFiltros[idCamada];
@@ -1751,7 +1721,7 @@
             return;
           }
 
-          // Filtro estrito: compara 1:1 o valor do atributo na feição
+          // Filtro estrito por igualdade exata de atributo
           const filtradas = dados.features.filter(f => {
             const p = f.properties || {};
             if (!campo) return false;
@@ -1788,9 +1758,6 @@
       }
     };
 
-    /**
-     * MÓDULO 9: MOTOR DE BUSCA EM TEMPO REAL
-     */
     const SearchEngine = {
       onInput: function(val) {
         const box = document.getElementById('resultados-busca');
@@ -2220,7 +2187,7 @@
               const cat = PortClassification.classificar(f.properties || {});
               const p = f.properties || {};
               const uf = String(p.uf || p.UF || p.sigla_uf || p.SIGLA_UF || '').toUpperCase();
-              const matchTipo = tipoOutorga ? (cat.id === tipoOutorga || (cat.nome && cat.nome.toUpperCase().includes(tipoOutorga.toUpperCase()))) : true;
+              const matchTipo = tipoOutorga ? (cat.id === tipoOutorga) : true;
               const matchUf = (estados.length > 0) ? estados.some(e => uf.includes(e)) : true;
               return matchTipo && matchUf;
             });
@@ -2483,38 +2450,6 @@ Responda APENAS o JSON puro.`;
      * MÓDULO 12: INTERFACE GERAL (UI, DASHBOARDS E TABELAS)
      */
     const UI = {
-      renderizarSubpaletaPortos: function() {
-        const cont = document.getElementById('container-subpaleta-portos');
-        if (!cont) return;
-        const totalTipos = Object.keys(PortClassification.tipos).length;
-        if (totalTipos === 0) {
-          cont.innerHTML = '<div style="font-size:10px; color:#64748b; padding:4px 0;">Carregando tipologias da camada...</div>';
-          return;
-        }
-
-        let listaSubHTML = '';
-        for (const [tKey, cat] of Object.entries(PortClassification.tipos)) {
-          listaSubHTML += `
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:3px 0;">
-              <div style="display:flex; align-items:center; gap:6px;">
-                <input type="color" id="subcolor-${tKey}" value="${cat.cor}" onchange="Styler.atualizarSubcamadaPorto('${tKey}', this.value)" style="width:16px; height:16px; border:none; padding:0; background:transparent; cursor:pointer;" title="Personalizar cor de ${cat.nome}">
-                <span>${cat.nome}</span>
-                <span class="badge-contador" id="subcnt-${tKey}">(${cat.qtd || 0})</span>
-              </div>
-              <input type="checkbox" id="chk-sub-${tKey}" checked onchange="toggleSubcamadaPorto('${tKey}', this.checked)">
-            </div>
-          `;
-        }
-        cont.innerHTML = `
-          <div style="margin-top:6px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; font-size:10px; display:flex; flex-direction:column; gap:4px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
-              <span style="font-weight:700; color:#0a2540;">Tipologias da Camada (Campo: ${PortClassification.campoAtivo}):</span>
-              <span style="font-size:9px; color:#0284c7; cursor:pointer; font-weight:700;" onclick="toggleTodasSubcamadasPortos(true)">Marcar Todas</span>
-            </div>
-            ${listaSubHTML}
-          </div>
-        `;
-      },
       toastTimeout: null,
       toast: function(msg) {
         const t = document.getElementById('toast');
@@ -2603,3 +2538,72 @@ Responda APENAS o JSON puro.`;
         if (!portos || !portos.features) return;
 
         const tipos = {};
+        const ufs = {};
+
+        portos.features.forEach(f => {
+          const p = f.properties || {};
+          const cat = PortClassification.classificar(p);
+          tipos[cat.nome] = (tipos[cat.nome] || 0) + 1;
+
+          const uf = String(p.uf || p.UF || p.sigla_uf || 'Outros').toUpperCase().trim();
+          if (uf && uf.length === 2) ufs[uf] = (ufs[uf] || 0) + 1;
+        });
+
+        const ctxTipo = document.getElementById('grafico-portos-tipo')?.getContext('2d');
+        if (ctxTipo) {
+          if (this.chartTipo) this.chartTipo.destroy();
+          this.chartTipo = new Chart(ctxTipo, {
+            type: 'doughnut',
+            data: {
+              labels: Object.keys(tipos),
+              datasets: [{ data: Object.values(tipos), backgroundColor: ['#0284c7', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6', '#64748b'] }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } }
+          });
+        }
+
+        const ordenadas = Object.entries(ufs).sort((a, b) => b[1] - a[1]).slice(0, 8);
+        const ctxUf = document.getElementById('grafico-portos-uf')?.getContext('2d');
+        if (ctxUf) {
+          if (this.chartUf) this.chartUf.destroy();
+          this.chartUf = new Chart(ctxUf, {
+            type: 'bar',
+            data: {
+              labels: ordenadas.map(i => i[0]),
+              datasets: [{ data: ordenadas.map(i => i[1]), backgroundColor: '#0284c7', borderRadius: 4 }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+          });
+        }
+      }
+    };
+
+    window.addEventListener('click', (e) => {
+      if (!e.target.closest('#drop-ambiente')) document.getElementById('drop-ambiente')?.classList.remove('aberto');
+      if (!e.target.closest('.barra-busca-atributos')) {
+        const rBox = document.getElementById('resultados-busca');
+        if (rBox) rBox.style.display = 'none';
+      }
+    });
+
+    /**
+     * INICIALIZAÇÃO AUTOMÁTICA
+     */
+    (async function init() {
+      console.log("[WebGIS ANTAQ] Inicializando ambiente corporativo...");
+      construirPainelLateral();
+      FilterManager.aoMudarCamada("instalacoes_portuarias");
+      Styler.atualizarLegenda();
+
+      await LayerRegistry.carregarManifest();
+
+      for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
+        if (cfg.ativa) {
+          await DataManager.carregarCamada(id);
+        }
+      }
+      console.log("[WebGIS ANTAQ] Inicialização concluída com sucesso.");
+    })();
+  </script>
+</body>
+</html>
