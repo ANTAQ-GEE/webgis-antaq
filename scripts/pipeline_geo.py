@@ -128,6 +128,13 @@ def detectar_tipo_geometria(caminho_geojson: Path) -> str:
     return "poligono"
 
 def processar_pasta_dados():
+    # Camadas descartadas para manter o catálogo enxuto e focado no escopo ANTAQ
+    CAMADAS_IGNORADAS = [
+        "unidades_conservacao", "ucs_todas_mma", "estados_amazonia_legal",
+        "br_municipios_2025", "municipios_simplificados",
+        "bacias_nivel_2", "bacias_nivel_3", "bacias_nivel_4", "bacias_nivel_5", "bacias_nivel_6",
+        "regioes", "pais"
+    ]
     """Gera o catálogo de camadas com integridade referencial."""
     if not PASTA_DADOS.exists():
         PASTA_DADOS.mkdir(parents=True, exist_ok=True)
@@ -140,11 +147,10 @@ def processar_pasta_dados():
 
     # Ordem de prioridade na interface cartográfica
     ordem_prioritaria = [
-        "instalacoes_portuarias", "ven_2024", "ven_2022", "ven_2020", "ven_2018", "ven_2013",
+        "instalacoes_portuarias", "ven_2022", "ven_2024", "ven_2020", "ven_2018", "ven_2013",
         "linhas_travessias", "snv_1973", "embarcacoes",
-        "br_municipios_2025", "bacias_nivel_2", "bacias_nivel_3", "bacias_nivel_4", "bacias_nivel_5", "bacias_nivel_6",
-        "rodovias", "ferrovias", "uf", "regioes", "pais",
-        "tis_poligonais", "estados_amazonia_legal", "ucs_federais", "ucs_todas_mma"
+        "rodovias", "ferrovias", "uf",
+        "tis_poligonais", "ucs_federais"
     ]
 
     arquivos_dict = {p.stem: p for p in arquivos}
@@ -152,7 +158,7 @@ def processar_pasta_dados():
     # 1. Processa camadas padrão prioritárias
     for slug in ordem_prioritaria:
         # Ignora camada legada descontinuada
-        if slug == "unidades_conservacao":
+        if slug in CAMADAS_IGNORADAS or slug == "unidades_conservacao":
             continue
 
         p = arquivos_dict.get(slug)
@@ -182,7 +188,7 @@ def processar_pasta_dados():
     # 2. Adiciona camadas adicionais encontradas na pasta
     for p in arquivos:
         slug = normalizar_id(p.stem)
-        if slug == "unidades_conservacao":
+        if slug in CAMADAS_IGNORADAS or slug == "unidades_conservacao":
             continue
         if any(c["id"] == slug for c in camadas_manifesto):
             continue
