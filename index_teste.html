@@ -269,6 +269,139 @@
 
 
 
+    
+    /* ============================================================
+       APRIMORAMENTOS DE LAYOUT, ERGONOMIA E CATÁLOGO DE CAMADAS
+       ============================================================ */
+    .painel-lateral {
+      position: absolute; top: 64px; right: 16px; width: 360px; max-width: calc(100vw - 32px);
+      max-height: calc(100% - 80px); background: #ffffff; border-radius: 10px;
+      box-shadow: 0 16px 40px rgba(10, 25, 47, 0.35); z-index: 1000;
+      display: flex; flex-direction: column; border: 1px solid #cbd5e1;
+      overflow-x: hidden; transition: transform 0.25s ease, width 0.25s ease;
+    }
+    .painel-lateral.recolhido {
+      transform: translateX(calc(100% + 20px));
+    }
+    .btn-flutuante-abrir-painel {
+      display: none; position: absolute; top: 64px; right: 16px; z-index: 999;
+      background: #0a2540; color: #fff; border: 2px solid #0284c7; border-radius: 8px;
+      padding: 8px 12px; font-size: 11px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3); align-items: center; gap: 6px;
+    }
+    .btn-flutuante-abrir-painel:hover {
+      background: #0369a1;
+    }
+    .painel-barra-acoes {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px 10px;
+      background: #f1f5f9; border-bottom: 1px solid #e2e8f0;
+    }
+    .btn-barra-acao {
+      background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px;
+      padding: 6px 8px; font-size: 10.5px; font-weight: 700; color: #0a2540;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      gap: 5px; transition: all 0.15s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .btn-barra-acao:hover {
+      background: #e0f2fe; border-color: #0284c7; color: #0284c7; transform: translateY(-1px);
+    }
+    .btn-topo-painel {
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+      color: #fff; font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 4px;
+      cursor: pointer; transition: background 0.15s ease;
+    }
+    .btn-topo-painel:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    .item-camada {
+      display: flex; flex-direction: column; padding: 7px 8px; border-bottom: 1px solid #f1f5f9;
+      background: #ffffff; border-radius: 6px; margin-bottom: 4px;
+      transition: background 0.15s ease;
+    }
+    .item-camada:hover {
+      background: #f8fafc;
+    }
+    .item-camada-linha-topo {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .camada-info-bloco {
+      display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0;
+    }
+    .camada-titulo-txt {
+      font-size: 11.5px; font-weight: 600; color: #1e293b; line-height: 1.25;
+      overflow: hidden; text-overflow: ellipsis; white-space: normal;
+    }
+    .camada-acoes-barra {
+      display: flex; align-items: center; gap: 4px; margin-top: 5px; padding-top: 4px;
+      border-top: 1px dashed #e2e8f0; justify-content: flex-end;
+    }
+    .btn-acao-chip {
+      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px;
+      padding: 2px 5px; font-size: 9.5px; font-weight: 600; color: #475569;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 3px;
+      transition: all 0.12s ease;
+    }
+    .btn-acao-chip:hover {
+      background: #e2e8f0; color: #0a2540; border-color: #cbd5e1;
+    }
+    .btn-acao-chip.btn-retirar {
+      color: #ef4444; border-color: #fecaca; background: #fff5f5;
+    }
+    .btn-acao-chip.btn-retirar:hover {
+      background: #fee2e2; border-color: #ef4444; color: #b91c1c;
+    }
+    
+    /* MODAL DO CATÁLOGO DE CAMADAS */
+    .modal-catalogo {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(10, 25, 47, 0.85); backdrop-filter: blur(6px);
+      z-index: 999999; justify-content: center; align-items: center; padding: 20px;
+    }
+    .modal-catalogo.aberto {
+      display: flex;
+    }
+    .modal-catalogo-card {
+      background: #0f172a; border: 1px solid #0284c7; border-radius: 12px;
+      width: 95%; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.6); overflow: hidden; color: #f8fafc;
+    }
+    .modal-catalogo-header {
+      background: #061426; padding: 14px 18px; border-bottom: 1px solid rgba(2,132,199,0.3);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-catalogo-body {
+      padding: 16px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px;
+    }
+    .catalogo-grupo-bloco {
+      background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px 14px;
+    }
+    .catalogo-grupo-header {
+      font-size: 12px; font-weight: 700; color: #38bdf8; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .catalogo-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px;
+    }
+    .catalogo-item {
+      background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px 10px;
+      display: flex; justify-content: space-between; align-items: center; gap: 6px;
+    }
+    .catalogo-item-nome {
+      font-size: 11px; font-weight: 600; color: #f1f5f9; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-catalogo-acao {
+      border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s ease;
+    }
+    .btn-catalogo-add {
+      background: #0284c7; color: #fff;
+    }
+    .btn-catalogo-add:hover { background: #0369a1; }
+    .btn-catalogo-rem {
+      background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444;
+    }
+    .btn-catalogo-rem:hover { background: rgba(239, 68, 68, 0.35); }
+
     /* Switch */
     .switch { position: relative; display: inline-block; width: 30px; height: 16px; flex-shrink: 0; }
     .switch input { opacity: 0; width: 0; height: 0; }
@@ -939,6 +1072,31 @@
 
   <div id="toast"></div>
 
+  
+  <!-- MODAL DO CATÁLOGO DE CAMADAS -->
+  <div id="modal-catalogo-camadas" class="modal-catalogo">
+    <div class="modal-catalogo-card">
+      <div class="modal-catalogo-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:16px;">📚</span>
+          <strong>Catálogo de Camadas & Governança do Painel &bull; ANTAQ</strong>
+        </div>
+        <button class="modal-matriz-fechar" onclick="CatalogoManager.fecharModal()">&times;</button>
+      </div>
+      <div class="modal-catalogo-body">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <p style="font-size:11px; color:#94a3b8; margin:0;">
+            Adicione ou retire camadas do seu painel lateral para manter a área de trabalho focada no seu estudo.
+          </p>
+          <button class="btn-barra-acao" onclick="CatalogoManager.mostrarTodas()" style="background:#0284c7; color:#fff; border:none; padding:4px 10px;">
+            Exibir Todas no Painel
+          </button>
+        </div>
+        <div id="catalogo-conteudo-grupos"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL DA MATRIZ DE NAVEGAÇÃO & TEMPOS DE PERCURSO DO VEN -->
   <div id="modal-matriz-ven" class="modal-matriz-ven">
     <div class="modal-matriz-conteudo">
@@ -1335,10 +1493,33 @@
 
 
   <!-- PAINEL LATERAL DE CAMADAS -->
-  <aside class="painel-lateral">
+  <button class="btn-flutuante-abrir-painel" id="btn-flutuante-painel" onclick="UI.abrirPainelLateral()">
+    <span>🗺️ Abrir Painel de Camadas</span>
+  </button>
+
+  <aside class="painel-lateral" id="painel-camadas-lateral">
     <div class="painel-header">
-      <h2>PAINEL DE CAMADAS</h2>
-      <span id="label-status-estilo">Homologação Ativa</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:13px;">🗺️</span>
+        <h2>PAINEL DE CAMADAS</h2>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button class="btn-topo-painel" onclick="CatalogoManager.abrirModal()" title="Gerenciar e Adicionar Camadas ao Painel">
+          ➕ Adicionar
+        </button>
+        <button class="btn-topo-painel" onclick="UI.recolherPainelLateral()" title="Recolher Painel">
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <div class="painel-barra-acoes">
+      <button class="btn-barra-acao" onclick="CatalogoManager.abrirModal()" title="Abrir Catálogo de Camadas">
+        <span>➕ Catálogo de Camadas</span>
+      </button>
+      <button class="btn-barra-acao" onclick="ImportManager.abrirSeletor()" title="Importar arquivo Shapefile (ZIP), GeoJSON, KML ou GPKG">
+        <span>📁 Importar Arquivo</span>
+      </button>
     </div>
 
 
@@ -1393,8 +1574,13 @@
 
 
       <div class="secao">
-        <div class="secao-titulo" onclick="UI.alternarSecao(this)"><span>Infraestrutura Aquaviária</span><span>&#9662;</span></div>
+        <div class="secao-titulo" onclick="UI.alternarSecao(this)"><span>⚓ Infraestrutura Aquaviária</span><span>&#9662;</span></div>
         <div class="secao-conteudo" id="grupo-infra"></div>
+      </div>
+
+      <div class="secao" id="secao-multimodal">
+        <div class="secao-titulo" onclick="UI.alternarSecao(this)"><span>🚚 Transporte Multimodal (Ferrovias & Rodovias)</span><span>&#9662;</span></div>
+        <div class="secao-conteudo" id="grupo-multimodal"></div>
       </div>
 
 
@@ -1899,13 +2085,13 @@
       },
       rodovias: { 
         nome: "Rodovias Federais (SNV)", 
-        grupo: "infra", 
+        grupo: "multimodal", 
         arquivos: ["dados/rodovias.geojson", "./dados/rodovias.geojson", "../dados/rodovias.geojson"], 
         cor: "#f97316", opacidade: 0.85, peso: 2.2, tipoGeo: "linha", ativa: false, camposVisiveis: [] 
       },
       ferrovias: { 
         nome: "Malha Ferroviária Federal", 
-        grupo: "infra", 
+        grupo: "multimodal", 
         arquivos: ["dados/ferrovias.geojson", "./dados/ferrovias.geojson", "../dados/ferrovias.geojson"], 
         cor: "#a855f7", opacidade: 0.90, peso: 2.5, tipoGeo: "linha", ativa: false, camposVisiveis: [] 
       },
@@ -4513,9 +4699,18 @@
     function construirItemCamada(id, cfg, grupoEl) {
       if (id === 'unidades_conservacao') return;
       if (!grupoEl) return;
+
+      // Verifica se a camada foi retirada/oculta pelo usuário
+      const ocultas = CatalogoManager.obterOcultas();
+      const estaOculta = ocultas.includes(id);
+
       const item = document.createElement('div');
       item.className = 'item-camada';
       item.id = `item-camada-${id}`;
+      if (estaOculta) {
+        item.style.display = 'none';
+      }
+
       let subpaletaHTML = '';
 
       if (id === 'instalacoes_portuarias') {
@@ -4614,27 +4809,29 @@
         `;
 
       item.innerHTML = `
-        <div class="item-camada-principal">
-          <div class="camada-info">
+        <div class="item-camada-linha-topo">
+          <div class="camada-info-bloco">
             ${indicadorHTML}
-            <span>${cfg.nome}</span>
+            <span class="camada-titulo-txt">${cfg.nome}</span>
             <span class="badge-contador" id="cnt-${id}"></span>
             <span class="badge-erro" id="err-${id}"></span>
           </div>
-          <div class="camada-acoes">
-            <button class="btn-acao-icone btn-ordem-camada" title="Mover para Cima (Sobrepor às outras camadas deste grupo)" onclick="LayerOrderManager.mover('${id}', 'cima')" style="color:#0284c7; font-size:10px; font-weight:bold;">▲</button>
-            <button class="btn-acao-icone btn-ordem-camada" title="Mover para Baixo" onclick="LayerOrderManager.mover('${id}', 'baixo')" style="color:#0284c7; font-size:10px; font-weight:bold;">▼</button>
-            <button class="btn-acao-icone" title="Personalizar Estilo" onclick="toggleGavetaEstilo('${id}')">🎨</button>
-            <button class="btn-acao-icone" title="Tabela de Atributos" onclick="abrirTabela('${id}')">📋</button>
-            <button class="btn-acao-icone" title="Centralizar no Mapa" onclick="zoomCamada('${id}')">🔍</button>
-            <button class="btn-acao-icone" title="Exportar Camada (GeoJSON)" onclick="ExportManager.exportarGeoJSON('${id}')">💾</button>
-            ${cfg.grupo === 'importadas' ? `<button class="btn-acao-icone" title="Excluir Camada Importada" style="color:#ef4444;" onclick="ImportManager.excluir('${id}')">🗑️</button>` : ''}
-            <label class="switch">
-              <input type="checkbox" id="chk-${id}" ${cfg.ativa ? 'checked' : ''} onchange="toggleCamada('${id}', this.checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
+          <label class="switch" title="Ligar/Desligar Camada no Mapa">
+            <input type="checkbox" id="chk-${id}" ${cfg.ativa ? 'checked' : ''} onchange="toggleCamada('${id}', this.checked)">
+            <span class="slider"></span>
+          </label>
         </div>
+
+        <div class="camada-acoes-barra">
+          <button class="btn-acao-chip" title="Mover Camada para Cima" onclick="LayerOrderManager.mover('${id}', 'cima')">▲</button>
+          <button class="btn-acao-chip" title="Mover Camada para Baixo" onclick="LayerOrderManager.mover('${id}', 'baixo')">▼</button>
+          <button class="btn-acao-chip" title="Ajustar Estilo e Cores" onclick="toggleGavetaEstilo('${id}')">🎨 Estilo</button>
+          <button class="btn-acao-chip" title="Abrir Tabela de Atributos" onclick="abrirTabela('${id}')">📋 Tabela</button>
+          <button class="btn-acao-chip" title="Centralizar e Zoom no Mapa" onclick="zoomCamada('${id}')">🔍</button>
+          <button class="btn-acao-chip" title="Exportar Camada em GeoJSON" onclick="ExportManager.exportarGeoJSON('${id}')">💾</button>
+          <button class="btn-acao-chip btn-retirar" title="Retirar esta camada do painel (pode ser readicionada no Catálogo)" onclick="CatalogoManager.ocultarCamada('${id}')">✕ Retirar</button>
+        </div>
+
         ${subpaletaHTML}
         <div class="gaveta-painel" id="gaveta-${id}">
           ${gavetaConteudo}
@@ -5031,6 +5228,159 @@
 
 
     
+    
+    /* ============================================================
+       MÓDULO: GERENCIADOR DO CATÁLOGO DE CAMADAS (ADIÇÃO / RETIRADA)
+       ============================================================ */
+    const CatalogoManager = {
+      storageKey: 'antaq_webgis_camadas_ocultas',
+
+      obterOcultas: function() {
+        try {
+          const salvas = localStorage.getItem(this.storageKey);
+          return salvas ? JSON.parse(salvas) : [];
+        } catch(e) {
+          return [];
+        }
+      },
+
+      salvarOcultas: function(lista) {
+        try {
+          localStorage.setItem(this.storageKey, JSON.stringify(lista));
+        } catch(e) {}
+      },
+
+      ocultarCamada: function(id) {
+        const cfg = CONFIG_CAMADAS[id];
+        const nome = cfg ? cfg.nome : id;
+
+        // Desliga a camada do mapa se estiver ativa
+        const chk = document.getElementById(`chk-${id}`);
+        if (chk && chk.checked) {
+          chk.checked = false;
+          toggleCamada(id, false);
+        }
+
+        // Esconde o elemento no painel lateral
+        const el = document.getElementById(`item-camada-${id}`);
+        if (el) el.style.display = 'none';
+
+        // Registra na lista de ocultas
+        const ocultas = this.obterOcultas();
+        if (!ocultas.includes(id)) {
+          ocultas.push(id);
+          this.salvarOcultas(ocultas);
+        }
+
+        UI.toast(`Camada "${nome}" retirada do painel. Readicione em "➕ Adicionar".`);
+      },
+
+      adicionarCamadaAoPainel: function(id) {
+        const el = document.getElementById(`item-camada-${id}`);
+        if (el) {
+          el.style.display = 'flex';
+        }
+
+        const ocultas = this.obterOcultas().filter(x => x !== id);
+        this.salvarOcultas(ocultas);
+
+        this.renderizarCatalogo();
+        UI.toast(`Camada readicionada ao painel lateral!`);
+      },
+
+      mostrarTodas: function() {
+        this.salvarOcultas([]);
+        for (const id of Object.keys(CONFIG_CAMADAS)) {
+          const el = document.getElementById(`item-camada-${id}`);
+          if (el) el.style.display = 'flex';
+        }
+        this.renderizarCatalogo();
+        UI.toast('Todas as camadas estão visíveis no painel lateral!');
+      },
+
+      abrirModal: function() {
+        const m = document.getElementById('modal-catalogo-camadas');
+        if (!m) return;
+        m.classList.add('aberto');
+        this.renderizarCatalogo();
+      },
+
+      fecharModal: function() {
+        const m = document.getElementById('modal-catalogo-camadas');
+        if (m) m.classList.remove('aberto');
+      },
+
+      renderizarCatalogo: function() {
+        const container = document.getElementById('catalogo-conteudo-grupos');
+        if (!container) return;
+
+        const gruposInfo = {
+          infra: { titulo: "⚓ Infraestrutura Aquaviária & Portuária", icon: "⚓" },
+          multimodal: { titulo: "🚚 Transporte Multimodal (Ferrovias & Rodovias)", icon: "🚚" },
+          limites: { titulo: "🗺️ Limites Territoriais & Bacias Hidrográficas", icon: "🗺️" },
+          restricoes: { titulo: "🌿 Restrições Socioambientais & Territoriais", icon: "🌿" },
+          importadas: { titulo: "📁 Camadas Importadas / Personalizadas", icon: "📁" }
+        };
+
+        const ocultas = this.obterOcultas();
+        let htmlGrupos = '';
+
+        for (const [grpId, grpMeta] of Object.entries(gruposInfo)) {
+          const camadasGrupo = Object.entries(CONFIG_CAMADAS).filter(([_, c]) => c.grupo === grpId);
+          if (!camadasGrupo.length) continue;
+
+          let itensHTML = '';
+          for (const [id, cfg] of camadasGrupo) {
+            const estaOculta = ocultas.includes(id);
+            const statusBadge = estaOculta
+              ? '<span style="font-size:9px; color:#94a3b8; background:#334155; padding:2px 6px; border-radius:4px;">Oculta do Painel</span>'
+              : '<span style="font-size:9px; color:#34d399; background:rgba(16,185,129,0.2); padding:2px 6px; border-radius:4px;">No Painel</span>';
+
+            const botaoAcao = estaOculta
+              ? `<button class="btn-catalogo-acao btn-catalogo-add" onclick="CatalogoManager.adicionarCamadaAoPainel('${id}')">+ Adicionar</button>`
+              : `<button class="btn-catalogo-acao btn-catalogo-rem" onclick="CatalogoManager.ocultarCamada('${id}'); CatalogoManager.renderizarCatalogo();">✕ Retirar</button>`;
+
+            itensHTML += `
+              <div class="catalogo-item">
+                <div style="display:flex; flex-direction:column; gap:3px;">
+                  <div class="catalogo-item-nome">
+                    <span style="width:10px; height:10px; border-radius:2px; background:${cfg.cor}; display:inline-block;"></span>
+                    <span>${cfg.nome}</span>
+                  </div>
+                  <div>${statusBadge}</div>
+                </div>
+                ${botaoAcao}
+              </div>
+            `;
+          }
+
+          htmlGrupos += `
+            <div class="catalogo-grupo-bloco">
+              <div class="catalogo-grupo-header">${grpMeta.titulo}</div>
+              <div class="catalogo-grid">${itensHTML}</div>
+            </div>
+          `;
+        }
+
+        container.innerHTML = htmlGrupos;
+      }
+    };
+
+    // Controle de Recolher/Expandir Painel Lateral
+    UI.recolherPainelLateral = function() {
+      const p = document.getElementById('painel-camadas-lateral');
+      const b = document.getElementById('btn-flutuante-painel');
+      if (p) p.classList.add('recolhido');
+      if (b) b.style.display = 'flex';
+    };
+
+    UI.abrirPainelLateral = function() {
+      const p = document.getElementById('painel-camadas-lateral');
+      const b = document.getElementById('btn-flutuante-painel');
+      if (p) p.classList.remove('recolhido');
+      if (b) b.style.display = 'none';
+    };
+
     /* ============================================================
        MÓDULO: GERENCIADOR DA MATRIZ OPERACIONAL E TEMPOS DO VEN
        ============================================================ */
