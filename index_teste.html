@@ -950,6 +950,22 @@
     </div>
   </div>
 
+  <!-- MODAL DE METADADOS DA CAMADA (M3) -->
+  <div id="modal-metadados" class="modal-metadados">
+    <div class="modal-metadados-card">
+      <div class="modal-metadados-header">
+        <h3>
+          <span>ℹ️</span>
+          <span id="meta-nome-camada">Metadados da Camada</span>
+        </h3>
+        <button class="modal-matriz-fechar" onclick="LayerMetadata.fechar()">&times;</button>
+      </div>
+      <div class="modal-metadados-body" id="meta-corpo">
+        <!-- Preenchido dinamicamente -->
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL DA MATRIZ DE NAVEGAÇÃO & TEMPOS DE PERCURSO DO VEN -->
   <div id="modal-matriz-ven" class="modal-matriz-ven">
     <div class="modal-matriz-conteudo">
@@ -1109,6 +1125,35 @@
     </div>
   </div>
   <!-- FIM do painel do Copiloto — SEM duplicação -->
+
+  <!-- FERRAMENTA DE MEDIÇÃO (M1) -->
+  <div class="toolbar-medicao" id="toolbar-medicao">
+    <div class="toolbar-medicao-header" onclick="document.getElementById('toolbar-medicao').classList.toggle('recolhida')">
+      <span>📐 Medição</span>
+      <span class="toggle-icon">▼</span>
+    </div>
+    <div class="toolbar-medicao-corpo">
+      <button class="btn-medicao" id="btn-medir-distancia" onclick="MeasurementTool.ativar('distancia')" title="Medir distância entre pontos">
+        📏 Distância
+      </button>
+      <button class="btn-medicao" id="btn-medir-area" onclick="MeasurementTool.ativar('area')" title="Medir área de polígono">
+        ⬛ Área
+      </button>
+      <button class="btn-medicao" id="btn-medir-raio" onclick="MeasurementTool.ativar('raio')" title="Medir raio de influência">
+        ⭕ Raio
+      </button>
+      <button class="btn-medicao limpar" onclick="MeasurementTool.limparTudo()" title="Limpar todas as medições">
+        🧹 Limpar
+      </button>
+    </div>
+  </div>
+
+  <!-- Painel de resultados de medição -->
+  <div class="painel-medicao-resultados" id="painel-medicao-resultados">
+    <span id="medicao-rotulo">Medição</span>
+    <span class="valor" id="medicao-valor">0</span>
+    <span class="dica" id="medicao-dica">Clique no mapa para começar. Duplo-clique para finalizar.</span>
+  </div>
 
   <div id="mapa" style="margin-top: 52px; height: calc(100% - 52px); position: relative; z-index: 1;"></div>
 
