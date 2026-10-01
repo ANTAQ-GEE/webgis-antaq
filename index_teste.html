@@ -4899,69 +4899,7 @@
           }
         });
       },
-          relatorio = resultado.relatorio;
-          geojson = resultado.geojson;
-
-          // Se o arquivo é completamente inválido → mostra relatório e aborta
-          if (!resultado.ok) {
-            GeoJSONValidator.mostrarRelatorio(relatorio);
-            console.warn('[R2] Arquivo rejeitado:', relatorio);
-            return;
-          }
-
-          // Se teve problemas parciais → mostra relatório e pergunta ao usuário
-          if (relatorio.invalidas > 0 || relatorio.corrigidas > 0) {
-            // Guarda temporariamente para o caso do usuário clicar "Prosseguir"
-            const continuarImportacao = () => {
-              this._adicionarValidado(nome, geojson, relatorio);
-            };
-            GeoJSONValidator.mostrarRelatorio(relatorio, {
-              onProsseguir: continuarImportacao
-            });
-
-            // Se o usuário fechou o relatório sem clicar em nada, importa automaticamente
-            // (o usuário pode fechar o modal — nesse caso importamos apenas as válidas)
-            setTimeout(() => {
-              const modal = document.getElementById('modal-validacao');
-              if (modal && modal.classList.contains('aberto')) {
-                // Modal ainda está aberto — aguardamos ação do usuário
-                return;
-              }
-              // Modal já foi fechado — importamos as válidas
-              this._adicionarValidado(nome, geojson, relatorio);
-            }, 100);
-
-            // Adiciona listener de "fechar" para importar automaticamente
-            const self = this;
-            const modal = document.getElementById('modal-validacao');
-            if (modal && !modal._r2Listener) {
-              modal._r2Listener = true;
-              const handler = () => {
-                if (!modal.classList.contains('aberto')) {
-                  // Se ainda não foi importado, importa agora
-                  if (!self._r2Importado) {
-                    self._r2Importado = true;
-                    self._adicionarValidado(nome, geojson, relatorio);
-                  }
-                  self._r2Importado = false;
-                  modal.removeEventListener('click', handler);
-                  modal._r2Listener = false;
-                }
-              };
-              modal.addEventListener('click', handler);
-            }
-            return;
-          }
-        } catch (e) {
-          console.error('[R2] Falha inesperada na validação:', e);
-          UI.toast('⚠️ Erro inesperado ao validar arquivo. Importação abortada.');
-          return;
-        }
-
-        // Fluxo normal: arquivo 100% válido
-        this._adicionarValidado(nome, geojson, relatorio);
-      },
-
+      
       /* Renderiza o GeoJSON já validado */
       _adicionarValidado: function(nome, geojson, relatorio) {
         if (!geojson || !geojson.features || !geojson.features.length) {
