@@ -1963,68 +1963,62 @@
        └──────────────────────────────────────────────────────┘
        ============================================================ */
 
-    /* 1) PAINEL LATERAL — reduzido para não alcançar o canto inferior */
+        /* ============================================================
+       LAYOUT FINAL — Zonas exclusivas e corretas
+       ============================================================ */
+
+    /* 1) PAINEL LATERAL — top-right, não alcança o canto inferior */
     .painel-lateral {
       top: 64px !important;
-      max-height: calc(100vh - 64px - 180px) !important;
+      max-height: calc(100vh - 64px - 140px) !important;
     }
 
-    /* 2) BARRA DE BUSCA — top-left compacta */
+    /* 2) BARRA DE BUSCA — top-left */
     .barra-busca-atributos {
       top: 64px !important;
       left: 16px !important;
-      max-width: calc(100vw - 400px) !important;
     }
 
-    /* 3) MINIMAP — top-left compacto, abaixo da busca */
+    /* 3) MINIMAP — top-left, sem position:relative */
     .leaflet-control-minimap {
-      position: relative !important;
       margin-top: 62px !important;
       margin-left: 16px !important;
-      width: 180px !important;
-      height: 180px !important;
+      width: 160px !important;
+      height: 160px !important;
       z-index: 900 !important;
     }
-    .leaflet-control-minimap a.minimap-toggle {
-      display: block !important;
-    }
-    /* Minimap colapsado */
-    .leaflet-control-minimap.minimized {
-      width: 24px !important;
-      height: 24px !important;
-    }
 
-    /* 4) NOTIFICAÇÕES — top-center, não colidem com painel */
+    /* 4) NOTIFICAÇÕES — top-center */
     .notificacoes-container {
       top: 64px !important;
       left: 50% !important;
       transform: translateX(-50%) !important;
-      max-width: 400px !important;
+      max-width: 420px !important;
       z-index: 3000 !important;
     }
 
-    /* 5) LEGENDA — bottom-left, compacta e limitada */
+    /* 5) LEGENDA — bottom-left, encostada no canto */
     .caixa-legenda {
       bottom: 16px !important;
       left: 16px !important;
       width: 240px !important;
-      max-height: 320px !important;
+      max-height: 280px !important;
       z-index: 1100 !important;
     }
     .caixa-legenda .legenda-conteudo {
-      max-height: 260px !important;
+      max-height: 220px !important;
       overflow-y: auto !important;
     }
 
-    /* 6) TOOLBAR DE MEDIÇÃO — bottom-left, acima da legenda */
+    /* 6) MEDIÇÃO (toolbar) — acima da legenda */
     .toolbar-medicao {
-      bottom: 350px !important;
+      bottom: 310px !important;
       left: 16px !important;
       right: auto !important;
       z-index: 1100 !important;
     }
 
-    /* 7) PAINEL DE RESULTADOS DE MEDIÇÃO — bottom-center, acima do rodapé */
+    /* 7) MEDIÇÃO (resultados) — bottom-center, acima do rodapé */
     .painel-medicao-resultados {
       bottom: 50px !important;
       left: 50% !important;
@@ -2032,46 +2026,41 @@
       z-index: 1400 !important;
     }
 
-    /* 8) PAINEL DE SELEÇÃO — bottom-center, acima da medição */
+    /* 8) SELEÇÃO MÚLTIPLA — bottom-center, acima do rodapé */
     .painel-selecao {
       top: auto !important;
-      bottom: 130px !important;
+      bottom: 50px !important;
       left: 50% !important;
-      transform: translateX(-50%) translateY(0) !important;
-      z-index: 1500 !important;
-      max-width: calc(100vw - 500px) !important;
+      transform: translateX(-50%) !important;
+      z-index: 1600 !important;
+      max-width: calc(100vw - 100px) !important;
     }
     .painel-selecao.aberto {
       display: flex !important;
       opacity: 1 !important;
-      transform: translateX(-50%) translateY(0) !important;
+      transform: translateX(-50%) !important;
     }
 
-    /* 9) ZOOM CONTROL — bottom-right, encostado no rodapé */
+    /* 9) ZOOM — bottom-right, canto */
     .leaflet-bottom.leaflet-right .leaflet-control-zoom {
-      margin-bottom: 10px !important;
+      margin-bottom: 8px !important;
       margin-right: 16px !important;
       z-index: 1000 !important;
     }
 
-    /* 10) COORDENADAS — bottom-right, ACIMA do zoom */
+    /* 10) COORDENADAS — bottom-right, acima do zoom */
     .leaflet-bottom.leaflet-right .leaflet-control-coords {
-      margin-bottom: 110px !important;
+      margin-bottom: 95px !important;
       margin-right: 16px !important;
       z-index: 1000 !important;
     }
 
-    /* 11) ESCALA — bottom-right, ao lado do zoom */
-    .leaflet-bottom.leaflet-right .leaflet-control-scale {
-      margin-bottom: 10px !important;
-      margin-right: 60px !important;
-      z-index: 1000 !important;
-    }
-    .leaflet-bottom.leaflet-left .leaflet-control-scale {
+    /* 11) ESCALA — escondida (a coordenada já dá a referência) */
+    .leaflet-control-scale {
       display: none !important;
     }
 
-    /* 12) RODAPÉ — fixo no fundo */
+    /* 12) RODAPÉ */
     .rodape-versao {
       z-index: 2000 !important;
     }
@@ -2121,9 +2110,6 @@
         border: 1px solid #333 !important;
         background: #ffffff !important;
         z-index: 9998 !important;
-      }
-      .caixa-legenda .legenda-conteudo {
-        max-height: none !important;
       }
       * {
         -webkit-print-color-adjust: exact !important;
