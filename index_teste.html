@@ -4769,48 +4769,6 @@
           geojson = await fnShp(zipBuffer);
         }
 
-          const zip = await JSZip.loadAsync(zipBuffer);
-          const entradas = Object.keys(zip.files).filter(
-            n => !n.includes('__MACOSX') && !n.startsWith('.')
-          );
-
-          const shpNome = entradas.find(n => n.toLowerCase().endsWith('.shp'));
-
-          if (!shpNome) {
-            const extensoes = [...new Set(entradas.map(n => {
-              const m = n.match(/\.([^.]+)$/);
-              return m ? m[1].toLowerCase() : '';
-            }).filter(Boolean))];
-
-            const temParcial = extensoes.some(e => ['dbf', 'shx', 'prj', 'cpg'].includes(e));
-            if (temParcial) {
-              throw new Error(`ZIP tem arquivos de SHP (${extensoes.join(', ')}) mas falta o .shp.`);
-            }
-
-            try {
-              geojson = await fnShp(zipBuffer);
-            } catch (eFallback) {
-              throw new Error(`Nenhum .shp no ZIP. Conteúdo: ${extensoes.join(', ') || '?'}.`);
-            }
-          } else {
-            const baseNome = shpNome.replace(/\.shp$/i, '');
-            const dbfNome = entradas.find(n => n.replace(/\.dbf$/i, '').toLowerCase() === baseNome.toLowerCase() && n.toLowerCase().endsWith('.dbf'))
-                         || entradas.find(n => n.toLowerCase().endsWith('.dbf'));
-            const prjNome = entradas.find(n => n.replace(/\.prj$/i, '').toLowerCase() === baseNome.toLowerCase() && n.toLowerCase().endsWith('.prj'))
-                         || entradas.find(n => n.toLowerCase().endsWith('.prj'));
-
-            const shpBuf = await zip.files[shpNome].async('arraybuffer');
-            const dbfBuf = dbfNome ? await zip.files[dbfNome].async('arraybuffer') : null;
-            const prjTxt = prjNome ? await zip.files[prjNome].async('string') : null;
-
-            if (dbfBuf) {
-              geojson = await fnShp({ shp: shpBuf, dbf: dbfBuf, prj: prjTxt });
-            } else {
-              UI.toast(`Aviso: .dbf não encontrado. Geometrias sem atributos.`);
-              geojson = await fnShp({ shp: shpBuf, prj: prjTxt });
-            }
-          }
-        }
         // ---------- KML ----------
         else if (ext === 'kml') {
           geojson = this._kmlDeTexto(await file.text());
