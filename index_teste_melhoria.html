@@ -3912,7 +3912,8 @@
       filtrar: function(termo) {
         const listaEl = document.getElementById('resultados-busca');
         if (!termo || termo.trim().length < 2) { listaEl.style.display = 'none'; return; }
-        const idCamada = document.getElementById('sel-camada-busca').value;
+        const idCamadaVirtual = document.getElementById('sel-camada-busca').value;
+        const idCamada = this._resolverCamadaDeDados(idCamadaVirtual);
         const geojson = DADOS_GEOJSON_BRUTOS[idCamada];
         if (!geojson || !geojson.features) return;
         const t = termo.toLowerCase();
