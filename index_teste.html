@@ -4714,14 +4714,63 @@
         if (ext === 'geojson' || ext === 'json') {
           geojson = JSON.parse(await file.text());
         } else if (ext === 'zip') {
-          if (!fnShp) throw new Error('shpjs indisponível.');
-          const zip = await JSZip.loadAsync(file);
-          const entradas = Object.keys(zip.files).filter(n => !n.includes('__MACOSX') && !n.startsWith('.'));
-          const shpNome = entradas.find(n => n.toLowerCase().endsWith('.shp'));
-          if (!shpNome) {
-            const buf = await file.arrayBuffer();
-            geojson = await fnShp(buf);
-          } else {
+          if (!fnShp) throw new Error('Biblioteca de Shapefile (shpjs) indisponível. Verifique a conexão com a internet.');
+          try {
+            // ✅ Correção: converte explicitamente File → ArrayBuffer antes de passar
+            // ao JSZip. Isso evita falha de detecção de tipo em navegadores com CSP
+            // restritiva (como GitHub Pages) onde `instanceof Blob` pode falhar.
+            if (!file || typeof file.arrayBuffer !== 'function') {
+              throw new Error('Arquivo ZIP inválido ou não reconhecido pelo navegador.');
+            }
+
+            let zipBuffer;
+            try {
+              zipBuffer = await file.arrayBuffer();
+            } catch (e) {
+              throw new Error('Não foi possível ler o arquivo ZIP. Ele pode estar corrompido ou protegido.');
+            }
+
+            if (!zipBuffer || zipBuffer.byteLength === 0) {
+              throw new Error('Arquivo ZIP está vazio (0 bytes).');
+            }
+
+            // Assinatura ZIP: primeiros 2 bytes devem ser "PK" (0x50 0x4B)
+            const view = new Uint8Array(zipBuffer);
+            if (view.length < 4 || view[0] !== 0x50 || view[1] !== 0x4B) {
+              throw new Error('O arquivo não é um ZIP válido (assinatura "PK" ausente). Talvez seja um .zip renomeado ou corrompido.');
+            }
+
+            // ✅ Passa o ArrayBuffer (tipo garantido, evita detecção dinâmica do JSZip)
+            const zip = await JSZip.loadAsync(zipBuffer);
+            const entradas = Object.keys(zip.files).filter(n => !n.includes('__MACOSX') && !n.startsWith('.'));
+            const shpNome = entradas.find(n => n.toLowerCase().endsWith('.shp'));
+            if (!shpNome) {
+              // Detecta o que tem dentro do ZIP para dar mensagem útil
+              const extensoes = [...new Set(entradas.map(n => {
+                const m = n.match(/\.([^.]+)$/);
+                return m ? m[1].toLowerCase() : '';
+              }).filter(Boolean))];
+
+              const ehShapefileParcial = extensoes.some(e => ['dbf', 'shx', 'prj', 'cpg'].includes(e));
+              if (ehShapefileParcial) {
+                throw new Error(
+                  `O ZIP contém arquivos de Shapefile (${extensoes.join(', ')}) ` +
+                  `mas o arquivo .shp principal está faltando. ` +
+                  `Verifique se o ZIP está completo.`
+                );
+              }
+
+              // Fallback: tenta leitura nativa do shpjs com o buffer
+              try {
+                const buf = await file.arrayBuffer();
+                geojson = await fnShp(buf);
+              } catch (eFallback) {
+                throw new Error(
+                  `Não foi possível encontrar um arquivo .shp dentro do ZIP. ` +
+                  `Conteúdo detectado: ${extensoes.join(', ') || 'desconhecido'}.`
+                );
+              }
+            } else {
             const baseNome = shpNome.replace(/\.shp$/i, '');
             const dbfNome = entradas.find(n => n.replace(/\.dbf$/i, '').toLowerCase() === baseNome.toLowerCase() && n.toLowerCase().endsWith('.dbf')) || entradas.find(n => n.toLowerCase().endsWith('.dbf'));
             const prjNome = entradas.find(n => n.replace(/\.prj$/i, '').toLowerCase() === baseNome.toLowerCase() && n.toLowerCase().endsWith('.prj')) || entradas.find(n => n.toLowerCase().endsWith('.prj'));
