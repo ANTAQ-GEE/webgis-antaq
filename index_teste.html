@@ -19,6 +19,9 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
+  <!-- Leaflet MiniMap CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.css" />
+
   <style>
     :root {
       --antaq-azul-escuro: #0a2540;
@@ -1175,7 +1178,131 @@
       color: #ffffff;
       border-color: #38bdf8;
     }
+    /* ============================================================
+       M4 — MINIMAP + ESCALA + COORDENADAS
+       ============================================================ */
 
+    /* Lift dos controles nativos do Leaflet acima do rodapé (26px) */
+    .leaflet-bottom.leaflet-right .leaflet-control,
+    .leaflet-bottom.leaflet-left .leaflet-control {
+      margin-bottom: 34px !important;
+    }
+
+    /* Minimap (canto inferior direito) */
+    .leaflet-control-minimap {
+      border: 2px solid #0a2540 !important;
+      border-radius: 6px !important;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4) !important;
+      background: #0a2540 !important;
+      transition: all 0.25s ease !important;
+    }
+    .leaflet-control-minimap:hover {
+      transform: scale(1.03);
+    }
+    .leaflet-control-minimap a.minimap-toggle {
+      background-color: #0284c7 !important;
+      border-radius: 0 0 4px 4px !important;
+    }
+    .leaflet-control-minimap a.minimap-toggle:hover {
+      background-color: #0369a1 !important;
+    }
+    .leaflet-control-minimap .leaflet-control-attribution {
+      display: none !important;
+    }
+
+    /* Esconde o minimap na impressão */
+    @media print {
+      .leaflet-control-minimap { display: none !important; }
+    }
+
+    /* Escala gráfica */
+    .leaflet-control-scale {
+      background: rgba(10, 37, 64, 0.85) !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(56, 189, 248, 0.4) !important;
+      border-radius: 4px !important;
+      padding: 3px 6px !important;
+      font-size: 10.5px !important;
+      font-weight: 600 !important;
+      font-family: 'Consolas', monospace !important;
+      letter-spacing: 0.3px !important;
+      backdrop-filter: blur(6px);
+    }
+    .leaflet-control-scale-line {
+      border-color: #38bdf8 !important;
+      color: #ffffff !important;
+      border: 2px solid #38bdf8 !important;
+      border-top: none !important;
+      background: rgba(10, 37, 64, 0.75) !important;
+      padding: 2px 6px !important;
+      font-size: 10.5px !important;
+      font-weight: 700 !important;
+      font-family: 'Consolas', monospace !important;
+      letter-spacing: 0.3px !important;
+    }
+
+    /* Coordenadas do mouse (canto inferior esquerdo) */
+    .leaflet-control-coords {
+      background: rgba(10, 37, 64, 0.92) !important;
+      color: #bae6fd !important;
+      border: 1px solid rgba(56, 189, 248, 0.4) !important;
+      border-radius: 4px !important;
+      padding: 4px 10px !important;
+      font-size: 10.5px !important;
+      font-weight: 700 !important;
+      font-family: 'Consolas', monospace !important;
+      letter-spacing: 0.3px !important;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+      pointer-events: auto;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .leaflet-control-coords .coords-part {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .leaflet-control-coords .coords-rotulo {
+      color: #64748b;
+      font-size: 9.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .leaflet-control-coords .coords-valor {
+      color: #38bdf8;
+      font-weight: 800;
+    }
+    .leaflet-control-coords .coords-sep {
+      color: rgba(148, 163, 184, 0.4);
+      font-weight: 300;
+    }
+    .leaflet-control-coords .btn-copiar-coords {
+      background: transparent;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 11px;
+      padding: 0 2px;
+      transition: color 0.15s ease;
+    }
+    .leaflet-control-coords .btn-copiar-coords:hover {
+      color: #38bdf8;
+    }
+
+    /* Esconde a escala e as coordenadas na impressão (o cabeçalho da folha já informa) */
+    @media print {
+      .leaflet-control-scale,
+      .leaflet-control-coords { display: none !important; }
+    }
+
+    /* ============================================================
+       IMPRESSÃO — Layout limpo para PDF/papel
     /* ============================================================
        IMPRESSÃO — Layout limpo para PDF/papel
        ------------------------------------------------------------
@@ -1956,9 +2083,10 @@
     </div>
   </div>
 
-  <!-- Leaflet JS + MarkerCluster (ordem importa!) -->
+  <!-- Leaflet JS + MarkerCluster + MiniMap (ordem importa!) -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.js"></script>
 
   <!-- ============================================================ -->
   <!-- PARTE 2 do arquivo: JavaScript (vem na próxima resposta)     -->
@@ -4724,7 +4852,172 @@
         if (CAMADAS_MAPA[ano]) CAMADAS_MAPA[ano].setStyle({ weight: val });
       }
     };
+    /* ============================================================
+       MÓDULO 20: EXTRAS DE MAPA (M4)
+       ------------------------------------------------------------
+       - Minimap com visão geral do Brasil
+       - Escala gráfica dinâmica
+       - Coordenadas do mouse em tempo real
+       ============================================================ */
+    const MapExtras = {
+      minimap: null,
+      scale: null,
+      coords: null,
 
+      init: function() {
+        try { this._criarMinimap(); } catch(e) { console.warn('[M4] Falha no minimap:', e); }
+        try { this._criarEscala(); } catch(e) { console.warn('[M4] Falha na escala:', e); }
+        try { this._criarCoordenadas(); } catch(e) { console.warn('[M4] Falha nas coordenadas:', e); }
+      },
+
+      _criarMinimap: function() {
+        if (typeof L.Control.MiniMap !== 'function') {
+          console.warn('[M4] Plugin MiniMap não carregado.');
+          return;
+        }
+
+        // Basemap leve e claro — ideal para minimap
+        const baseMinimap = L.tileLayer(
+          'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+          {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 18,
+            minZoom: 0
+          }
+        );
+
+        this.minimap = new L.Control.MiniMap(baseMinimap, {
+          position: 'bottomright',
+          width: 150,
+          height: 150,
+          collapsedWidth: 22,
+          collapsedHeight: 22,
+          zoomLevelOffset: -5,        // mais contexto (Brasil inteiro)
+          zoomAnimation: true,
+          toggleDisplay: true,        // botão de colapsar/expandir
+          minimized: false,           // inicia expandido
+          mapOptions: {
+            attributionControl: false,
+            zoomControl: false,
+            dragging: false,
+            touchZoom: false,
+            scrollWheelZoom: false,
+            doubleClickZoom: false,
+            boxZoom: false,
+            keyboard: false
+          },
+          aimingRectOptions: {
+            color: '#38bdf8',
+            weight: 2,
+            fillColor: '#38bdf8',
+            fillOpacity: 0.15
+          },
+          shadowRectOptions: {
+            color: '#0a2540',
+            weight: 1,
+            opacity: 0.6,
+            fillOpacity: 0
+          }
+        });
+
+        mapa.addControl(this.minimap);
+        console.info('[M4] Minimap ativo.');
+      },
+
+      _criarEscala: function() {
+        this.scale = L.control.scale({
+          position: 'bottomleft',
+          metric: true,
+          imperial: false,
+          maxWidth: 160,
+          updateWhenIdle: false
+        });
+        this.scale.addTo(mapa);
+        console.info('[M4] Escala gráfica ativa.');
+      },
+
+      _criarCoordenadas: function() {
+        const self = this;
+
+        const CoordControl = L.Control.extend({
+          options: { position: 'bottomleft' },
+          onAdd: function() {
+            const div = L.DomUtil.create('div', 'leaflet-control-coords');
+            div.id = 'leaflet-coords-control';
+            div.innerHTML = `
+              <span class="coords-part">
+                <span class="coords-rotulo">Lat</span>
+                <span class="coords-valor" id="coord-lat">—</span>
+              </span>
+              <span class="coords-sep">|</span>
+              <span class="coords-part">
+                <span class="coords-rotulo">Lng</span>
+                <span class="coords-valor" id="coord-lng">—</span>
+              </span>
+              <button class="btn-copiar-coords" id="coord-btn-copiar" title="Copiar coordenadas">📋</button>
+            `;
+
+            // Impede que o clique no controle dispare pan no mapa
+            L.DomEvent.disableClickPropagation(div);
+
+            // Botão de copiar
+            setTimeout(() => {
+              const btn = document.getElementById('coord-btn-copiar');
+              if (btn) {
+                btn.addEventListener('click', () => {
+                  const lat = document.getElementById('coord-lat')?.textContent || '';
+                  const lng = document.getElementById('coord-lng')?.textContent || '';
+                  if (lat === '—' || lng === '—') {
+                    UI.toast('Passe o mouse sobre o mapa primeiro.');
+                    return;
+                  }
+                  const texto = `${lat}, ${lng}`;
+                  navigator.clipboard.writeText(texto).then(() => {
+                    UI.toast(`📋 Copiado: ${texto}`);
+                  }).catch(() => {
+                    UI.toast('⚠️ Não foi possível copiar.');
+                  });
+                });
+              }
+            }, 0);
+
+            return div;
+          }
+        });
+
+        this.coords = new CoordControl();
+        this.coords.addTo(mapa);
+
+        // Listeners de movimento do mouse
+        const latEl = () => document.getElementById('coord-lat');
+        const lngEl = () => document.getElementById('coord-lng');
+
+        mapa.on('mousemove', (e) => {
+          const la = latEl(); const lo = lngEl();
+          if (la) la.textContent = e.latlng.lat.toFixed(5) + '°';
+          if (lo) lo.textContent = e.latlng.lng.toFixed(5) + '°';
+        });
+
+        // Ao sair do mapa, mostra "—" para não confundir
+        mapa.on('mouseout', () => {
+          const la = latEl(); const lo = lngEl();
+          if (la) la.textContent = '—';
+          if (lo) lo.textContent = '—';
+        });
+
+        console.info('[M4] Coordenadas do mouse ativas.');
+      },
+
+      /* Utilitário: retorna coordenadas atuais do centro do mapa */
+      obterCentro: function() {
+        const c = mapa.getCenter();
+        return { lat: c.lat, lng: c.lng };
+      }
+    };
+
+    /* ============================================================
+       MÓDULO 19: VERSIONAMENTO E INSTITUCIONAL (M7)
     /* ============================================================
        MÓDULO 19: VERSIONAMENTO E INSTITUCIONAL (M7)
        ------------------------------------------------------------
@@ -5712,6 +6005,11 @@
       try {
         WebGISAbout.init();
       } catch(e) { console.warn('[WebGISAbout] init falhou:', e); }
+
+      // ✅ NOVO: M4 — Minimap + Escala + Coordenadas
+      try {
+        MapExtras.init();
+      } catch(e) { console.warn('[MapExtras] init falhou:', e); }
 
       // ✅ NOVO: atalhos globais da ferramenta de medição
       document.addEventListener('keydown', (ev) => {
