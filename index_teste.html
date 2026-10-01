@@ -4501,10 +4501,10 @@
         this._atualizarFormaTemporaria();
 
         if (this.pontos.length === 1) {
-          const totalSalvas = this.medicoesSalvas.length;
-          this._atualizarPainel(this.modo, 0,
-            `Clique para iniciar nova medição. ${totalSalvas} medição(ões) finalizada(s).`);
+          this._atualizarPainel(this.modo, 0, 'Clique em mais pontos. Duplo-clique ou ESC para finalizar.');
         }
+      },
+
       _onMouseMove: function(e) {
         if (!this.modo || this.pontos.length === 0) return;
 
