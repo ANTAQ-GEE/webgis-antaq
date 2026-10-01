@@ -4060,13 +4060,23 @@
           return;
         }
 
-        // Detecta tipo pela mensagem (heurística leve)
+        // Detecta tipo pela mensagem
         const texto = String(msg);
         let tipo = 'info';
-        if (/✅|✓|💾|📥|📋|sucesso|exportad|carregad|removida|adicionada|copiad/i.test(texto)) tipo = 'sucesso';
-        else if (/⚠️|⚠|aviso|atenção|faltam|não foi poss|inválid/i.test(texto)) tipo = 'alerta';
-        else if (/❌|erro|falh|falha|impossível|não foi possível/i.test(texto)) tipo = 'erro';
-        else if (/🔄|⏳|carregando|processando|sincronizando/i.test(texto)) tipo = 'info';
+
+        // 1. Prioridade máxima: emoji explícito no início
+        if (/^(✅|✓|💾|📥|📋)/.test(texto.trim())) tipo = 'sucesso';
+        else if (/^(⚠️|⚠|🟡)/.test(texto.trim())) tipo = 'alerta';
+        else if (/^(❌|🔴)/.test(texto.trim())) tipo = 'erro';
+        else if (/^(🔄|⏳|ℹ️)/.test(texto.trim())) tipo = 'info';
+        else {
+          // 2. Fallback: palavras-chave com \b (word boundary) para evitar
+          //    falsos positivos em nomes de arquivo como "02_parcial_com_erros"
+          if (/\bsucesso\b|\bexportad|\bcarregad|\bremovid|\badicionad|\bcopiad|\bimportad/i.test(texto)) tipo = 'sucesso';
+          else if (/\bavis|\batenç|\bfaltam\b|\binválid/i.test(texto)) tipo = 'alerta';
+          else if (/\berro\b|\berros\b(?!\s*\.)|^erro|\bfalh(ou|a)\b|\bimpossível\b/i.test(texto)) tipo = 'erro';
+          else if (/\bprocessando\b|\bcarregando\b|\bsincronizando\b/i.test(texto)) tipo = 'info';
+        }
 
         // Remove o emoji inicial redundante (já temos ícone)
         const msgLimpa = texto
@@ -5805,9 +5815,12 @@
           }
         }
 
-        // 3. Detecta suspeita de projeção em coordenadas
-        if (validas.length > 0) {
-          relatorio.suspeitaProjecao = this._detectarProjecaoSuspeita(validas);
+        // 3. Detecta suspeita de projeção — roda nas features ORIGINAIS
+        //    (não nas válidas), porque quando todas as coordenadas estão em UTM,
+        //    todas são descartadas por "fora de faixa" e o detector nunca teria
+        //    chance de explicar o motivo real.
+        if (features.length > 0) {
+          relatorio.suspeitaProjecao = this._detectarProjecaoSuspeita(features);
         }
 
         // 4. Monta GeoJSON final
@@ -5836,18 +5849,20 @@
           return { ok: false, tipo: 'geometria', erro: 'Sem geometria (null/undefined)' };
         }
 
-        // Valida e repara geometria
-        const geoResult = this._validarGeometria(f.geometry, idx);
+        // ✅ Contexto que acumula correções ao longo da cadeia de validação
+        const ctx = { correcoes: [] };
+
+        // Valida e repara geometria (passando o contexto)
+        const geoResult = this._validarGeometria(f.geometry, idx, 0, ctx);
         if (!geoResult.ok) {
           return { ok: false, tipo: geoResult.tipo || 'geometria', erro: geoResult.erro };
         }
 
         // Normaliza properties (garante objeto)
         let props = f.properties;
-        let corrigida = null;
         if (!props || typeof props !== 'object' || Array.isArray(props)) {
           props = {};
-          corrigida = 'Campos alfanuméricos ausentes — normalizados para vazio';
+          ctx.correcoes.push('Campos alfanuméricos ausentes — normalizados para vazio');
         }
 
         const featureFinal = {
@@ -5856,12 +5871,15 @@
           geometry: geoResult.geometry
         };
 
+        // Retorna lista de correções encontradas (ou null se nenhuma)
+        const corrigida = ctx.correcoes.length > 0 ? ctx.correcoes.join(' · ') : null;
         return { ok: true, feature: featureFinal, corrigida };
       },
 
       /* ---------- Validação recursiva de geometria ---------- */
-      _validarGeometria: function(geom, idx, profundidade) {
+      _validarGeometria: function(geom, idx, profundidade, ctx) {
         profundidade = profundidade || 0;
+        ctx = ctx || { correcoes: [] };
         if (profundidade > 6) {
           return { ok: false, tipo: 'geometria', erro: 'Estrutura profundamente aninhada (recursão)' };
         }
@@ -5874,7 +5892,7 @@
 
         switch (tipo) {
           case 'Point': {
-            const r = this._validarPonto(coords);
+            const r = this._validarPonto(coords, ctx);
             if (!r.ok) return { ok: false, tipo: 'ponto', erro: r.erro };
             return { ok: true, geometry: { type: 'Point', coordinates: r.coords } };
           }
@@ -5884,14 +5902,14 @@
             }
             const pontos = [];
             for (const p of coords) {
-              const r = this._validarPonto(p);
+              const r = this._validarPonto(p, ctx);
               if (r.ok) pontos.push(r.coords);
             }
             if (pontos.length === 0) return { ok: false, tipo: 'multiponto', erro: 'Nenhum ponto válido' };
             return { ok: true, geometry: { type: 'MultiPoint', coordinates: pontos } };
           }
           case 'LineString': {
-            return this._validarLinha(coords);
+            return this._validarLinha(coords, false, ctx);
           }
           case 'MultiLineString': {
             if (!Array.isArray(coords) || coords.length === 0) {
@@ -5899,14 +5917,14 @@
             }
             const linhas = [];
             for (const ln of coords) {
-              const r = this._validarLinha(ln, true);
+              const r = this._validarLinha(ln, true, ctx);
               if (r.ok) linhas.push(r.geometry.coordinates);
             }
             if (linhas.length === 0) return { ok: false, tipo: 'multilinha', erro: 'Nenhuma linha válida' };
             return { ok: true, geometry: { type: 'MultiLineString', coordinates: linhas } };
           }
           case 'Polygon': {
-            return this._validarPoligono(coords);
+            return this._validarPoligono(coords, false, ctx);
           }
           case 'MultiPolygon': {
             if (!Array.isArray(coords) || coords.length === 0) {
@@ -5914,7 +5932,7 @@
             }
             const poligonos = [];
             for (const poly of coords) {
-              const r = this._validarPoligono(poly, true);
+              const r = this._validarPoligono(poly, true, ctx);
               if (r.ok) poligonos.push(r.geometry.coordinates);
             }
             if (poligonos.length === 0) return { ok: false, tipo: 'multipoligono', erro: 'Nenhum polígono válido' };
@@ -5926,7 +5944,7 @@
             }
             const geomsOk = [];
             for (const g of geom.geometries) {
-              const r = this._validarGeometria(g, idx, profundidade + 1);
+              const r = this._validarGeometria(g, idx, profundidade + 1, ctx);
               if (r.ok) geomsOk.push(r.geometry);
             }
             if (geomsOk.length === 0) return { ok: false, tipo: 'collection', erro: 'Nenhuma geometria válida' };
@@ -5938,7 +5956,7 @@
       },
 
       /* ---------- Componentes ---------- */
-      _validarPonto: function(p) {
+      _validarPonto: function(p, ctx) {
         if (!Array.isArray(p) || p.length < 2) {
           return { ok: false, erro: 'Ponto sem coordenadas [lng, lat]' };
         }
@@ -5956,6 +5974,10 @@
         if (lng < this.LIMITES.LNG_MIN || lng > this.LIMITES.LNG_MAX) {
           return { ok: false, erro: `Longitude fora de faixa: ${lng}` };
         }
+        // ✅ Detecta correção string→número
+        if (ctx && (typeof p[0] === 'string' || typeof p[1] === 'string')) {
+          ctx.correcoes.push('Coordenadas em texto convertidas para número');
+        }
         const coords = [lng, lat];
         if (p.length >= 3) {
           const alt = this._paraNumero(p[2]);
@@ -5964,53 +5986,52 @@
         return { ok: true, coords };
       },
 
-      _validarLinha: function(coords, silencioso) {
+      _validarLinha: function(coords, silencioso, ctx) {
         if (!Array.isArray(coords) || coords.length < 2) {
-          return silencioso
-            ? { ok: false }
-            : { ok: false, tipo: 'linha', erro: 'Linha com menos de 2 pontos' };
+          return silencioso ? { ok: false } : { ok: false, tipo: 'linha', erro: 'Linha com menos de 2 pontos' };
         }
         const pontos = [];
         for (const p of coords) {
-          const r = this._validarPonto(p);
+          const r = this._validarPonto(p, ctx);
           if (r.ok) pontos.push(r.coords);
         }
         if (pontos.length < 2) {
-          return silencioso
-            ? { ok: false }
-            : { ok: false, tipo: 'linha', erro: 'Menos de 2 pontos válidos' };
+          return silencioso ? { ok: false } : { ok: false, tipo: 'linha', erro: 'Menos de 2 pontos válidos' };
         }
         return { ok: true, geometry: { type: 'LineString', coordinates: pontos } };
       },
 
-      _validarPoligono: function(coords, silencioso) {
+      _validarPoligono: function(coords, silencioso, ctx) {
         if (!Array.isArray(coords) || coords.length === 0) {
-          return silencioso
-            ? { ok: false }
-            : { ok: false, tipo: 'poligono', erro: 'Polígono sem anéis' };
+          return silencioso ? { ok: false } : { ok: false, tipo: 'poligono', erro: 'Polígono sem anéis' };
         }
         const aneisValidos = [];
+        let fechamentosCorrigidos = 0;
         for (const anel of coords) {
           if (!Array.isArray(anel) || anel.length < 3) continue;
           const pontos = [];
           for (const p of anel) {
-            const r = this._validarPonto(p);
+            const r = this._validarPonto(p, ctx);
             if (r.ok) pontos.push(r.coords);
           }
           if (pontos.length < 3) continue;
-          // Fecha o anel se necessário
+
+          // ✅ Fecha o anel se necessário
           const primeiro = pontos[0];
           const ultimo = pontos[pontos.length - 1];
           if (primeiro[0] !== ultimo[0] || primeiro[1] !== ultimo[1]) {
             pontos.push([primeiro[0], primeiro[1]]);
+            fechamentosCorrigidos++;
           }
-          if (pontos.length < 4) continue; // precisa de ≥4 após fechar
+          if (pontos.length < 4) continue;
           aneisValidos.push(pontos);
         }
+        // ✅ Registra o fechamento como correção no contexto
+        if (ctx && fechamentosCorrigidos > 0) {
+          ctx.correcoes.push(`Anel de polígono fechado automaticamente (${fechamentosCorrigidos} vez${fechamentosCorrigidos > 1 ? 'es' : ''})`);
+        }
         if (aneisValidos.length === 0) {
-          return silencioso
-            ? { ok: false }
-            : { ok: false, tipo: 'poligono', erro: 'Nenhum anel válido' };
+          return silencioso ? { ok: false } : { ok: false, tipo: 'poligono', erro: 'Nenhum anel válido' };
         }
         return { ok: true, geometry: { type: 'Polygon', coordinates: aneisValidos } };
       },
@@ -6026,20 +6047,26 @@
 
       /* ---------- Heurística: coordenadas em projeção (UTM etc.) ---------- */
       _detectarProjecaoSuspeita: function(features) {
+        if (!Array.isArray(features) || features.length === 0) return false;
+
         let amostras = 0;
         let foraDeFaixa = 0;
+
         for (let i = 0; i < features.length && amostras < 50; i++) {
           try {
-            const coords = this._primeiroPonto(features[i].geometry);
-            if (!coords) continue;
+            const f = features[i];
+            if (!f || !f.geometry || !f.geometry.coordinates) continue;
+            const coords = this._primeiroPonto(f.geometry);
+            if (!coords || !Array.isArray(coords) || coords.length < 2) continue;
             amostras++;
-            const lng = coords[0];
-            const lat = coords[1];
-            // Fora da faixa normal → provável UTM (metros)
-            if (Math.abs(lng) > 500 || Math.abs(lat) > 500) foraDeRaixa = foraDeFaixa++;
+            const lng = Number(coords[0]);
+            const lat = Number(coords[1]);
+            if (!isFinite(lng) || !isFinite(lat)) continue;
+            // UTM típico: valores na casa dos milhares a milhões
+            if (Math.abs(lng) > 500 || Math.abs(lat) > 500) foraDeFaixa++;
           } catch (e) {}
         }
-        return amostras > 0 && (foraDeFaixa / amostras) > 0.8;
+        return amostras >= 2 && (foraDeFaixa / amostras) > 0.8;
       },
 
       _primeiroPonto: function(geom) {
@@ -6080,7 +6107,26 @@
         }
 
         if (relatorio.suspeitaProjecao) {
-          avisoPrincipalHTML += `<div class="val-aviso-geral erro" style="margin-top:8px;"><strong>🌐 Suspeita de projeção inadequada.</strong> As coordenadas parecem estar em metros (UTM) em vez de graus. Reprojete o arquivo para <code>SIRGAS 2000 / EPSG:4674</code> ou <code>WGS84 / EPSG:4326</code> no QGIS antes de importar.</div>`;
+          const contextoExtra = relatorio.validas === 0
+            ? 'Este é o motivo pelo qual <strong>todas</strong> as feições foram rejeitadas.'
+            : 'Algumas feições podem ter sido rejeitadas por causa disso.';
+
+          avisoPrincipalHTML += `
+            <div class="val-aviso-geral erro" style="margin-top:8px;">
+              <strong>🌐 Projeção inadequada detectada.</strong>
+              ${contextoExtra}
+              As coordenadas parecem estar em <strong>metros (UTM)</strong> em vez de graus.
+              <br><br>
+              <strong>Como corrigir no QGIS:</strong>
+              <ol style="margin:6px 0 0 18px; padding:0; font-size:11.5px; line-height:1.6;">
+                <li>Abra o shapefile no QGIS</li>
+                <li>Clique com botão direito na camada → <strong>Exportar → Salvar Feições Como…</strong></li>
+                <li>Escolha o formato <strong>GeoJSON</strong></li>
+                <li>Em <strong>CRS</strong>, selecione <code>EPSG:4674 — SIRGAS 2000</code></li>
+                <li>Salve e importe novamente aqui</li>
+              </ol>
+            </div>
+          `;
         }
 
         let errosHTML = '';
