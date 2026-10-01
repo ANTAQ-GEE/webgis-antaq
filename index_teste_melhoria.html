@@ -2012,66 +2012,22 @@
     }
 
     /* 10) MINIMAP: top-left, abaixo da barra de busca */
+      /* 10) MINIMAP: top-left, abaixo da barra de busca */
     .leaflet-control-minimap {
       margin-top: 62px !important;
       margin-left: 16px !important;
     }
-  </style>
-  </style>
+
+    /* ============================================================
+       IMPRESSÃO — Layout limpo para PDF/papel
+       ============================================================ */
     @media print {
-      /* 1. Esconde elementos de interface */
-      .top-header,
-      .painel-lateral,
-      .btn-flutuante-abrir-painel,
-      .painel-graficos,
-      .painel-copiloto,
-      .painel-tabela-atributos,
-      .toolbar-medicao,
-      .painel-medicao-resultados,
-      .barra-busca-atributos,
-      .dropdown-homologacao,
-      .modal-catalogo,
-      .modal-matriz-ven,
-      .modal-metadados,
-      .modal-sobre,
-      .rodape-versao,
-      #dropzone,
-      #toast,
-      .leaflet-control-zoom {
-        display: none !important;
-      }
-
-      /* 2. Reset global para impressão */
-      html, body {
-        overflow: visible !important;
-        height: auto !important;
-        width: 100% !important;
-        background: #ffffff !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-
-      /* 3. Mapa em tela cheia (menos o cabeçalho de 40px) */
-      #mapa {
-        position: relative !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: calc(100vh - 40px) !important;
-        margin: 0 !important;
-        margin-top: 40px !important;
-        page-break-inside: avoid;
-        page-break-after: avoid;
-      }
-
-      /* 4. Cabeçalho institucional no topo da página */
+      /* Cabeçalho institucional no topo da página */
       body::before {
-        content: "AGÊNCIA NACIONAL DE TRANSPORTES AQUAVIÁRIOS — ANTAQ  |  WebGIS Corporativo  |  GEE-SEPH";
+        content: "AGÊNCIA NACIONAL DE TRANSPORTES AQUAVIÁRIOS — ANTAQ | WebGIS Corporativo | GEE-SEPH";
         display: block;
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
+        top: 0; left: 0; right: 0;
         height: 40px;
         padding: 12px 16px 0 16px;
         box-sizing: border-box;
@@ -2085,14 +2041,12 @@
         z-index: 9999;
       }
 
-      /* 5. Rodapé com data de impressão */
+      /* Rodapé com data de impressão */
       body::after {
         content: "Documento gerado em " attr(data-data-impressao) " · Fonte: WebGIS ANTAQ / GEE-SEPH";
         display: block;
         position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        bottom: 0; left: 0; right: 0;
         height: 18px;
         padding: 3px 16px;
         box-sizing: border-box;
@@ -2105,7 +2059,7 @@
         z-index: 9999;
       }
 
-      /* 6. Legenda visível e ajustada ao papel */
+      /* Legenda visível e ajustada ao papel */
       .caixa-legenda {
         position: fixed !important;
         bottom: 30px !important;
@@ -2118,22 +2072,19 @@
         page-break-inside: avoid;
         z-index: 9998 !important;
       }
-
       .caixa-legenda .legenda-conteudo {
         max-height: none !important;
       }
 
-      /* 7. Preserva cores das camadas e da legenda */
+      /* Preserva cores das camadas e da legenda */
       * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
-
       .leaflet-tile-pane {
         filter: none !important;
       }
     }
-  </style>
   </style>
 
   <!-- CABEÇALHO -->
