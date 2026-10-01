@@ -1642,8 +1642,8 @@
     /* Histórico (botão flutuante no canto) */
     .btn-historico-notif {
       position: absolute;
-      top: 64px;
-      right: 390px;
+      top: 20px;
+      right: 220px;
       background: rgba(10, 37, 64, 0.9);
       color: #bae6fd;
       border: 1px solid rgba(56, 189, 248, 0.4);
@@ -1945,21 +1945,90 @@
     }
 
     /* ============================================================
-       IMPRESSÃO — Layout limpo para PDF/papel
-    /* ============================================================
-       IMPRESSÃO — Layout limpo para PDF/papel
-    /* ============================================================
-       IMPRESSÃO — Layout limpo para PDF/papel
-    /* ============================================================
-       IMPRESSÃO — Layout limpo para PDF/papel
-    /* ============================================================
-       IMPRESSÃO — Layout limpo para PDF/papel
+       LAYOUT DEFINITIVO — ZONAS EXCLUSIVAS SEM SOBREPOSIÇÃO
        ------------------------------------------------------------
-       - Esconde toda a UI (painel, toolbar, cabeçalho, modais)
-       - Mantém apenas o mapa + legenda
-       - Adiciona cabeçalho institucional no topo da página
-       - Preserva as cores das camadas
+       Top-Left      → Busca, Minimap
+       Top-Right     → Painel lateral (não desce até o rodapé)
+       Top-Center    → Notificações
+       Bottom-Left   → Escala, Medição (toolbar), Legenda
+       Bottom-Center → Seleção múltipla
+       Bottom-Right  → Zoom, Coordenadas
+       Rodapé        → Versão
        ============================================================ */
+
+    /* 1) Painel lateral: reduzido para não alcançar o rodapé nem os controles */
+    .painel-lateral {
+      max-height: calc(100vh - 64px - 140px) !important;
+    }
+
+    /* 2) NOTIFICAÇÕES: mantém top-center (não cruza com seleção pois seleção vai para bottom) */
+
+    /* 3) SELEÇÃO: bottom-center, acima do rodapé */
+    .painel-selecao {
+      top: auto !important;
+      bottom: 34px !important;
+      left: 50% !important;
+      transform: translateX(-50%) translateY(0) !important;
+    }
+    .painel-selecao.aberto {
+      display: flex !important;
+      opacity: 1 !important;
+      transform: translateX(-50%) translateY(0) !important;
+    }
+
+    /* 4) MEDIÇÃO (toolbar): bottom-left, encostada no canto */
+    .toolbar-medicao {
+      bottom: 44px !important;
+      left: 16px !important;
+      right: auto !important;
+    }
+
+    /* 5) MEDIÇÃO (painel de resultados): bottom-center, acima da seleção */
+    .painel-medicao-resultados {
+      bottom: 130px !important;
+      left: 50% !important;
+    }
+
+    /* 6) LEGENDA: bottom-left, acima da medição */
+    .caixa-legenda {
+      bottom: 130px !important;
+      left: 16px !important;
+    }
+
+    /* 7) ZOOM control: bottom-right, encostado no canto (acima do rodapé) */
+    .leaflet-bottom.leaflet-right .leaflet-control-zoom {
+      margin-bottom: 8px !important;
+      margin-right: 16px !important;
+    }
+
+    /* 8) COORDENADAS: bottom-right, acima do zoom */
+    .leaflet-bottom.leaflet-right .leaflet-control-coords {
+      margin-bottom: 90px !important;
+      margin-right: 16px !important;
+    }
+
+    /* 9) ESCALA: mover para bottom-left, canto */
+    .leaflet-bottom.leaflet-left .leaflet-control-scale {
+      margin-bottom: 8px !important;
+      margin-left: 16px !important;
+    }
+
+    /* 10) MINIMAP: top-left, abaixo da barra de busca */
+    .leaflet-control-minimap {
+      margin-top: 62px !important;
+      margin-left: 16px !important;
+    }
+
+    /* 11) Coordenadas: mudança de canto — precisa ir para bottomright */
+    /* (o controle foi criado em bottomleft; usamos margin-left negativo + right fixo) */
+
+    /* 12) Em telas pequenas: empilha medição acima da legenda */
+    @media (max-width: 1200px) {
+      .toolbar-medicao {
+        bottom: 400px !important;
+      }
+    }
+  </style>
     @media print {
       /* 1. Esconde elementos de interface */
       .top-header,
