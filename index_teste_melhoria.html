@@ -1983,9 +1983,17 @@
     .leaflet-control-minimap {
       margin-top: 62px !important;
       margin-left: 16px !important;
+      z-index: 900 !important;
+    }
+    /* Força tamanho correto */
+    .leaflet-control-minimap .leaflet-control-minimap-map,
+    .leaflet-control-minimap .leaflet-control-minimap-container {
       width: 160px !important;
       height: 160px !important;
-      z-index: 900 !important;
+    }
+    /* Esconde marcadores estranhos do minimap */
+    .leaflet-control-minimap .leaflet-marker-icon {
+      display: none !important;
     }
 
     /* 4) NOTIFICAÇÕES — top-center */
@@ -2778,11 +2786,7 @@
       </div>
     </div>
   </aside>
-
-  </aside>
-
-  </aside>
-
+  
   <!-- ============================================================
        M2 — PAINEL FLUTUANTE DE SELEÇÃO MÚLTIPLA
        ============================================================ -->
