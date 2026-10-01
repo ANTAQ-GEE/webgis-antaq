@@ -1425,6 +1425,310 @@
     }
 
     /* ============================================================
+       M5 — SISTEMA DE NOTIFICAÇÕES RICAS
+       ============================================================ */
+
+    /* Container central — empilha as notificações do topo para baixo */
+    .notificacoes-container {
+      position: fixed;
+      top: 64px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 10001;
+      pointer-events: none;
+      max-width: 460px;
+      width: calc(100% - 32px);
+    }
+
+    /* Notificação individual */
+    .notificacao {
+      background: rgba(10, 37, 64, 0.97);
+      backdrop-filter: blur(10px);
+      border-radius: 8px;
+      padding: 11px 12px 13px 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+      border-left: 4px solid #38bdf8;
+      pointer-events: auto;
+      color: #f1f5f9;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 12px;
+      line-height: 1.45;
+      position: relative;
+      overflow: hidden;
+      max-width: 100%;
+      animation: notifSlideDown 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .notificacao.saindo {
+      animation: notifSlideUp 0.22s ease-in forwards;
+    }
+
+    @keyframes notifSlideDown {
+      from { opacity: 0; transform: translateY(-16px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes notifSlideUp {
+      from { opacity: 1; transform: translateY(0); max-height: 200px; }
+      to   { opacity: 0; transform: translateY(-16px); max-height: 0; }
+    }
+
+    /* Tipos: cores + ícones */
+    .notificacao.tipo-sucesso { border-left-color: #10b981; }
+    .notificacao.tipo-info    { border-left-color: #38bdf8; }
+    .notificacao.tipo-alerta  { border-left-color: #f59e0b; }
+    .notificacao.tipo-erro    { border-left-color: #ef4444; }
+
+    .notificacao .notif-icone {
+      font-size: 18px;
+      line-height: 1;
+      flex-shrink: 0;
+      margin-top: 1px;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+    }
+    .notificacao.tipo-sucesso .notif-icone { color: #34d399; }
+    .notificacao.tipo-info    .notif-icone { color: #7dd3fc; }
+    .notificacao.tipo-alerta  .notif-icone { color: #fbbf24; }
+    .notificacao.tipo-erro    .notif-icone { color: #f87171; }
+
+    .notificacao .notif-conteudo {
+      flex: 1;
+      min-width: 0;
+      padding-top: 1px;
+    }
+    .notificacao .notif-titulo {
+      font-weight: 800;
+      font-size: 12px;
+      margin-bottom: 3px;
+      letter-spacing: 0.2px;
+      display: block;
+    }
+    .notificacao.tipo-sucesso .notif-titulo { color: #a7f3d0; }
+    .notificacao.tipo-info    .notif-titulo { color: #bae6fd; }
+    .notificacao.tipo-alerta  .notif-titulo { color: #fde68a; }
+    .notificacao.tipo-erro    .notif-titulo { color: #fecaca; }
+
+    .notificacao .notif-mensagem {
+      color: #e2e8f0;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+    .notificacao .notif-mensagem strong { color: #ffffff; font-weight: 700; }
+    .notificacao .notif-mensagem code {
+      background: rgba(56, 189, 248, 0.15);
+      color: #7dd3fc;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-family: 'Consolas', monospace;
+      font-size: 11px;
+    }
+    .notificacao .notif-mensagem a {
+      color: #38bdf8;
+      text-decoration: underline;
+    }
+    .notificacao .notif-mensagem a:hover { color: #7dd3fc; }
+
+    /* Ações (botões dentro da notificação) */
+    .notificacao .notif-acoes {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .notificacao .notif-acoes button {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      color: #bae6fd;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: 'Segoe UI', sans-serif;
+      letter-spacing: 0.2px;
+    }
+    .notificacao .notif-acoes button:hover {
+      background: rgba(56, 189, 248, 0.3);
+      border-color: #38bdf8;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    /* Botão de fechar (X) */
+    .notificacao .notif-fechar {
+      background: transparent;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 3px;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .notificacao .notif-fechar:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+    }
+
+    /* Barra de progresso (indicador de tempo) */
+    .notificacao .notif-progresso {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: rgba(56, 189, 248, 0.15);
+      overflow: hidden;
+      border-radius: 0 0 8px 8px;
+    }
+    .notificacao .notif-progresso span {
+      display: block;
+      height: 100%;
+      width: 100%;
+      transform-origin: left center;
+      background: linear-gradient(90deg, #38bdf8 0%, #0284c7 100%);
+      animation: notifProgresso linear forwards;
+    }
+    .notificacao.tipo-sucesso .notif-progresso span { background: linear-gradient(90deg, #34d399 0%, #10b981 100%); }
+    .notificacao.tipo-alerta  .notif-progresso span { background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%); }
+    .notificacao.tipo-erro    .notif-progresso span { background: linear-gradient(90deg, #f87171 0%, #ef4444 100%); }
+
+    @keyframes notifProgresso {
+      from { transform: scaleX(1); }
+      to   { transform: scaleX(0); }
+    }
+
+    /* Histórico (botão flutuante no canto) */
+    .btn-historico-notif {
+      position: absolute;
+      top: 64px;
+      right: 390px;
+      background: rgba(10, 37, 64, 0.9);
+      color: #bae6fd;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 10.5px;
+      font-weight: 700;
+      cursor: pointer;
+      z-index: 999;
+      transition: all 0.15s ease;
+      font-family: 'Segoe UI', sans-serif;
+      display: none;
+      align-items: center;
+      gap: 5px;
+    }
+    .btn-historico-notif.visivel { display: inline-flex; }
+    .btn-historico-notif:hover {
+      background: rgba(56, 189, 248, 0.2);
+      color: #ffffff;
+      border-color: #38bdf8;
+    }
+
+    /* Modal de histórico */
+    .modal-historico-notif {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 25, 47, 0.9);
+      backdrop-filter: blur(8px);
+      z-index: 100002;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .modal-historico-notif.aberto { display: flex; }
+    .modal-historico-notif-card {
+      background: #0f172a;
+      border: 1px solid #0284c7;
+      border-radius: 12px;
+      width: 95%;
+      max-width: 640px;
+      max-height: 82vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+      overflow: hidden;
+      color: #f8fafc;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+    .modal-historico-notif-header {
+      background: #061426;
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(2,132,199,0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-historico-notif-header h3 {
+      font-size: 14px;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .modal-historico-notif-body {
+      padding: 14px 18px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .historico-item {
+      background: #061426;
+      border-left: 3px solid #38bdf8;
+      border-radius: 5px;
+      padding: 9px 12px;
+      font-size: 11.5px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+    .historico-item.tipo-sucesso { border-left-color: #10b981; }
+    .historico-item.tipo-info    { border-left-color: #38bdf8; }
+    .historico-item.tipo-alerta  { border-left-color: #f59e0b; }
+    .historico-item.tipo-erro    { border-left-color: #ef4444; }
+    .historico-item .hist-hora {
+      font-size: 9.5px;
+      color: #64748b;
+      font-family: 'Consolas', monospace;
+      margin-bottom: 3px;
+      letter-spacing: 0.3px;
+    }
+    .historico-item .hist-titulo {
+      color: #f8fafc;
+      font-weight: 700;
+      font-size: 11.5px;
+      margin-bottom: 2px;
+    }
+    .historico-vazio {
+      text-align: center;
+      padding: 40px 20px;
+      color: #64748b;
+      font-style: italic;
+      font-size: 12px;
+    }
+
+    /* Esconde tudo na impressão */
+    @media print {
+      .notificacoes-container,
+      .btn-historico-notif,
+      .modal-historico-notif { display: none !important; }
+    }
+
+    /* ============================================================
+       IMPRESSÃO — Layout limpo para PDF/papel
+    /* ============================================================
        IMPRESSÃO — Layout limpo para PDF/papel
     /* ============================================================
        IMPRESSÃO — Layout limpo para PDF/papel
@@ -1606,7 +1910,32 @@
     </select>
   </div>
 
-  <div id="toast"></div>
+  <!-- M5 — Container de notificações ricas (substitui o #toast) -->
+  <div class="notificacoes-container" id="notificacoes-container"></div>
+
+  <!-- Botão discreto para abrir o histórico de notificações -->
+  <button class="btn-historico-notif" id="btn-historico-notif" onclick="NotificationManager.abrirHistorico()" title="Ver histórico de notificações">
+    🕘 Histórico
+  </button>
+
+  <!-- Modal de histórico -->
+  <div class="modal-historico-notif" id="modal-historico-notif">
+    <div class="modal-historico-notif-card">
+      <div class="modal-historico-notif-header">
+        <h3>
+          <span>🕘</span>
+          <span>Histórico de Notificações</span>
+        </h3>
+        <button class="modal-matriz-fechar" onclick="NotificationManager.fecharHistorico()">&times;</button>
+      </div>
+      <div class="modal-historico-notif-body" id="historico-notif-corpo">
+        <div class="historico-vazio">Nenhuma notificação ainda.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mantido para compatibilidade legada (não usado) -->
+  <div id="toast" style="display:none !important;"></div>
 
   <!-- MODAL DO CATÁLOGO DE CAMADAS -->
   <div id="modal-catalogo-camadas" class="modal-catalogo">
@@ -3506,12 +3835,40 @@
        MÓDULO 9: UI
        ============================================================ */
     const UI = {
+      /**
+       * Toast retrocompatível — roteia para o NotificationManager.
+       * Mantém 100% de compatibilidade com todas as chamadas antigas.
+       * Detecta automaticamente o tipo baseado em emojis/prefixos da mensagem.
+       */
       toast: function(msg) {
-        const t = document.getElementById('toast');
-        if (!t) return;
-        t.innerHTML = msg;
-        t.style.display = 'block';
-        setTimeout(() => { t.style.display = 'none'; }, 3500);
+        // Fallback para o #toast antigo caso NotificationManager ainda não exista
+        if (typeof NotificationManager === 'undefined') {
+          const t = document.getElementById('toast');
+          if (!t) return;
+          t.innerHTML = msg;
+          t.style.display = 'block';
+          setTimeout(() => { t.style.display = 'none'; }, 3500);
+          return;
+        }
+
+        // Detecta tipo pela mensagem (heurística leve)
+        const texto = String(msg);
+        let tipo = 'info';
+        if (/✅|✓|💾|📥|📋|sucesso|exportad|carregad|removida|adicionada|copiad/i.test(texto)) tipo = 'sucesso';
+        else if (/⚠️|⚠|aviso|atenção|faltam|não foi poss|inválid/i.test(texto)) tipo = 'alerta';
+        else if (/❌|erro|falh|falha|impossível|não foi possível/i.test(texto)) tipo = 'erro';
+        else if (/🔄|⏳|carregando|processando|sincronizando/i.test(texto)) tipo = 'info';
+
+        // Remove o emoji inicial redundante (já temos ícone)
+        const msgLimpa = texto
+          .replace(/^(✅|✓|💾|📥|📋|⚠️|❌|🔄|⏳|🧹|➕|➖|🗑️|🟡|🟢|✨)\s*/i, '')
+          .trim();
+
+        return NotificationManager.show({
+          tipo: tipo,
+          mensagem: msgLimpa || texto,
+          duracao: tipo === 'erro' ? 0 : 4500
+        });
       },
       toggleMenuAmbiente: function(e) {
         e.stopPropagation();
@@ -5067,6 +5424,229 @@
       }
     };
     /* ============================================================
+       MÓDULO 22: NOTIFICAÇÕES RICAS (M5)
+       ------------------------------------------------------------
+       Substitui o UI.toast() simples por um sistema com:
+       - 4 tipos (sucesso, info, alerta, erro)
+       - Ações clicáveis dentro da notificação
+       - Empilhamento de múltiplas simultâneas
+       - Duração variável (erro = não auto-fecha)
+       - Barra de progresso visual
+       - Histórico persistente em memória (últimas 20)
+       ============================================================ */
+    const NotificationManager = {
+      _historico: [],
+      _maxHistorico: 20,
+      _duracaoPadrao: 5000,
+
+      _icones: {
+        sucesso: '✅',
+        info:    'ℹ️',
+        alerta:  '⚠️',
+        erro:    '❌'
+      },
+
+      _titulosPadrao: {
+        sucesso: 'Sucesso',
+        info:    'Informação',
+        alerta:  'Atenção',
+        erro:    'Erro'
+      },
+
+      /**
+       * API principal.
+       * @param {Object} opts
+       * @param {string} opts.mensagem — texto (aceita HTML controlado)
+       * @param {string} [opts.tipo]   — 'sucesso' | 'info' | 'alerta' | 'erro'
+       * @param {string} [opts.titulo] — título customizado
+       * @param {number} [opts.duracao] — ms (0 = não auto-fecha). Default 5000. Erro = 0.
+       * @param {Array}  [opts.acoes]  — [{ texto, fn, fechar }]
+       */
+      show: function(opts) {
+        if (typeof opts === 'string') opts = { mensagem: opts };
+        opts = opts || {};
+
+        const tipo = ['sucesso', 'info', 'alerta', 'erro'].includes(opts.tipo) ? opts.tipo : 'info';
+        const duracao = opts.duracao !== undefined
+          ? opts.duracao
+          : (tipo === 'erro' ? 0 : this._duracaoPadrao);
+
+        const container = document.getElementById('notificacoes-container');
+        if (!container) {
+          console.log(`[Notif ${tipo}]`, opts.mensagem);
+          return null;
+        }
+
+        // Limita a 4 notificações simultâneas
+        const ativas = container.querySelectorAll('.notificacao');
+        if (ativas.length >= 4) {
+          ativas[0].dispatchEvent(new CustomEvent('notif-fechar-forcado'));
+        }
+
+        const id = 'notif-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+        const el = document.createElement('div');
+        el.className = `notificacao tipo-${tipo}`;
+        el.id = id;
+
+        const titulo = opts.titulo || this._titulosPadrao[tipo];
+        const icone = this._icones[tipo];
+
+        // Ações
+        let acoesHTML = '';
+        if (Array.isArray(opts.acoes) && opts.acoes.length) {
+          acoesHTML = '<div class="notif-acoes">' +
+            opts.acoes.map((a, idx) =>
+              `<button data-acao-idx="${idx}">${Security.escapeHTML(a.texto || 'Ação')}</button>`
+            ).join('') +
+            '</div>';
+        }
+
+        // Progresso (barra inferior)
+        const progressoHTML = duracao > 0
+          ? `<div class="notif-progresso"><span style="animation-duration:${duracao}ms;"></span></div>`
+          : '';
+
+        el.innerHTML = `
+          <span class="notif-icone">${icone}</span>
+          <div class="notif-conteudo">
+            <span class="notif-titulo">${Security.escapeHTML(titulo)}</span>
+            <div class="notif-mensagem">${opts.mensagem || ''}</div>
+            ${acoesHTML}
+          </div>
+          <button class="notif-fechar" title="Fechar">✕</button>
+          ${progressoHTML}
+        `;
+
+        container.appendChild(el);
+
+        // Registra no histórico
+        this._adicionarAoHistorico({
+          tipo, titulo,
+          mensagem: opts.mensagem,
+          timestamp: new Date()
+        });
+        this._atualizarBotaoHistorico();
+
+        // Auto-fechar
+        let timeoutId = null;
+        if (duracao > 0) {
+          timeoutId = setTimeout(() => this._fechar(id), duracao);
+        }
+
+        // Handler de fechar (X)
+        el.querySelector('.notif-fechar').addEventListener('click', () => {
+          if (timeoutId) clearTimeout(timeoutId);
+          this._fechar(id);
+        });
+
+        // Handler de fechar forçado (limite de 4 simultâneas)
+        el.addEventListener('notif-fechar-forcado', () => {
+          if (timeoutId) clearTimeout(timeoutId);
+          this._fechar(id);
+        });
+
+        // Handlers das ações
+        if (Array.isArray(opts.acoes)) {
+          el.querySelectorAll('.notif-acoes button').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const idx = parseInt(btn.dataset.acaoIdx, 10);
+              const acao = opts.acoes[idx];
+              if (!acao) return;
+              // Se `fechar` for false, mantém a notificação aberta
+              if (acao.fechar !== false) {
+                if (timeoutId) clearTimeout(timeoutId);
+                this._fechar(id);
+              }
+              try { if (typeof acao.fn === 'function') acao.fn(); }
+              catch (e) { console.warn('[Notif] Erro na ação:', e); }
+            });
+          });
+        }
+
+        return id;
+      },
+
+      /* ---------- Aliases de conveniência ---------- */
+      sucesso: function(msg, opts) { return this.show(Object.assign({ tipo: 'sucesso', mensagem: msg }, opts || {})); },
+      info:    function(msg, opts) { return this.show(Object.assign({ tipo: 'info', mensagem: msg }, opts || {})); },
+      alerta:  function(msg, opts) { return this.show(Object.assign({ tipo: 'alerta', mensagem: msg }, opts || {})); },
+      erro:    function(msg, opts) { return this.show(Object.assign({ tipo: 'erro', mensagem: msg, duracao: 0 }, opts || {})); },
+
+      /* ---------- Fechar uma notificação específica ---------- */
+      _fechar: function(id) {
+        const el = document.getElementById(id);
+        if (!el || el.classList.contains('saindo')) return;
+        el.classList.add('saindo');
+        setTimeout(() => {
+          if (el.parentNode) el.parentNode.removeChild(el);
+        }, 250);
+      },
+
+      fecharTodas: function() {
+        const container = document.getElementById('notificacoes-container');
+        if (!container) return;
+        container.querySelectorAll('.notificacao').forEach(el => {
+          el.dispatchEvent(new CustomEvent('notif-fechar-forcado'));
+        });
+      },
+
+      /* ---------- Histórico ---------- */
+      _adicionarAoHistorico: function(item) {
+        this._historico.unshift(item);
+        if (this._historico.length > this._maxHistorico) {
+          this._historico = this._historico.slice(0, this._maxHistorico);
+        }
+      },
+
+      _atualizarBotaoHistorico: function() {
+        const btn = document.getElementById('btn-historico-notif');
+        if (!btn) return;
+        if (this._historico.length > 0) btn.classList.add('visivel');
+      },
+
+      abrirHistorico: function() {
+        const corpo = document.getElementById('historico-notif-corpo');
+        if (!corpo) return;
+
+        if (this._historico.length === 0) {
+          corpo.innerHTML = '<div class="historico-vazio">Nenhuma notificação ainda.</div>';
+        } else {
+          corpo.innerHTML = this._historico.map(item => {
+            const hora = item.timestamp.toLocaleTimeString('pt-BR');
+            const data = item.timestamp.toLocaleDateString('pt-BR');
+            return `
+              <div class="historico-item tipo-${item.tipo}">
+                <div class="hist-hora">${data} às ${hora}</div>
+                <div class="hist-titulo">${Security.escapeHTML(item.titulo)}</div>
+                <div>${item.mensagem || ''}</div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        document.getElementById('modal-historico-notif').classList.add('aberto');
+      },
+
+      fecharHistorico: function() {
+        document.getElementById('modal-historico-notif').classList.remove('aberto');
+      },
+
+      limparHistorico: function() {
+        this._historico = [];
+        const btn = document.getElementById('btn-historico-notif');
+        if (btn) btn.classList.remove('visivel');
+        this.abrirHistorico(); // re-renderiza vazio
+      },
+
+      /* ---------- Configuração ---------- */
+      configurarDuracaoPadrao: function(ms) {
+        this._duracaoPadrao = Math.max(0, ms);
+      }
+    };
+
+    /* ============================================================
+       MÓDULO 21: SELEÇÃO MÚLTIPLA DE FEIÇÕES (M2)
+    /* ============================================================
        MÓDULO 21: SELEÇÃO MÚLTIPLA DE FEIÇÕES (M2)
        ------------------------------------------------------------
        - Ctrl+Clique: adiciona/remove feição da seleção
@@ -6561,6 +7141,30 @@
       try {
         SelectionManager.init();
       } catch(e) { console.warn('[SelectionManager] init falhou:', e); }
+
+      // ✅ NOVO: M5 — Sistema de notificações ricas
+      try {
+        // Teclado: ESC fecha o histórico se aberto
+        document.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Escape') {
+            const m = document.getElementById('modal-historico-notif');
+            if (m && m.classList.contains('aberto')) {
+              ev.stopPropagation();
+              NotificationManager.fecharHistorico();
+            }
+          }
+        });
+
+        // Click fora do modal fecha
+        const modalHist = document.getElementById('modal-historico-notif');
+        if (modalHist) {
+          modalHist.addEventListener('click', (ev) => {
+            if (ev.target === modalHist) NotificationManager.fecharHistorico();
+          });
+        }
+
+        console.info('[M5] Notificações ricas ativas.');
+      } catch(e) { console.warn('[NotificationManager] init falhou:', e); }
 
       // ✅ NOVO: atalhos globais da ferramenta de medição
       document.addEventListener('keydown', (ev) => {
