@@ -1725,7 +1725,194 @@
       .btn-historico-notif,
       .modal-historico-notif { display: none !important; }
     }
+    /* ============================================================
+       R2 — MODAL DE RELATÓRIO DE VALIDAÇÃO DE GEOJSON
+       ============================================================ */
+    .modal-validacao {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 25, 47, 0.9);
+      backdrop-filter: blur(8px);
+      z-index: 100003;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .modal-validacao.aberto { display: flex; }
+    .modal-validacao-card {
+      background: #0f172a;
+      border: 1px solid #0284c7;
+      border-radius: 12px;
+      width: 95%;
+      max-width: 720px;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.75);
+      overflow: hidden;
+      color: #f8fafc;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+    .modal-validacao-header {
+      background: #061426;
+      padding: 16px 22px;
+      border-bottom: 1px solid rgba(2,132,199,0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-validacao-header h3 {
+      font-size: 14px;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .modal-validacao-body {
+      padding: 18px 22px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .val-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .val-kpi {
+      background: #061426;
+      border: 1px solid #1e4976;
+      border-radius: 6px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .val-kpi .rotulo {
+      font-size: 9.5px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .val-kpi .valor {
+      font-size: 22px;
+      font-weight: 800;
+      font-family: 'Consolas', monospace;
+      line-height: 1.1;
+    }
+    .val-kpi.total .valor { color: #94a3b8; }
+    .val-kpi.ok .valor { color: #34d399; }
+    .val-kpi.aviso .valor { color: #fbbf24; }
+    .val-kpi.erro .valor { color: #f87171; }
 
+    .val-bloco {
+      margin-bottom: 16px;
+      border-top: 1px solid #1e293b;
+      padding-top: 14px;
+    }
+    .val-bloco:first-child { border-top: none; padding-top: 0; }
+    .val-bloco-titulo {
+      font-size: 11px;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .val-bloco-titulo.erro { color: #f87171; }
+    .val-bloco-titulo.aviso { color: #fbbf24; }
+    .val-bloco-titulo.ok { color: #34d399; }
+    .val-lista {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 180px;
+      overflow-y: auto;
+      border: 1px solid #1e293b;
+      border-radius: 5px;
+      background: #061426;
+    }
+    .val-lista li {
+      font-size: 11.5px;
+      color: #cbd5e1;
+      padding: 6px 10px;
+      border-bottom: 1px dashed #1e293b;
+      font-family: 'Consolas', monospace;
+      line-height: 1.4;
+    }
+    .val-lista li:last-child { border-bottom: none; }
+    .val-lista li .idx {
+      display: inline-block;
+      min-width: 42px;
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .val-aviso-geral {
+      background: rgba(245, 158, 11, 0.1);
+      border-left: 3px solid #f59e0b;
+      border-radius: 5px;
+      padding: 10px 14px;
+      font-size: 11.5px;
+      color: #fde68a;
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+    .val-aviso-geral.erro {
+      background: rgba(239, 68, 68, 0.12);
+      border-left-color: #ef4444;
+      color: #fecaca;
+    }
+    .val-aviso-geral.ok {
+      background: rgba(16, 185, 129, 0.12);
+      border-left-color: #10b981;
+      color: #a7f3d0;
+    }
+    .val-aviso-geral strong { color: #ffffff; }
+
+    .modal-validacao-footer {
+      padding: 12px 22px;
+      border-top: 1px solid #1e293b;
+      background: #061426;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .modal-validacao-footer button {
+      padding: 8px 18px;
+      border-radius: 5px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+      font-family: 'Segoe UI', sans-serif;
+      letter-spacing: 0.2px;
+    }
+    .modal-validacao-footer .btn-primario {
+      background: #0284c7; color: #fff;
+    }
+    .modal-validacao-footer .btn-primario:hover { background: #0369a1; }
+    .modal-validacao-footer .btn-secundario {
+      background: transparent; color: #94a3b8;
+      border: 1px solid #334155;
+    }
+    .modal-validacao-footer .btn-secundario:hover {
+      background: #1e293b; color: #f1f5f9;
+    }
+
+    @media print {
+      .modal-validacao { display: none !important; }
+    }
+
+    /* ============================================================
+       IMPRESSÃO — Layout limpo para PDF/papel
     /* ============================================================
        IMPRESSÃO — Layout limpo para PDF/papel
     /* ============================================================
@@ -1936,6 +2123,28 @@
 
   <!-- Mantido para compatibilidade legada (não usado) -->
   <div id="toast" style="display:none !important;"></div>
+
+  <!-- ============================================================
+       R2 — MODAL DE RELATÓRIO DE VALIDAÇÃO DE GEOJSON
+       ============================================================ -->
+  <div class="modal-validacao" id="modal-validacao">
+    <div class="modal-validacao-card">
+      <div class="modal-validacao-header">
+        <h3>
+          <span>🔍</span>
+          <span id="val-titulo">Relatório de Validação do Arquivo</span>
+        </h3>
+        <button class="modal-matriz-fechar" onclick="GeoJSONValidator.fecharRelatorio()">&times;</button>
+      </div>
+      <div class="modal-validacao-body" id="val-corpo">
+        <!-- Preenchido dinamicamente -->
+      </div>
+      <div class="modal-validacao-footer">
+        <button class="btn-secundario" onclick="GeoJSONValidator.fecharRelatorio()">Fechar</button>
+        <button class="btn-primario" id="val-btn-prosseguir" style="display:none;">Prosseguir mesmo assim</button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL DO CATÁLOGO DE CAMADAS -->
   <div id="modal-catalogo-camadas" class="modal-catalogo">
@@ -4560,7 +4769,79 @@
         }
       },
       _adicionar: function(nome, geojson) {
-        if (!geojson || !geojson.features || !geojson.features.length) { UI.toast('⚠️ Sem feições em ' + nome); return; }
+        // ✅ R2: Valida e repara o GeoJSON ANTES de tentar renderizar
+        let relatorio = null;
+        try {
+          const resultado = GeoJSONValidator.validar(geojson, nome);
+          relatorio = resultado.relatorio;
+          geojson = resultado.geojson;
+
+          // Se o arquivo é completamente inválido → mostra relatório e aborta
+          if (!resultado.ok) {
+            GeoJSONValidator.mostrarRelatorio(relatorio);
+            console.warn('[R2] Arquivo rejeitado:', relatorio);
+            return;
+          }
+
+          // Se teve problemas parciais → mostra relatório e pergunta ao usuário
+          if (relatorio.invalidas > 0 || relatorio.corrigidas > 0) {
+            // Guarda temporariamente para o caso do usuário clicar "Prosseguir"
+            const continuarImportacao = () => {
+              this._adicionarValidado(nome, geojson, relatorio);
+            };
+            GeoJSONValidator.mostrarRelatorio(relatorio, {
+              onProsseguir: continuarImportacao
+            });
+
+            // Se o usuário fechou o relatório sem clicar em nada, importa automaticamente
+            // (o usuário pode fechar o modal — nesse caso importamos apenas as válidas)
+            setTimeout(() => {
+              const modal = document.getElementById('modal-validacao');
+              if (modal && modal.classList.contains('aberto')) {
+                // Modal ainda está aberto — aguardamos ação do usuário
+                return;
+              }
+              // Modal já foi fechado — importamos as válidas
+              this._adicionarValidado(nome, geojson, relatorio);
+            }, 100);
+
+            // Adiciona listener de "fechar" para importar automaticamente
+            const self = this;
+            const modal = document.getElementById('modal-validacao');
+            if (modal && !modal._r2Listener) {
+              modal._r2Listener = true;
+              const handler = () => {
+                if (!modal.classList.contains('aberto')) {
+                  // Se ainda não foi importado, importa agora
+                  if (!self._r2Importado) {
+                    self._r2Importado = true;
+                    self._adicionarValidado(nome, geojson, relatorio);
+                  }
+                  self._r2Importado = false;
+                  modal.removeEventListener('click', handler);
+                  modal._r2Listener = false;
+                }
+              };
+              modal.addEventListener('click', handler);
+            }
+            return;
+          }
+        } catch (e) {
+          console.error('[R2] Falha inesperada na validação:', e);
+          UI.toast('⚠️ Erro inesperado ao validar arquivo. Importação abortada.');
+          return;
+        }
+
+        // Fluxo normal: arquivo 100% válido
+        this._adicionarValidado(nome, geojson, relatorio);
+      },
+
+      /* Renderiza o GeoJSON já validado */
+      _adicionarValidado: function(nome, geojson, relatorio) {
+        if (!geojson || !geojson.features || !geojson.features.length) {
+          UI.toast('⚠️ Nenhuma feição espacial encontrada em ' + nome);
+          return;
+        }
         this.contador++;
         const id = `imp_${this.contador}_${LayerRegistry.gerarId(nome)}`;
         geojson.features.forEach(f => {
@@ -4590,7 +4871,25 @@
         }
         Styler.atualizarLegenda();
         FilterManager.atualizarSeletorCamadas();
-        UI.toast(`✓ ${geojson.features.length} feições (${tipoGeo}) de "${nome}"`);
+
+        // ✅ R2: Notificação informativa com o resultado da validação
+        if (relatorio && (relatorio.invalidas > 0 || relatorio.corrigidas > 0)) {
+          NotificationManager.show({
+            tipo: 'alerta',
+            titulo: 'Importação com avisos',
+            mensagem: `"${Security.escapeHTML(nome)}": <strong>${geojson.features.length}</strong> feições importadas` +
+                      (relatorio.invalidas > 0 ? ` · ${relatorio.invalidas} descartada(s)` : '') +
+                      (relatorio.corrigidas > 0 ? ` · ${relatorio.corrigidas} corrigida(s)` : ''),
+            duracao: 8000,
+            acoes: [{
+              texto: '📋 Ver relatório',
+              fn: () => GeoJSONValidator.mostrarRelatorio(relatorio)
+            }]
+          });
+        } else {
+          UI.toast(`✓ ${geojson.features.length} feições (${tipoGeo}) importadas de "${nome}"`);
+        }
+
         try {
           const b = CAMADAS_MAPA[id].getBounds();
           if (b.isValid()) mapa.fitBounds(b, { padding: [40, 40], maxZoom: 14 });
@@ -5423,6 +5722,456 @@
         if (CAMADAS_MAPA[ano]) CAMADAS_MAPA[ano].setStyle({ weight: val });
       }
     };
+    /* ============================================================
+       MÓDULO 23: VALIDAÇÃO ROBUSTA DE GEOJSON (R2)
+       ------------------------------------------------------------
+       Garante que arquivos mal-formados NUNCA derrubem o WebGIS.
+       Fluxo:
+         1. validar(gj) → relatório completo (estrutura, geometrias, coordenadas)
+         2. Auto-repara o que for seguro (string→número, anel não-fechado)
+         3. Descarta features irrecuperáveis
+         4. Se sobreviver ≥1 feature, retorna { ok:true, geojson, relatorio }
+         5. Se 0 features sobreviverem, retorna { ok:false, relatorio }
+       ============================================================ */
+    const GeoJSONValidator = {
+      LIMITES: {
+        LAT_MIN: -90,
+        LAT_MAX: 90,
+        LNG_MIN: -180,
+        LNG_MAX: 180
+      },
+
+      /* ---------- API principal ---------- */
+      validar: function(geojson, nomeArquivo) {
+        const relatorio = {
+          arquivo: nomeArquivo || 'arquivo.geojson',
+          total: 0,
+          validas: 0,
+          corrigidas: 0,
+          invalidas: 0,
+          erros: [],      // Array de { idx, tipo, mensagem }
+          avisos: [],     // Array de { idx, tipo, mensagem }
+          correcoes: [],  // Array de { idx, mensagem }
+          fatal: null,    // Erro estrutural que aborta tudo
+          suspeitaProjecao: false
+        };
+
+        // 1. Validação estrutural
+        if (!geojson || typeof geojson !== 'object') {
+          relatorio.fatal = 'O arquivo não contém um objeto GeoJSON válido.';
+          return { ok: false, geojson: null, relatorio };
+        }
+        if (geojson.type !== 'FeatureCollection' && geojson.type !== 'Feature') {
+          relatorio.fatal = `Tipo "${geojson.type}" não suportado. Esperado "FeatureCollection" ou "Feature".`;
+          return { ok: false, geojson: null, relatorio };
+        }
+
+        // Normaliza Feature solto para FeatureCollection
+        let features = [];
+        if (geojson.type === 'Feature') {
+          features = [geojson];
+        } else if (Array.isArray(geojson.features)) {
+          features = geojson.features;
+        } else {
+          relatorio.fatal = 'A propriedade "features" está ausente ou não é um array.';
+          return { ok: false, geojson: null, relatorio };
+        }
+
+        relatorio.total = features.length;
+        if (features.length === 0) {
+          relatorio.fatal = 'O arquivo não contém nenhuma feição (features vazio).';
+          return { ok: false, geojson: null, relatorio };
+        }
+
+        // 2. Validação de cada feature
+        const validas = [];
+        for (let i = 0; i < features.length; i++) {
+          try {
+            const resultado = this._validarFeature(features[i], i);
+            if (resultado.ok && resultado.feature) {
+              validas.push(resultado.feature);
+              if (resultado.corrigida) {
+                relatorio.corrigidas++;
+                relatorio.correcoes.push({ idx: i, mensagem: resultado.corrigida });
+              }
+              relatorio.validas++;
+            } else {
+              relatorio.invalidas++;
+              relatorio.erros.push({ idx: i, tipo: resultado.tipo || 'desconhecido', mensagem: resultado.erro || 'Feature inválida' });
+            }
+          } catch (e) {
+            relatorio.invalidas++;
+            relatorio.erros.push({ idx: i, tipo: 'exceção', mensagem: e.message || 'Erro inesperado' });
+          }
+        }
+
+        // 3. Detecta suspeita de projeção em coordenadas
+        if (validas.length > 0) {
+          relatorio.suspeitaProjecao = this._detectarProjecaoSuspeita(validas);
+        }
+
+        // 4. Monta GeoJSON final
+        const geojsonFinal = (validas.length > 0)
+          ? { type: 'FeatureCollection', features: validas }
+          : null;
+
+        const ok = validas.length > 0;
+
+        // Guarda o último relatório para reuso (modal "Prosseguir")
+        this._ultimoRelatorio = relatorio;
+        this._ultimoGeoJSON = geojsonFinal;
+
+        return { ok, geojson: geojsonFinal, relatorio };
+      },
+
+      /* ---------- Validação de UMA feature ---------- */
+      _validarFeature: function(f, idx) {
+        if (!f || typeof f !== 'object') {
+          return { ok: false, tipo: 'estrutura', erro: 'Feição não é um objeto' };
+        }
+        if (f.type !== 'Feature') {
+          return { ok: false, tipo: 'estrutura', erro: `Tipo "${f.type}" — esperado "Feature"` };
+        }
+        if (!f.geometry || typeof f.geometry !== 'object') {
+          return { ok: false, tipo: 'geometria', erro: 'Sem geometria (null/undefined)' };
+        }
+
+        // Valida e repara geometria
+        const geoResult = this._validarGeometria(f.geometry, idx);
+        if (!geoResult.ok) {
+          return { ok: false, tipo: geoResult.tipo || 'geometria', erro: geoResult.erro };
+        }
+
+        // Normaliza properties (garante objeto)
+        let props = f.properties;
+        let corrigida = null;
+        if (!props || typeof props !== 'object' || Array.isArray(props)) {
+          props = {};
+          corrigida = 'Campos alfanuméricos ausentes — normalizados para vazio';
+        }
+
+        const featureFinal = {
+          type: 'Feature',
+          properties: props,
+          geometry: geoResult.geometry
+        };
+
+        return { ok: true, feature: featureFinal, corrigida };
+      },
+
+      /* ---------- Validação recursiva de geometria ---------- */
+      _validarGeometria: function(geom, idx, profundidade) {
+        profundidade = profundidade || 0;
+        if (profundidade > 6) {
+          return { ok: false, tipo: 'geometria', erro: 'Estrutura profundamente aninhada (recursão)' };
+        }
+        if (!geom.type) {
+          return { ok: false, tipo: 'geometria', erro: 'Geometria sem tipo' };
+        }
+
+        const tipo = geom.type;
+        const coords = geom.coordinates;
+
+        switch (tipo) {
+          case 'Point': {
+            const r = this._validarPonto(coords);
+            if (!r.ok) return { ok: false, tipo: 'ponto', erro: r.erro };
+            return { ok: true, geometry: { type: 'Point', coordinates: r.coords } };
+          }
+          case 'MultiPoint': {
+            if (!Array.isArray(coords) || coords.length === 0) {
+              return { ok: false, tipo: 'multiponto', erro: 'MultiPoint vazio' };
+            }
+            const pontos = [];
+            for (const p of coords) {
+              const r = this._validarPonto(p);
+              if (r.ok) pontos.push(r.coords);
+            }
+            if (pontos.length === 0) return { ok: false, tipo: 'multiponto', erro: 'Nenhum ponto válido' };
+            return { ok: true, geometry: { type: 'MultiPoint', coordinates: pontos } };
+          }
+          case 'LineString': {
+            return this._validarLinha(coords);
+          }
+          case 'MultiLineString': {
+            if (!Array.isArray(coords) || coords.length === 0) {
+              return { ok: false, tipo: 'multilinha', erro: 'MultiLineString vazio' };
+            }
+            const linhas = [];
+            for (const ln of coords) {
+              const r = this._validarLinha(ln, true);
+              if (r.ok) linhas.push(r.geometry.coordinates);
+            }
+            if (linhas.length === 0) return { ok: false, tipo: 'multilinha', erro: 'Nenhuma linha válida' };
+            return { ok: true, geometry: { type: 'MultiLineString', coordinates: linhas } };
+          }
+          case 'Polygon': {
+            return this._validarPoligono(coords);
+          }
+          case 'MultiPolygon': {
+            if (!Array.isArray(coords) || coords.length === 0) {
+              return { ok: false, tipo: 'multipoligono', erro: 'MultiPolygon vazio' };
+            }
+            const poligonos = [];
+            for (const poly of coords) {
+              const r = this._validarPoligono(poly, true);
+              if (r.ok) poligonos.push(r.geometry.coordinates);
+            }
+            if (poligonos.length === 0) return { ok: false, tipo: 'multipoligono', erro: 'Nenhum polígono válido' };
+            return { ok: true, geometry: { type: 'MultiPolygon', coordinates: poligonos } };
+          }
+          case 'GeometryCollection': {
+            if (!Array.isArray(geom.geometries)) {
+              return { ok: false, tipo: 'collection', erro: 'GeometryCollection sem array geometries' };
+            }
+            const geomsOk = [];
+            for (const g of geom.geometries) {
+              const r = this._validarGeometria(g, idx, profundidade + 1);
+              if (r.ok) geomsOk.push(r.geometry);
+            }
+            if (geomsOk.length === 0) return { ok: false, tipo: 'collection', erro: 'Nenhuma geometria válida' };
+            return { ok: true, geometry: { type: 'GeometryCollection', geometries: geomsOk } };
+          }
+          default:
+            return { ok: false, tipo: 'geometria', erro: `Tipo "${tipo}" não suportado` };
+        }
+      },
+
+      /* ---------- Componentes ---------- */
+      _validarPonto: function(p) {
+        if (!Array.isArray(p) || p.length < 2) {
+          return { ok: false, erro: 'Ponto sem coordenadas [lng, lat]' };
+        }
+        const lng = this._paraNumero(p[0]);
+        const lat = this._paraNumero(p[1]);
+        if (lng === null || lat === null) {
+          return { ok: false, erro: 'Coordenadas não são números' };
+        }
+        if (!isFinite(lng) || !isFinite(lat)) {
+          return { ok: false, erro: 'Coordenadas não-finitas (NaN/Infinity)' };
+        }
+        if (lat < this.LIMITES.LAT_MIN || lat > this.LIMITES.LAT_MAX) {
+          return { ok: false, erro: `Latitude fora de faixa: ${lat}` };
+        }
+        if (lng < this.LIMITES.LNG_MIN || lng > this.LIMITES.LNG_MAX) {
+          return { ok: false, erro: `Longitude fora de faixa: ${lng}` };
+        }
+        const coords = [lng, lat];
+        if (p.length >= 3) {
+          const alt = this._paraNumero(p[2]);
+          if (alt !== null && isFinite(alt)) coords.push(alt);
+        }
+        return { ok: true, coords };
+      },
+
+      _validarLinha: function(coords, silencioso) {
+        if (!Array.isArray(coords) || coords.length < 2) {
+          return silencioso
+            ? { ok: false }
+            : { ok: false, tipo: 'linha', erro: 'Linha com menos de 2 pontos' };
+        }
+        const pontos = [];
+        for (const p of coords) {
+          const r = this._validarPonto(p);
+          if (r.ok) pontos.push(r.coords);
+        }
+        if (pontos.length < 2) {
+          return silencioso
+            ? { ok: false }
+            : { ok: false, tipo: 'linha', erro: 'Menos de 2 pontos válidos' };
+        }
+        return { ok: true, geometry: { type: 'LineString', coordinates: pontos } };
+      },
+
+      _validarPoligono: function(coords, silencioso) {
+        if (!Array.isArray(coords) || coords.length === 0) {
+          return silencioso
+            ? { ok: false }
+            : { ok: false, tipo: 'poligono', erro: 'Polígono sem anéis' };
+        }
+        const aneisValidos = [];
+        for (const anel of coords) {
+          if (!Array.isArray(anel) || anel.length < 3) continue;
+          const pontos = [];
+          for (const p of anel) {
+            const r = this._validarPonto(p);
+            if (r.ok) pontos.push(r.coords);
+          }
+          if (pontos.length < 3) continue;
+          // Fecha o anel se necessário
+          const primeiro = pontos[0];
+          const ultimo = pontos[pontos.length - 1];
+          if (primeiro[0] !== ultimo[0] || primeiro[1] !== ultimo[1]) {
+            pontos.push([primeiro[0], primeiro[1]]);
+          }
+          if (pontos.length < 4) continue; // precisa de ≥4 após fechar
+          aneisValidos.push(pontos);
+        }
+        if (aneisValidos.length === 0) {
+          return silencioso
+            ? { ok: false }
+            : { ok: false, tipo: 'poligono', erro: 'Nenhum anel válido' };
+        }
+        return { ok: true, geometry: { type: 'Polygon', coordinates: aneisValidos } };
+      },
+
+      _paraNumero: function(v) {
+        if (typeof v === 'number') return isFinite(v) ? v : null;
+        if (typeof v === 'string') {
+          const n = parseFloat(v.replace(',', '.'));
+          return isFinite(n) ? n : null;
+        }
+        return null;
+      },
+
+      /* ---------- Heurística: coordenadas em projeção (UTM etc.) ---------- */
+      _detectarProjecaoSuspeita: function(features) {
+        let amostras = 0;
+        let foraDeFaixa = 0;
+        for (let i = 0; i < features.length && amostras < 50; i++) {
+          try {
+            const coords = this._primeiroPonto(features[i].geometry);
+            if (!coords) continue;
+            amostras++;
+            const lng = coords[0];
+            const lat = coords[1];
+            // Fora da faixa normal → provável UTM (metros)
+            if (Math.abs(lng) > 500 || Math.abs(lat) > 500) foraDeRaixa = foraDeFaixa++;
+          } catch (e) {}
+        }
+        return amostras > 0 && (foraDeFaixa / amostras) > 0.8;
+      },
+
+      _primeiroPonto: function(geom) {
+        if (!geom) return null;
+        const t = geom.type;
+        if (t === 'Point') return geom.coordinates;
+        if (t === 'MultiPoint' || t === 'LineString') return geom.coordinates[0];
+        if (t === 'MultiLineString' || t === 'Polygon') return geom.coordinates[0][0];
+        if (t === 'MultiPolygon') return geom.coordinates[0][0][0];
+        if (t === 'GeometryCollection' && geom.geometries[0]) return this._primeiroPonto(geom.geometries[0]);
+        return null;
+      },
+
+      /* ---------- Relatório visual ---------- */
+      mostrarRelatorio: function(relatorio, opts) {
+        opts = opts || {};
+        const corpo = document.getElementById('val-corpo');
+        const titulo = document.getElementById('val-titulo');
+        if (!corpo) return;
+
+        if (titulo) titulo.textContent = `Relatório: ${relatorio.arquivo}`;
+
+        const pctOk = relatorio.total > 0
+          ? Math.round((relatorio.validas / relatorio.total) * 100)
+          : 0;
+
+        let avisoPrincipalHTML = '';
+        if (relatorio.fatal) {
+          avisoPrincipalHTML = `<div class="val-aviso-geral erro"><strong>❌ Arquivo rejeitado:</strong> ${Security.escapeHTML(relatorio.fatal)}</div>`;
+        } else if (relatorio.invalidas === 0 && relatorio.corrigidas === 0) {
+          avisoPrincipalHTML = `<div class="val-aviso-geral ok"><strong>✅ Arquivo íntegro.</strong> Todas as ${relatorio.total} feições são válidas e serão importadas.</div>`;
+        } else if (relatorio.invalidas === 0 && relatorio.corrigidas > 0) {
+          avisoPrincipalHTML = `<div class="val-aviso-geral"><strong>⚠️ Importação com ajustes.</strong> ${relatorio.corrigidas} feição(ões) foram corrigidas automaticamente.</div>`;
+        } else if (relatorio.invalidas > 0 && relatorio.validas > 0) {
+          avisoPrincipalHTML = `<div class="val-aviso-geral"><strong>⚠️ Importação parcial.</strong> ${relatorio.invalidas} de ${relatorio.total} feições foram descartadas por problemas irrecuperáveis. As ${relatorio.validas} feições válidas serão importadas.</div>`;
+        } else {
+          avisoPrincipalHTML = `<div class="val-aviso-geral erro"><strong>❌ Nenhuma feição importável.</strong> Todas as ${relatorio.total} feições apresentaram problemas.</div>`;
+        }
+
+        if (relatorio.suspeitaProjecao) {
+          avisoPrincipalHTML += `<div class="val-aviso-geral erro" style="margin-top:8px;"><strong>🌐 Suspeita de projeção inadequada.</strong> As coordenadas parecem estar em metros (UTM) em vez de graus. Reprojete o arquivo para <code>SIRGAS 2000 / EPSG:4674</code> ou <code>WGS84 / EPSG:4326</code> no QGIS antes de importar.</div>`;
+        }
+
+        let errosHTML = '';
+        if (relatorio.erros.length > 0) {
+          errosHTML = `
+            <div class="val-bloco">
+              <div class="val-bloco-titulo erro">❌ Feições descartadas (${relatorio.erros.length})</div>
+              <ul class="val-lista">
+                ${relatorio.erros.slice(0, 30).map(e =>
+                  `<li><span class="idx">#${e.idx}</span>${Security.escapeHTML(e.mensagem)}</li>`
+                ).join('')}
+                ${relatorio.erros.length > 30 ? `<li><span class="idx">...</span>+${relatorio.erros.length - 30} outros problemas</li>` : ''}
+              </ul>
+            </div>`;
+        }
+
+        let correcoesHTML = '';
+        if (relatorio.correcoes.length > 0) {
+          correcoesHTML = `
+            <div class="val-bloco">
+              <div class="val-bloco-titulo aviso">🔧 Correções automáticas (${relatorio.correcoes.length})</div>
+              <ul class="val-lista">
+                ${relatorio.correcoes.slice(0, 20).map(c =>
+                  `<li><span class="idx">#${c.idx}</span>${Security.escapeHTML(c.mensagem)}</li>`
+                ).join('')}
+                ${relatorio.correcoes.length > 20 ? `<li><span class="idx">...</span>+${relatorio.correcoes.length - 20} outras correções</li>` : ''}
+              </ul>
+            </div>`;
+        }
+
+        corpo.innerHTML = `
+          ${avisoPrincipalHTML}
+
+          <div class="val-kpis">
+            <div class="val-kpi total">
+              <div class="rotulo">Total</div>
+              <div class="valor">${relatorio.total}</div>
+            </div>
+            <div class="val-kpi ok">
+              <div class="rotulo">Válidas</div>
+              <div class="valor">${relatorio.validas}</div>
+            </div>
+            <div class="val-kpi aviso">
+              <div class="rotulo">Corrigidas</div>
+              <div class="valor">${relatorio.corrigidas}</div>
+            </div>
+            <div class="val-kpi erro">
+              <div class="rotulo">Descartadas</div>
+              <div class="valor">${relatorio.invalidas}</div>
+            </div>
+          </div>
+
+          ${errosHTML}
+          ${correcoesHTML}
+
+          <div class="val-bloco">
+            <div class="val-bloco-titulo">📊 Aproveitamento</div>
+            <div style="font-size:12px; color:#cbd5e1;">
+              ${pctOk}% das feições serão efetivamente importadas.
+            </div>
+          </div>
+        `;
+
+        // Botão "Prosseguir" só aparece quando o arquivo tem falhas mas ainda tem features
+        const btnProsseguir = document.getElementById('val-btn-prosseguir');
+        if (btnProsseguir) {
+          if (!relatorio.fatal && relatorio.validas > 0 && relatorio.invalidas > 0) {
+            btnProsseguir.style.display = 'inline-block';
+            btnProsseguir.onclick = () => {
+              this.fecharRelatorio();
+              if (typeof opts.onProsseguir === 'function') opts.onProsseguir();
+            };
+          } else {
+            btnProsseguir.style.display = 'none';
+          }
+        }
+
+        document.getElementById('modal-validacao').classList.add('aberto');
+      },
+
+      fecharRelatorio: function() {
+        document.getElementById('modal-validacao').classList.remove('aberto');
+      },
+
+      /* ---------- Flag para saber se o usuário forçou prosseguir ---------- */
+      _ultimoRelatorio: null,
+      _ultimoGeoJSON: null
+    };
+
+    /* ============================================================
+       MÓDULO 22: NOTIFICAÇÕES RICAS (M5)
     /* ============================================================
        MÓDULO 22: NOTIFICAÇÕES RICAS (M5)
        ------------------------------------------------------------
@@ -7165,6 +7914,25 @@
 
         console.info('[M5] Notificações ricas ativas.');
       } catch(e) { console.warn('[NotificationManager] init falhou:', e); }
+
+      // ✅ NOVO: R2 — Handlers globais do modal de validação
+      try {
+        const modalVal = document.getElementById('modal-validacao');
+        if (modalVal) {
+          // ESC fecha
+          document.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Escape' && modalVal.classList.contains('aberto')) {
+              ev.stopPropagation();
+              GeoJSONValidator.fecharRelatorio();
+            }
+          });
+          // Clique fora fecha
+          modalVal.addEventListener('click', (ev) => {
+            if (ev.target === modalVal) GeoJSONValidator.fecharRelatorio();
+          });
+        }
+        console.info('[R2] Validador de GeoJSON pronto.');
+      } catch(e) { console.warn('[GeoJSONValidator] init falhou:', e); }
 
       // ✅ NOVO: atalhos globais da ferramenta de medição
       document.addEventListener('keydown', (ev) => {
