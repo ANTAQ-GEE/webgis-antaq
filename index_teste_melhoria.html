@@ -5287,23 +5287,18 @@
           if (selPorto) {
             selPorto.style.display = 'inline-block';
 
-            // ✅ CORREÇÃO: só usa FILTRO_PORTO_ATUAL se for um ID VÁLIDO de categoria.
+            // ✅ Só usa FILTRO_PORTO_ATUAL se for um ID válido de categoria.
             // Nunca cai para o valor do dropdown dinâmico (que pode conter safras VEN,
             // esferas de UC, etc. e corromper o filtro de portos).
             const CATEGORIAS_VALIDAS = ['TODOS', 'ORGANIZADO', 'PUBLICO', 'TUP', 'IP4', 'ETC', 'OUTROS'];
             let valAtual = window.FILTRO_PORTO_ATUAL;
             if (!CATEGORIAS_VALIDAS.includes(valAtual)) {
               valAtual = 'TODOS';
-              window.FILTRO_PORTO_ATUAL = 'TODOS';  // limpa a variável global contaminada
+              window.FILTRO_PORTO_ATUAL = 'TODOS';
             }
             selPorto.value = valAtual;
-          this.filtroPorto = 'TODOS';
-        }              ← linha 5305
-        const amostra = g.features[0].properties || {};
-        } else {
-          if (selPorto) selPorto.style.display = 'none';
-          this.filtroPorto = 'TODOS';
-        }
+            this.filtroPorto = valAtual;   // ✅ aqui é valAtual, não 'TODOS'
+          }
         } else {
           if (selPorto) selPorto.style.display = 'none';
           this.filtroPorto = 'TODOS';
