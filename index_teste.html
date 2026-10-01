@@ -123,7 +123,7 @@
 
     .painel-lateral {
       position: absolute; top: 64px; right: 16px; width: 360px; max-width: calc(100vw - 32px);
-      max-height: calc(100% - 180px); background: #ffffff; border-radius: 10px;
+      max-height: calc(100% - 220px); background: #ffffff; border-radius: 10px;
       box-shadow: 0 16px 40px rgba(10, 25, 47, 0.35); z-index: 1000;
       display: flex; flex-direction: column; border: 1px solid #cbd5e1;
       overflow-x: hidden; transition: transform 0.25s ease, width 0.25s ease;
@@ -619,8 +619,9 @@
        ============================================================ */
     .toolbar-medicao {
       position: absolute;
-      bottom: 40px;
+      bottom: 34px;
       right: 16px;
+      z-index: 1500;
       z-index: 1300;
       display: flex;
       flex-direction: column;
@@ -683,10 +684,10 @@
     /* Painel de resultados de medição */
     .painel-medicao-resultados {
       position: absolute;
-      bottom: 40px;
+      bottom: 34px;
       left: 50%;
+      z-index: 1500;
       transform: translateX(-50%);
-      z-index: 1300;
       background: rgba(10, 37, 64, 0.96);
       color: #fff;
       padding: 10px 16px;
@@ -1187,17 +1188,21 @@
     .leaflet-bottom.leaflet-left .leaflet-control {
       margin-bottom: 34px !important;
     }
+    /* Zoom control ainda mais alto para não colidir com a toolbar de medição */
+    .leaflet-bottom.leaflet-right .leaflet-control-zoom {
+      margin-bottom: 130px !important;
+    }
 
-    /* Minimap (canto inferior esquerdo, acima da legenda) */
+    /* Minimap (canto superior esquerdo, abaixo da barra de busca) */
     .leaflet-control-minimap {
       border: 2px solid #0a2540 !important;
       border-radius: 6px !important;
       box-shadow: 0 6px 20px rgba(0,0,0,0.4) !important;
       background: #0a2540 !important;
       transition: all 0.25s ease !important;
-      margin-bottom: 290px !important;  /* sobe acima da legenda */
+      margin-top: 62px !important;      /* abaixo da barra de busca */
       margin-left: 16px !important;
-      z-index: 1100 !important;         /* acima do painel lateral se coincidir */
+      z-index: 1500 !important;         /* acima da barra de busca, se coincidir */
     }
     .leaflet-control-minimap:hover {
       transform: scale(1.03);
@@ -4879,27 +4884,28 @@
           return;
         }
 
-        // Basemap oficial Esri Light Gray — confiável, sem API key, sem watermark
+        // Tiles OpenStreetMap padrão — coloridos, confiáveis, sem API key
         const baseMinimap = L.tileLayer(
-          'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+          'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
           {
-            attribution: '&copy; Esri, HERE, Garmin, OpenStreetMap',
-            maxZoom: 18,
+            attribution: '&copy; OpenStreetMap contributors',
+            subdomains: 'abc',
+            maxZoom: 19,
             minZoom: 0,
             errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
           }
         );
 
         this.minimap = new L.Control.MiniMap(baseMinimap, {
-          position: 'bottomleft',
-          width: 150,
-          height: 150,
-          collapsedWidth: 22,
-          collapsedHeight: 22,
-          zoomLevelOffset: -5,        // mais contexto (Brasil inteiro)
+          position: 'topleft',
+          width: 180,
+          height: 180,
+          collapsedWidth: 24,
+          collapsedHeight: 24,
+          zoomLevelOffset: -3,        // mostra bem mais contexto sem perder referência
           zoomAnimation: true,
-          toggleDisplay: true,        // botão de colapsar/expandir
-          minimized: false,           // inicia expandido
+          toggleDisplay: true,
+          minimized: false,
           mapOptions: {
             attributionControl: false,
             zoomControl: false,
@@ -4911,15 +4917,15 @@
             keyboard: false
           },
           aimingRectOptions: {
-            color: '#38bdf8',
-            weight: 2,
-            fillColor: '#38bdf8',
-            fillOpacity: 0.15
+            color: '#f59e0b',
+            weight: 2.5,
+            fillColor: '#f59e0b',
+            fillOpacity: 0.2
           },
           shadowRectOptions: {
             color: '#0a2540',
             weight: 1,
-            opacity: 0.6,
+            opacity: 0.7,
             fillOpacity: 0
           }
         });
