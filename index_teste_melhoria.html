@@ -3550,6 +3550,11 @@
               <option value="ven_2013">📅 Safra 2013</option>
             `;
             selSub.value = VENUnifiedManager.anoAtivo;
+
+            // ✅ Feedback: informa que a busca opera sobre a safra ativa
+            if (inputBusca) {
+              inputBusca.placeholder = `Buscar trecho VEN ${VENUnifiedManager.anoAtivo.replace('ven_','')} (rio, município, eclusa)…`;
+            }
           } else if (idCamada === 'instalacoes_portuarias') {
             selSub.innerHTML = '<option value="TODOS">⚓ Todos os Regimes Portuários</option>';
             selSub.style.display = 'inline-block';
@@ -3616,8 +3621,10 @@
       },
 
       aoMudarSubfiltro: function(valor) {
-        const idCamada = document.getElementById('sel-camada-busca').value;
-        if (idCamada === 'ven') { VENUnifiedManager.mudarSafra(valor); return; }
+        const idCamadaVirtual = document.getElementById('sel-camada-busca').value;
+        const idCamada = this._resolverCamadaDeDados(idCamadaVirtual);
+        const geojson = DADOS_GEOJSON_BRUTOS[idCamada];
+        if (!geojson || !geojson.features) return; }
         this.aplicarFiltro(idCamada, valor);
       },
 
@@ -3884,6 +3891,18 @@
        ============================================================ */
     const SearchEngine = {
       debounceTimer: null,
+
+      /* ✅ Resolve o id "virtual" de uma camada para o id de dados real.
+         Hoje só o VEN tem esse mapeamento, mas fica pronto para outras pastas no futuro. */
+      _resolverCamadaDeDados: function(idCamada) {
+        if (idCamada === 'ven') {
+          return (window.VENUnifiedManager && VENUnifiedManager.anoAtivo)
+            ? VENUnifiedManager.anoAtivo
+            : 'ven_2022';
+        }
+        return idCamada;
+      },
+
       onInput: function(val) {
         clearTimeout(this.debounceTimer);
         this.debounceTimer = setTimeout(() => this.filtrar(val), 250);
@@ -3941,14 +3960,24 @@
         } else {
           mapa.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
         }
-        window.CAMADA_DESTAQUE.bindPopup(PopupRenderer.gerar('instalacoes_portuarias', feature.properties)).openPopup();
+           // ✅ Usa a camada de dados correta ao abrir o popup (antes fixava em 'instalacoes_portuarias')
+        const idAtualVirtual = document.getElementById('sel-camada-busca').value;
+        const idAtual = this._resolverCamadaDeDados(idAtualVirtual);
+        window.CAMADA_DESTAQUE.bindPopup(PopupRenderer.gerar(idAtual, feature.properties)).openPopup();
       },
       executar: function() {
         const v = (document.getElementById('input-busca').value || '').trim();
-        if (!v) { UI.toast("Digite o nome ou código de um ativo para aproximar."); return; }
-        const idCamada = document.getElementById('sel-camada-busca').value;
+        if (!v) {
+          UI.toast("Digite o nome ou código de um ativo para aproximar.");
+          return;
+        }
+        const idCamadaVirtual = document.getElementById('sel-camada-busca').value;
+        const idCamada = this._resolverCamadaDeDados(idCamadaVirtual);
         const geojson = DADOS_GEOJSON_BRUTOS[idCamada];
-        if (!geojson || !geojson.features) { UI.toast("Aguarde o carregamento dos dados da camada."); return; }
+        if (!geojson || !geojson.features) {
+          UI.toast("Aguarde o carregamento dos dados da camada.");
+          return;
+        }
         const termo = v.toLowerCase();
         let matchExato = null, primeiroMatch = null;
         for (const f of geojson.features) {
@@ -5250,14 +5279,28 @@
         this.termoBusca = '';
         const inp = document.getElementById('filtro-busca-tabela');
         if (inp) inp.value = '';
+        // Sincronizar seletor de regime portuário
         const selPorto = document.getElementById('filtro-porto-tabela');
         if (id === 'instalacoes_portuarias') {
           if (selPorto) {
             selPorto.style.display = 'inline-block';
-            const valAtual = window.FILTRO_PORTO_ATUAL || document.getElementById('filtro-subtipo-dinamico')?.value || 'TODOS';
+
+            // ✅ CORREÇÃO: só usa FILTRO_PORTO_ATUAL se for um ID VÁLIDO de categoria.
+            // Nunca cai para o valor do dropdown dinâmico (que pode conter safras VEN,
+            // esferas de UC, etc. e corromper o filtro de portos).
+            const CATEGORIAS_VALIDAS = ['TODOS', 'ORGANIZADO', 'PUBLICO', 'TUP', 'IP4', 'ETC', 'OUTROS'];
+            let valAtual = window.FILTRO_PORTO_ATUAL;
+            if (!CATEGORIAS_VALIDAS.includes(valAtual)) {
+              valAtual = 'TODOS';
+              window.FILTRO_PORTO_ATUAL = 'TODOS';  // limpa a variável global contaminada
+            }
             selPorto.value = valAtual;
             this.filtroPorto = valAtual;
           }
+        } else {
+          if (selPorto) selPorto.style.display = 'none';
+          this.filtroPorto = 'TODOS';
+        }
         } else {
           if (selPorto) selPorto.style.display = 'none';
           this.filtroPorto = 'TODOS';
