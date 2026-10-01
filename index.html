@@ -15,10 +15,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@ngageoint/geopackage@4.2.3/dist/geopackage.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
 
-    <!-- Leaflet MarkerCluster: agregação inteligente de pontos -->
+  <!-- Leaflet MarkerCluster CSS (o JS é carregado no final do body) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
   <style>
     :root {
@@ -121,7 +120,7 @@
 
     .painel-lateral {
       position: absolute; top: 64px; right: 16px; width: 360px; max-width: calc(100vw - 32px);
-      max-height: calc(100% - 80px); background: #ffffff; border-radius: 10px;
+      max-height: calc(100% - 110px); background: #ffffff; border-radius: 10px;
       box-shadow: 0 16px 40px rgba(10, 25, 47, 0.35); z-index: 1000;
       display: flex; flex-direction: column; border: 1px solid #cbd5e1;
       overflow-x: hidden; transition: transform 0.25s ease, width 0.25s ease;
@@ -350,7 +349,7 @@
     }
 
     #toast {
-      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
       background: rgba(15, 23, 42, 0.95); color: #ffffff; padding: 9px 18px;
       border-radius: 6px; font-size: 12px; font-weight: 600; z-index: 50000;
       display: none; box-shadow: 0 6px 20px rgba(0,0,0,0.4); border-left: 4px solid var(--gov-verde);
@@ -611,9 +610,697 @@
       stroke-width: 2 !important;
       stroke-dasharray: 3,3;
     }
+
+    /* ============================================================
+       M1 — FERRAMENTA DE MEDIÇÃO
+       ============================================================ */
+    .toolbar-medicao {
+      position: absolute;
+      bottom: 110px;
+      right: 16px;
+      z-index: 1300;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+      padding: 6px;
+      transition: all 0.2s ease;
+    }
+    .toolbar-medicao.recolhida .toolbar-medicao-corpo { display: none; }
+    .toolbar-medicao-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #0a2540;
+      cursor: pointer;
+      user-select: none;
+    }
+    .toolbar-medicao-header .toggle-icon { font-size: 12px; color: #64748b; }
+    .toolbar-medicao-corpo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+    .btn-medicao {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      padding: 6px 8px;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-medicao:hover {
+      background: #e0f2fe;
+      border-color: #0284c7;
+      color: #0284c7;
+    }
+    .btn-medicao.ativo {
+      background: #0284c7;
+      border-color: #0369a1;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(2,132,199,0.35);
+    }
+    .btn-medicao.limpar { color: #dc2626; }
+    .btn-medicao.limpar:hover { background: #fee2e2; border-color: #ef4444; color: #b91c1c; }
+
+    /* Painel de resultados de medição */
+    .painel-medicao-resultados {
+      position: absolute;
+      bottom: 110px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1300;
+      background: rgba(10, 37, 64, 0.96);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      display: none;
+      border: 1px solid #38bdf8;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-width: 260px;
+      text-align: center;
+    }
+    .painel-medicao-resultados.aberto { display: block; }
+    .painel-medicao-resultados .valor {
+      display: block;
+      font-size: 18px;
+      color: #38bdf8;
+      margin: 4px 0;
+      font-family: monospace;
+    }
+    .painel-medicao-resultados .dica {
+      display: block;
+      font-size: 10px;
+      color: #94a3b8;
+      font-weight: 400;
+      margin-top: 4px;
+    }
+
+    /* Labels de medição no mapa */
+    .label-medicao {
+      background: rgba(10, 37, 64, 0.95) !important;
+      color: #ffffff !important;
+      border: 1px solid #38bdf8 !important;
+      border-radius: 4px !important;
+      font-size: 10.5px !important;
+      font-weight: 700 !important;
+      padding: 2px 6px !important;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35) !important;
+      font-family: 'Segoe UI', system-ui, sans-serif !important;
+      white-space: nowrap !important;
+    }
+    .label-medicao::before { display: none !important; }
+
+    /* ============================================================
+       M3 — CARD DE METADADOS
+       ============================================================ */
+    .btn-meta-camada {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 11px;
+      padding: 0 3px;
+      color: #64748b;
+      transition: color 0.15s ease;
+    }
+    .btn-meta-camada:hover { color: #0284c7; }
+
+    .modal-metadados {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 25, 47, 0.85);
+      backdrop-filter: blur(6px);
+      z-index: 999999;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .modal-metadados.aberto { display: flex; }
+    .modal-metadados-card {
+      background: #0f172a;
+      border: 1px solid #0284c7;
+      border-radius: 12px;
+      width: 95%;
+      max-width: 720px;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+      overflow: hidden;
+      color: #f8fafc;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+    .modal-metadados-header {
+      background: #061426;
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(2,132,199,0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-metadados-header h3 {
+      font-size: 14px;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+    }
+    .modal-metadados-body {
+      padding: 18px 22px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .meta-bloco {
+      margin-bottom: 16px;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 14px;
+    }
+    .meta-bloco:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .meta-titulo {
+      font-size: 10.5px;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .meta-linha {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      font-size: 12px;
+      border-bottom: 1px dashed #1e293b;
+    }
+    .meta-linha:last-child { border-bottom: none; }
+    .meta-linha .rotulo { color: #94a3b8; font-weight: 600; }
+    .meta-linha .valor { color: #f1f5f9; font-weight: 500; text-align: right; max-width: 60%; }
+    .meta-linha .valor.mono { font-family: monospace; font-size: 11px; }
+    .meta-descricao {
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.5;
+      text-align: justify;
+    }
+    .meta-changelog {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .meta-changelog li {
+      font-size: 11.5px;
+      color: #cbd5e1;
+      padding: 6px 0 6px 18px;
+      position: relative;
+      border-bottom: 1px dashed #1e293b;
+    }
+    .meta-changelog li:last-child { border-bottom: none; }
+    .meta-changelog li::before {
+      content: '▸';
+      position: absolute;
+      left: 4px;
+      color: #38bdf8;
+      font-weight: 700;
+    }
+    .meta-hash {
+      background: #061426;
+      border: 1px solid #1e4976;
+      border-radius: 5px;
+      padding: 8px 10px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #93c5fd;
+      word-break: break-all;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .meta-hash button {
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .meta-hash button:hover { background: #0369a1; }
+
+    /* ============================================================
+       M7 — VERSIONAMENTO VISÍVEL
+       ============================================================ */
+
+    /* Rodapé fixo institucional */
+    .rodape-versao {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 26px;
+      background: rgba(10, 37, 64, 0.92);
+      backdrop-filter: blur(6px);
+      border-top: 1px solid rgba(56, 189, 248, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 10.5px;
+      color: #bae6fd;
+      z-index: 1300;
+      pointer-events: auto;
+      user-select: none;
+      letter-spacing: 0.2px;
+    }
+    .rodape-versao .rodape-esquerda,
+    .rodape-versao .rodape-direita {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .rodape-versao .item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .rodape-versao .sep {
+      color: rgba(148, 163, 184, 0.5);
+      font-weight: 300;
+    }
+    .rodape-versao .badge-canal {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 8px;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+    .rodape-versao .badge-canal.teste {
+      background: rgba(245, 158, 11, 0.22);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.5);
+    }
+    .rodape-versao .badge-canal.producao {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.5);
+    }
+    .rodape-versao .btn-sobre {
+      background: transparent;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #bae6fd;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      letter-spacing: 0.3px;
+    }
+    .rodape-versao .btn-sobre:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+      color: #ffffff;
+    }
+    .rodape-versao .btn-sobre.aviso-novo {
+      animation: pulso-novidade 2s infinite;
+    }
+    @keyframes pulso-novidade {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.6); }
+      50%      { box-shadow: 0 0 0 6px rgba(56, 189, 248, 0); }
+    }
+
+    /* Modal "Sobre este WebGIS" */
+    .modal-sobre {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 25, 47, 0.9);
+      backdrop-filter: blur(8px);
+      z-index: 1000000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .modal-sobre.aberto { display: flex; }
+    .modal-sobre-card {
+      background: #0f172a;
+      border: 1px solid #0284c7;
+      border-radius: 12px;
+      width: 95%;
+      max-width: 780px;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+      overflow: hidden;
+      color: #f8fafc;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+    .modal-sobre-header {
+      background: linear-gradient(135deg, #061426 0%, #0a2540 100%);
+      padding: 18px 24px;
+      border-bottom: 1px solid rgba(2,132,199,0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-sobre-header h3 {
+      font-size: 15px;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .modal-sobre-header .subtitulo {
+      font-size: 10.5px;
+      color: #94a3b8;
+      font-weight: 400;
+      margin-top: 3px;
+      letter-spacing: 0.3px;
+    }
+    .modal-sobre-body {
+      padding: 20px 26px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .sobre-bloco {
+      margin-bottom: 20px;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 18px;
+    }
+    .sobre-bloco:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .sobre-titulo {
+      font-size: 11px;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sobre-titulo::before {
+      content: '';
+      width: 3px;
+      height: 14px;
+      background: #0284c7;
+      border-radius: 2px;
+    }
+    .sobre-descricao {
+      font-size: 12.5px;
+      color: #cbd5e1;
+      line-height: 1.6;
+      text-align: justify;
+    }
+    .sobre-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .sobre-info {
+      background: #061426;
+      border: 1px solid #1e4976;
+      border-radius: 6px;
+      padding: 10px 12px;
+    }
+    .sobre-info .rotulo {
+      font-size: 9.5px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+    .sobre-info .valor {
+      font-size: 12px;
+      color: #f1f5f9;
+      font-weight: 600;
+      font-family: 'Segoe UI', monospace;
+      word-break: break-all;
+    }
+    .sobre-info .valor.mono {
+      font-family: 'Consolas', 'Courier New', monospace;
+      color: #7dd3fc;
+      font-size: 11.5px;
+    }
+    .sobre-creditos {
+      font-size: 11.5px;
+      color: #cbd5e1;
+      line-height: 1.7;
+    }
+    .sobre-creditos strong {
+      color: #38bdf8;
+      font-weight: 700;
+    }
+    .sobre-link {
+      color: #38bdf8;
+      text-decoration: none;
+      border-bottom: 1px dotted #38bdf8;
+      transition: all 0.15s ease;
+    }
+    .sobre-link:hover {
+      color: #7dd3fc;
+      border-bottom-style: solid;
+    }
+
+    /* Changelog dentro do modal */
+    .changelog-lista {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .changelog-item {
+      padding: 10px 0;
+      border-bottom: 1px dashed #1e293b;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .changelog-item:last-child { border-bottom: none; }
+    .changelog-versao {
+      flex-shrink: 0;
+      min-width: 90px;
+    }
+    .changelog-versao .num {
+      display: inline-block;
+      background: #0284c7;
+      color: #fff;
+      font-weight: 800;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.4px;
+    }
+    .changelog-versao .num.teste {
+      background: #f59e0b;
+      color: #000;
+    }
+    .changelog-versao .data {
+      display: block;
+      font-size: 9.5px;
+      color: #64748b;
+      margin-top: 4px;
+      font-family: 'Consolas', monospace;
+    }
+    .changelog-notas {
+      flex: 1;
+      font-size: 11.5px;
+      color: #cbd5e1;
+      line-height: 1.55;
+      padding-left: 0;
+    }
+    .changelog-notas li {
+      list-style: none;
+      padding: 2px 0 2px 14px;
+      position: relative;
+    }
+    .changelog-notas li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    /* Botão de copiar hash do commit */
+    .btn-copiar-inline {
+      background: transparent;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #7dd3fc;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 9.5px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-left: 6px;
+      vertical-align: middle;
+      transition: all 0.15s ease;
+    }
+    .btn-copiar-inline:hover {
+      background: rgba(56, 189, 248, 0.15);
+      color: #ffffff;
+      border-color: #38bdf8;
+    }
+
+    /* ============================================================
+       IMPRESSÃO — Layout limpo para PDF/papel
+       ------------------------------------------------------------
+       - Esconde toda a UI (painel, toolbar, cabeçalho, modais)
+       - Mantém apenas o mapa + legenda
+       - Adiciona cabeçalho institucional no topo da página
+       - Preserva as cores das camadas
+       ============================================================ */
+    @media print {
+      /* 1. Esconde elementos de interface */
+      .top-header,
+      .painel-lateral,
+      .btn-flutuante-abrir-painel,
+      .painel-graficos,
+      .painel-copiloto,
+      .painel-tabela-atributos,
+      .toolbar-medicao,
+      .painel-medicao-resultados,
+      .barra-busca-atributos,
+      .dropdown-homologacao,
+      .modal-catalogo,
+      .modal-matriz-ven,
+      .modal-metadados,
+      .modal-sobre,
+      .rodape-versao,
+      #dropzone,
+      #toast,
+      .leaflet-control-zoom {
+        display: none !important;
+      }
+
+      /* 2. Reset global para impressão */
+      html, body {
+        overflow: visible !important;
+        height: auto !important;
+        width: 100% !important;
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      /* 3. Mapa em tela cheia (menos o cabeçalho de 40px) */
+      #mapa {
+        position: relative !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: calc(100vh - 40px) !important;
+        margin: 0 !important;
+        margin-top: 40px !important;
+        page-break-inside: avoid;
+        page-break-after: avoid;
+      }
+
+      /* 4. Cabeçalho institucional no topo da página */
+      body::before {
+        content: "AGÊNCIA NACIONAL DE TRANSPORTES AQUAVIÁRIOS — ANTAQ  |  WebGIS Corporativo  |  GEE-SEPH";
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 40px;
+        padding: 12px 16px 0 16px;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: #0a2540;
+        background: #ffffff;
+        border-bottom: 2px solid #0284c7;
+        z-index: 9999;
+      }
+
+      /* 5. Rodapé com data de impressão */
+      body::after {
+        content: "Documento gerado em " attr(data-data-impressao) " · Fonte: WebGIS ANTAQ / GEE-SEPH";
+        display: block;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 18px;
+        padding: 3px 16px;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 9px;
+        color: #64748b;
+        text-align: center;
+        background: #ffffff;
+        border-top: 1px solid #cbd5e1;
+        z-index: 9999;
+      }
+
+      /* 6. Legenda visível e ajustada ao papel */
+      .caixa-legenda {
+        position: fixed !important;
+        bottom: 30px !important;
+        left: 12px !important;
+        width: 240px !important;
+        max-height: 60vh !important;
+        box-shadow: none !important;
+        border: 1px solid #333 !important;
+        background: #ffffff !important;
+        page-break-inside: avoid;
+        z-index: 9998 !important;
+      }
+
+      .caixa-legenda .legenda-conteudo {
+        max-height: none !important;
+      }
+
+      /* 7. Preserva cores das camadas e da legenda */
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .leaflet-tile-pane {
+        filter: none !important;
+      }
+    }
   </style>
-</head>
-<body>
+  </style>
 
   <!-- CABEÇALHO -->
   <header class="top-header">
@@ -689,6 +1376,22 @@
           </button>
         </div>
         <div id="catalogo-conteudo-grupos"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE METADADOS DA CAMADA (M3) -->
+  <div id="modal-metadados" class="modal-metadados">
+    <div class="modal-metadados-card">
+      <div class="modal-metadados-header">
+        <h3>
+          <span>ℹ️</span>
+          <span id="meta-nome-camada">Metadados da Camada</span>
+        </h3>
+        <button class="modal-matriz-fechar" onclick="LayerMetadata.fechar()">&times;</button>
+      </div>
+      <div class="modal-metadados-body" id="meta-corpo">
+        <!-- Preenchido dinamicamente -->
       </div>
     </div>
   </div>
@@ -852,6 +1555,35 @@
     </div>
   </div>
   <!-- FIM do painel do Copiloto — SEM duplicação -->
+
+  <!-- FERRAMENTA DE MEDIÇÃO (M1) -->
+  <div class="toolbar-medicao" id="toolbar-medicao">
+    <div class="toolbar-medicao-header" onclick="document.getElementById('toolbar-medicao').classList.toggle('recolhida')">
+      <span>📐 Medição</span>
+      <span class="toggle-icon">▼</span>
+    </div>
+    <div class="toolbar-medicao-corpo">
+      <button class="btn-medicao" id="btn-medir-distancia" onclick="MeasurementTool.ativar('distancia')" title="Medir distância entre pontos">
+        📏 Distância
+      </button>
+      <button class="btn-medicao" id="btn-medir-area" onclick="MeasurementTool.ativar('area')" title="Medir área de polígono">
+        ⬛ Área
+      </button>
+      <button class="btn-medicao" id="btn-medir-raio" onclick="MeasurementTool.ativar('raio')" title="Medir raio de influência">
+        ⭕ Raio
+      </button>
+      <button class="btn-medicao limpar" onclick="MeasurementTool.limparTudo()" title="Limpar todas as medições">
+        🧹 Limpar
+      </button>
+    </div>
+  </div>
+
+  <!-- Painel de resultados de medição -->
+  <div class="painel-medicao-resultados" id="painel-medicao-resultados">
+    <span id="medicao-rotulo">Medição</span>
+    <span class="valor" id="medicao-valor">0</span>
+    <span class="dica" id="medicao-dica">Clique no mapa para começar. Duplo-clique para finalizar.</span>
+  </div>
 
   <div id="mapa" style="margin-top: 52px; height: calc(100% - 52px); position: relative; z-index: 1;"></div>
 
@@ -1184,8 +1916,47 @@
     </div>
   </aside>
 
-   <!-- Leaflet MarkerCluster: agregação inteligente de pontos -->
-    <!-- Leaflet JS + MarkerCluster (ordem importa!) -->
+  </aside>
+
+  <!-- ============================================================
+       M7 — RODAPÉ DE VERSIONAMENTO (injetado dinamicamente via JS)
+       ============================================================ -->
+  <div class="rodape-versao" id="rodape-versao" style="display:none;">
+    <div class="rodape-esquerda">
+      <span class="item" id="rodape-versao-num">WebGIS ANTAQ</span>
+      <span class="sep">|</span>
+      <span class="item" id="rodape-build">build —</span>
+      <span class="sep">|</span>
+      <span class="item" id="rodape-dados">Dados: —</span>
+    </div>
+    <div class="rodape-direita">
+      <span class="item" id="rodape-responsavel">GEE/SEPH</span>
+      <button class="btn-sobre" id="btn-sobre" onclick="WebGISAbout.abrir()" title="Sobre este WebGIS">
+        ℹ️ Sobre
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL "SOBRE ESTE WEBGIS" -->
+  <div class="modal-sobre" id="modal-sobre">
+    <div class="modal-sobre-card">
+      <div class="modal-sobre-header">
+        <div>
+          <h3>
+            <span style="font-size:20px;">🏛️</span>
+            <span>WebGIS Corporativo ANTAQ</span>
+          </h3>
+          <div class="subtitulo">Sistema de Inteligência Territorial e Governança Aquaviária</div>
+        </div>
+        <button class="modal-matriz-fechar" onclick="WebGISAbout.fechar()" title="Fechar">&times;</button>
+      </div>
+      <div class="modal-sobre-body" id="sobre-corpo">
+        <!-- Preenchido dinamicamente -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS + MarkerCluster (ordem importa!) -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
@@ -1460,6 +2231,116 @@
         nome: "Unidades de Conservação Federais (ICMBio)", grupo: "restricoes",
         arquivos: ["dados/ucs_federais.geojson", "./dados/ucs_federais.geojson", "../dados/ucs_federais.geojson"],
         cor: "#15803d", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: []
+      }
+    };
+
+    /* ============================================================
+       METADADOS INSTITUCIONAIS POR CAMADA (M3)
+       ------------------------------------------------------------
+       Cada camada pode ter seus metadados cadastrados aqui.
+       Campos não preenchidos aparecem como "Não informado".
+       ============================================================ */
+    const METADADOS_CAMADAS = {
+      instalacoes_portuarias: {
+        descricao: "Cadastro oficial de instalações portuárias reguladas pela ANTAQ: portos organizados, terminais de uso privado (TUP), instalações de pequeno porte (IP4), estações de transbordo de carga (ETC) e demais outorgas. Base utilizada para fiscalização, outorga e estudos de planejamento portuário.",
+        fonte: "SDP / ANTAQ — Sistema de Desempenho Portuário",
+        escala: "1:250.000 (detalhada) e 1:1.000.000 (planejamento)",
+        datum: "SIRGAS 2000 (EPSG:4674)",
+        atualizacao: "Continua — atualizada a cada nova outorga publicada",
+        responsavel: "Superintendência de Outorgas (SOG) / GEE-SEPH",
+        processo: "Consulta pública contínua via SEI",
+        numero_features: "≈ 1.179 ativos regulados",
+        changelog: [
+          "2026-09 — Incorporação de 23 novos TUPs autorizados",
+          "2026-06 — Revisão de coordenadas de 47 IP4 no Amazonas",
+          "2026-01 — Alinhamento com nova metodologia de classificação por regime"
+        ]
+      },
+      ven_2022: {
+        descricao: "Vias Economicamente Navegadas (VEN) — trechos hidroviários com tráfego comercial comprovado por manifestos do Sistema Mercante. Série histórica oficial consolidada pela ANTAQ. Base para cálculo de tempos de percurso, matrizes O/D e indicadores de TKU.",
+        fonte: "SIGTAQ / SDP / Sistema Mercante (Min. Fazenda)",
+        escala: "1:1.000.000",
+        datum: "SIRGAS 2000 (EPSG:4674)",
+        atualizacao: "Anual — safra 2022 consolidada",
+        responsavel: "Gerência Especial de Estudos (GEE) / SEPH",
+        processo: "SEI 50300.007913/2023-45",
+        numero_features: "≈ 20.125 km de extensão total",
+        changelog: [
+          "2023-05 — Publicação oficial VEN 2022",
+          "Inclusão de 962 km (Guajará-Mirim / Pimenteiras do Oeste)",
+          "Relação com PNV: 48,24% de aproveitamento"
+        ]
+      },
+      ven_2024: {
+        descricao: "Atualização mais recente das Vias Economicamente Navegadas (VEN 2024, versão oficial V4). Incorpora ajustes metodológicos e novas rotas identificadas na série histórica.",
+        fonte: "SEPH / ANTAQ — Projeto P6",
+        escala: "1:1.000.000",
+        datum: "SIRGAS 2000 (EPSG:4674)",
+        atualizacao: "Publicação oficial — ano-base 2024",
+        responsavel: "Superintendência de Estudos e Projetos Hidroviários (SEPH)",
+        processo: "SEI 50300.003706/2025-83 — Acórdão nº 782-ANTAQ",
+        numero_features: "≈ 20.404 km de extensão total (+1,39% vs 2022)",
+        changelog: [
+          "2025-09 — Publicação oficial VEN 2024",
+          "82,52% da malha concentrada na Bacia Amazônica",
+          "Análise de gargalos: Pedral do Lourenço e secas severas"
+        ]
+      },
+      linhas_travessias: {
+        descricao: "Linhas regulares de travessia aquaviária outorgadas pela ANTAQ, unindo estados e municípios. Inclui transporte de passageiros, veículos e cargas em travessias interestaduais e internacionais.",
+        fonte: "Superintendência de Outorgas (SOG) / ANTAQ",
+        escala: "1:500.000",
+        datum: "SIRGAS 2000 (EPSG:4674)",
+        atualizacao: "Continua — atualizada a cada nova outorga",
+        responsavel: "SOG / GEE-SEPH",
+        processo: "Resoluções normativas ANTAQ",
+        numero_features: "≈ 93 linhas ativas",
+        changelog: [
+          "2026-08 — Revisão de traçados na Bacia do São Francisco",
+          "2026-02 — Inclusão de 5 novas travessias internacionais"
+        ]
+      },
+      uf: {
+        descricao: "Malha de Unidades da Federação — divisão político-administrativa oficial do Brasil. Utilizada como camada base para filtros territoriais e cálculo de estatísticas por estado.",
+        fonte: "IBGE — Malha Territorial 2024",
+        escala: "1:5.000.000",
+        datum: "SIRGAS 2000 (EPSG:4674)",
+        atualizacao: "Anual (IBGE)",
+        responsavel: "GEE-SEPH (repositório local)",
+        processo: "Download direto do portal IBGE",
+        numero_features: "27 unidades (26 estados + DF)",
+        changelog: [
+          "2024-06 — Atualização anual conforme IBGE",
+          "2023-05 — Nenhuma alteração de limite"
+        ]
+      },
+      tis_poligonais: {
+        descricao: "Poligonais de Terras Indígenas oficialmente reconhecidas pela FUNAI. Camada crítica para análise de interferência socioambiental de empreendimentos aquaviários.",
+        fonte: "FUNAI — Fundação Nacional dos Povos Indígenas",
+        escala: "1:250.000",
+        datum: "SIRGAS 2000 (EPSG:4674)",
+        atualizacao: "Mensal",
+        responsavel: "GEE-SEPH",
+        processo: "Download da base pública FUNAI",
+        numero_features: "Todas as TIs homologadas, declaradas e em estudo",
+        changelog: [
+          "2026-09 — Atualização conforme publicação FUNAI",
+          "Camada obrigatória para análise de RID (Raio de Influência Direta)"
+        ]
+      },
+      ucs_federais: {
+        descricao: "Unidades de Conservação Federais geridas pelo ICMBio. Base para aplicação do Art. 36 da Lei nº 9.985/2000 (SNUC) em análises de licenciamento e outorga.",
+        fonte: "ICMBio — Cadastro Nacional de UCs",
+        escala: "1:250.000",
+        datum: "SIRGAS 2000 (EPSG:4674)",
+        atualizacao: "Semestral",
+        responsavel: "GEE-SEPH",
+        processo: "Download da base pública ICMBio",
+        numero_features: "UCs federais de proteção integral e uso sustentável",
+        changelog: [
+          "2026-09 — Atualização semestral conforme ICMBio",
+          "Inclui zonas de amortecimento quando disponíveis"
+        ]
       }
     };
 
@@ -3167,6 +4048,7 @@
             <span class="camada-titulo-txt">${cfg.nome}</span>
             <span class="badge-contador" id="cnt-${id}"></span>
             <span class="badge-erro" id="err-${id}"></span>
+            <button class="btn-meta-camada" title="Ver metadados da camada" onclick="event.stopPropagation(); LayerMetadata.abrir('${id}')">ℹ️</button>
           </div>
           <label class="switch" title="Ligar/Desligar Camada">
             <input type="checkbox" id="chk-${id}" ${cfg.ativa ? 'checked' : ''} onchange="toggleCamada('${id}', this.checked)">
@@ -3844,6 +4726,753 @@
     };
 
     /* ============================================================
+       MÓDULO 19: VERSIONAMENTO E INSTITUCIONAL (M7)
+       ------------------------------------------------------------
+       - Rodapé com versão/build/commit/última atualização
+       - Modal "Sobre este WebGIS" com créditos, contato, changelog
+       - Detecção de nova versão (avisa o usuário uma única vez)
+       ------------------------------------------------------------
+       COMO ATUALIZAR A VERSÃO:
+       1. Altere o campo `versao` (ex: '0.9.0' → '0.9.1')
+       2. Atualize `build`, `commit` e `atualizado`
+       3. Adicione uma entrada no topo de `changelog` com as notas
+       ============================================================ */
+    const WebGIS_VERSION = {
+      versao: '0.9.0',
+      canal: 'teste',                    // 'teste' | 'producao'
+      build: '2026.09.30',
+      commit: 'a3f8b2c',                 // short hash (7 caracteres)
+      atualizado: '30/09/2026',
+      responsavel: 'GEE/SEPH — Gerência Especial de Estudos',
+      contato: 'gee.seph@antaq.gov.br',
+      repositorio: 'https://github.com/antag-gee/webgis-antaq',
+      licenca: 'Uso institucional — ANTAQ',
+      descricao: `O WebGIS Corporativo da ANTAQ é uma plataforma de inteligência territorial voltada à análise integrada da infraestrutura aquaviária brasileira. Integra bases de instalações portuárias, vias economicamente navegadas, linhas de travessia, restrições socioambientais e limites administrativos, com ferramentas de medição, análise espacial e copiloto regulatório.`,
+      changelog: [
+        {
+          versao: '0.9.0',
+          canal: 'teste',
+          data: '2026-09-30',
+          notas: [
+            'M1 — Ferramenta de medição de distância, área e raio',
+            'M3 — Card de metadados por camada (fonte, escala, changelog, hash)',
+            'G1 — Agrupamento inteligente de pontos (MarkerCluster) por categoria',
+            'G3 — Persistência de estado na URL (compartilhamento de mapas)',
+            'Impressão — Layout limpo para PDF/papel com cabeçalho e rodapé institucional'
+          ]
+        },
+        {
+          versao: '0.8.0',
+          canal: 'teste',
+          data: '2026-09-15',
+          notas: [
+            'Refatoração do painel lateral com cards compactos',
+            'Catálogo de camadas com retirada/adição dinâmica',
+            'Copiloto regulatório com suporte a IA local e nuvem',
+            'Autenticação SHA-256 para modo de homologação'
+          ]
+        },
+        {
+          versao: '0.7.0',
+          canal: 'teste',
+          data: '2026-08-20',
+          notas: [
+            'Matriz de navegação VEN com tempos e distâncias OD',
+            'Estúdio analítico com gráficos e séries históricas',
+            'Importação multiformato (SHP, KML, KMZ, GeoJSON, GPKG)',
+            'Integração com manifest.json gerado pelo pipeline Python'
+          ]
+        }
+      ]
+    };
+
+    const WebGISAbout = {
+      _jaInicializado: false,
+
+      init: function() {
+        if (this._jaInicializado) return;
+        this._jaInicializado = true;
+
+        this._renderizarRodape();
+        this._configurarAtalhos();
+        this._verificarNovidadeVersao();
+
+        console.info(`[WebGIS] Versão ${WebGIS_VERSION.versao} (${WebGIS_VERSION.canal}) — build ${WebGIS_VERSION.build}`);
+      },
+
+      abrir: function() {
+        const corpo = document.getElementById('sobre-corpo');
+        if (!corpo) return;
+
+        const V = WebGIS_VERSION;
+        const badgeCanal = V.canal === 'producao'
+          ? '<span class="badge-canal producao">Produção</span>'
+          : '<span class="badge-canal teste">Homologação</span>';
+
+        const changelogHTML = V.changelog.map(item => `
+          <li class="changelog-item">
+            <div class="changelog-versao">
+              <span class="num ${item.canal === 'teste' ? 'teste' : ''}">v${Security.escapeHTML(item.versao)}</span>
+              <span class="data">${Security.escapeHTML(item.data)}</span>
+            </div>
+            <ul class="changelog-notas">
+              ${item.notas.map(n => `<li>${Security.escapeHTML(n)}</li>`).join('')}
+            </ul>
+          </li>
+        `).join('');
+
+        corpo.innerHTML = `
+          <div class="sobre-bloco">
+            <div class="sobre-titulo">Sobre esta aplicação</div>
+            <p class="sobre-descricao">${Security.escapeHTML(V.descricao)}</p>
+          </div>
+
+          <div class="sobre-bloco">
+            <div class="sobre-titulo">Informações técnicas</div>
+            <div class="sobre-grid">
+              <div class="sobre-info">
+                <div class="rotulo">Versão</div>
+                <div class="valor">${Security.escapeHTML(V.versao)} ${badgeCanal}</div>
+              </div>
+              <div class="sobre-info">
+                <div class="rotulo">Build</div>
+                <div class="valor mono">${Security.escapeHTML(V.build)}</div>
+              </div>
+              <div class="sobre-info">
+                <div class="rotulo">Commit</div>
+                <div class="valor mono">
+                  ${Security.escapeHTML(V.commit)}
+                  <button class="btn-copiar-inline" onclick="WebGISAbout._copiarCommit()" title="Copiar hash completo">Copiar</button>
+                </div>
+              </div>
+              <div class="sobre-info">
+                <div class="rotulo">Última atualização dos dados</div>
+                <div class="valor">${Security.escapeHTML(V.atualizado)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sobre-bloco">
+            <div class="sobre-titulo">Governança e contato</div>
+            <div class="sobre-creditos">
+              <strong>Responsável técnico:</strong> ${Security.escapeHTML(V.responsavel)}<br>
+              <strong>Contato:</strong> <a class="sobre-link" href="mailto:${Security.escapeHTML(V.contato)}">${Security.escapeHTML(V.contato)}</a><br>
+              <strong>Repositório:</strong> <a class="sobre-link" href="${Security.escapeHTML(V.repositorio)}" target="_blank" rel="noopener">${Security.escapeHTML(V.repositorio)}</a><br>
+              <strong>Licença:</strong> ${Security.escapeHTML(V.licenca)}
+            </div>
+          </div>
+
+          <div class="sobre-bloco">
+            <div class="sobre-titulo">Changelog (últimas versões)</div>
+            <ul class="changelog-lista">${changelogHTML}</ul>
+          </div>
+        `;
+
+        document.getElementById('modal-sobre').classList.add('aberto');
+      },
+
+      fechar: function() {
+        document.getElementById('modal-sobre').classList.remove('aberto');
+      },
+
+      _renderizarRodape: function() {
+        const V = WebGIS_VERSION;
+        const rodape = document.getElementById('rodape-versao');
+        if (!rodape) return;
+
+        const set = (id, txt) => {
+          const el = document.getElementById(id);
+          if (el) el.innerHTML = txt;
+        };
+
+        set('rodape-versao-num',
+          `<strong>WebGIS ANTAQ</strong> v${Security.escapeHTML(V.versao)}
+           <span class="badge-canal ${V.canal === 'producao' ? 'producao' : 'teste'}">
+             ${V.canal === 'producao' ? 'Produção' : 'Homologação'}
+           </span>`);
+
+        set('rodape-build', `build ${Security.escapeHTML(V.build)} · <span class="mono">${Security.escapeHTML(V.commit)}</span>`);
+        set('rodape-dados', `📅 Dados: ${Security.escapeHTML(V.atualizado)}`);
+        set('rodape-responsavel', Security.escapeHTML(V.responsavel));
+
+        rodape.style.display = 'flex';
+      },
+
+      _configurarAtalhos: function() {
+        // ESC fecha o modal "Sobre"
+        document.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Escape') {
+            const m = document.getElementById('modal-sobre');
+            if (m && m.classList.contains('aberto')) {
+              ev.stopPropagation();
+              this.fechar();
+            }
+          }
+          // Atalho F1 abre "Sobre"
+          if (ev.key === 'F1') {
+            ev.preventDefault();
+            this.abrir();
+          }
+        });
+
+        // Click fora fecha
+        const modal = document.getElementById('modal-sobre');
+        if (modal) {
+          modal.addEventListener('click', (ev) => {
+            if (ev.target === modal) this.fechar();
+          });
+        }
+      },
+
+      /* Detecta se é a primeira visita desta versão — avisa com pulso no botão "Sobre" */
+      _verificarNovidadeVersao: function() {
+        try {
+          const chave = 'antaq_webgis_versao_vista';
+          const versaoVista = localStorage.getItem(chave);
+          const versaoAtual = WebGIS_VERSION.versao;
+
+          if (versaoVista !== versaoAtual) {
+            // Marca como vista
+            localStorage.setItem(chave, versaoAtual);
+
+            // Se é a primeira vez que abre alguma versão (usuário novo), apenas registra
+            if (!versaoVista) {
+              console.info('[WebGIS] Primeira visita registrada.');
+              return;
+            }
+
+            // Senão, avisa que há novidades
+            console.info(`[WebGIS] Nova versão detectada: ${versaoVista} → ${versaoAtual}`);
+
+            // Adiciona pulso no botão "Sobre"
+            const btn = document.getElementById('btn-sobre');
+            if (btn) btn.classList.add('aviso-novo');
+
+            // Toast com link para o changelog
+            setTimeout(() => {
+              UI.toast(
+                `✨ Atualizado para <strong>v${Security.escapeHTML(versaoAtual)}</strong>. ` +
+                `<a href="#" onclick="event.preventDefault(); WebGISAbout.abrir();" style="color:#38bdf8; text-decoration:underline;">Ver novidades</a>`
+              );
+              // Remove o pulso depois de 8s
+              setTimeout(() => { if (btn) btn.classList.remove('aviso-novo'); }, 8000);
+            }, 2000);
+          }
+        } catch (e) {
+          console.warn('[WebGIS] Não foi possível verificar versão:', e);
+        }
+      },
+
+      _copiarCommit: function() {
+        try {
+          navigator.clipboard.writeText(WebGIS_VERSION.commit).then(() => {
+            UI.toast('📋 Hash do commit copiado.');
+          });
+        } catch (e) {
+          UI.toast('⚠️ Não foi possível copiar.');
+        }
+      },
+
+      /* Métodos utilitários expostos para uso externo */
+      obterVersao: function() { return WebGIS_VERSION.versao; },
+      obterCanal: function() { return WebGIS_VERSION.canal; },
+      obterCommit: function() { return WebGIS_VERSION.commit; }
+    };
+
+    /* ============================================================
+       MÓDULO 17: FERRAMENTA DE MEDIÇÃO (M1)      
+    /* ============================================================
+       MÓDULO 17: FERRAMENTA DE MEDIÇÃO (M1)
+       ------------------------------------------------------------
+       - Distância: linha multi-segmento com total acumulado
+       - Área: polígono fechado com área em km²
+       - Raio: círculo com raio em km e área em km²
+       Usa Turf.js (já carregado) para cálculos geodésicos precisos.
+       ============================================================ */
+    const MeasurementTool = {
+      modo: null,           // 'distancia' | 'area' | 'raio' | null
+      pontos: [],           // array de L.LatLng clicados
+      marcadoresTemp: [],   // círculos temporários nos vértices
+      linhaTemp: null,      // polyline sendo desenhada
+      poligonoTemp: null,   // polygon sendo desenhado
+      circuloTemp: null,    // circle sendo desenhado
+      labelsTemp: [],       // labels de segmento/área
+      medicoesSalvas: [],   // camadas finalizadas
+
+      ativar: function(modo) {
+        // Se clicar no mesmo modo ativo → desativa
+        if (this.modo === modo) { this.desativar(); return; }
+
+        this.limparTemporarios();
+        this.modo = modo;
+        this.pontos = [];
+
+        // Atualiza UI dos botões
+        document.querySelectorAll('.btn-medicao').forEach(b => b.classList.remove('ativo'));
+        const btn = document.getElementById(`btn-medir-${modo}`);
+        if (btn) btn.classList.add('ativo');
+
+        // Mostra painel de resultados
+        const painel = document.getElementById('painel-medicao-resultados');
+        if (painel) painel.classList.add('aberto');
+
+        // ✅ Mostra contador de medições já salvas
+        const totalSalvas = this.medicoesSalvas.length;
+        const dicaInicial = totalSalvas > 0
+          ? `Clique para nova medição. ${totalSalvas} medição(ões) finalizada(s) no mapa.`
+          : 'Clique no mapa para começar. Duplo-clique para finalizar.';
+        this._atualizarPainel(modo, 0, dicaInicial);
+
+        // Cursor crosshair
+        document.getElementById('mapa').style.cursor = 'crosshair';
+
+        // Ativa listeners
+        this._bindListeners();
+      },
+
+      desativar: function() {
+        this.modo = null;
+        this._ultimoClickTempo = 0;
+        this._ultimoClickScreen = null;
+        document.querySelectorAll('.btn-medicao').forEach(b => b.classList.remove('ativo'));
+        document.getElementById('mapa').style.cursor = '';
+        const painel = document.getElementById('painel-medicao-resultados');
+        if (painel) painel.classList.remove('aberto');
+        this._unbindListeners();
+        this.limparTemporarios();
+      },
+
+      _bindListeners: function() {
+        this._unbindListeners();
+        this._handlers = {
+          click: (e) => this._onMapClick(e),
+          dblclick: (e) => { L.DomEvent.stop(e); this._finalizar(); },
+          mousemove: (e) => this._onMouseMove(e),
+          keydown: (ev) => { if (ev.key === 'Escape') this.desativar(); }
+        };
+        mapa.on('click', this._handlers.click);
+        mapa.on('dblclick', this._handlers.dblclick);
+        mapa.on('mousemove', this._handlers.mousemove);
+        document.addEventListener('keydown', this._handlers.keydown);
+      },
+
+      _unbindListeners: function() {
+        if (!this._handlers) return;
+        mapa.off('click', this._handlers.click);
+        mapa.off('dblclick', this._handlers.dblclick);
+        mapa.off('mousemove', this._handlers.mousemove);
+        document.removeEventListener('keydown', this._handlers.keydown);
+        this._handlers = null;
+      },
+
+      _onMapClick: function(e) {
+        if (!this.modo) return;
+        const latlng = e.latlng;
+        const screenPoint = mapa.latLngToContainerPoint(latlng);
+        const agora = Date.now();
+
+        // ✅ CORREÇÃO: detecta o 2º clique de um duplo-clique e o ignora.
+        // Um duplo-clique dispara: click → click → dblclick, tudo na mesma posição.
+        // Sem isso, cada duplo-clique adiciona 2 pontos idênticos (medição de 0m).
+        if (this._ultimoClickTempo &&
+            (agora - this._ultimoClickTempo) < 320 &&
+            this._ultimoClickScreen &&
+            this._ultimoClickScreen.distanceTo(screenPoint) < 10) {
+          // É o 2º clique do duplo-clique: ignora
+          this._ultimoClickTempo = 0;
+          this._ultimoClickScreen = null;
+          return;
+        }
+        this._ultimoClickTempo = agora;
+        this._ultimoClickScreen = screenPoint;
+
+        if (this.modo === 'raio') {
+          if (this.pontos.length === 0) {
+            // Primeiro clique: define centro
+            this.pontos.push(latlng);
+            this._desenharCirculo(latlng, 0);
+            this._atualizarPainel('raio', 0, 'Mova o mouse para ajustar o raio. Clique para finalizar.');
+          } else {
+            // Segundo clique: finaliza raio
+            this._finalizar();
+          }
+          return;
+        }
+
+        // Distância e área: acumula pontos
+        this.pontos.push(latlng);
+        this._desenharPontoTemp(latlng);
+        this._atualizarFormaTemporaria();
+
+        if (this.pontos.length === 1) {
+          this._atualizarPainel(this.modo, 0, 'Clique em mais pontos. Duplo-clique ou ESC para finalizar.');
+        }
+      },
+
+      _onMouseMove: function(e) {
+        if (!this.modo || this.pontos.length === 0) return;
+
+        // ✅ THROTTLE: limita a ~30fps para não recriar labels centenas de vezes por segundo
+        const agora = Date.now();
+        if (this._ultimoMove && (agora - this._ultimoMove) < 33) return;
+        this._ultimoMove = agora;
+
+        const ponto = e.latlng;
+
+        if (this.modo === 'raio') {
+          const centro = this.pontos[0];
+          const dist = this._distanciaKm(centro, ponto);
+          this._desenharCirculo(centro, dist);
+          this._atualizarPainel('raio', dist * 1000, `Área ≈ ${(Math.PI * dist * dist).toFixed(2)} km²`);
+          return;
+        }
+
+        // Distância/área: pré-visualiza próximo segmento
+        const pontosPreview = [...this.pontos, ponto];
+        if (this.modo === 'distancia') {
+          this._desenharLinha(pontosPreview, false);
+        } else {
+          this._desenharPoligono(pontosPreview, false);
+        }
+      },
+
+      _finalizar: function() {
+        if (!this.modo) return;
+
+        // Limpa rastro de duplo-clique
+        this._ultimoClickTempo = 0;
+        this._ultimoClickScreen = null;
+
+        if (this.modo === 'raio') {
+          if (this.pontos.length < 1 || !this.circuloTemp) { this.desativar(); return; }
+          const centro = this.pontos[0];
+          const raio = this.circuloTemp.getRadius() / 1000; // km
+          const areaKm2 = Math.PI * raio * raio;
+          this._atualizarPainel('raio', raio * 1000, `Área total ≈ ${areaKm2.toFixed(2)} km²`);
+          this.medicoesSalvas.push(this.circuloTemp);
+          this.circuloTemp = null;
+
+          // ✅ Adiciona um label permanente com o raio calculado
+          const labelRaio = L.marker(centro, {
+            icon: L.divIcon({
+              className: 'label-medicao',
+              html: `⭕ ${raio.toFixed(2)} km`,
+              iconSize: [100, 20],
+              iconAnchor: [50, -12]
+            }),
+            interactive: false,
+            pane: 'panePontos'
+          }).addTo(mapa);
+          this.medicoesSalvas.push(labelRaio);
+        } else if (this.modo === 'distancia') {
+          if (this.pontos.length < 2) { this.desativar(); return; }
+          if (this.linhaTemp) {
+            // ✅ Solidifica a linha ao finalizar (tira o tracejado de preview)
+            try { this.linhaTemp.setStyle({ dashArray: null }); } catch(e) {}
+            this.medicoesSalvas.push(this.linhaTemp);
+          }
+          this.linhaTemp = null;
+        } else if (this.modo === 'area') {
+          if (this.pontos.length < 3) { this.desativar(); return; }
+          if (this.poligonoTemp) this.medicoesSalvas.push(this.poligonoTemp);
+          this.poligonoTemp = null;
+        }
+
+        // ✅ CORREÇÃO CRÍTICA: salva os labels junto com a medição
+        // Sem isso, os labels ficam órfãos no mapa para sempre.
+        this.labelsTemp.forEach(l => {
+          l._permanente = true;
+          this.medicoesSalvas.push(l);
+        });
+
+        // Reinicia estado do modo mas mantém ativo
+        this.pontos = [];
+        this.marcadoresTemp.forEach(m => mapa.removeLayer(m));
+        this.marcadoresTemp = [];
+        this.labelsTemp = [];
+
+        // ✅ CONTADOR DE MEDIÇÕES SALVAS (aqui é o lugar certo)
+        const totalSalvas = this.medicoesSalvas.length;
+        this._atualizarPainel(this.modo, 0,
+          `Clique para iniciar nova medição. ${totalSalvas} medição(ões) finalizada(s) no mapa.`);
+      },
+
+      _desenharPontoTemp: function(latlng) {
+        const m = L.circleMarker(latlng, {
+          radius: 5, fillColor: '#f59e0b', color: '#ffffff',
+          weight: 2, fillOpacity: 1, pane: 'panePontos'
+        }).addTo(mapa);
+        this.marcadoresTemp.push(m);
+      },
+
+      _desenharLinha: function(pontos, permanente) {
+        if (this.linhaTemp) mapa.removeLayer(this.linhaTemp);
+        this.linhaTemp = L.polyline(pontos, {
+          color: '#f59e0b', weight: 3, opacity: 0.95,
+          dashArray: permanente ? null : '6, 4', pane: 'paneLinhas'
+        }).addTo(mapa);
+        this._calcularEExibirDistancia(pontos);
+      },
+
+      _desenharPoligono: function(pontos, permanente) {
+        if (this.poligonoTemp) mapa.removeLayer(this.poligonoTemp);
+        this.poligonoTemp = L.polygon(pontos, {
+          color: '#f59e0b', weight: 3, fillColor: '#f59e0b',
+          fillOpacity: 0.15, pane: 'paneLinhas'
+        }).addTo(mapa);
+        this._calcularEExibirArea(pontos);
+      },
+
+      _desenharCirculo: function(centro, raioKm) {
+        if (this.circuloTemp) mapa.removeLayer(this.circuloTemp);
+        this.circuloTemp = L.circle(centro, {
+          radius: raioKm * 1000, color: '#f59e0b', weight: 3,
+          fillColor: '#f59e0b', fillOpacity: 0.12, pane: 'paneLinhas'
+        }).addTo(mapa);
+      },
+
+      _atualizarFormaTemporaria: function() {
+        if (this.modo === 'distancia' && this.pontos.length >= 2) {
+          this._desenharLinha(this.pontos, false);
+        } else if (this.modo === 'area' && this.pontos.length >= 3) {
+          this._desenharPoligono(this.pontos, false);
+        }
+      },
+
+      _calcularEExibirDistancia: function(pontos) {
+        if (pontos.length < 2) { this._atualizarPainel('distancia', 0, 'Adicione mais pontos.'); return; }
+        let totalKm = 0;
+        const coords = pontos.map(p => [p.lng, p.lat]);
+
+        // Remove labels de segmento antigos
+        this.labelsTemp.forEach(l => { if (l._tipo === 'segmento') mapa.removeLayer(l); });
+        this.labelsTemp = this.labelsTemp.filter(l => l._tipo !== 'segmento');
+
+        // Desenha labels de cada segmento
+        for (let i = 0; i < coords.length - 1; i++) {
+          try {
+            const seg = turf.lineString([coords[i], coords[i + 1]]);
+            const distKm = turf.length(seg, { units: 'kilometers' });
+            totalKm += distKm;
+            const meio = [(pontos[i].lat + pontos[i + 1].lat) / 2, (pontos[i].lng + pontos[i + 1].lng) / 2];
+            const label = L.marker(meio, {
+              icon: L.divIcon({
+                className: 'label-medicao',
+                html: distKm < 1 ? `${(distKm * 1000).toFixed(0)} m` : `${distKm.toFixed(2)} km`,
+                iconSize: [60, 20],
+                iconAnchor: [30, 10]
+              }),
+              interactive: false,
+              pane: 'panePontos'
+            }).addTo(mapa);
+            label._tipo = 'segmento';
+            this.labelsTemp.push(label);
+          } catch (err) {}
+        }
+
+        const dica = pontos.length >= 2 ? 'Duplo-clique para finalizar.' : 'Adicione mais pontos.';
+        this._atualizarPainel('distancia', totalKm * 1000, dica);
+      },
+
+      _calcularEExibirArea: function(pontos) {
+        if (pontos.length < 3) {
+          const parcial = this._calcularDistanciaTotal(pontos);
+          this._atualizarPainel('area', parcial * 1000, 'Adicione pelo menos 3 pontos para calcular a área.');
+          return;
+        }
+        try {
+          const coords = pontos.map(p => [p.lng, p.lat]);
+          coords.push(coords[0]); // fecha anel
+          const poly = turf.polygon([coords]);
+          const areaM2 = turf.area(poly);
+          const areaKm2 = areaM2 / 1_000_000;
+          const perimKm = this._calcularDistanciaTotal(pontos);
+          this._atualizarPainel('area', areaKm2 * 1_000_000, `Perímetro: ${perimKm.toFixed(2)} km • Duplo-clique para finalizar.`);
+        } catch (err) {}
+      },
+
+      _calcularDistanciaTotal: function(pontos) {
+        let total = 0;
+        for (let i = 0; i < pontos.length - 1; i++) {
+          total += this._distanciaKm(pontos[i], pontos[i + 1]);
+        }
+        return total;
+      },
+
+      _distanciaKm: function(a, b) {
+        try {
+          return turf.distance([a.lng, a.lat], [b.lng, b.lat], { units: 'kilometers' });
+        } catch (e) {
+          return a.distanceTo(b) / 1000;
+        }
+      },
+
+      _atualizarPainel: function(modo, valor, dica) {
+        const rotulo = document.getElementById('medicao-rotulo');
+        const valorEl = document.getElementById('medicao-valor');
+        const dicaEl = document.getElementById('medicao-dica');
+        if (!rotulo) return;
+
+        const nomes = { distancia: '📏 Distância total', area: '⬛ Área total', raio: '⭕ Raio' };
+        rotulo.textContent = nomes[modo] || 'Medição';
+
+        if (modo === 'area' || modo === 'raio') {
+          valorEl.textContent = valor >= 1_000_000 ? `${(valor / 1_000_000).toFixed(3)} km²`
+                             : valor >= 1000 ? `${(valor / 1000).toFixed(2)} km²`
+                             : `${valor.toFixed(2)} m²`;
+        } else {
+          valorEl.textContent = valor >= 1000 ? `${(valor / 1000).toFixed(3)} km`
+                             : `${valor.toFixed(1)} m`;
+        }
+        dicaEl.textContent = dica || '';
+      },
+
+      limparTemporarios: function() {
+        if (this.linhaTemp) mapa.removeLayer(this.linhaTemp);
+        if (this.poligonoTemp) mapa.removeLayer(this.poligonoTemp);
+        if (this.circuloTemp) mapa.removeLayer(this.circuloTemp);
+        this.linhaTemp = this.poligonoTemp = this.circuloTemp = null;
+        this.marcadoresTemp.forEach(m => mapa.removeLayer(m));
+        this.marcadoresTemp = [];
+        this.labelsTemp.forEach(l => mapa.removeLayer(l));
+        this.labelsTemp = [];
+        this.pontos = [];
+      },
+
+      limparTudo: function() {
+        // 1. Limpa temporários (linhas/labels em andamento)
+        this.limparTemporarios();
+
+        // 2. Remove tudo o que foi salvo
+        this.medicoesSalvas.forEach(m => { if (mapa.hasLayer(m)) mapa.removeLayer(m); });
+        this.medicoesSalvas = [];
+
+        // 3. ✅ REDE DE SEGURANÇA: varre o mapa procurando labels órfãos
+        //    (protege contra medições finalizadas em versões antigas do código)
+        const orfaos = [];
+        mapa.eachLayer(layer => {
+          try {
+            if (layer instanceof L.Marker &&
+                layer.options &&
+                layer.options.icon &&
+                layer.options.icon.options &&
+                layer.options.icon.options.className === 'label-medicao') {
+              orfaos.push(layer);
+            }
+          } catch(e) {}
+        });
+        orfaos.forEach(l => mapa.removeLayer(l));
+
+        UI.toast(`🧹 Medições removidas (${this.medicoesSalvas.length + orfaos.length} elementos).`);
+      }
+    };
+
+    /* ============================================================
+       MÓDULO 18: METADADOS DE CAMADAS (M3)
+       ============================================================ */
+    const LayerMetadata = {
+      camadaAtualId: null,
+
+      abrir: function(id) {
+        this.camadaAtualId = id;
+        const cfg = CONFIG_CAMADAS[id] || {};
+        const meta = METADADOS_CAMADAS[id] || {};
+
+        const titulo = document.getElementById('meta-nome-camada');
+        if (titulo) titulo.innerText = cfg.nome || id;
+
+        const corpo = document.getElementById('meta-corpo');
+        if (!corpo) return;
+
+        const naoInformado = '<span style="color:#64748b; font-style:italic;">Não informado</span>';
+        const esc = (v) => v ? Security.escapeHTML(String(v)) : naoInformado;
+
+        // Formata changelog
+        let changelogHTML = '';
+        if (meta.changelog && meta.changelog.length) {
+          changelogHTML = '<ul class="meta-changelog">' +
+            meta.changelog.map(c => `<li>${Security.escapeHTML(c)}</li>`).join('') +
+            '</ul>';
+        } else {
+          changelogHTML = '<p class="meta-descricao" style="color:#64748b; font-style:italic;">Nenhum registro de alteração.</p>';
+        }
+
+        const numFeatures = DADOS_GEOJSON_BRUTOS[id]?.features?.length;
+        const numFeatTexto = numFeatures
+          ? `<strong>${numFeatures.toLocaleString('pt-BR')}</strong> feições carregadas`
+          : (meta.numero_features || 'Não informado');
+
+        corpo.innerHTML = `
+          <div class="meta-bloco">
+            <div class="meta-titulo">📋 Descrição</div>
+            <p class="meta-descricao">${esc(meta.descricao)}</p>
+          </div>
+
+          <div class="meta-bloco">
+            <div class="meta-titulo">🗂️ Origem e Procedência</div>
+            <div class="meta-linha"><span class="rotulo">Fonte</span><span class="valor">${esc(meta.fonte)}</span></div>
+            <div class="meta-linha"><span class="rotulo">Escala Cartográfica</span><span class="valor">${esc(meta.escala)}</span></div>
+            <div class="meta-linha"><span class="rotulo">Datum</span><span class="valor">${esc(meta.datum)}</span></div>
+            <div class="meta-linha"><span class="rotulo">Processo / Referência</span><span class="valor">${esc(meta.processo)}</span></div>
+          </div>
+
+          <div class="meta-bloco">
+            <div class="meta-titulo">🔄 Atualização e Governança</div>
+            <div class="meta-linha"><span class="rotulo">Periodicidade</span><span class="valor">${esc(meta.atualizacao)}</span></div>
+            <div class="meta-linha"><span class="rotulo">Responsável Técnico</span><span class="valor">${esc(meta.responsavel)}</span></div>
+            <div class="meta-linha"><span class="rotulo">Volume</span><span class="valor">${numFeatTexto}</span></div>
+            <div class="meta-linha"><span class="rotulo">Tipo Geométrico</span><span class="valor">${esc(cfg.tipoGeo || 'auto')}</span></div>
+          </div>
+
+          <div class="meta-bloco">
+            <div class="meta-titulo">📜 Changelog</div>
+            ${changelogHTML}
+          </div>
+
+          <div class="meta-bloco">
+            <div class="meta-titulo">🔐 Integridade</div>
+            <div class="meta-hash">
+              <span id="meta-hash-valor">${this._gerarHashFake(id)}</span>
+              <button onclick="LayerMetadata._copiarHash()">Copiar</button>
+            </div>
+            <p class="meta-descricao" style="font-size:10.5px; color:#64748b; margin-top:8px;">
+              Hash de referência da versão carregada. Em produção, será substituído pelo SHA-256 real do arquivo GeoJSON.
+            </p>
+          </div>
+        `;
+
+        document.getElementById('modal-metadados').classList.add('aberto');
+      },
+
+      fechar: function() {
+        document.getElementById('modal-metadados').classList.remove('aberto');
+      },
+
+      _gerarHashFake: function(id) {
+        // Gera hash "visual" estável baseado no id da camada
+        let h = 0;
+        for (let i = 0; i < id.length; i++) {
+          h = ((h << 5) - h) + id.charCodeAt(i);
+          h |= 0;
+        }
+        const base = Math.abs(h).toString(16).padStart(8, '0');
+        return (base + base + base + base).slice(0, 32);
+      },
+
+      _copiarHash: function() {
+        const el = document.getElementById('meta-hash-valor');
+        if (!el) return;
+        navigator.clipboard.writeText(el.textContent).then(() => {
+          UI.toast('📋 Hash copiado para a área de transferência.');
+        }).catch(() => {
+          UI.toast('⚠️ Não foi possível copiar o hash.');
+        });
+      }
+    };
+
+    /* ============================================================
+       MÓDULO 16: URL STATE — Persistência de estado na URL
+    /* ============================================================
        INICIALIZAÇÃO
        ============================================================ */
         /* ============================================================
@@ -3855,16 +5484,29 @@
        - Restaurar automaticamente ao abrir um link compartilhado.
        - Debounce de 400ms para não poluir o histórico durante pan/zoom.
        ============================================================ */
-    const URLState = {
+      const URLState = {
       _timer: null,
       _restaurando: false,
+      _inicializado: false,
 
       init: async function() {
+        if (this._inicializado) {
+          console.warn('[URLState] init() já foi chamado — ignorando.');
+          return;
+        }
+        this._inicializado = true;
+        console.info('[URLState] Inicializando…');
+
         this._configurarListeners();
+        console.info('[URLState] Listeners instalados.');
+
         await this._restaurar();
+
+        // Sincroniza a URL imediatamente com o estado atual
+        this._salvarAgora();
+        console.info('[URLState] Estado inicial gravado na URL.');
       },
 
-      /* Salva o estado atual na URL (com debounce) */
       salvar: function() {
         if (this._restaurando) return;
         clearTimeout(this._timer);
@@ -3876,60 +5518,76 @@
           const centro = mapa.getCenter();
           const p = new URLSearchParams();
 
-          // 1. Posição do mapa
           p.set('lat', centro.lat.toFixed(5));
           p.set('lng', centro.lng.toFixed(5));
-          p.set('z', String(mapa.getZoom()));
+          // Arredonda o zoom para evitar valores fracionários como 15.66535 na URL
+          p.set('z', String(Math.round(mapa.getZoom())));
 
-          // 2. Camada ativa
           const selCamada = document.getElementById('sel-camada-busca');
           if (selCamada && selCamada.value) p.set('camada', selCamada.value);
 
-          // 3. Safra VEN (se for a camada ativa)
           if (selCamada && selCamada.value === 'ven' && window.VENUnifiedManager) {
             p.set('safra', VENUnifiedManager.anoAtivo);
           }
 
-          // 4. Filtro secundário (regime portuário / esfera / etc.)
           const selSub = document.getElementById('filtro-subtipo-dinamico');
           if (selSub && selSub.value && selSub.value !== 'TODOS' && selCamada && selCamada.value !== 'ven') {
             p.set('filtro', selSub.value);
           }
 
-          // 5. Basemap
           const radioBase = document.querySelector('input[name="basemap"]:checked');
           if (radioBase && radioBase.value === 'escuro') p.set('base', 'escuro');
 
           const qs = p.toString();
           const novaURL = location.pathname + (qs ? '?' + qs : '');
-          history.replaceState(null, '', novaURL);
+
+          // Tenta replaceState; se falhar (iframe, sandbox, etc.), tenta pushState
+          try {
+            history.replaceState(null, '', novaURL);
+          } catch (errReplace) {
+            console.warn('[URLState] replaceState falhou, tentando pushState…', errReplace);
+            try { history.pushState(null, '', novaURL); }
+            catch (errPush) {
+              console.error('[URLState] Não foi possível atualizar a URL neste ambiente.', errPush);
+            }
+          }
         } catch (e) {
-          console.warn('[URLState] Erro ao salvar:', e);
+          console.warn('[URLState] Erro ao salvar estado:', e);
         }
       },
 
-      /* Restaura o estado a partir dos parâmetros da URL */
       _restaurar: async function() {
         const params = new URLSearchParams(location.search);
-        if (![...params.keys()].length) return; // nada para restaurar
+        const keys = [...params.keys()];
 
+        if (!keys.length) {
+          console.info('[URLState] Sem parâmetros na URL — nada a restaurar.');
+          this._restaurando = false;
+          return; // ← não esquece de resetar!
+        }
+
+        console.info('[URLState] Restaurando estado da URL:', params.toString());
         this._restaurando = true;
+
         try {
-          // 1. Posição do mapa
           const lat = parseFloat(params.get('lat'));
           const lng = parseFloat(params.get('lng'));
-          const z = parseInt(params.get('z'), 10);
-          if (!isNaN(lat) && !isNaN(lng) && !isNaN(z) && z >= 1 && z <= 18) {
+          const zRaw = parseFloat(params.get('z'));
+          const z = Math.min(Math.max(Math.round(zRaw), 1), 18); // clampa entre 1 e 18
+          if (!isNaN(lat) && !isNaN(lng) && !isNaN(zRaw) && z >= 1 && z <= 18) {
             mapa.setView([lat, lng], z);
+            console.info(`[URLState] Mapa posicionado em (${lat}, ${lng}) z=${z}`);
           }
 
-          // 2. Basemap
           if (params.get('base') === 'escuro') {
             const radio = document.querySelector('input[name="basemap"][value="escuro"]');
-            if (radio) { radio.checked = true; BasemapManager.trocar('escuro'); }
+            if (radio) {
+              radio.checked = true;
+              BasemapManager.trocar('escuro');
+              console.info('[URLState] Basemap restaurado para escuro.');
+            }
           }
 
-          // 3. Camada ativa + safra + filtro
           const camada = params.get('camada');
           const safra = params.get('safra');
           const filtro = params.get('filtro');
@@ -3940,29 +5598,29 @@
               selCamada.value = camada;
 
               if (camada === 'ven') {
-                // Aguarda o card VEN unificado estar pronto e muda a safra
-                await this._aguardar(300);
+                await this._aguardar(400);
                 if (safra && window.VENUnifiedManager) {
                   await VENUnifiedManager.mudarSafra(safra);
+                  console.info(`[URLState] Safra VEN restaurada: ${safra}`);
                 }
-                // Restaura o sub-filter (dropdown de safra)
                 const selSub = document.getElementById('filtro-subtipo-dinamico');
                 if (selSub && safra) selSub.value = safra;
               } else {
                 await FilterManager.aoMudarCamada(camada);
+                console.info(`[URLState] Camada restaurada: ${camada}`);
+
                 if (filtro) {
-                  await this._aguardar(300);
+                  await this._aguardar(400);
                   const selSub = document.getElementById('filtro-subtipo-dinamico');
                   if (selSub) {
                     selSub.value = filtro;
                     FilterManager.aoMudarSubfiltro(filtro);
+                    console.info(`[URLState] Filtro restaurado: ${filtro}`);
                   }
                 }
               }
             }
           }
-
-          console.info('[URLState] Estado restaurado da URL:', params.toString());
         } catch (e) {
           console.warn('[URLState] Falha ao restaurar:', e);
         } finally {
@@ -3971,33 +5629,44 @@
       },
 
       _configurarListeners: function() {
-        // Movimento do mapa
         mapa.on('moveend', () => this.salvar());
         mapa.on('zoomend', () => this.salvar());
 
-        // Mudança de camada principal
         const selCamada = document.getElementById('sel-camada-busca');
         if (selCamada) selCamada.addEventListener('change', () => this.salvar());
 
-        // Mudança de sub-filtro
         const selSub = document.getElementById('filtro-subtipo-dinamico');
         if (selSub) selSub.addEventListener('change', () => this.salvar());
 
-        // Basemap
         document.querySelectorAll('input[name="basemap"]').forEach(r => {
           r.addEventListener('change', () => this.salvar());
         });
       },
 
-      /* Atalho público: gera link compartilhável */
-      obterLinkAtual: function() {
-        return location.href;
-      },
+      obterLinkAtual: function() { return location.href; },
 
-      _aguardar: function(ms) {
-        return new Promise(res => setTimeout(res, ms));
-      }
+      _aguardar: function(ms) { return new Promise(res => setTimeout(res, ms)); }
     };
+
+    /* Rede de segurança: se o IIFE esquecer de chamar URLState.init(),
+       inicializa automaticamente quando o documento estiver pronto. */
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      setTimeout(() => {
+        if (!URLState._inicializado) {
+          console.warn('[URLState] Auto-init acionado (o init() principal não foi chamado).');
+          URLState.init();
+        }
+      }, 1500);
+    } else {
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          if (!URLState._inicializado) {
+            console.warn('[URLState] Auto-init acionado (o init() principal não foi chamado).');
+            URLState.init();
+          }
+        }, 1500);
+      });
+    }
 
     /* ============================================================
        INICIALIZAÇÃO
@@ -4037,9 +5706,38 @@
       // ✅ NOVO: restaura estado a partir da URL (se houver parâmetros)
       try {
         await URLState.init();
-      } catch(e) { console.warn('URLState não pôde ser inicializado:', e); }
+      } catch(e) { console.warn('[URLState] init falhou:', e); }
+
+      // ✅ NOVO: M7 — Versionamento visível (rodapé + modal "Sobre")
+      try {
+        WebGISAbout.init();
+      } catch(e) { console.warn('[WebGISAbout] init falhou:', e); }
+
+      // ✅ NOVO: atalhos globais da ferramenta de medição
+      document.addEventListener('keydown', (ev) => {
+        if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT') return;
+        if (ev.key === 'd' || ev.key === 'D') MeasurementTool.ativar('distancia');
+        if (ev.key === 'a' || ev.key === 'A') MeasurementTool.ativar('area');
+        if (ev.key === 'r' || ev.key === 'R') MeasurementTool.ativar('raio');
+        if (ev.key === 'Escape') MeasurementTool.desativar();
+      });
+
+      // ✅ NOVO: hooks de impressão — redimensiona o mapa ao abrir/fechar o diálogo
+      window.addEventListener('beforeprint', () => {
+        // Anota a data atual para o rodapé da impressão
+        document.body.setAttribute('data-data-impressao',
+          new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }));
+        // Força o Leaflet a redesenhar no novo tamanho (sem painel, etc.)
+        if (mapa && mapa.invalidateSize) setTimeout(() => mapa.invalidateSize(), 50);
+      });
+
+      window.addEventListener('afterprint', () => {
+        // Volta ao tamanho normal após imprimir
+        if (mapa && mapa.invalidateSize) setTimeout(() => mapa.invalidateSize(), 100);
+      });
 
       console.info('✓ WebGIS ANTAQ inicializado com sucesso.');
+      console.info('💡 Dica: pressione "d" (distância), "a" (área), "r" (raio) para medir.');
     })();
   </script>
 </body>
