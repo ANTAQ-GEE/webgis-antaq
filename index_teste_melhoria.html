@@ -3621,10 +3621,12 @@
       },
 
       aoMudarSubfiltro: function(valor) {
-        const idCamadaVirtual = document.getElementById('sel-camada-busca').value;
-        const idCamada = this._resolverCamadaDeDados(idCamadaVirtual);
-        const geojson = DADOS_GEOJSON_BRUTOS[idCamada];
-        if (!geojson || !geojson.features) return; }
+        const idCamada = document.getElementById('sel-camada-busca').value;
+        // VEN tem tratamento especial: o "valor" é a safra, não um filtro de atributo
+        if (idCamada === 'ven') {
+          VENUnifiedManager.mudarSafra(valor);
+          return;
+        }
         this.aplicarFiltro(idCamada, valor);
       },
 
