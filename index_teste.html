@@ -4586,7 +4586,11 @@
         this.marcadoresTemp.forEach(m => mapa.removeLayer(m));
         this.marcadoresTemp = [];
         this.labelsTemp = [];
-        this._atualizarPainel(this.modo, 0, 'Clique para iniciar nova medição. Duplo-clique para finalizar.');
+
+        // ✅ CONTADOR DE MEDIÇÕES SALVAS (aqui é o lugar certo)
+        const totalSalvas = this.medicoesSalvas.length;
+        this._atualizarPainel(this.modo, 0,
+          `Clique para iniciar nova medição. ${totalSalvas} medição(ões) finalizada(s) no mapa.`);
       },
 
       _desenharPontoTemp: function(latlng) {
