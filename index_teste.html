@@ -1308,7 +1308,124 @@
       .leaflet-control-scale,
       .leaflet-control-coords { display: none !important; }
     }
+    /* ============================================================
+       M2 — SELEÇÃO MÚLTIPLA DE FEIÇÕES
+       ============================================================ */
 
+    /* Pane de highlight — sempre acima de tudo
+       (criado via JS: mapa.createPane('paneSelecao') com z-index 650) */
+
+    /* Painel flutuante de seleção (topo, abaixo do header) */
+    .painel-selecao {
+      position: fixed;
+      top: 64px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: rgba(10, 37, 64, 0.96);
+      backdrop-filter: blur(8px);
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      z-index: 2000;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      opacity: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .painel-selecao.aberto {
+      display: flex;
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .painel-selecao .selecao-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 600;
+      padding-right: 10px;
+      border-right: 1px solid rgba(148, 163, 184, 0.3);
+      white-space: nowrap;
+    }
+    .painel-selecao .selecao-info strong {
+      color: #fbbf24;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .painel-selecao .selecao-info .selecao-dica {
+      display: block;
+      font-size: 9.5px;
+      color: #94a3b8;
+      font-weight: 400;
+      margin-top: 1px;
+    }
+    .painel-selecao .selecao-acoes {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .painel-selecao .btn-sel {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #bae6fd;
+      padding: 5px 9px;
+      border-radius: 5px;
+      font-size: 10.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .painel-selecao .btn-sel:hover {
+      background: rgba(56, 189, 248, 0.28);
+      border-color: #38bdf8;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+    .painel-selecao .btn-sel.btn-limpar {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+    }
+    .painel-selecao .btn-sel.btn-limpar:hover {
+      background: rgba(239, 68, 68, 0.3);
+      border-color: #ef4444;
+      color: #ffffff;
+    }
+
+    /* Retângulo de seleção em tela (shift+drag) */
+    .retangulo-selecao {
+      position: fixed;
+      border: 2px dashed #f59e0b;
+      background: rgba(245, 158, 11, 0.12);
+      pointer-events: none;
+      z-index: 10000;
+      display: none;
+    }
+    .retangulo-selecao.ativo { display: block; }
+
+    /* Cursor durante seleção por retângulo */
+    body.modo-selecao-retangulo #mapa,
+    body.modo-selecao-retangulo #mapa * {
+      cursor: crosshair !important;
+    }
+
+    /* Esconde o painel de seleção na impressão */
+    @media print {
+      .painel-selecao,
+      .retangulo-selecao { display: none !important; }
+    }
+
+    /* ============================================================
+       IMPRESSÃO — Layout limpo para PDF/papel
     /* ============================================================
        IMPRESSÃO — Layout limpo para PDF/papel
     /* ============================================================
@@ -2053,6 +2170,41 @@
 
   </aside>
 
+  </aside>
+
+  <!-- ============================================================
+       M2 — PAINEL FLUTUANTE DE SELEÇÃO MÚLTIPLA
+       ============================================================ -->
+  <div class="painel-selecao" id="painel-selecao">
+    <div class="selecao-info">
+      <span style="font-size:16px;">✅</span>
+      <div>
+        <span><strong id="selecao-count">0</strong> feições selecionadas</span>
+        <span class="selecao-dica">Ctrl+Clique para adicionar · Shift+Arrastar para retângulo</span>
+      </div>
+    </div>
+    <div class="selecao-acoes">
+      <button class="btn-sel" onclick="SelectionManager.zoomParaSelecao()" title="Zoom para as feições selecionadas">
+        🔍 Zoom
+      </button>
+      <button class="btn-sel" onclick="SelectionManager.abrirTabelaFiltrada()" title="Abrir tabela apenas com as feições selecionadas">
+        📋 Tabela
+      </button>
+      <button class="btn-sel" onclick="SelectionManager.exportarCSV()" title="Exportar seleção em CSV">
+        📥 CSV
+      </button>
+      <button class="btn-sel" onclick="SelectionManager.exportarGeoJSON()" title="Exportar seleção em GeoJSON">
+        💾 GeoJSON
+      </button>
+      <button class="btn-sel btn-limpar" onclick="SelectionManager.limpar()" title="Limpar seleção (ESC)">
+        ✕ Limpar
+      </button>
+    </div>
+  </div>
+
+  <!-- Retângulo visual de seleção em tela -->
+  <div class="retangulo-selecao" id="retangulo-selecao"></div>
+
   <!-- ============================================================
        M7 — RODAPÉ DE VERSIONAMENTO (injetado dinamicamente via JS)
        ============================================================ -->
@@ -2698,9 +2850,27 @@
                   },
                   click: e => {
                     CopilotoIA.ultimoAtivoInspecionado = f;
+
+                    // ✅ M2: Ctrl+Clique (ou Cmd no Mac) adiciona à seleção múltipla
+                    if (e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey)) {
+                      SelectionManager.toggle(f, id);
+                      return;
+                    }
+
+                    // ✅ M2: se há seleção ativa e o usuário clicou sem Ctrl, limpa
+                    if (typeof SelectionManager !== 'undefined' && SelectionManager.temSelecao()) {
+                      SelectionManager.limpar(true);
+                    }
+
                     if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
                     if (e.target.getBounds) {
-                      window.CAMADA_DESTAQUE = L.polyline(e.target.getLatLngs ? e.target.getLatLngs() : [], { color: '#f59e0b', weight: 4, opacity: 0.9, dashArray: '4, 4' }).addTo(mapa);
+                      // Polígono ou Linha selecionada
+                      window.CAMADA_DESTAQUE = L.polyline(e.target.getLatLngs ? e.target.getLatLngs() : [], {
+                        color: '#f59e0b',
+                        weight: 4,
+                        opacity: 0.9,
+                        dashArray: '4, 4'
+                      }).addTo(mapa);
                     }
                   }
                 });
@@ -3086,7 +3256,21 @@
                     fillOpacity: CONFIG_CAMADAS.instalacoes_portuarias.opacidade
                   });
                   m.feature = f;
-                  m.on("click", () => { CopilotoIA.ultimoAtivoInspecionado = f; });
+                  m.on("click", (e) => {
+                    CopilotoIA.ultimoAtivoInspecionado = f;
+
+                    // ✅ M2: Ctrl+Clique adiciona à seleção múltipla
+                    if (e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey)) {
+                      L.DomEvent.stopPropagation(e);
+                      SelectionManager.toggle(f, 'instalacoes_portuarias');
+                      return;
+                    }
+
+                    // ✅ M2: clique normal limpa seleção prévia
+                    if (typeof SelectionManager !== 'undefined' && SelectionManager.temSelecao()) {
+                      SelectionManager.limpar(true);
+                    }
+                  });
                   m.bindPopup(PopupRenderer.gerar('instalacoes_portuarias', f.properties));
                   if (window.SUBGRUPOS_PORTOS[cat.id]) window.SUBGRUPOS_PORTOS[cat.id].addLayer(m);
                 }
@@ -4346,6 +4530,28 @@
       camadaAtualId: null, features: [], filtradas: [], colunas: [],
       pagina: 1, porPagina: 50, filtroPorto: 'TODOS', termoBusca: '',
 
+      abrirFiltrado: function(id, featuresFiltradas) {
+        const g = DADOS_GEOJSON_BRUTOS[id];
+        if (!g || !g.features || !g.features.length) { UI.toast("Nenhum dado carregado para esta camada."); return; }
+        this.camadaAtualId = id;
+        this.features = featuresFiltradas;
+        this.filtradas = featuresFiltradas.slice();
+        this.pagina = 1;
+        this.termoBusca = '';
+        const inp = document.getElementById('filtro-busca-tabela');
+        if (inp) inp.value = '';
+        const selPorto = document.getElementById('filtro-porto-tabela');
+        if (selPorto) selPorto.style.display = 'none';
+        this.filtroPorto = 'TODOS';
+        const amostra = featuresFiltradas[0].properties || {};
+        this.colunas = Object.keys(amostra).filter(c => !['geom', 'geometry', 'id', '_gpkgtable'].includes(c.toLowerCase())).slice(0, 15);
+        document.getElementById('painel-tabela').classList.add('aberto');
+        // Marca visualmente que é uma tabela filtrada
+        const titEl = document.getElementById('titulo-tabela-camada');
+        if (titEl) titEl.textContent = `Tabela Filtrada: ${CONFIG_CAMADAS[id]?.nome || id} (seleção)`;
+        this.renderizar();
+      },
+
       abrir: function(id) {
         const g = DADOS_GEOJSON_BRUTOS[id];
         if (!g || !g.features || !g.features.length) { UI.toast("Nenhum dado carregado para esta camada."); return; }
@@ -4860,6 +5066,337 @@
         if (CAMADAS_MAPA[ano]) CAMADAS_MAPA[ano].setStyle({ weight: val });
       }
     };
+    /* ============================================================
+       MÓDULO 21: SELEÇÃO MÚLTIPLA DE FEIÇÕES (M2)
+       ------------------------------------------------------------
+       - Ctrl+Clique: adiciona/remove feição da seleção
+       - Shift+Arrastar: seleciona por retângulo
+       - Painel flutuante com ações em lote
+       - Highlight visual (halo dourado)
+       - ESC limpa a seleção
+       ============================================================ */
+    const SelectionManager = {
+      _selecionadas: [],     // [{ feature, camadaId, chaveUnica }]
+      _highlightLayer: null,
+      _paneCriado: false,
+      _rectAtivo: false,
+      _startPoint: null,
+
+      /* ---------- Inicialização ---------- */
+      init: function() {
+        // Cria pane dedicada para o highlight (sempre no topo)
+        if (!this._paneCriado) {
+          mapa.createPane('paneSelecao');
+          mapa.getPane('paneSelecao').style.zIndex = 650;
+          mapa.getPane('paneSelecao').style.pointerEvents = 'none';
+          this._paneCriado = true;
+        }
+
+        // Desabilita o boxZoom padrão do Leaflet (conflita com Shift+Arrastar)
+        if (mapa.boxZoom) mapa.boxZoom.disable();
+
+        this._configurarRectSelection();
+        this._configurarTeclado();
+        console.info('[M2] Seleção múltipla pronta. Ctrl+Clique ou Shift+Arrastar.');
+      },
+
+      /* ---------- API principal ---------- */
+      toggle: function(feature, camadaId) {
+        const chave = this._chaveDe(feature, camadaId);
+        const idx = this._selecionadas.findIndex(s => s.chaveUnica === chave);
+
+        if (idx >= 0) {
+          this._selecionadas.splice(idx, 1);
+          UI.toast(`➖ Feição removida da seleção (${this._selecionadas.length} restantes).`);
+        } else {
+          this._selecionadas.push({ feature, camadaId, chaveUnica: chave });
+          UI.toast(`➕ Feição adicionada à seleção (${this._selecionadas.length} no total).`);
+        }
+
+        this._atualizarUI();
+      },
+
+      adicionarMultiplas: function(features, camadaId) {
+        let adicionadas = 0;
+        for (const f of features) {
+          const chave = this._chaveDe(f, camadaId);
+          if (!this._selecionadas.find(s => s.chaveUnica === chave)) {
+            this._selecionadas.push({ feature: f, camadaId, chaveUnica: chave });
+            adicionadas++;
+          }
+        }
+        if (adicionadas > 0) {
+          this._atualizarUI();
+          UI.toast(`➕ ${adicionadas} feições adicionadas (${this._selecionadas.length} no total).`);
+        } else {
+          UI.toast('Nenhuma feição nova na área selecionada.');
+        }
+      },
+
+      temSelecao: function() { return this._selecionadas.length > 0; },
+
+      obterSelecionadas: function() { return this._selecionadas.slice(); },
+
+      limpar: function(silencioso) {
+        this._selecionadas = [];
+        this._atualizarUI();
+        if (!silencioso) UI.toast('🗑️ Seleção limpa.');
+      },
+
+      /* ---------- Ações do painel ---------- */
+      zoomParaSelecao: function() {
+        if (!this._selecionadas.length) return;
+        try {
+          const grupo = L.featureGroup(
+            this._selecionadas.map(s => L.geoJSON(s.feature))
+          );
+          const bounds = grupo.getBounds();
+          if (bounds.isValid()) {
+            mapa.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
+          }
+        } catch(e) { console.warn('[M2] Erro ao fazer zoom:', e); }
+      },
+
+      abrirTabelaFiltrada: function() {
+        if (!this._selecionadas.length) return;
+        const camadaId = this._selecionadas[0].camadaId;
+        // Agrupa por camada (para tabela só faz sentido se for da mesma camada)
+        const todasMesma = this._selecionadas.every(s => s.camadaId === camadaId);
+        if (!todasMesma) {
+          UI.toast('⚠️ A seleção abrange múltiplas camadas. Selecione apenas uma.');
+          return;
+        }
+        const features = this._selecionadas.map(s => s.feature);
+        TabelaManager.abrirFiltrado(camadaId, features);
+      },
+
+      exportarCSV: function() {
+        if (!this._selecionadas.length) { UI.toast('⚠️ Nenhuma feição selecionada.'); return; }
+
+        // Coleta todas as chaves únicas
+        const chaves = new Set();
+        this._selecionadas.forEach(s => {
+          Object.keys(s.feature.properties || {}).forEach(k => {
+            if (!['geom', 'geometry'].includes(k.toLowerCase())) chaves.add(k);
+          });
+        });
+        const colunas = [...chaves];
+
+        const linhas = [colunas.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')];
+        this._selecionadas.forEach(s => {
+          const p = s.feature.properties || {};
+          const row = colunas.map(c => {
+            const v = p[c] !== undefined && p[c] !== null ? p[c] : '';
+            return `"${String(v).replace(/"/g, '""')}"`;
+          });
+          linhas.push(row.join(';'));
+        });
+
+        const csv = '\uFEFF' + linhas.join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `selecao_${this._selecionadas.length}_feicoes_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        UI.toast(`📥 CSV com ${this._selecionadas.length} feições exportado.`);
+      },
+
+      exportarGeoJSON: function() {
+        if (!this._selecionadas.length) { UI.toast('⚠️ Nenhuma feição selecionada.'); return; }
+        const fc = {
+          type: 'FeatureCollection',
+          features: this._selecionadas.map(s => s.feature)
+        };
+        const blob = new Blob([JSON.stringify(fc, null, 2)], { type: 'application/geo+json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `selecao_${this._selecionadas.length}_feicoes_${new Date().toISOString().slice(0,10)}.geojson`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        UI.toast(`💾 GeoJSON com ${this._selecionadas.length} feições exportado.`);
+      },
+
+      /* ---------- Highlight visual ---------- */
+      _atualizarUI: function() {
+        const painel = document.getElementById('painel-selecao');
+        const countEl = document.getElementById('selecao-count');
+
+        if (this._selecionadas.length === 0) {
+          if (painel) painel.classList.remove('aberto');
+        } else {
+          if (countEl) countEl.textContent = this._selecionadas.length;
+          if (painel) painel.classList.add('aberto');
+        }
+
+        this._atualizarHighlight();
+      },
+
+      _atualizarHighlight: function() {
+        if (this._highlightLayer) {
+          mapa.removeLayer(this._highlightLayer);
+          this._highlightLayer = null;
+        }
+        if (!this._selecionadas.length) return;
+
+        try {
+          const fc = {
+            type: 'FeatureCollection',
+            features: this._selecionadas.map(s => s.feature)
+          };
+          this._highlightLayer = L.geoJSON(fc, {
+            pane: 'paneSelecao',
+            interactive: false,
+            style: {
+              color: '#f59e0b',
+              weight: 4,
+              opacity: 1,
+              fillColor: '#f59e0b',
+              fillOpacity: 0.2,
+              dashArray: '6, 4'
+            },
+            pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+              pane: 'paneSelecao',
+              radius: 13,
+              color: '#f59e0b',
+              weight: 3,
+              fillColor: '#fbbf24',
+              fillOpacity: 0.35
+            })
+          }).addTo(mapa);
+        } catch(e) { console.warn('[M2] Erro ao criar highlight:', e); }
+      },
+
+      /* ---------- Chave única para identificar feição ---------- */
+      _chaveDe: function(feature, camadaId) {
+        const p = feature.properties || {};
+        const id = p.id || p.ID || p.gid || p.GID || p.objectid ||
+                   p.codigo || p.CODIGO || p.nome || p.NOME ||
+                   JSON.stringify(feature.geometry).substring(0, 100);
+        return `${camadaId}::${id}`;
+      },
+
+      /* ---------- Seleção por retângulo (Shift+Arrastar) ---------- */
+      _configurarRectSelection: function() {
+        const container = mapa.getContainer();
+        const rectEl = document.getElementById('retangulo-selecao');
+        const self = this;
+
+        container.addEventListener('mousedown', (e) => {
+          if (!e.shiftKey) return;
+          if (e.button !== 0) return;
+          e.preventDefault();
+          e.stopPropagation();
+
+          self._rectAtivo = true;
+          self._startPoint = { x: e.clientX, y: e.clientY };
+          document.body.classList.add('modo-selecao-retangulo');
+
+          if (rectEl) {
+            rectEl.style.left = e.clientX + 'px';
+            rectEl.style.top = e.clientY + 'px';
+            rectEl.style.width = '0px';
+            rectEl.style.height = '0px';
+            rectEl.classList.add('ativo');
+          }
+        }, true);
+
+        window.addEventListener('mousemove', (e) => {
+          if (!self._rectAtivo || !self._startPoint) return;
+          if (!rectEl) return;
+
+          const x = Math.min(self._startPoint.x, e.clientX);
+          const y = Math.min(self._startPoint.y, e.clientY);
+          const w = Math.abs(e.clientX - self._startPoint.x);
+          const h = Math.abs(e.clientY - self._startPoint.y);
+
+          rectEl.style.left = x + 'px';
+          rectEl.style.top = y + 'px';
+          rectEl.style.width = w + 'px';
+          rectEl.style.height = h + 'px';
+        });
+
+        window.addEventListener('mouseup', (e) => {
+          if (!self._rectAtivo) return;
+          self._rectAtivo = false;
+          document.body.classList.remove('modo-selecao-retangulo');
+          if (rectEl) rectEl.classList.remove('ativo');
+
+          if (!self._startPoint) return;
+
+          const x1 = self._startPoint.x;
+          const y1 = self._startPoint.y;
+          const x2 = e.clientX;
+          const y2 = e.clientY;
+          self._startPoint = null;
+
+          // Ignora cliques acidentais (retângulo muito pequeno)
+          if (Math.abs(x2 - x1) < 6 && Math.abs(y2 - y1) < 6) return;
+
+          // Converte retângulo de tela para bounds do mapa
+          const containerRect = container.getBoundingClientRect();
+          const p1 = L.point(x1 - containerRect.left, y1 - containerRect.top);
+          const p2 = L.point(x2 - containerRect.left, y2 - containerRect.top);
+          const bounds = L.latLngBounds(
+            mapa.containerPointToLatLng(p1),
+            mapa.containerPointToLatLng(p2)
+          );
+
+          self._selecionarPorBounds(bounds);
+        });
+      },
+
+      _selecionarPorBounds: function(bounds) {
+        // Usa a camada atualmente selecionada no dropdown de busca
+        const selCamada = document.getElementById('sel-camada-busca');
+        const camadaId = selCamada ? selCamada.value : null;
+        if (!camadaId || camadaId === 'ven') {
+          UI.toast('⚠️ Selecione uma camada específica para usar seleção por retângulo.');
+          return;
+        }
+
+        const dados = DADOS_GEOJSON_BRUTOS[camadaId];
+        if (!dados || !dados.features) {
+          UI.toast('⚠️ Camada não carregada.');
+          return;
+        }
+
+        // Filtra features que intersectam o bounds
+        const dentro = [];
+        for (const f of dados.features) {
+          try {
+            // Teste rápido por bbox da geometria
+            const tempLayer = L.geoJSON(f);
+            const b = tempLayer.getBounds();
+            if (b.isValid() && bounds.intersects(b)) {
+              dentro.push(f);
+            }
+          } catch(e) { /* ignora */ }
+        }
+
+        if (dentro.length === 0) {
+          UI.toast('Nenhuma feição na área selecionada.');
+          return;
+        }
+        this.adicionarMultiplas(dentro, camadaId);
+      },
+
+      /* ---------- Teclado ---------- */
+      _configurarTeclado: function() {
+        document.addEventListener('keydown', (ev) => {
+          if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT' || ev.target.tagName === 'TEXTAREA') return;
+          if (ev.key === 'Escape' && this.temSelecao()) {
+            this.limpar();
+            ev.stopPropagation();
+          }
+        });
+      }
+    };
+
+    /* ============================================================
+       MÓDULO 20: EXTRAS DE MAPA (M4)
     /* ============================================================
        MÓDULO 20: EXTRAS DE MAPA (M4)
        ------------------------------------------------------------
@@ -6019,6 +6556,11 @@
       try {
         MapExtras.init();
       } catch(e) { console.warn('[MapExtras] init falhou:', e); }
+
+      // ✅ NOVO: M2 — Seleção múltipla de feições
+      try {
+        SelectionManager.init();
+      } catch(e) { console.warn('[SelectionManager] init falhou:', e); }
 
       // ✅ NOVO: atalhos globais da ferramenta de medição
       document.addEventListener('keydown', (ev) => {
