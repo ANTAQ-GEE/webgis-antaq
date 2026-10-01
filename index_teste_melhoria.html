@@ -1961,8 +1961,6 @@
       max-height: calc(100vh - 64px - 140px) !important;
     }
 
-    /* 2) NOTIFICAÇÕES: mantém top-center (não cruza com seleção pois seleção vai para bottom) */
-
     /* 3) SELEÇÃO: bottom-center, acima do rodapé */
     .painel-selecao {
       top: auto !important;
@@ -2018,16 +2016,7 @@
       margin-top: 62px !important;
       margin-left: 16px !important;
     }
-
-    /* 11) Coordenadas: mudança de canto — precisa ir para bottomright */
-    /* (o controle foi criado em bottomleft; usamos margin-left negativo + right fixo) */
-
-    /* 12) Em telas pequenas: empilha medição acima da legenda */
-    @media (max-width: 1200px) {
-      .toolbar-medicao {
-        bottom: 400px !important;
-      }
-    }
+  </style>
   </style>
     @media print {
       /* 1. Esconde elementos de interface */
@@ -6916,12 +6905,42 @@
         // Filtra features cujo bounding box intersecta o retângulo de seleção.
         // Usa bbox (não geometria real) — é o que casa com a expectativa visual do usuário
         // para linhas curvas longas (VEN). Turf.booleanIntersects era restritivo demais.
+        // ✅ Usa Turf.js para teste geométrico REAL (não bounding box).
+        // Compensa a imprecisão do bbox de linhas VEN curvas e longas.
         const dentro = [];
+
+        if (typeof turf === 'undefined') {
+          UI.toast('⚠️ Turf.js indisponível. Recarregue a página.');
+          return;
+        }
+
+        // Polígono de seleção com pequena tolerância para compensar arredondamento
+        const tol = 0.02;
+        const boundsGeoJSON = {
+          type: 'Polygon',
+          coordinates: [[
+            [bounds.getWest()  - tol, bounds.getSouth() - tol],
+            [bounds.getEast()  + tol, bounds.getSouth() - tol],
+            [bounds.getEast()  + tol, bounds.getNorth() + tol],
+            [bounds.getWest()  - tol, bounds.getNorth() + tol],
+            [bounds.getWest()  - tol, bounds.getSouth() - tol]
+          ]]
+        };
+
         for (const f of dados.features) {
           try {
+            // Pré-filtro rápido por bbox (evita chamar Turf desnecessariamente)
             const tempLayer = L.geoJSON(f);
             const b = tempLayer.getBounds();
-            if (b.isValid() && bounds.intersects(b)) {
+            if (!b.isValid() || !bounds.intersects(b)) continue;
+
+            // Teste geométrico real
+            try {
+              if (turf.booleanIntersects(f, boundsGeoJSON)) {
+                dentro.push(f);
+              }
+            } catch (eTurf) {
+              // Se Turf falhar (geometria inválida), aceita por bbox
               dentro.push(f);
             }
           } catch(e) { /* ignora */ }
