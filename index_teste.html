@@ -4709,88 +4709,124 @@
         const nome = file.name;
         const ext = nome.toLowerCase().split('.').pop();
         UI.toast(`Processando ${nome}...`);
+
         let geojson = null;
         const fnShp = window.shp || (typeof shp !== 'undefined' ? shp : null);
+
+        // ---------- GeoJSON / JSON ----------
         if (ext === 'geojson' || ext === 'json') {
           geojson = JSON.parse(await file.text());
-        } else if (ext === 'zip') {
-          if (!fnShp) throw new Error('Biblioteca de Shapefile (shpjs) indisponível. Verifique a conexão com a internet.');
+        }
+
+        // ---------- ZIP (Shapefile) ----------
+        else if (ext === 'zip') {
+          if (!fnShp) {
+            throw new Error('Biblioteca de leitura de Shapefile indisponível. Verifique a conexão.');
+          }
+
+          // Converte File → ArrayBuffer explicitamente (evita falha de detecção
+          // de tipo em navegadores com CSP restritiva, como GitHub Pages)
+          let zipBuffer;
           try {
-            // ✅ Correção: converte explicitamente File → ArrayBuffer antes de passar
-            // ao JSZip. Isso evita falha de detecção de tipo em navegadores com CSP
-            // restritiva (como GitHub Pages) onde `instanceof Blob` pode falhar.
-            if (!file || typeof file.arrayBuffer !== 'function') {
-              throw new Error('Arquivo ZIP inválido ou não reconhecido pelo navegador.');
+            zipBuffer = await file.arrayBuffer();
+          } catch (e) {
+            throw new Error('Não foi possível ler o arquivo ZIP. Ele pode estar corrompido.');
+          }
+
+          if (!zipBuffer || zipBuffer.byteLength === 0) {
+            throw new Error('O arquivo ZIP está vazio (0 bytes).');
+          }
+
+          // Verifica assinatura PK (0x50 0x4B)
+          const view = new Uint8Array(zipBuffer);
+          if (view.length < 4 || view[0] !== 0x50 || view[1] !== 0x4B) {
+            throw new Error('O arquivo não é um ZIP válido (assinatura "PK" ausente).');
+          }
+
+          const zip = await JSZip.loadAsync(zipBuffer);
+          const entradas = Object.keys(zip.files).filter(
+            n => !n.includes('__MACOSX') && !n.startsWith('.')
+          );
+
+          const shpNome = entradas.find(n => n.toLowerCase().endsWith('.shp'));
+
+          if (!shpNome) {
+            // Diagnóstico: descreve o que tem dentro do ZIP
+            const extensoes = [...new Set(entradas.map(n => {
+              const m = n.match(/\.([^.]+)$/);
+              return m ? m[1].toLowerCase() : '';
+            }).filter(Boolean))];
+
+            const temParcial = extensoes.some(e => ['dbf', 'shx', 'prj', 'cpg'].includes(e));
+
+            if (temParcial) {
+              throw new Error(
+                `O ZIP contém arquivos de Shapefile (${extensoes.join(', ')}) ` +
+                `mas o arquivo .shp principal está faltando.`
+              );
             }
 
-            let zipBuffer;
+            // Fallback: tenta o shpjs nativo com o buffer
             try {
-              zipBuffer = await file.arrayBuffer();
-            } catch (e) {
-              throw new Error('Não foi possível ler o arquivo ZIP. Ele pode estar corrompido ou protegido.');
+              geojson = await fnShp(zipBuffer);
+            } catch (eFallback) {
+              throw new Error(
+                `Nenhum arquivo .shp encontrado no ZIP. ` +
+                `Conteúdo detectado: ${extensoes.join(', ') || 'desconhecido'}.`
+              );
             }
-
-            if (!zipBuffer || zipBuffer.byteLength === 0) {
-              throw new Error('Arquivo ZIP está vazio (0 bytes).');
-            }
-
-            // Assinatura ZIP: primeiros 2 bytes devem ser "PK" (0x50 0x4B)
-            const view = new Uint8Array(zipBuffer);
-            if (view.length < 4 || view[0] !== 0x50 || view[1] !== 0x4B) {
-              throw new Error('O arquivo não é um ZIP válido (assinatura "PK" ausente). Talvez seja um .zip renomeado ou corrompido.');
-            }
-
-            // ✅ Passa o ArrayBuffer (tipo garantido, evita detecção dinâmica do JSZip)
-            const zip = await JSZip.loadAsync(zipBuffer);
-            const entradas = Object.keys(zip.files).filter(n => !n.includes('__MACOSX') && !n.startsWith('.'));
-            const shpNome = entradas.find(n => n.toLowerCase().endsWith('.shp'));
-            if (!shpNome) {
-              // Detecta o que tem dentro do ZIP para dar mensagem útil
-              const extensoes = [...new Set(entradas.map(n => {
-                const m = n.match(/\.([^.]+)$/);
-                return m ? m[1].toLowerCase() : '';
-              }).filter(Boolean))];
-
-              const ehShapefileParcial = extensoes.some(e => ['dbf', 'shx', 'prj', 'cpg'].includes(e));
-              if (ehShapefileParcial) {
-                throw new Error(
-                  `O ZIP contém arquivos de Shapefile (${extensoes.join(', ')}) ` +
-                  `mas o arquivo .shp principal está faltando. ` +
-                  `Verifique se o ZIP está completo.`
-                );
-              }
-
-              // Fallback: tenta leitura nativa do shpjs com o buffer
-              try {
-                const buf = await file.arrayBuffer();
-                geojson = await fnShp(buf);
-              } catch (eFallback) {
-                throw new Error(
-                  `Não foi possível encontrar um arquivo .shp dentro do ZIP. ` +
-                  `Conteúdo detectado: ${extensoes.join(', ') || 'desconhecido'}.`
-                );
-              }
-            } else {
+          } else {
+            // Caminho normal: extrai .shp + .dbf + .prj e chama o shpjs
             const baseNome = shpNome.replace(/\.shp$/i, '');
-            const dbfNome = entradas.find(n => n.replace(/\.dbf$/i, '').toLowerCase() === baseNome.toLowerCase() && n.toLowerCase().endsWith('.dbf')) || entradas.find(n => n.toLowerCase().endsWith('.dbf'));
-            const prjNome = entradas.find(n => n.replace(/\.prj$/i, '').toLowerCase() === baseNome.toLowerCase() && n.toLowerCase().endsWith('.prj')) || entradas.find(n => n.toLowerCase().endsWith('.prj'));
+
+            const dbfNome = entradas.find(
+              n => n.replace(/\.dbf$/i, '').toLowerCase() === baseNome.toLowerCase()
+                   && n.toLowerCase().endsWith('.dbf')
+            ) || entradas.find(n => n.toLowerCase().endsWith('.dbf'));
+
+            const prjNome = entradas.find(
+              n => n.replace(/\.prj$/i, '').toLowerCase() === baseNome.toLowerCase()
+                   && n.toLowerCase().endsWith('.prj')
+            ) || entradas.find(n => n.toLowerCase().endsWith('.prj'));
+
             const shpBuf = await zip.files[shpNome].async('arraybuffer');
             const dbfBuf = dbfNome ? await zip.files[dbfNome].async('arraybuffer') : null;
             const prjTxt = prjNome ? await zip.files[prjNome].async('string') : null;
-            if (dbfBuf) geojson = await fnShp({ shp: shpBuf, dbf: dbfBuf, prj: prjTxt });
-            else geojson = await fnShp({ shp: shpBuf, prj: prjTxt });
+
+            if (dbfBuf) {
+              geojson = await fnShp({ shp: shpBuf, dbf: dbfBuf, prj: prjTxt });
+            } else {
+              UI.toast(`Aviso: .dbf não encontrado em "${nome}". Geometrias sem atributos.`);
+              geojson = await fnShp({ shp: shpBuf, prj: prjTxt });
+            }
           }
-        } else if (ext === 'kml') {
+        }
+
+        // ---------- KML ----------
+        else if (ext === 'kml') {
           geojson = this._kmlDeTexto(await file.text());
-        } else if (ext === 'kmz') {
+        }
+
+        // ---------- KMZ ----------
+        else if (ext === 'kmz') {
           geojson = await this._lerKMZ(file);
-        } else if (ext === 'gpkg' || ext === 'geopackage') {
+        }
+
+        // ---------- GeoPackage ----------
+        else if (ext === 'gpkg' || ext === 'geopackage') {
           geojson = await this._lerGPKG(file);
-        } else {
+        }
+
+        // ---------- Formato não suportado ----------
+        else {
           throw new Error('Formato não suportado: .' + ext);
         }
+
+        // ---------- Envia para o validador (R2) ----------
         if (Array.isArray(geojson)) {
-          for (let i = 0; i < geojson.length; i++) this._adicionar(`${nome.replace(/\.[^.]+$/, '')}_${i + 1}`, geojson[i]);
+          for (let i = 0; i < geojson.length; i++) {
+            this._adicionar(`${nome.replace(/\.[^.]+$/, '')}_${i + 1}`, geojson[i]);
+          }
           return;
         }
         this._adicionar(nome.replace(/\.[^.]+$/, ''), geojson);
