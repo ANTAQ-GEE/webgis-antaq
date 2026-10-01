@@ -15,10 +15,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@ngageoint/geopackage@4.2.3/dist/geopackage.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
 
-    <!-- Leaflet MarkerCluster: agregação inteligente de pontos -->
+  <!-- Leaflet MarkerCluster CSS (o JS é carregado no final do body) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
   <style>
     :root {
@@ -4505,8 +4504,8 @@
         const totalSalvas = this.medicoesSalvas.length;
         this._atualizarPainel(this.modo, 0,
           `Clique para iniciar nova medição. ${totalSalvas} medição(ões) finalizada(s).`);
-      },
-
+      }
+      
       _onMouseMove: function(e) {
         if (!this.modo || this.pontos.length === 0) return;
 
