@@ -2049,18 +2049,22 @@
       transform: translateX(-50%) !important;
     }
 
-    /* 9) ZOOM — bottom-right, canto */
-    .leaflet-bottom.leaflet-right .leaflet-control-zoom {
-      margin-bottom: 8px !important;
-      margin-right: 16px !important;
-      z-index: 1000 !important;
+    /* 9) ZOOM — posição fixa, canto inferior direito */
+    .leaflet-control-zoom {
+      position: fixed !important;
+      bottom: 16px !important;
+      right: 16px !important;
+      margin: 0 !important;
+      z-index: 1300 !important;
     }
 
-    /* 10) COORDENADAS — bottom-right, acima do zoom */
-    .leaflet-bottom.leaflet-right .leaflet-control-coords {
-      margin-bottom: 95px !important;
-      margin-right: 16px !important;
-      z-index: 1000 !important;
+    /* 10) COORDENADAS — posição fixa no canto inferior direito */
+    .leaflet-control-coords {
+      position: fixed !important;
+      bottom: 56px !important;
+      right: 16px !important;
+      margin: 0 !important;
+      z-index: 1400 !important;
     }
 
     /* 11) ESCALA — escondida (a coordenada já dá a referência) */
@@ -2799,6 +2803,9 @@
       </div>
     </div>
     <div class="selecao-acoes">
+      <button class="btn-sel" onclick="SelectionManager.selecionarTudo()" title="Selecionar todas as feições da camada ativa">
+        🎯 Tudo
+      </button>
       <button class="btn-sel" onclick="SelectionManager.zoomParaSelecao()" title="Zoom para as feições selecionadas">
         🔍 Zoom
       </button>
@@ -6654,10 +6661,45 @@
 
       obterSelecionadas: function() { return this._selecionadas.slice(); },
 
-      limpar: function(silencioso) {
-        this._selecionadas = [];
+      selecionarTudo: function() {
+        // Pega a camada ativa no dropdown (pode ser virtual 'ven')
+        const selCamada = document.getElementById('sel-camada-busca');
+        if (!selCamada) return;
+
+        const idVirtual = selCamada.value;
+        let idCamada = idVirtual;
+
+        // Resolve camada virtual 'ven' → safra ativa
+        if (idVirtual === 'ven') {
+          idCamada = (window.VENUnifiedManager && VENUnifiedManager.anoAtivo)
+            ? VENUnifiedManager.anoAtivo
+            : 'ven_2022';
+        }
+
+        const dados = DADOS_GEOJSON_BRUTOS[idCamada];
+        if (!dados || !dados.features || !dados.features.length) {
+          UI.toast(`⚠️ Camada "${idCamada}" não carregada.`);
+          return;
+        }
+
+        // Adiciona todas as features que ainda não estão na seleção
+        let adicionadas = 0;
+        for (const f of dados.features) {
+          const chave = this._chaveDe(f, idCamada);
+          if (!this._selecionadas.find(s => s.chaveUnica === chave)) {
+            this._selecionadas.push({ feature: f, camadaId: idCamada, chaveUnica: chave });
+            adicionadas++;
+          }
+        }
+
         this._atualizarUI();
-        if (!silencioso) UI.toast('🗑️ Seleção limpa.');
+
+        if (adicionadas > 0) {
+          const nomeCamada = CONFIG_CAMADAS[idCamada]?.nome || idCamada;
+          UI.toast(`🎯 ${adicionadas} feições de "${nomeCamada}" adicionadas à seleção (total: ${this._selecionadas.length}).`);
+        } else {
+          UI.toast(`ℹ️ Todas as feições de "${CONFIG_CAMADAS[idCamada]?.nome || idCamada}" já estavam selecionadas.`);
+        }
       },
 
       /* ---------- Ações do painel ---------- */
@@ -6945,9 +6987,20 @@
       _configurarTeclado: function() {
         document.addEventListener('keydown', (ev) => {
           if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT' || ev.target.tagName === 'TEXTAREA') return;
+
+          // ESC limpa seleção
           if (ev.key === 'Escape' && this.temSelecao()) {
             this.limpar();
             ev.stopPropagation();
+          }
+
+          // Ctrl+A seleciona tudo
+          if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'a') {
+            // Só dispara se não houver input/textarea focado
+            if (document.activeElement === document.body) {
+              ev.preventDefault();
+              this.selecionarTudo();
+            }
           }
         });
       }
