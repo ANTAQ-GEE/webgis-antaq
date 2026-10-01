@@ -3019,7 +3019,7 @@
         cor: "#0369a1", opacidade: 0.75, peso: 2.0, tipoGeo: "linha", ativa: false, camposVisiveis: []
       },
       linhas_travessias: {
-        nome: "Linhas de Travessias (93)", grupo: "infra",
+        nome: "Linhas de Travessias", grupo: "infra",
         arquivos: ["dados/linhas_travessias.geojson", "./dados/linhas_travessias.geojson", "../dados/linhas_travessias.geojson"],
         cor: "#f59e0b", opacidade: 0.90, peso: 2, tipoGeo: "linha_tracejada", ativa: true, camposVisiveis: []
       },
@@ -6812,44 +6812,15 @@
           return;
         }
 
-        // Filtra features que intersectam o retângulo — em duas etapas:
-        // 1) Pré-filtro rápido por bounding box (barato)
-        // 2) Teste preciso por geometria real com Turf.js (para VEN com linhas curvas)
+        // Filtra features cujo bounding box intersecta o retângulo de seleção.
+        // Usa bbox (não geometria real) — é o que casa com a expectativa visual do usuário
+        // para linhas curvas longas (VEN). Turf.booleanIntersects era restritivo demais.
         const dentro = [];
-        // ✅ Adiciona uma pequena tolerância (em graus) para compensar
-        // imprecisão de pixels em zoom baixo. ~0.05° ≈ 5 km no equador.
-        const tolerancia = 0.05;
-        const boundsGeoJSON = {
-          type: 'Polygon',
-          coordinates: [[
-            [bounds.getWest()  - tolerancia, bounds.getSouth() - tolerancia],
-            [bounds.getEast()  + tolerancia, bounds.getSouth() - tolerancia],
-            [bounds.getEast()  + tolerancia, bounds.getNorth() + tolerancia],
-            [bounds.getWest()  - tolerancia, bounds.getNorth() + tolerancia],
-            [bounds.getWest()  - tolerancia, bounds.getSouth() - tolerancia]
-          ]]
-        };
-
-        const usarTurf = typeof turf !== 'undefined' && turf.booleanIntersects;
-
         for (const f of dados.features) {
           try {
             const tempLayer = L.geoJSON(f);
             const b = tempLayer.getBounds();
-            if (!b.isValid() || !bounds.intersects(b)) continue;
-
-            // Se Turf estiver disponível, faz teste geométrico preciso
-            if (usarTurf) {
-              try {
-                if (turf.booleanIntersects(f, boundsGeoJSON)) {
-                  dentro.push(f);
-                }
-              } catch (eTurf) {
-                // Geometria inválida (self-intersection etc.) → cai para bbox
-                dentro.push(f);
-              }
-            } else {
-              // Fallback: aceita se bbox intersecta
+            if (b.isValid() && bounds.intersects(b)) {
               dentro.push(f);
             }
           } catch(e) { /* ignora */ }
@@ -7913,28 +7884,23 @@
           if (camada) {
             const selCamada = document.getElementById('sel-camada-busca');
             if (selCamada && selCamada.querySelector(`option[value="${camada}"]`)) {
-              selCamada.value = camada;
+              // ✅ Chama SEMPRE o aoMudarCamada — é quem repopula o sub-filtro corretamente
+              // (sem isso, o sub-filtro fica com opções da camada anterior)
+              await FilterManager.aoMudarCamada(camada);
 
               if (camada === 'ven') {
-                await this._aguardar(400);
-                if (safra && window.VENUnifiedManager) {
-                  await VENUnifiedManager.mudarSafra(safra);
-                  console.info(`[URLState] Safra VEN restaurada: ${safra}`);
-                }
-                const selSub = document.getElementById('filtro-subtipo-dinamico');
-                if (selSub && safra) selSub.value = safra;
-              } else {
-                await FilterManager.aoMudarCamada(camada);
-                console.info(`[URLState] Camada restaurada: ${camada}`);
-
-                if (filtro) {
+                // Depois de repopular o sub-filtro com as safras, aplica a safra salva
+                if (safra && window.VENUnifiedManager && VENUnifiedManager.anoAtivo !== safra) {
                   await this._aguardar(400);
-                  const selSub = document.getElementById('filtro-subtipo-dinamico');
-                  if (selSub) {
-                    selSub.value = filtro;
-                    FilterManager.aoMudarSubfiltro(filtro);
-                    console.info(`[URLState] Filtro restaurado: ${filtro}`);
-                  }
+                  await VENUnifiedManager.mudarSafra(safra);
+                }
+              } else if (filtro) {
+                // Para camadas normais, aplica o filtro salvo (ex: TUP, ORGANIZADO)
+                await this._aguardar(300);
+                const selSub = document.getElementById('filtro-subtipo-dinamico');
+                if (selSub) {
+                  selSub.value = filtro;
+                  FilterManager.aoMudarSubfiltro(filtro);
                 }
               }
             }
