@@ -6816,14 +6816,17 @@
         // 1) Pré-filtro rápido por bounding box (barato)
         // 2) Teste preciso por geometria real com Turf.js (para VEN com linhas curvas)
         const dentro = [];
+        // ✅ Adiciona uma pequena tolerância (em graus) para compensar
+        // imprecisão de pixels em zoom baixo. ~0.05° ≈ 5 km no equador.
+        const tolerancia = 0.05;
         const boundsGeoJSON = {
           type: 'Polygon',
           coordinates: [[
-            [bounds.getWest(), bounds.getSouth()],
-            [bounds.getEast(), bounds.getSouth()],
-            [bounds.getEast(), bounds.getNorth()],
-            [bounds.getWest(), bounds.getNorth()],
-            [bounds.getWest(), bounds.getSouth()]
+            [bounds.getWest()  - tolerancia, bounds.getSouth() - tolerancia],
+            [bounds.getEast()  + tolerancia, bounds.getSouth() - tolerancia],
+            [bounds.getEast()  + tolerancia, bounds.getNorth() + tolerancia],
+            [bounds.getWest()  - tolerancia, bounds.getNorth() + tolerancia],
+            [bounds.getWest()  - tolerancia, bounds.getSouth() - tolerancia]
           ]]
         };
 
