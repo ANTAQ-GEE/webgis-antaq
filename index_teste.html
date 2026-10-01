@@ -4756,12 +4756,18 @@
             throw new Error('Não foi possível ler o ZIP.');
           }
 
-          if (!zipBuffer || zipBuffer.byteLength === 0) throw new Error('ZIP vazio.');
+          if (!zipBuffer || zipBuffer.byteLength === 0) {
+            throw new Error('O arquivo ZIP está vazio (0 bytes).');
+          }
 
           const view = new Uint8Array(zipBuffer);
           if (view.length < 4 || view[0] !== 0x50 || view[1] !== 0x4B) {
-            throw new Error('O arquivo não é um ZIP válido.');
+            throw new Error('O arquivo não é um ZIP válido (assinatura "PK" ausente).');
           }
+
+          // ✅ shpjs v4: passa o ZIP direto, ele descompacta internamente
+          geojson = await fnShp(zipBuffer);
+        }
 
           const zip = await JSZip.loadAsync(zipBuffer);
           const entradas = Object.keys(zip.files).filter(
