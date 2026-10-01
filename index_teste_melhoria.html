@@ -1219,7 +1219,7 @@
     }
 
     /* Esconde o minimap na impressão */
-    @media print {
+     {
       .leaflet-control-minimap { display: none !important; }
     }
 
@@ -6914,8 +6914,9 @@
           return;
         }
 
-        // Polígono de seleção com pequena tolerância para compensar arredondamento
-        const tol = 0.02;
+        // Polígono de seleção com tolerância generosa para compensar
+        // linhas VEN muito sinuosas e arredondamento de pixel em zoom baixo
+        const tol = 0.1;
         const boundsGeoJSON = {
           type: 'Polygon',
           coordinates: [[
