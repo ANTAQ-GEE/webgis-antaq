@@ -6789,17 +6789,26 @@
       },
 
       _selecionarPorBounds: function(bounds) {
-        // Usa a camada atualmente selecionada no dropdown de busca
+        // Pega o valor do dropdown (pode ser 'ven', 'instalacoes_portuarias', etc.)
         const selCamada = document.getElementById('sel-camada-busca');
-        const camadaId = selCamada ? selCamada.value : null;
-        if (!camadaId || camadaId === 'ven') {
-          UI.toast('⚠️ Selecione uma camada específica para usar seleção por retângulo.');
+        const camadaIdVirtual = selCamada ? selCamada.value : null;
+
+        if (!camadaIdVirtual) {
+          UI.toast('⚠️ Selecione uma camada para usar seleção por retângulo.');
           return;
+        }
+
+        // ✅ Resolve camada virtual 'ven' para a safra ativa (ven_2022, ven_2024, etc.)
+        let camadaId = camadaIdVirtual;
+        if (camadaIdVirtual === 'ven') {
+          camadaId = (window.VENUnifiedManager && VENUnifiedManager.anoAtivo)
+            ? VENUnifiedManager.anoAtivo
+            : 'ven_2022';
         }
 
         const dados = DADOS_GEOJSON_BRUTOS[camadaId];
         if (!dados || !dados.features) {
-          UI.toast('⚠️ Camada não carregada.');
+          UI.toast(`⚠️ Camada "${camadaId}" não carregada.`);
           return;
         }
 
