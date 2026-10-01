@@ -5297,8 +5297,9 @@
               window.FILTRO_PORTO_ATUAL = 'TODOS';  // limpa a variável global contaminada
             }
             selPorto.value = valAtual;
-            this.filtroPorto = valAtual;
-          }
+          this.filtroPorto = 'TODOS';
+        }              ← linha 5305
+        const amostra = g.features[0].properties || {};
         } else {
           if (selPorto) selPorto.style.display = 'none';
           this.filtroPorto = 'TODOS';
