@@ -4828,10 +4828,41 @@
         }
       },
       _adicionar: function(nome, geojson) {
-        // ✅ R2: Valida e repara o GeoJSON ANTES de tentar renderizar
+        // ✅ R2: valida ANTES de renderizar
         let relatorio = null;
+        let geojsonValidado = null;
+
         try {
           const resultado = GeoJSONValidator.validar(geojson, nome);
+          relatorio = resultado.relatorio;
+          geojsonValidado = resultado.geojson;
+        } catch (e) {
+          console.error('[R2] Falha na validação:', e);
+          UI.toast('⚠️ Erro inesperado ao validar o arquivo. Importação cancelada.');
+          return;
+        }
+
+        // Caso 1 — arquivo completamente inválido: modal sem botão "Prosseguir"
+        if (!relatorio || !geojsonValidado || relatorio.validas === 0) {
+          GeoJSONValidator.mostrarRelatorio(relatorio);
+          return;
+        }
+
+        // Caso 2 — arquivo 100% limpo: importa direto, sem modal
+        if (relatorio.invalidas === 0 && relatorio.corrigidas === 0) {
+          this._adicionarValidado(nome, geojsonValidado, relatorio);
+          return;
+        }
+
+        // Caso 3 — arquivo com problemas parciais: mostra modal e aguarda
+        //          o usuário clicar em "Prosseguir mesmo assim"
+        const self = this;
+        GeoJSONValidator.mostrarRelatorio(relatorio, {
+          onProsseguir: function() {
+            self._adicionarValidado(nome, geojsonValidado, relatorio);
+          }
+        });
+      },
           relatorio = resultado.relatorio;
           geojson = resultado.geojson;
 
@@ -4903,6 +4934,8 @@
         }
         this.contador++;
         const id = `imp_${this.contador}_${LayerRegistry.gerarId(nome)}`;
+        // ... resto igual (não mexa)
+      },
         geojson.features.forEach(f => {
           if (f.properties) for (const [k, v] of Object.entries(f.properties)) if (typeof v === 'string') f.properties[k] = Security.repararTexto(v);
         });
