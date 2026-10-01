@@ -6812,14 +6812,41 @@
           return;
         }
 
-        // Filtra features que intersectam o bounds
+        // Filtra features que intersectam o retângulo — em duas etapas:
+        // 1) Pré-filtro rápido por bounding box (barato)
+        // 2) Teste preciso por geometria real com Turf.js (para VEN com linhas curvas)
         const dentro = [];
+        const boundsGeoJSON = {
+          type: 'Polygon',
+          coordinates: [[
+            [bounds.getWest(), bounds.getSouth()],
+            [bounds.getEast(), bounds.getSouth()],
+            [bounds.getEast(), bounds.getNorth()],
+            [bounds.getWest(), bounds.getNorth()],
+            [bounds.getWest(), bounds.getSouth()]
+          ]]
+        };
+
+        const usarTurf = typeof turf !== 'undefined' && turf.booleanIntersects;
+
         for (const f of dados.features) {
           try {
-            // Teste rápido por bbox da geometria
             const tempLayer = L.geoJSON(f);
             const b = tempLayer.getBounds();
-            if (b.isValid() && bounds.intersects(b)) {
+            if (!b.isValid() || !bounds.intersects(b)) continue;
+
+            // Se Turf estiver disponível, faz teste geométrico preciso
+            if (usarTurf) {
+              try {
+                if (turf.booleanIntersects(f, boundsGeoJSON)) {
+                  dentro.push(f);
+                }
+              } catch (eTurf) {
+                // Geometria inválida (self-intersection etc.) → cai para bbox
+                dentro.push(f);
+              }
+            } else {
+              // Fallback: aceita se bbox intersecta
               dentro.push(f);
             }
           } catch(e) { /* ignora */ }
