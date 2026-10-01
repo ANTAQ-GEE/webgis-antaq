@@ -4908,26 +4908,39 @@
         }
         this.contador++;
         const id = `imp_${this.contador}_${LayerRegistry.gerarId(nome)}`;
-        // ... resto igual (não mexa)
-      },
+
         geojson.features.forEach(f => {
-          if (f.properties) for (const [k, v] of Object.entries(f.properties)) if (typeof v === 'string') f.properties[k] = Security.repararTexto(v);
+          if (f.properties) {
+            for (const [k, v] of Object.entries(f.properties)) {
+              if (typeof v === 'string') f.properties[k] = Security.repararTexto(v);
+            }
+          }
         });
+
         const tipoGeo = GeomTypeDetector.detectar(geojson);
         const cor = LayerRegistry.corAleatoria();
         const cfg = {
-          nome: nome, grupo: 'importadas', arquivos: [], cor: cor,
+          nome: nome,
+          grupo: 'importadas',
+          arquivos: [],
+          cor: cor,
           opacidade: tipoGeo === 'poligono' ? 0.4 : (tipoGeo === 'linha' ? 0.9 : 0.95),
           peso: tipoGeo === 'ponto' ? 5 : (tipoGeo === 'linha' ? 2.5 : 1.5),
-          tipoGeo: tipoGeo, ativa: true, camposVisiveis: []
+          tipoGeo: tipoGeo,
+          ativa: true,
+          camposVisiveis: []
         };
+
         CONFIG_CAMADAS[id] = cfg;
         DADOS_GEOJSON_BRUTOS[id] = geojson;
+
         CAMADAS_MAPA[id] = L.geoJSON(geojson, Styler.obterOpcoes(id));
         CAMADAS_MAPA[id].addTo(mapa);
+
         const grupoEl = document.getElementById('grupo-importadas');
         const msgVazio = document.getElementById('msg-sem-importadas');
         if (msgVazio) msgVazio.style.display = 'none';
+
         if (grupoEl) {
           construirItemCamada(id, cfg, grupoEl);
           const cntBadge = document.getElementById(`cnt-${id}`);
@@ -4935,10 +4948,11 @@
           const sec = grupoEl.closest('.secao');
           if (sec) sec.classList.remove('fechado');
         }
+
         Styler.atualizarLegenda();
         FilterManager.atualizarSeletorCamadas();
 
-        // ✅ R2: Notificação informativa com o resultado da validação
+        // ✅ R2: notificação com avisos da validação
         if (relatorio && (relatorio.invalidas > 0 || relatorio.corrigidas > 0)) {
           NotificationManager.show({
             tipo: 'alerta',
@@ -4960,8 +4974,7 @@
           const b = CAMADAS_MAPA[id].getBounds();
           if (b.isValid()) mapa.fitBounds(b, { padding: [40, 40], maxZoom: 14 });
         } catch (e) {}
-      }
-    };
+      },
 
     /* Drag & drop global */
     (function(){
