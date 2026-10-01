@@ -72,7 +72,7 @@
     {
       "id": "linhas_travessias",
       "arquivo": "dados/linhas_travessias.geojson",
-      "nome": "Linhas de Travessias (93)",
+      "nome": "Linhas de Travessias",
       "grupo": "infra",
       "cor": "#f59e0b",
       "peso": 2.0,
