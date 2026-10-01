@@ -1944,29 +1944,102 @@
       .modal-validacao { display: none !important; }
     }
 
-    /* ============================================================
-       LAYOUT DEFINITIVO — ZONAS EXCLUSIVAS SEM SOBREPOSIÇÃO
-       ------------------------------------------------------------
-       Top-Left      → Busca, Minimap
-       Top-Right     → Painel lateral (não desce até o rodapé)
-       Top-Center    → Notificações
-       Bottom-Left   → Escala, Medição (toolbar), Legenda
-       Bottom-Center → Seleção múltipla
-       Bottom-Right  → Zoom, Coordenadas
-       Rodapé        → Versão
+       /* ============================================================
+       LAYOUT DEFINITIVO v2 — ZONAS EXCLUSIVAS E NÃO-SOBREPOSTAS
+       ============================================================
+       ┌──────────────────────────────────────────────────────┐
+       │ HEADER (fixo, topo)                                  │
+       ├──────────────────────────────────────────────────────┤
+       │ [BUSCA]                              [PAINEL LATERAL]│
+       │ [MINIMAP]                            (máx 60vh)      │
+       │ [NOTIFICAÇÕES]                                       │
+       │                                                      │
+       │                     MAPA                             │
+       │                                                      │
+       │ [LEGENDA]      [SELEÇÃO]                [COORD]     │
+       │ [MEDIÇÃO]                               [ZOOM]      │
+       ├──────────────────────────────────────────────────────┤
+       │ RODAPÉ                                               │
+       └──────────────────────────────────────────────────────┘
        ============================================================ */
 
-    /* 1) Painel lateral: reduzido para não alcançar o rodapé nem os controles */
+    /* 1) PAINEL LATERAL — reduzido para não alcançar o canto inferior */
     .painel-lateral {
-      max-height: calc(100vh - 64px - 140px) !important;
+      top: 64px !important;
+      max-height: calc(100vh - 64px - 180px) !important;
     }
 
-    /* 3) SELEÇÃO: bottom-center, acima do rodapé */
+    /* 2) BARRA DE BUSCA — top-left compacta */
+    .barra-busca-atributos {
+      top: 64px !important;
+      left: 16px !important;
+      max-width: calc(100vw - 400px) !important;
+    }
+
+    /* 3) MINIMAP — top-left compacto, abaixo da busca */
+    .leaflet-control-minimap {
+      position: relative !important;
+      margin-top: 62px !important;
+      margin-left: 16px !important;
+      width: 180px !important;
+      height: 180px !important;
+      z-index: 900 !important;
+    }
+    .leaflet-control-minimap a.minimap-toggle {
+      display: block !important;
+    }
+    /* Minimap colapsado */
+    .leaflet-control-minimap.minimized {
+      width: 24px !important;
+      height: 24px !important;
+    }
+
+    /* 4) NOTIFICAÇÕES — top-center, não colidem com painel */
+    .notificacoes-container {
+      top: 64px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      max-width: 400px !important;
+      z-index: 3000 !important;
+    }
+
+    /* 5) LEGENDA — bottom-left, compacta e limitada */
+    .caixa-legenda {
+      bottom: 16px !important;
+      left: 16px !important;
+      width: 240px !important;
+      max-height: 320px !important;
+      z-index: 1100 !important;
+    }
+    .caixa-legenda .legenda-conteudo {
+      max-height: 260px !important;
+      overflow-y: auto !important;
+    }
+
+    /* 6) TOOLBAR DE MEDIÇÃO — bottom-left, acima da legenda */
+    .toolbar-medicao {
+      bottom: 350px !important;
+      left: 16px !important;
+      right: auto !important;
+      z-index: 1100 !important;
+    }
+
+    /* 7) PAINEL DE RESULTADOS DE MEDIÇÃO — bottom-center, acima do rodapé */
+    .painel-medicao-resultados {
+      bottom: 50px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      z-index: 1400 !important;
+    }
+
+    /* 8) PAINEL DE SELEÇÃO — bottom-center, acima da medição */
     .painel-selecao {
       top: auto !important;
-      bottom: 34px !important;
+      bottom: 130px !important;
       left: 50% !important;
       transform: translateX(-50%) translateY(0) !important;
+      z-index: 1500 !important;
+      max-width: calc(100vw - 500px) !important;
     }
     .painel-selecao.aberto {
       display: flex !important;
@@ -1974,55 +2047,39 @@
       transform: translateX(-50%) translateY(0) !important;
     }
 
-    /* 4) MEDIÇÃO (toolbar): bottom-left, encostada no canto */
-    .toolbar-medicao {
-      bottom: 44px !important;
-      left: 16px !important;
-      right: auto !important;
-    }
-
-    /* 5) MEDIÇÃO (painel de resultados): bottom-center, acima da seleção */
-    .painel-medicao-resultados {
-      bottom: 130px !important;
-      left: 50% !important;
-    }
-
-    /* 6) LEGENDA: bottom-left, acima da medição */
-    .caixa-legenda {
-      bottom: 130px !important;
-      left: 16px !important;
-    }
-
-    /* 7) ZOOM control: bottom-right, encostado no canto (acima do rodapé) */
+    /* 9) ZOOM CONTROL — bottom-right, encostado no rodapé */
     .leaflet-bottom.leaflet-right .leaflet-control-zoom {
-      margin-bottom: 8px !important;
+      margin-bottom: 10px !important;
       margin-right: 16px !important;
+      z-index: 1000 !important;
     }
 
-    /* 8) COORDENADAS: bottom-right, acima do zoom */
+    /* 10) COORDENADAS — bottom-right, ACIMA do zoom */
     .leaflet-bottom.leaflet-right .leaflet-control-coords {
-      margin-bottom: 90px !important;
+      margin-bottom: 110px !important;
       margin-right: 16px !important;
+      z-index: 1000 !important;
     }
 
-    /* 9) ESCALA: mover para bottom-left, canto */
+    /* 11) ESCALA — bottom-right, ao lado do zoom */
+    .leaflet-bottom.leaflet-right .leaflet-control-scale {
+      margin-bottom: 10px !important;
+      margin-right: 60px !important;
+      z-index: 1000 !important;
+    }
     .leaflet-bottom.leaflet-left .leaflet-control-scale {
-      margin-bottom: 8px !important;
-      margin-left: 16px !important;
+      display: none !important;
     }
 
-    /* 10) MINIMAP: top-left, abaixo da barra de busca */
-      /* 10) MINIMAP: top-left, abaixo da barra de busca */
-    .leaflet-control-minimap {
-      margin-top: 62px !important;
-      margin-left: 16px !important;
+    /* 12) RODAPÉ — fixo no fundo */
+    .rodape-versao {
+      z-index: 2000 !important;
     }
 
     /* ============================================================
-       IMPRESSÃO — Layout limpo para PDF/papel
+       IMPRESSÃO
        ============================================================ */
     @media print {
-      /* Cabeçalho institucional no topo da página */
       body::before {
         content: "AGÊNCIA NACIONAL DE TRANSPORTES AQUAVIÁRIOS — ANTAQ | WebGIS Corporativo | GEE-SEPH";
         display: block;
@@ -2034,14 +2091,11 @@
         font-family: 'Segoe UI', sans-serif;
         font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.5px;
         color: #0a2540;
         background: #ffffff;
         border-bottom: 2px solid #0284c7;
         z-index: 9999;
       }
-
-      /* Rodapé com data de impressão */
       body::after {
         content: "Documento gerado em " attr(data-data-impressao) " · Fonte: WebGIS ANTAQ / GEE-SEPH";
         display: block;
@@ -2058,31 +2112,22 @@
         border-top: 1px solid #cbd5e1;
         z-index: 9999;
       }
-
-      /* Legenda visível e ajustada ao papel */
       .caixa-legenda {
         position: fixed !important;
         bottom: 30px !important;
         left: 12px !important;
         width: 240px !important;
-        max-height: 60vh !important;
         box-shadow: none !important;
         border: 1px solid #333 !important;
         background: #ffffff !important;
-        page-break-inside: avoid;
         z-index: 9998 !important;
       }
       .caixa-legenda .legenda-conteudo {
         max-height: none !important;
       }
-
-      /* Preserva cores das camadas e da legenda */
       * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
-      }
-      .leaflet-tile-pane {
-        filter: none !important;
       }
     }
   </style>
@@ -6732,19 +6777,19 @@
             interactive: false,
             style: {
               color: '#f59e0b',
-              weight: 4,
-              opacity: 1,
+              weight: 3,           // era 4
+              opacity: 0.95,
               fillColor: '#f59e0b',
-              fillOpacity: 0.2,
-              dashArray: '6, 4'
+              fillOpacity: 0,      // ✅ sem preenchimento para linhas/polígonos
+              dashArray: null      // ✅ linha sólida, sem tracejado
             },
             pointToLayer: (f, latlng) => L.circleMarker(latlng, {
               pane: 'paneSelecao',
-              radius: 13,
+              radius: 7,           // era 13
               color: '#f59e0b',
-              weight: 3,
+              weight: 2.5,
               fillColor: '#fbbf24',
-              fillOpacity: 0.35
+              fillOpacity: 0.6
             })
           }).addTo(mapa);
         } catch(e) { console.warn('[M2] Erro ao criar highlight:', e); }
@@ -6867,7 +6912,7 @@
 
         // Polígono de seleção com tolerância generosa para compensar
         // linhas VEN muito sinuosas e arredondamento de pixel em zoom baixo
-        const tol = 0.1;
+ const tol = 0.03;   // ~3 km — preciso mas não restritivo demais
         const boundsGeoJSON = {
           type: 'Polygon',
           coordinates: [[
