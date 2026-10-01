@@ -1249,8 +1249,11 @@
       letter-spacing: 0.3px !important;
     }
 
-    /* Coordenadas do mouse (canto inferior esquerdo) */
-    .leaflet-control-coords {
+    /* Reposiciona as coordenadas acima do zoom control no canto direito */
+    .leaflet-bottom.leaflet-right .leaflet-control-coords {
+      margin-bottom: 200px !important;
+      margin-right: 12px !important;
+    }
       background: rgba(10, 37, 64, 0.92) !important;
       color: #bae6fd !important;
       border: 1px solid rgba(56, 189, 248, 0.4) !important;
@@ -1318,22 +1321,24 @@
     /* Painel flutuante de seleção (topo, abaixo do header) */
     .painel-selecao {
       position: fixed;
-      top: 64px;
+      bottom: 130px;
       left: 50%;
-      transform: translateX(-50%) translateY(-20px);
-      background: rgba(10, 37, 64, 0.96);
-      backdrop-filter: blur(8px);
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(10, 37, 64, 0.97);
+      backdrop-filter: blur(10px);
       border: 1px solid #f59e0b;
-      border-radius: 8px;
-      padding: 8px 12px;
+      border-radius: 10px;
+      padding: 10px 14px;
       display: none;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       z-index: 2000;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.55), 0 0 0 1px rgba(245,158,11,0.15) inset;
       font-family: 'Segoe UI', system-ui, sans-serif;
       opacity: 0;
-      transition: opacity 0.2s ease, transform 0.2s ease;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      max-width: calc(100vw - 40px);
+      pointer-events: auto;
     }
     .painel-selecao.aberto {
       display: flex;
@@ -1343,62 +1348,90 @@
     .painel-selecao .selecao-info {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       color: #ffffff;
       font-size: 12px;
       font-weight: 600;
-      padding-right: 10px;
-      border-right: 1px solid rgba(148, 163, 184, 0.3);
+      padding-right: 14px;
+      border-right: 1px solid rgba(148, 163, 184, 0.25);
       white-space: nowrap;
     }
-    .painel-selecao .selecao-info strong {
-      color: #fbbf24;
+    .painel-selecao .selecao-info .selecao-icone {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(245, 158, 11, 0.18);
+      border: 1px solid rgba(245, 158, 11, 0.4);
       font-size: 14px;
+      flex-shrink: 0;
+    }
+    .painel-selecao .selecao-info .selecao-texto {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      line-height: 1.2;
+    }
+    .painel-selecao .selecao-info .selecao-contagem {
+      font-size: 13px;
       font-weight: 800;
+      color: #fbbf24;
+      letter-spacing: 0.2px;
     }
     .painel-selecao .selecao-info .selecao-dica {
       display: block;
-      font-size: 9.5px;
+      font-size: 9px;
       color: #94a3b8;
-      font-weight: 400;
-      margin-top: 1px;
+      font-weight: 500;
+      letter-spacing: 0.15px;
+      text-transform: uppercase;
     }
     .painel-selecao .selecao-acoes {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
     }
     .painel-selecao .btn-sel {
-      background: rgba(56, 189, 248, 0.15);
-      border: 1px solid rgba(56, 189, 248, 0.4);
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
       color: #bae6fd;
-      padding: 5px 9px;
-      border-radius: 5px;
+      padding: 6px 10px;
+      border-radius: 6px;
       font-size: 10.5px;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.15s ease;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
       white-space: nowrap;
       font-family: 'Segoe UI', sans-serif;
+      letter-spacing: 0.2px;
     }
     .painel-selecao .btn-sel:hover {
-      background: rgba(56, 189, 248, 0.28);
+      background: rgba(56, 189, 248, 0.25);
       border-color: #38bdf8;
       color: #ffffff;
       transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(56, 189, 248, 0.25);
     }
     .painel-selecao .btn-sel.btn-limpar {
-      background: rgba(239, 68, 68, 0.15);
-      border-color: rgba(239, 68, 68, 0.5);
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.4);
       color: #fca5a5;
     }
     .painel-selecao .btn-sel.btn-limpar:hover {
-      background: rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.28);
       border-color: #ef4444;
       color: #ffffff;
+      box-shadow: 0 3px 10px rgba(239, 68, 68, 0.25);
+    }
+
+    /* Ajusta a medição para não colidir com o painel de seleção (quando ambos abertos) */
+    .toolbar-medicao.empurrada {
+      bottom: 220px;
     }
 
     /* Retângulo de seleção em tela (shift+drag) */
@@ -2713,12 +2746,11 @@
   <!-- ============================================================
        M2 — PAINEL FLUTUANTE DE SELEÇÃO MÚLTIPLA
        ============================================================ -->
-  <div class="painel-selecao" id="painel-selecao">
     <div class="selecao-info">
-      <span style="font-size:16px;">✅</span>
-      <div>
-        <span><strong id="selecao-count">0</strong> feições selecionadas</span>
-        <span class="selecao-dica">Ctrl+Clique para adicionar · Shift+Arrastar para retângulo</span>
+      <span class="selecao-icone">✅</span>
+      <div class="selecao-texto">
+        <span class="selecao-contagem"><span id="selecao-count">0</span> feições selecionadas</span>
+        <span class="selecao-dica">Ctrl+Clique · Shift+Arrastar</span>
       </div>
     </div>
     <div class="selecao-acoes">
@@ -6937,7 +6969,7 @@
         const self = this;
 
         const CoordControl = L.Control.extend({
-          options: { position: 'bottomleft' },
+          options: { position: 'bottomright' },
           onAdd: function() {
             const div = L.DomUtil.create('div', 'leaflet-control-coords');
             div.id = 'leaflet-coords-control';
