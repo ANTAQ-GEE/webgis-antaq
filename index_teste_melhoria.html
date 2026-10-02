@@ -7012,7 +7012,6 @@ selecionarTudo: async function() {
   const nomeCamada = CONFIG_CAMADAS[idCamada]?.nome || idCamada;
   const msgAnt = anteriores > 0 ? ` (${anteriores} anteriores removidas)` : '';
   UI.toast(`🎯 ${this._selecionadas.length} feições de "${nomeCamada}" selecionadas${msgAnt}.`);
-}
       },
 
       /* ---------- Exportar seleção em CSV ---------- */
