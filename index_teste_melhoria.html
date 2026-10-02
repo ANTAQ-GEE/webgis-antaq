@@ -6683,7 +6683,7 @@
         // Cria pane dedicada para o highlight (sempre no topo)
         if (!this._paneCriado) {
           mapa.createPane('paneSelecao');
-          mapa.getPane('paneSelecao').style.zIndex = 650;
+          mapa.getPane('paneSelecao').style.zIndex = 700;
           mapa.getPane('paneSelecao').style.pointerEvents = 'none';
           this._paneCriado = true;
         }
@@ -6768,36 +6768,66 @@
 
         const dados = DADOS_GEOJSON_BRUTOS[idCamada];
         if (!dados || !dados.features || !dados.features.length) {
-          UI.toast(`⚠️ Camada ${idCamada} não tem feições.`);
+          UI.toast(`⚠️ Camada ${idCamada} sem feições.`);
           return;
         }
 
-        // ✅ Limpa seleção anterior ANTES de adicionar
+        // ✅ Detecta filtro ativo e aplica
+        let featuresParaSelecionar = dados.features;
+        let nomeFiltro = '';
+
+        const selSub = document.getElementById('filtro-subtipo-dinamico');
+        const filtroAtivo = selSub ? selSub.value : null;
+
+        if (filtroAtivo && filtroAtivo !== 'TODOS' && filtroAtivo !== '' &&
+            !filtroAtivo.startsWith('ven_')) {  // ignora valores que são safras VEN
+
+          // Filtro de Instalações Portuárias (ORGANIZADO, PUBLICO, TUP, IP4, ETC, OUTROS)
+          if (idCamada === 'instalacoes_portuarias') {
+            featuresParaSelecionar = dados.features.filter(f => {
+              const cat = PortClassification.classificar(f.properties || {});
+              return cat.id === filtroAtivo;
+            });
+            nomeFiltro = PortClassification.tipos[filtroAtivo]?.nome || filtroAtivo;
+
+          // Filtro de UCs (Federal, Estadual, Municipal, Privada)
+          } else if (idCamada === 'ucs_todas_mma') {
+            featuresParaSelecionar = dados.features.filter(f => {
+              return classificarEsfera(f.properties).id === filtroAtivo;
+            });
+            nomeFiltro = filtroAtivo;
+
+          // Filtro genérico (por esfera ou coluna detectada)
+          } else if (FilterManager.colunaEsferaAtiva) {
+            const col = FilterManager.colunaEsferaAtiva;
+            featuresParaSelecionar = dados.features.filter(f => {
+              const v = String(f.properties ? f.properties[col] : '').trim();
+              return v === filtroAtivo;
+            });
+            nomeFiltro = `${col}: ${filtroAtivo}`;
+          }
+        }
+
+        // Limpa seleção anterior
         const anteriores = this._selecionadas.length;
         this._selecionadas = [];
-        if (this._highlightLayer) {
-          try {
-            if (mapa.hasLayer(this._highlightLayer)) mapa.removeLayer(this._highlightLayer);
-          } catch(e) {}
+        if (this._highlightLayer && mapa.hasLayer(this._highlightLayer)) {
+          mapa.removeLayer(this._highlightLayer);
           this._highlightLayer = null;
         }
 
-        // ✅ Adiciona todas as features da safra atual
-        for (const f of dados.features) {
+        // ✅ Adiciona apenas as features filtradas
+        for (const f of featuresParaSelecionar) {
           const chave = this._chaveDe(f, idCamada);
-          this._selecionadas.push({
-            feature: f,
-            camadaId: idCamada,
-            chaveUnica: chave
-          });
+          this._selecionadas.push({ feature: f, camadaId: idCamada, chaveUnica: chave });
         }
 
         this._atualizarUI();
 
         const nomeCamada = CONFIG_CAMADAS[idCamada]?.nome || idCamada;
+        const msgFiltro = nomeFiltro ? ` [${nomeFiltro}]` : '';
         const msgAnt = anteriores > 0 ? ` (${anteriores} anteriores removidas)` : '';
-        UI.toast(`🎯 ${this._selecionadas.length} feições de "${nomeCamada}" selecionadas${msgAnt}.`);
-      },
+        UI.toast(`🎯 ${this._selecionadas.length} feições de "${nomeCamada}"${msgFiltro} selecionadas${msgAnt}.`);
 
       /* ---------- Ações do painel ---------- */
       zoomParaSelecao: function() {
@@ -6907,21 +6937,35 @@
             interactive: false,
             style: {
               color: '#f59e0b',
-              weight: 3,           // era 4
+              weight: 3,
               opacity: 0.95,
               fillColor: '#f59e0b',
-              fillOpacity: 0,      // ✅ sem preenchimento para linhas/polígonos
-              dashArray: null      // ✅ linha sólida, sem tracejado
+              fillOpacity: 0,
+              dashArray: null
             },
             pointToLayer: (f, latlng) => L.circleMarker(latlng, {
               pane: 'paneSelecao',
-              radius: 7,           // era 13
+              radius: 8,               // era 7 — mais visível
               color: '#f59e0b',
-              weight: 2.5,
+              weight: 3,               // era 2.5
               fillColor: '#fbbf24',
-              fillOpacity: 0.6
+              fillOpacity: 0.85        // era 0.6 — mais destacado
             })
           }).addTo(mapa);
+
+          // ✅ Força o pane de seleção a ficar no topo (frente de tudo)
+          const pane = mapa.getPane('paneSelecao');
+          if (pane) {
+            pane.style.zIndex = 700;   // era 650
+            pane.style.pointerEvents = 'none';
+          }
+
+          // ✅ Garante que cada camada filha traga para frente
+          this._highlightLayer.eachLayer(sub => {
+            if (sub.bringToFront) sub.bringToFront();
+          });
+
+          console.log(`[M2] Highlight criado com ${this._highlightLayer.getLayers().length} features`);
         } catch(e) { console.warn('[M2] Erro ao criar highlight:', e); }
       },
       
