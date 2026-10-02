@@ -2089,11 +2089,11 @@
       right: 16px !important;
     }
 
-    /* 10) COORDENADAS — fixo, à ESQUERDA do painel, caixa branca */
+    /* 10) COORDENADAS — fixo, acima do painel de seleção, à esquerda do painel lateral */
     .leaflet-control-coords,
     .leaflet-bottom.leaflet-right .leaflet-control-coords {
       position: fixed !important;
-      bottom: 66px !important;
+      bottom: 130px !important;
       right: 396px !important;
       margin: 0 !important;
       z-index: 2000 !important;
@@ -7274,6 +7274,42 @@ selecionarTudo: async function() {
           return;
         }
 
+        // ✅ Respeita o filtro ativo da camada
+        let featuresBase = dados.features;
+
+        // Filtro de portos
+        if (camadaId === 'instalacoes_portuarias') {
+          const filtroPorto = window.FILTRO_PORTO_ATUAL || 'TODOS';
+          if (filtroPorto !== 'TODOS') {
+            featuresBase = featuresBase.filter(f =>
+              PortClassification.classificar(f.properties || {}).id === filtroPorto
+            );
+          }
+        }
+
+        // Filtro de UCs
+        if (camadaId === 'ucs_todas_mma') {
+          const filtroUC = window.FILTRO_UC_ATUAL || 'TODOS';
+          if (filtroUC !== 'TODOS') {
+            featuresBase = featuresBase.filter(f =>
+              classificarEsfera(f.properties).id === filtroUC
+            );
+          }
+        }
+
+        // Filtro genérico (outras camadas com esfera)
+        const selSub = document.getElementById('filtro-subtipo-dinamico');
+        if (selSub && selSub.value && selSub.value !== 'TODOS' &&
+            camadaId !== 'instalacoes_portuarias' && camadaId !== 'ucs_todas_mma' &&
+            !camadaId.startsWith('ven_')) {
+          const colunaFiltro = FilterManager.colunaEsferaAtiva;
+          if (colunaFiltro) {
+            featuresBase = featuresBase.filter(f =>
+              String(f.properties?.[colunaFiltro] || '').trim() === selSub.value
+            );
+          }
+        }
+
         // Filtra features cujo bounding box intersecta o retângulo de seleção.
         // Usa bbox (não geometria real) — é o que casa com a expectativa visual do usuário
         // para linhas curvas longas (VEN). Turf.booleanIntersects era restritivo demais.
@@ -7300,7 +7336,7 @@ selecionarTudo: async function() {
           ]]
         };
 
-        for (const f of dados.features) {
+        for (const f of featuresBase) {
           try {
             // Pré-filtro rápido por bbox (evita chamar Turf desnecessariamente)
             const tempLayer = L.geoJSON(f);
