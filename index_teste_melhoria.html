@@ -2150,7 +2150,81 @@
     }
 
     /* ============================================================
-       IMPRESSÃO
+       M8 — UNDO / REDO
+       ============================================================ */
+    .grupo-undo-redo {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px;
+      padding: 2px;
+    }
+    .btn-undo-redo {
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      width: 30px;
+      height: 30px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      position: relative;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .btn-undo-redo:hover:not(:disabled) {
+      background: rgba(56, 189, 248, 0.2);
+      color: #38bdf8;
+      transform: scale(1.05);
+    }
+    .btn-undo-redo:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+    .btn-undo-redo:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .btn-undo-redo .badge-undo {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      background: #0284c7;
+      color: #fff;
+      font-size: 8px;
+      font-weight: 800;
+      min-width: 14px;
+      height: 14px;
+      line-height: 14px;
+      padding: 0 3px;
+      border-radius: 7px;
+      text-align: center;
+      border: 1.5px solid #0a2540;
+      display: none;
+    }
+    .btn-undo-redo .badge-undo.visivel {
+      display: block;
+    }
+
+    /* Ícone pulsante ao desfazer/refazer */
+    .btn-undo-redo.flash {
+      animation: pulseUndoRedo 0.4s ease-out;
+    }
+    @keyframes pulseUndoRedo {
+      0%   { background: rgba(56, 189, 248, 0.5); }
+      100% { background: transparent; }
+    }
+
+    /* Ocultar na impressão */
+    @media print {
+      .grupo-undo-redo { display: none !important; }
+    }
+    /* ============================================================
+       IMPRESSÃO — Layout limpo para PDF/papel
        ============================================================ */
     @media print {
       body::before {
@@ -2221,6 +2295,16 @@
       <button class="btn-homologacao" id="btn-env-topo" onclick="UI.toggleMenuAmbiente(event)" style="background:#0a2540; color:#38bdf8; border:1px solid #0284c7;" title="Alternar entre Produção Oficial e Homologação GEE">
         <span id="txt-ambiente">Produção (Oficial ANTAQ)</span> &#9662;
       </button>
+            <div class="grupo-undo-redo" title="Desfazer / Refazer últimas ações">
+        <button class="btn-undo-redo" id="btn-undo" onclick="ActionHistory.undo()" disabled title="Desfazer (Ctrl+Z)">
+          <span>↶</span>
+          <span class="badge-undo" id="badge-undo-count"></span>
+        </button>
+        <button class="btn-undo-redo" id="btn-redo" onclick="ActionHistory.redo()" disabled title="Refazer (Ctrl+Shift+Z ou Ctrl+Y)">
+          <span>↷</span>
+          <span class="badge-undo" id="badge-redo-count"></span>
+        </button>
+      </div>
       <button class="btn-atualizar" id="btn-sync" onclick="DataManager.atualizarTodasCamadas()" style="background:#0284c7; border:1px solid #38bdf8;" title="Sincronizar e recarregar dados do servidor">
         <span id="ico-sync">🔄</span> Atualizar
       </button>
@@ -3066,27 +3150,51 @@
        MÓDULO: ORDENAÇÃO E SOBREPOSIÇÃO DE CAMADAS
        ============================================================ */
     const LayerOrderManager = {
-      mover: function(id, direcao) {
+      mover: function(id, direcao, opcoes) {
+        opcoes = opcoes || {};
         const item = document.getElementById(`item-camada-${id}`);
         if (!item) return;
         const grupoEl = item.parentElement;
         if (!grupoEl) return;
+
+        const direcaoInversa = direcao === 'cima' ? 'baixo' : 'cima';
+        const nome = CONFIG_CAMADAS[id]?.nome || id;
 
         if (direcao === 'cima') {
           const prev = item.previousElementSibling;
           if (prev && prev.classList.contains('item-camada')) {
             grupoEl.insertBefore(item, prev);
             this.sincronizarOrdemMapa(grupoEl);
-            const nome = CONFIG_CAMADAS[id]?.nome || id;
             UI.toast(`⬆️ "${nome}" movida para cima.`);
+
+            // ✅ M8: registra
+            if (!opcoes.semHistorico) {
+              const self = this;
+              ActionHistory.registrar({
+                tipo: 'ordem-camada',
+                descricao: `Mover "${nome}" para cima`,
+                undo: () => self.mover(id, direcaoInversa, { semHistorico: true }),
+                redo: () => self.mover(id, direcao, { semHistorico: true })
+              });
+            }
           }
         } else if (direcao === 'baixo') {
           const next = item.nextElementSibling;
           if (next && next.classList.contains('item-camada')) {
             grupoEl.insertBefore(next, item);
             this.sincronizarOrdemMapa(grupoEl);
-            const nome = CONFIG_CAMADAS[id]?.nome || id;
             UI.toast(`⬇️ "${nome}" movida para baixo.`);
+
+            // ✅ M8: registra
+            if (!opcoes.semHistorico) {
+              const self = this;
+              ActionHistory.registrar({
+                tipo: 'ordem-camada',
+                descricao: `Mover "${nome}" para baixo`,
+                undo: () => self.mover(id, direcaoInversa, { semHistorico: true }),
+                redo: () => self.mover(id, direcao, { semHistorico: true })
+              });
+            }
           }
         }
       },
@@ -3352,11 +3460,29 @@
         L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'),
         L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}')
       ]),
-      trocar: function(tipo) {
+      trocar: function(tipo, opcoes) {
+        opcoes = opcoes || {};
+        const atual = window._basemapAtual || 'satelite';
+
         if (tipo === 'satelite') {
           mapa.removeLayer(this.escuro); this.satelite.addTo(mapa); this.rotulos.addTo(mapa);
         } else {
           mapa.removeLayer(this.satelite); mapa.removeLayer(this.rotulos); this.escuro.addTo(mapa);
+        }
+        window._basemapAtual = tipo;
+        // ✅ Sincroniza o radio no painel lateral
+        const radio = document.querySelector(`input[name="basemap"][value="${tipo}"]`);
+        if (radio) radio.checked = true;
+
+        // ✅ M8: registra
+        if (!opcoes.semHistorico && atual !== tipo) {
+          const self = this;
+          ActionHistory.registrar({
+            tipo: 'basemap',
+            descricao: `Trocar mapa base para ${tipo === 'satelite' ? 'Satélite' : 'Escuro'}`,
+            undo: () => self.trocar(atual, { semHistorico: true }),
+            redo: () => self.trocar(tipo, { semHistorico: true })
+          });
         }
       }
     };
@@ -3573,9 +3699,26 @@
           }
         };
       },
-      atualizar: function(id, prop, valor) {
+      atualizar: function(id, prop, valor, opcoes) {
+        opcoes = opcoes || {};
         if (!CONFIG_CAMADAS[id]) return;
+
+        const valorAnterior = CONFIG_CAMADAS[id][prop];
+
         CONFIG_CAMADAS[id][prop] = valor;
+
+        // ✅ M8: registra (só se valor realmente mudou)
+        if (!opcoes.semHistorico && valorAnterior !== valor && ['cor', 'opacidade', 'peso'].includes(prop)) {
+          const nome = CONFIG_CAMADAS[id]?.nome || id;
+          const rotulos = { cor: 'cor', opacidade: 'opacidade', peso: 'peso' };
+          const self = this;
+          ActionHistory.registrar({
+            tipo: 'estilo',
+            descricao: `Alterar ${rotulos[prop]} de "${nome}"`,
+            undo: () => self.atualizar(id, prop, valorAnterior, { semHistorico: true }),
+            redo: () => self.atualizar(id, prop, valor, { semHistorico: true })
+          });
+        }
         const ind = document.getElementById(`indicador-cor-${id}`);
         if (ind && prop === 'cor' && id !== 'instalacoes_portuarias') ind.style.backgroundColor = valor;
         if (CAMADAS_MAPA[id]) {
@@ -3786,7 +3929,26 @@
         this.aplicarFiltro(idCamada, valor);
       },
 
-      aplicarFiltro: function(idCamada, valor) {
+      aplicarFiltro: function(idCamada, valor, opcoes) {
+        opcoes = opcoes || {};
+
+        // ✅ M8: captura o valor anterior para poder reverter
+        const valorAnterior = (idCamada === 'instalacoes_portuarias')
+          ? (window.FILTRO_PORTO_ATUAL || 'TODOS')
+          : (idCamada === 'ucs_todas_mma')
+            ? (window.FILTRO_UC_ATUAL || 'TODOS')
+            : null;
+
+        if (!opcoes.semHistorico && valorAnterior !== null && valorAnterior !== valor) {
+          const self = this;
+          ActionHistory.registrar({
+            tipo: 'filtro',
+            descricao: `Filtro [${idCamada}]: ${valorAnterior} → ${valor}`,
+            undo: () => self.aplicarFiltro(idCamada, valorAnterior, { semHistorico: true }),
+            redo: () => self.aplicarFiltro(idCamada, valor, { semHistorico: true })
+          });
+        }
+
         if (idCamada === 'instalacoes_portuarias' && window.SUBGRUPOS_PORTOS) {
           let visiveis = 0;
           const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
@@ -3812,6 +3974,9 @@
           Styler.atualizarLegenda();
           if (valor !== 'TODOS') UI.toast(`Filtro [Portos]: ${PortClassification.tipos[valor]?.nome || valor} (${visiveis} ativos visíveis).`);
           window.FILTRO_PORTO_ATUAL = valor;
+          // ✅ M8: mantém o dropdown sincronizado ao reverter
+          const selSub = document.getElementById('filtro-subtipo-dinamico');
+          if (selSub) selSub.value = valor;
           if (TabelaManager.camadaAtualId === 'instalacoes_portuarias' && document.getElementById('painel-tabela').classList.contains('aberto')) {
             const selP = document.getElementById('filtro-porto-tabela');
             if (selP) selP.value = valor;
@@ -5416,11 +5581,18 @@
       Styler.atualizarLegenda();
     }
 
-    async function toggleCamada(id, ligar) {
+    async function toggleCamada(id, ligar, opcoes) {
+      opcoes = opcoes || {};
+      const estadoAnterior = mapa.hasLayer(CAMADAS_MAPA?.[id]);
+
       if (!CAMADAS_MAPA[id] || !DADOS_GEOJSON_BRUTOS[id]) {
         UI.toast(`Carregando camada "${CONFIG_CAMADAS[id]?.nome || id}"...`);
-        try { await DataManager.carregarCamada(id); }
-        catch (e) { UI.toast(`⚠️ Falha ao carregar ${CONFIG_CAMADAS[id]?.nome || id}`); return; }
+        try {
+          await DataManager.carregarCamada(id);
+        } catch (e) {
+          UI.toast(`⚠️ Falha ao carregar ${CONFIG_CAMADAS[id]?.nome || id}`);
+          return;
+        }
       }
       if (ligar) {
         if (!mapa.hasLayer(CAMADAS_MAPA[id])) CAMADAS_MAPA[id].addTo(mapa);
@@ -5430,6 +5602,25 @@
         if (mapa.hasLayer(CAMADAS_MAPA[id])) mapa.removeLayer(CAMADAS_MAPA[id]);
       }
       Styler.atualizarLegenda();
+
+      // ✅ M8: registra a ação
+      if (!opcoes.semHistorico && estadoAnterior !== ligar) {
+        const nome = CONFIG_CAMADAS[id]?.nome || id;
+        ActionHistory.registrar({
+          tipo: 'toggle-camada',
+          descricao: `${ligar ? 'Ligar' : 'Desligar'} camada "${nome}"`,
+          undo: () => {
+            const chk = document.getElementById(`chk-${id}`);
+            if (chk) chk.checked = estadoAnterior;
+            toggleCamada(id, estadoAnterior, { semHistorico: true });
+          },
+          redo: () => {
+            const chk = document.getElementById(`chk-${id}`);
+            if (chk) chk.checked = ligar;
+            toggleCamada(id, ligar, { semHistorico: true });
+          }
+        });
+      }
     }
 
     function zoomCamada(id) {
@@ -5926,8 +6117,21 @@
         container.insertBefore(card, container.firstChild);
       },
 
-      mudarSafra: async function(novoAno) {
+      mudarSafra: async function(novoAno, opcoes) {
+        opcoes = opcoes || {};
+        // Desliga o ano anterior do mapa
         const anoVelho = this.anoAtivo;
+
+        // ✅ M8: registra a ação (a não ser que seja um undo/redo)
+        if (!opcoes.semHistorico && anoVelho !== novoAno) {
+          const self = this;
+          ActionHistory.registrar({
+            tipo: 'mudar-safra-ven',
+            descricao: `Trocar safra VEN para ${novoAno.replace('ven_', '')}`,
+            undo: () => self.mudarSafra(anoVelho, { semHistorico: true }),
+            redo: () => self.mudarSafra(novoAno, { semHistorico: true })
+          });
+        }
         if (CAMADAS_MAPA[anoVelho] && mapa.hasLayer(CAMADAS_MAPA[anoVelho])) {
           mapa.removeLayer(CAMADAS_MAPA[anoVelho]);
         }
@@ -7804,9 +8008,7 @@ selecionarTudo: async function() {
       obterCanal: function() { return WebGIS_VERSION.canal; },
       obterCommit: function() { return WebGIS_VERSION.commit; }
     };
-
-    /* ============================================================
-       MÓDULO 17: FERRAMENTA DE MEDIÇÃO (M1)      
+     
     /* ============================================================
        MÓDULO 17: FERRAMENTA DE MEDIÇÃO (M1)
        ------------------------------------------------------------
@@ -7815,6 +8017,178 @@ selecionarTudo: async function() {
        - Raio: círculo com raio em km e área em km²
        Usa Turf.js (já carregado) para cálculos geodésicos precisos.
        ============================================================ */
+    /* ============================================================
+       MÓDULO 23: HISTÓRICO DE AÇÕES — UNDO / REDO (M8)
+       ------------------------------------------------------------
+       - Fila circular de 20 ações com {tipo, descricao, undo, redo}
+       - Pilha de undo (histórico) e redo (reaplicar)
+       - Flag `_aplicando` evita gravação durante undo/redo (loop infinito)
+       - Atalhos: Ctrl+Z (undo), Ctrl+Shift+Z ou Ctrl+Y (redo)
+       ============================================================ */
+    const ActionHistory = {
+      _historico: [],       // array de ações
+      _redoStack: [],       // array de ações para refazer
+      _maxAcoes: 20,
+      _aplicando: false,    // flag: true enquanto executa undo/redo
+
+      /* ---------- Registrar uma ação ---------- */
+      registrar: function(acao) {
+        if (this._aplicando) return;
+        if (!acao || typeof acao.undo !== 'function' || typeof acao.redo !== 'function') return;
+
+        // Limpa o redo stack (nova ação invalida o futuro)
+        this._redoStack = [];
+
+        // Adiciona ao histórico
+        this._historico.push({
+          tipo: acao.tipo || 'acao',
+          descricao: acao.descricao || 'Ação',
+          undo: acao.undo,
+          redo: acao.redo,
+          timestamp: Date.now()
+        });
+
+        // Respeita o limite (fila circular)
+        if (this._historico.length > this._maxAcoes) {
+          this._historico.shift();
+        }
+
+        this._atualizarUI();
+      },
+
+      /* ---------- Desfazer última ação ---------- */
+      undo: function() {
+        if (!this._historico.length) {
+          UI.toast('ℹ️ Nada para desfazer.');
+          return;
+        }
+
+        const acao = this._historico.pop();
+        this._aplicando = true;
+
+        try {
+          acao.undo();
+          this._redoStack.push(acao);
+
+          // Efeito visual no botão
+          const btn = document.getElementById('btn-undo');
+          if (btn) { btn.classList.add('flash'); setTimeout(() => btn.classList.remove('flash'), 400); }
+
+          UI.toast(`↶ Desfeito: <strong>${Security.escapeHTML(acao.descricao)}</strong>`);
+        } catch (e) {
+          console.error('[M8] Erro ao desfazer:', e);
+          UI.toast(`⚠️ Erro ao desfazer: ${e.message}`);
+        } finally {
+          this._aplicando = false;
+          this._atualizarUI();
+        }
+      },
+
+      /* ---------- Refazer última ação desfeita ---------- */
+      redo: function() {
+        if (!this._redoStack.length) {
+          UI.toast('ℹ️ Nada para refazer.');
+          return;
+        }
+
+        const acao = this._redoStack.pop();
+        this._aplicando = true;
+
+        try {
+          acao.redo();
+          this._historico.push(acao);
+
+          const btn = document.getElementById('btn-redo');
+          if (btn) { btn.classList.add('flash'); setTimeout(() => btn.classList.remove('flash'), 400); }
+
+          UI.toast(`↷ Refeito: <strong>${Security.escapeHTML(acao.descricao)}</strong>`);
+        } catch (e) {
+          console.error('[M8] Erro ao refazer:', e);
+          UI.toast(`⚠️ Erro ao refazer: ${e.message}`);
+        } finally {
+          this._aplicando = false;
+          this._atualizarUI();
+        }
+      },
+
+      /* ---------- Limpar histórico (útil em reload) ---------- */
+      limpar: function() {
+        this._historico = [];
+        this._redoStack = [];
+        this._atualizarUI();
+      },
+
+      /* ---------- Estado atual ---------- */
+      podeUndo: function() { return this._historico.length > 0; },
+      podeRedo: function() { return this._redoStack.length > 0; },
+
+      /* ---------- Utilitário: saber se está aplicando (para hooks externos) ---------- */
+      estaAplicando: function() { return this._aplicando; },
+
+      /* ---------- Atualiza botões e badges ---------- */
+      _atualizarUI: function() {
+        const btnUndo = document.getElementById('btn-undo');
+        const btnRedo = document.getElementById('btn-redo');
+        const badgeUndo = document.getElementById('badge-undo-count');
+        const badgeRedo = document.getElementById('badge-redo-count');
+
+        if (btnUndo) btnUndo.disabled = !this.podeUndo();
+        if (btnRedo) btnRedo.disabled = !this.podeRedo();
+
+        if (badgeUndo) {
+          if (this._historico.length > 0) {
+            badgeUndo.textContent = this._historico.length;
+            badgeUndo.classList.add('visivel');
+          } else {
+            badgeUndo.classList.remove('visivel');
+          }
+        }
+        if (badgeRedo) {
+          if (this._redoStack.length > 0) {
+            badgeRedo.textContent = this._redoStack.length;
+            badgeRedo.classList.add('visivel');
+          } else {
+            badgeRedo.classList.remove('visivel');
+          }
+        }
+      },
+
+      /* ---------- Descreve a última ação (para tooltip) ---------- */
+      obterUltimaDescricao: function() {
+        if (!this._historico.length) return null;
+        return this._historico[this._historico.length - 1].descricao;
+      },
+
+      /* ---------- Atalhos de teclado ---------- */
+      _configurarAtalhos: function() {
+        document.addEventListener('keydown', (ev) => {
+          const alvo = ev.target;
+          if (alvo && (alvo.tagName === 'INPUT' || alvo.tagName === 'TEXTAREA' || alvo.tagName === 'SELECT')) return;
+
+          // Ctrl+Z (ou Cmd+Z no Mac) — Undo
+          if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && ev.key.toLowerCase() === 'z') {
+            ev.preventDefault();
+            this.undo();
+            return;
+          }
+
+          // Ctrl+Shift+Z ou Ctrl+Y — Redo
+          if (((ev.ctrlKey || ev.metaKey) && ev.shiftKey && ev.key.toLowerCase() === 'z') ||
+              ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && ev.key.toLowerCase() === 'y')) {
+            ev.preventDefault();
+            this.redo();
+            return;
+          }
+        });
+      },
+
+      /* ---------- Inicialização ---------- */
+      init: function() {
+        this._configurarAtalhos();
+        this._atualizarUI();
+        console.info('[M8] Sistema de Undo/Redo pronto. Atalhos: Ctrl+Z (desfazer), Ctrl+Shift+Z (refazer).');
+      }
+    };
     const MeasurementTool = {
       modo: null,           // 'distancia' | 'area' | 'raio' | null
       pontos: [],           // array de L.LatLng clicados
@@ -8567,7 +8941,10 @@ selecionarTudo: async function() {
 
         console.info('[M5] Notificações ricas ativas.');
       } catch(e) { console.warn('[NotificationManager] init falhou:', e); }
-
+      // ✅ NOVO: M8 — Sistema de Undo/Redo
+      try {
+        ActionHistory.init();
+      } catch(e) { console.warn('[ActionHistory] init falhou:', e); }
       // ✅ NOVO: R2 — Handlers globais do modal de validação
       try {
         const modalVal = document.getElementById('modal-validacao');
