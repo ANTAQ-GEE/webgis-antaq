@@ -6733,45 +6733,70 @@
 
       obterSelecionadas: function() { return this._selecionadas.slice(); },
 
-      selecionarTudo: function() {
-        // Pega a camada ativa no dropdown (pode ser virtual 'ven')
+      selecionarTudo: async function() {
         const selCamada = document.getElementById('sel-camada-busca');
         if (!selCamada) return;
 
         const idVirtual = selCamada.value;
         let idCamada = idVirtual;
 
-        // Resolve camada virtual 'ven' → safra ativa
+        // ✅ Resolve camada virtual VEN → safra ativa
         if (idVirtual === 'ven') {
-          idCamada = (window.VENUnifiedManager && VENUnifiedManager.anoAtivo)
-            ? VENUnifiedManager.anoAtivo
-            : 'ven_2022';
+          const selPainel  = document.getElementById('sel-safra-ven-painel');
+          const selSub     = document.getElementById('filtro-subtipo-dinamico');
+          const safraPainel  = selPainel ? selPainel.value : null;
+          const safraSub     = selSub ? selSub.value : null;
+          const safraInterna = window.VENUnifiedManager ? VENUnifiedManager.anoAtivo : null;
+
+          // Prioridade: dropdown do painel > sub-filtro > variável interna
+          idCamada = safraPainel || safraSub || safraInterna || 'ven_2022';
+
+          console.log('[M2] selecionarTudo — safra resolvida:', idCamada,
+                      { safraPainel, safraSub, safraInterna });
+        }
+
+        // ✅ Garante que os dados estão em memória
+        if (!DADOS_GEOJSON_BRUTOS[idCamada]) {
+          UI.toast(`⏳ Carregando ${idCamada}...`);
+          try {
+            await DataManager.carregarCamada(idCamada);
+          } catch(e) {
+            UI.toast(`⚠️ Falha ao carregar ${idCamada}: ${e.message}`);
+            return;
+          }
         }
 
         const dados = DADOS_GEOJSON_BRUTOS[idCamada];
         if (!dados || !dados.features || !dados.features.length) {
-          UI.toast(`⚠️ Camada "${idCamada}" não carregada.`);
+          UI.toast(`⚠️ Camada ${idCamada} não tem feições.`);
           return;
         }
 
-        // Adiciona todas as features que ainda não estão na seleção
-        let adicionadas = 0;
+        // ✅ Limpa seleção anterior ANTES de adicionar
+        const anteriores = this._selecionadas.length;
+        this._selecionadas = [];
+        if (this._highlightLayer) {
+          try {
+            if (mapa.hasLayer(this._highlightLayer)) mapa.removeLayer(this._highlightLayer);
+          } catch(e) {}
+          this._highlightLayer = null;
+        }
+
+        // ✅ Adiciona todas as features da safra atual
         for (const f of dados.features) {
           const chave = this._chaveDe(f, idCamada);
-          if (!this._selecionadas.find(s => s.chaveUnica === chave)) {
-            this._selecionadas.push({ feature: f, camadaId: idCamada, chaveUnica: chave });
-            adicionadas++;
-          }
+          this._selecionadas.push({
+            feature: f,
+            camadaId: idCamada,
+            chaveUnica: chave
+          });
         }
 
         this._atualizarUI();
 
-        if (adicionadas > 0) {
-          const nomeCamada = CONFIG_CAMADAS[idCamada]?.nome || idCamada;
-          UI.toast(`🎯 ${adicionadas} feições de "${nomeCamada}" adicionadas à seleção (total: ${this._selecionadas.length}).`);
-        } else {
-          UI.toast(`ℹ️ Todas as feições de "${CONFIG_CAMADAS[idCamada]?.nome || idCamada}" já estavam selecionadas.`);
-        }
+        const nomeCamada = CONFIG_CAMADAS[idCamada]?.nome || idCamada;
+        const msgAnt = anteriores > 0 ? ` (${anteriores} anteriores removidas)` : '';
+        UI.toast(`🎯 ${this._selecionadas.length} feições de "${nomeCamada}" selecionadas${msgAnt}.`);
       },
 
       /* ---------- Ações do painel ---------- */
@@ -6932,76 +6957,62 @@
       },
 
       /* ---------- Seleciona TODAS as feições da camada ativa ---------- */
-      selecionarTudo: function() {
-        const selCamada = document.getElementById('sel-camada-busca');
-        if (!selCamada) return;
+selecionarTudo: async function() {
+  const selCamada = document.getElementById('sel-camada-busca');
+  if (!selCamada) return;
 
-        const idVirtual = selCamada.value;
-        let idCamada = idVirtual;
+  const idVirtual = selCamada.value;
+  let idCamada = idVirtual;
 
-        // Resolve camada virtual 'ven' → safra ativa
-        if (idVirtual === 'ven') {
-          idCamada = (window.VENUnifiedManager && VENUnifiedManager.anoAtivo)
-            ? VENUnifiedManager.anoAtivo
-            : 'ven_2022';
-        }
+  // Resolve camada virtual VEN → safra ativa
+  if (idVirtual === 'ven') {
+    const selPainel = document.getElementById('sel-safra-ven-painel');
+    const selSub = document.getElementById('filtro-subtipo-dinamico');
+    const safraPainel = selPainel ? selPainel.value : null;
+    const safraSub = selSub ? selSub.value : null;
+    const safraInterna = window.VENUnifiedManager ? VENUnifiedManager.anoAtivo : null;
 
-        const dados = DADOS_GEOJSON_BRUTOS[idCamada];
-        if (!dados || !dados.features || !dados.features.length) {
-          UI.toast(`⚠️ Camada "${idCamada}" não carregada.`);
-          return;
-        }
+    idCamada = safraPainel || safraSub || safraInterna || 'ven_2022';
+    console.log('[M2] selecionarTudo — safra resolvida:', idCamada, { safraPainel, safraSub, safraInterna });
+  }
 
-        // Adiciona todas as features que ainda não estão na seleção
-        let adicionadas = 0;
-        for (const f of dados.features) {
-          const chave = this._chaveDe(f, idCamada);
-          if (!this._selecionadas.find(s => s.chaveUnica === chave)) {
-            this._selecionadas.push({ feature: f, camadaId: idCamada, chaveUnica: chave });
-            adicionadas++;
-          }
-        }
+  // Garante que os dados estão carregados
+  if (!DADOS_GEOJSON_BRUTOS[idCamada]) {
+    UI.toast(`⏳ Carregando ${idCamada}...`);
+    try {
+      await DataManager.carregarCamada(idCamada);
+    } catch(e) {
+      UI.toast(`⚠️ Falha: ${e.message}`);
+      return;
+    }
+  }
 
-        this._atualizarUI();
+  const dados = DADOS_GEOJSON_BRUTOS[idCamada];
+  if (!dados || !dados.features || !dados.features.length) {
+    UI.toast(`⚠️ Camada ${idCamada} sem feições.`);
+    return;
+  }
 
-        if (adicionadas > 0) {
-          const nomeCamada = CONFIG_CAMADAS[idCamada]?.nome || idCamada;
-          UI.toast(`🎯 ${adicionadas} feições de "${nomeCamada}" adicionadas (total: ${this._selecionadas.length}).`);
-        } else {
-          UI.toast(`ℹ️ Todas as feições de "${CONFIG_CAMADAS[idCamada]?.nome || idCamada}" já estavam selecionadas.`);
-        }
-      },
+  // Limpa seleção anterior
+  const anteriores = this._selecionadas.length;
+  this._selecionadas = [];
+  if (this._highlightLayer && mapa.hasLayer(this._highlightLayer)) {
+    mapa.removeLayer(this._highlightLayer);
+    this._highlightLayer = null;
+  }
 
-      /* ---------- Zoom para a seleção atual ---------- */
-      zoomParaSelecao: function() {
-        if (!this._selecionadas.length) return;
-        try {
-          const grupo = L.featureGroup(
-            this._selecionadas.map(s => L.geoJSON(s.feature))
-          );
-          const bounds = grupo.getBounds();
-          if (bounds.isValid()) {
-            mapa.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
-          }
-        } catch(e) { console.warn('[M2] Erro ao fazer zoom:', e); }
-      },
+  // Adiciona todas as features
+  for (const f of dados.features) {
+    const chave = this._chaveDe(f, idCamada);
+    this._selecionadas.push({ feature: f, camadaId: idCamada, chaveUnica: chave });
+  }
 
-      /* ---------- Abrir tabela filtrada pela seleção ---------- */
-      abrirTabelaFiltrada: function() {
-        if (!this._selecionadas.length) return;
-        const camadaId = this._selecionadas[0].camadaId;
-        // Só permite tabela se todas forem da mesma camada
-        const todasMesma = this._selecionadas.every(s => s.camadaId === camadaId);
-        if (!todasMesma) {
-          UI.toast('⚠️ A seleção abrange múltiplas camadas. Selecione apenas uma.');
-          return;
-        }
-        const features = this._selecionadas.map(s => s.feature);
-        if (typeof TabelaManager !== 'undefined' && TabelaManager.abrirFiltrado) {
-          TabelaManager.abrirFiltrado(camadaId, features);
-        } else {
-          UI.toast('⚠️ Módulo de tabela indisponível.');
-        }
+  this._atualizarUI();
+
+  const nomeCamada = CONFIG_CAMADAS[idCamada]?.nome || idCamada;
+  const msgAnt = anteriores > 0 ? ` (${anteriores} anteriores removidas)` : '';
+  UI.toast(`🎯 ${this._selecionadas.length} feições de "${nomeCamada}" selecionadas${msgAnt}.`);
+}
       },
 
       /* ---------- Exportar seleção em CSV ---------- */
