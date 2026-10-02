@@ -2311,7 +2311,7 @@
     </div>
   </header>
 
-  <!-- Input escondido para importação de arquivos -->
+  <!-- Input escondido de importação (usado por ambos os botões) -->
   <input type="file" id="input-import" style="display:none"
          accept=".geojson,.json,.zip,.kml,.kmz,.gpkg,.geopackage,.shp,.dbf,.shx,.prj"
          multiple onchange="ImportManager.processar(this.files)">
@@ -5296,11 +5296,24 @@
         if (msgVazio) msgVazio.style.display = 'none';
 
         if (grupoEl) {
+          // ✅ Remove o "fechado" do PRÓPRIO #grupo-importadas (.secao-conteudo)
+          // O código antigo tentava remover de .secao (errado) e falhava silenciosamente.
+          grupoEl.classList.remove('fechado');
+
+          // ✅ Constrói o card da camada
           construirItemCamada(id, cfg, grupoEl);
+
           const cntBadge = document.getElementById(`cnt-${id}`);
           if (cntBadge) cntBadge.innerText = `(${geojson.features.length})`;
-          const sec = grupoEl.closest('.secao');
-          if (sec) sec.classList.remove('fechado');
+
+          // ✅ Força scroll da seção para mostrar o item recém-adicionado
+          setTimeout(() => {
+            const item = document.getElementById(`item-camada-${id}`);
+            if (item) {
+              item.style.display = 'flex';
+              item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }, 50);
         }
 
         Styler.atualizarLegenda();
