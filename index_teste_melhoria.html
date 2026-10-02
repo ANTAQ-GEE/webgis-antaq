@@ -2049,34 +2049,60 @@
       transform: translateX(-50%) !important;
     }
 
-    /* 9) ZOOM — fixo, canto inferior direito (abaixo das coordenadas) */
+    /* 9) ZOOM — fixo, à ESQUERDA do painel lateral */
     .leaflet-control-zoom {
       position: fixed !important;
       bottom: 16px !important;
-      right: 16px !important;
+      right: 396px !important;
       margin: 0 !important;
       z-index: 1900 !important;
+      border: 2px solid #0a2540 !important;
+      border-radius: 6px !important;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.35) !important;
+    }
+    .leaflet-control-zoom a {
+      background-color: #ffffff !important;
+      color: #0a2540 !important;
+      font-weight: 900 !important;
+      width: 34px !important;
+      height: 34px !important;
+      line-height: 34px !important;
+      font-size: 20px !important;
+    }
+    .leaflet-control-zoom a:hover {
+      background-color: #e0f2fe !important;
+      color: #0284c7 !important;
     }
 
-    /* Painel lateral: reduzido para nunca cobrir coordenadas (56px) */
+    /* Painel lateral: z-index abaixo dos controles fixos */
     .painel-lateral {
       max-height: calc(100vh - 64px - 130px) !important;
       z-index: 1800 !important;
+      overflow-y: auto !important;
     }
 
-    /* 10) COORDENADAS — fixo, caixa branca com texto preto */
-    .leaflet-control-coords {
-      position: fixed !important;
-      bottom: 56px !important;
+    /* Quando o painel está fechado, reaproxima o zoom do canto */
+    body.painel-fechado .leaflet-control-zoom {
       right: 16px !important;
+    }
+    body.painel-fechado .leaflet-control-coords {
+      right: 16px !important;
+    }
+
+    /* 10) COORDENADAS — fixo, à ESQUERDA do painel, caixa branca */
+    .leaflet-control-coords,
+    .leaflet-bottom.leaflet-right .leaflet-control-coords {
+      position: fixed !important;
+      bottom: 66px !important;
+      right: 396px !important;
       margin: 0 !important;
       z-index: 2000 !important;
 
       background: #ffffff !important;
       color: #0a2540 !important;
-      border: 1px solid #cbd5e1 !important;
+      border: 1px solid #94a3b8 !important;
       border-radius: 6px !important;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.15) !important;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18) !important;
       padding: 6px 12px !important;
       font-size: 11px !important;
       font-weight: 700 !important;
@@ -2087,15 +2113,6 @@
       align-items: center !important;
       gap: 10px !important;
       white-space: nowrap !important;
-    }
-
-    /* Remove qualquer estilo antigo aplicado pelo Leaflet */
-    .leaflet-bottom.leaflet-right .leaflet-control-coords {
-      position: fixed !important;
-      bottom: 56px !important;
-      right: 16px !important;
-      margin: 0 !important;
-      z-index: 2000 !important;
     }
 
     /* Rótulos e valores */
@@ -6882,7 +6899,161 @@
           }).addTo(mapa);
         } catch(e) { console.warn('[M2] Erro ao criar highlight:', e); }
       },
+      
+      /* ---------- Limpar seleção completa ---------- */
+      limpar: function(silencioso) {
+        // 1) Zera o array de selecionadas
+        this._selecionadas = [];
 
+        // 2) Remove o highlight do mapa (com verificação dupla)
+        if (this._highlightLayer) {
+          try {
+            if (mapa.hasLayer(this._highlightLayer)) {
+              mapa.removeLayer(this._highlightLayer);
+            }
+          } catch(e) { console.warn('[M2] Erro ao remover highlight:', e); }
+          this._highlightLayer = null;
+        }
+
+        // 3) Varre o pane de seleção procurando resíduos órfãos
+        try {
+          const paneSelecao = mapa.getPane('paneSelecao');
+          if (paneSelecao) paneSelecao.innerHTML = '';
+        } catch(e) { /* ignora */ }
+
+        // 4) Fecha o painel e zera o contador
+        const painel = document.getElementById('painel-selecao');
+        if (painel) painel.classList.remove('aberto');
+        const countEl = document.getElementById('selecao-count');
+        if (countEl) countEl.textContent = '0';
+
+        // 5) Feedback ao usuário
+        if (!silencioso) UI.toast('🗑️ Seleção limpa.');
+      },
+
+      /* ---------- Seleciona TODAS as feições da camada ativa ---------- */
+      selecionarTudo: function() {
+        const selCamada = document.getElementById('sel-camada-busca');
+        if (!selCamada) return;
+
+        const idVirtual = selCamada.value;
+        let idCamada = idVirtual;
+
+        // Resolve camada virtual 'ven' → safra ativa
+        if (idVirtual === 'ven') {
+          idCamada = (window.VENUnifiedManager && VENUnifiedManager.anoAtivo)
+            ? VENUnifiedManager.anoAtivo
+            : 'ven_2022';
+        }
+
+        const dados = DADOS_GEOJSON_BRUTOS[idCamada];
+        if (!dados || !dados.features || !dados.features.length) {
+          UI.toast(`⚠️ Camada "${idCamada}" não carregada.`);
+          return;
+        }
+
+        // Adiciona todas as features que ainda não estão na seleção
+        let adicionadas = 0;
+        for (const f of dados.features) {
+          const chave = this._chaveDe(f, idCamada);
+          if (!this._selecionadas.find(s => s.chaveUnica === chave)) {
+            this._selecionadas.push({ feature: f, camadaId: idCamada, chaveUnica: chave });
+            adicionadas++;
+          }
+        }
+
+        this._atualizarUI();
+
+        if (adicionadas > 0) {
+          const nomeCamada = CONFIG_CAMADAS[idCamada]?.nome || idCamada;
+          UI.toast(`🎯 ${adicionadas} feições de "${nomeCamada}" adicionadas (total: ${this._selecionadas.length}).`);
+        } else {
+          UI.toast(`ℹ️ Todas as feições de "${CONFIG_CAMADAS[idCamada]?.nome || idCamada}" já estavam selecionadas.`);
+        }
+      },
+
+      /* ---------- Zoom para a seleção atual ---------- */
+      zoomParaSelecao: function() {
+        if (!this._selecionadas.length) return;
+        try {
+          const grupo = L.featureGroup(
+            this._selecionadas.map(s => L.geoJSON(s.feature))
+          );
+          const bounds = grupo.getBounds();
+          if (bounds.isValid()) {
+            mapa.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
+          }
+        } catch(e) { console.warn('[M2] Erro ao fazer zoom:', e); }
+      },
+
+      /* ---------- Abrir tabela filtrada pela seleção ---------- */
+      abrirTabelaFiltrada: function() {
+        if (!this._selecionadas.length) return;
+        const camadaId = this._selecionadas[0].camadaId;
+        // Só permite tabela se todas forem da mesma camada
+        const todasMesma = this._selecionadas.every(s => s.camadaId === camadaId);
+        if (!todasMesma) {
+          UI.toast('⚠️ A seleção abrange múltiplas camadas. Selecione apenas uma.');
+          return;
+        }
+        const features = this._selecionadas.map(s => s.feature);
+        if (typeof TabelaManager !== 'undefined' && TabelaManager.abrirFiltrado) {
+          TabelaManager.abrirFiltrado(camadaId, features);
+        } else {
+          UI.toast('⚠️ Módulo de tabela indisponível.');
+        }
+      },
+
+      /* ---------- Exportar seleção em CSV ---------- */
+      exportarCSV: function() {
+        if (!this._selecionadas.length) { UI.toast('⚠️ Nenhuma feição selecionada.'); return; }
+
+        // Coleta todas as chaves únicas
+        const chaves = new Set();
+        this._selecionadas.forEach(s => {
+          Object.keys(s.feature.properties || {}).forEach(k => {
+            if (!['geom', 'geometry'].includes(k.toLowerCase())) chaves.add(k);
+          });
+        });
+        const colunas = [...chaves];
+
+        const linhas = [colunas.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')];
+        this._selecionadas.forEach(s => {
+          const p = s.feature.properties || {};
+          const row = colunas.map(c => {
+            const v = p[c] !== undefined && p[c] !== null ? p[c] : '';
+            return `"${String(v).replace(/"/g, '""')}"`;
+          });
+          linhas.push(row.join(';'));
+        });
+
+        const csv = '\uFEFF' + linhas.join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `selecao_${this._selecionadas.length}_feicoes_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        UI.toast(`📥 CSV com ${this._selecionadas.length} feições exportado.`);
+      },
+
+      /* ---------- Exportar seleção em GeoJSON ---------- */
+      exportarGeoJSON: function() {
+        if (!this._selecionadas.length) { UI.toast('⚠️ Nenhuma feição selecionada.'); return; }
+        const fc = {
+          type: 'FeatureCollection',
+          features: this._selecionadas.map(s => s.feature)
+        };
+        const blob = new Blob([JSON.stringify(fc, null, 2)], { type: 'application/geo+json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `selecao_${this._selecionadas.length}_feicoes_${new Date().toISOString().slice(0,10)}.geojson`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        UI.toast(`💾 GeoJSON com ${this._selecionadas.length} feições exportado.`);
+      },
       /* ---------- Chave única para identificar feição ---------- */
       _chaveDe: function(feature, camadaId) {
         const p = feature.properties || {};
