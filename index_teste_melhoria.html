@@ -2049,22 +2049,77 @@
       transform: translateX(-50%) !important;
     }
 
-    /* 9) ZOOM — posição fixa, canto inferior direito */
+    /* 9) ZOOM — fixo, canto inferior direito (abaixo das coordenadas) */
     .leaflet-control-zoom {
       position: fixed !important;
       bottom: 16px !important;
       right: 16px !important;
       margin: 0 !important;
-      z-index: 1300 !important;
+      z-index: 1900 !important;
     }
 
-    /* 10) COORDENADAS — posição fixa no canto inferior direito */
+    /* Painel lateral: reduzido para nunca cobrir coordenadas (56px) */
+    .painel-lateral {
+      max-height: calc(100vh - 64px - 130px) !important;
+      z-index: 1800 !important;
+    }
+
+    /* 10) COORDENADAS — fixo, caixa branca com texto preto */
     .leaflet-control-coords {
       position: fixed !important;
       bottom: 56px !important;
       right: 16px !important;
       margin: 0 !important;
-      z-index: 1400 !important;
+      z-index: 2000 !important;
+
+      background: #ffffff !important;
+      color: #0a2540 !important;
+      border: 1px solid #cbd5e1 !important;
+      border-radius: 6px !important;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15) !important;
+      padding: 6px 12px !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      font-family: 'Consolas', monospace !important;
+      letter-spacing: 0.3px !important;
+      backdrop-filter: none !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 10px !important;
+      white-space: nowrap !important;
+    }
+
+    /* Remove qualquer estilo antigo aplicado pelo Leaflet */
+    .leaflet-bottom.leaflet-right .leaflet-control-coords {
+      position: fixed !important;
+      bottom: 56px !important;
+      right: 16px !important;
+      margin: 0 !important;
+      z-index: 2000 !important;
+    }
+
+    /* Rótulos e valores */
+    .leaflet-control-coords .coords-rotulo {
+      color: #64748b !important;
+      font-size: 9.5px !important;
+      font-weight: 700 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.6px !important;
+    }
+    .leaflet-control-coords .coords-valor {
+      color: #0a2540 !important;
+      font-weight: 800 !important;
+    }
+    .leaflet-control-coords .coords-sep {
+      color: #cbd5e1 !important;
+      font-weight: 400 !important;
+    }
+    .leaflet-control-coords .btn-copiar-coords {
+      color: #64748b !important;
+      font-size: 12px !important;
+    }
+    .leaflet-control-coords .btn-copiar-coords:hover {
+      color: #0284c7 !important;
     }
 
     /* 11) ESCALA — escondida (a coordenada já dá a referência) */
@@ -6831,9 +6886,20 @@
       /* ---------- Chave única para identificar feição ---------- */
       _chaveDe: function(feature, camadaId) {
         const p = feature.properties || {};
-        const id = p.id || p.ID || p.gid || p.GID || p.objectid ||
-                   p.codigo || p.CODIGO || p.nome || p.NOME ||
-                   JSON.stringify(feature.geometry).substring(0, 100);
+
+        // ✅ Prioridade: campos de ID ÚNICOS por camada
+        let id = p.idhidrovia || p.idseq || p.id || p.ID ||
+                 p.gid || p.GID || p.objectid || p.codigo || p.CODIGO ||
+                 p.idm_origem || p.terrai_cod || p.cd_uc || p.codigo_uc;
+
+        // ✅ Fallback: combina nome + hash da geometria (garante unicidade)
+        if (!id) {
+          const nome = p.nome || p.NOME || p.NOME_INSTALACAO ||
+                       p.nome_rio || p.NOME_RIO || p.terrai_nom || '';
+          const geoHash = JSON.stringify(feature.geometry || '').substring(0, 200);
+          id = `${nome}::${geoHash}`;
+        }
+
         return `${camadaId}::${id}`;
       },
 
@@ -6994,13 +7060,10 @@
             ev.stopPropagation();
           }
 
-          // Ctrl+A seleciona tudo
-          if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'a') {
-            // Só dispara se não houver input/textarea focado
-            if (document.activeElement === document.body) {
-              ev.preventDefault();
-              this.selecionarTudo();
-            }
+          // ✅ Ctrl+Shift+A seleciona tudo (para não conflitar com Ctrl+A do navegador)
+          if ((ev.ctrlKey || ev.metaKey) && ev.shiftKey && ev.key.toLowerCase() === 'a') {
+            ev.preventDefault();
+            this.selecionarTudo();
           }
         });
       }
