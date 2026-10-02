@@ -6922,11 +6922,24 @@
       },
 
       _atualizarHighlight: function() {
+        // Remove highlight anterior com verificação dupla
         if (this._highlightLayer) {
-          mapa.removeLayer(this._highlightLayer);
+          try {
+            if (mapa.hasLayer(this._highlightLayer)) {
+              mapa.removeLayer(this._highlightLayer);
+            }
+          } catch(e) { console.warn('[M2] Erro ao remover highlight:', e); }
           this._highlightLayer = null;
         }
+
         if (!this._selecionadas.length) return;
+
+        // ✅ Confirma que a pane existe antes de desenhar
+        if (!mapa.getPane('paneSelecao')) {
+          mapa.createPane('paneSelecao');
+          mapa.getPane('paneSelecao').style.zIndex = 650;
+          mapa.getPane('paneSelecao').style.pointerEvents = 'none';
+        }
 
         try {
           const fc = {
@@ -6985,11 +6998,10 @@
           this._highlightLayer = null;
         }
 
-        // 3) Varre o pane de seleção procurando resíduos órfãos
-        try {
-          const paneSelecao = mapa.getPane('paneSelecao');
-          if (paneSelecao) paneSelecao.innerHTML = '';
-        } catch(e) { /* ignora */ }
+        // 3) ✅ NÃO mexer no innerHTML da pane!
+        // O Leaflet mantém referência interna aos layers. Limpar o DOM
+        // diretamente quebra a sincronização e impede que novos highlights
+        // sejam renderizados. A remoção do _highlightLayer já é suficiente.
 
         // 4) Fecha o painel e zera o contador
         const painel = document.getElementById('painel-selecao');
