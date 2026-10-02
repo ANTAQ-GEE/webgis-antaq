@@ -4788,40 +4788,79 @@
        ============================================================ */
     const ExportManager = {
       exportarGeoJSON: function(id) {
-        const dados = DADOS_GEOJSON_BRUTOS[id];
-        if (!dados || !dados.features || !dados.features.length) { UI.toast("⚠️ Nenhum dado carregado."); return; }
-        const cfg = CONFIG_CAMADAS[id] || {};
-        const slug = String(cfg.nome || id).toLowerCase().replace(/[^a-z0-9]+/g, '_');
-        const nomeArquivo = `${slug}_${new Date().toISOString().slice(0,10)}.geojson`;
-        const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/geo+json;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = nomeArquivo;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        UI.toast(`💾 Camada exportada: ${nomeArquivo}`);
-      },
-
-      /* ✅ CORRIGIDO: pega dados do MatrizVENManager */
-      baixarPlanilhaExcel: function() {
-        const dados = MatrizVENManager.dadosCompletos;
-        const ano = MatrizVENManager.anoAtual || 'ven_2022';
-        if (!dados || !dados.length) {
-          UI.toast("⚠️ Nenhum dado carregado para a safra selecionada.");
+        const dados = DADOS_GEOJSON_BRUTOS[idCamada];
+        if (!dados || !dados.features || !dados.features.length) {
+          UI.toast(`⚠️ Camada ${idCamada} não tem feições.`);
           return;
         }
-        let csv = "\uFEFFID_HIDROVIA;NOME_HIDROVIA;RIO;MUNICIPIO_ORIGEM;UF_ORIGEM;MUNICIPIO_DESTINO;UF_DESTINO;EXTENSAO_KM;VELOCIDADE_KMH;TEMPO_ESTIMADO;TIPO_VIA;ECLUSA\n";
-        dados.forEach(d => {
-          csv += `"${d.idhidrovia}";"${d.nome}";"${d.rio}";"${d.mun_orig}";"${d.est_orig}";"${d.mun_dest}";"${d.est_dest}";"${d.extensao}";"${d.velocidade}";"${d.tempo}";"${d.tipo}";"${d.eclusa}"\n`;
-        });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `ANTAQ_Planilha_Oficial_${ano.toUpperCase()}_Caminhos_Minimos.csv`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        UI.toast(`💾 Planilha Oficial ${ano.toUpperCase()} gerada com sucesso!`);
+
+        // ✅ Respeita o filtro ativo (só pega o que está VISÍVEL no mapa)
+        let featuresFiltradas = dados.features;
+
+        // Filtro de portos (por regime)
+        if (idCamada === 'instalacoes_portuarias') {
+          const filtroPorto = window.FILTRO_PORTO_ATUAL || 'TODOS';
+          if (filtroPorto !== 'TODOS') {
+            featuresFiltradas = featuresFiltradas.filter(f =>
+              PortClassification.classificar(f.properties || {}).id === filtroPorto
+            );
+          }
+        }
+
+        // Filtro de UCs (por esfera)
+        if (idCamada === 'ucs_todas_mma') {
+          const filtroUC = window.FILTRO_UC_ATUAL || 'TODOS';
+          if (filtroUC !== 'TODOS') {
+            featuresFiltradas = featuresFiltradas.filter(f =>
+              classificarEsfera(f.properties).id === filtroUC
+            );
+          }
+        }
+
+        // Filtro de esfera genérico (outras camadas com dropdown dinâmico)
+        const selSub = document.getElementById('filtro-subtipo-dinamico');
+        if (selSub && selSub.value && selSub.value !== 'TODOS' &&
+            idCamada !== 'instalacoes_portuarias' && idCamada !== 'ucs_todas_mma' &&
+            !idCamada.startsWith('ven_')) {
+          const colunaFiltro = FilterManager.colunaEsferaAtiva;
+          if (colunaFiltro) {
+            featuresFiltradas = featuresFiltradas.filter(f =>
+              String(f.properties?.[colunaFiltro] || '').trim() === selSub.value
+            );
+          }
+        }
+
+        if (!featuresFiltradas.length) {
+          UI.toast(`⚠️ Nenhuma feição corresponde ao filtro ativo.`);
+          return;
+        }
+
+        // ✅ Limpa seleção anterior ANTES de adicionar
+        const anteriores = this._selecionadas.length;
+        this._selecionadas = [];
+        if (this._highlightLayer) {
+          try {
+            if (mapa.hasLayer(this._highlightLayer)) mapa.removeLayer(this._highlightLayer);
+          } catch(e) {}
+          this._highlightLayer = null;
+        }
+
+        // ✅ Adiciona apenas as features FILTRADAS
+        for (const f of featuresFiltradas) {
+          const chave = this._chaveDe(f, idCamada);
+          this._selecionadas.push({
+            feature: f,
+            camadaId: idCamada,
+            chaveUnica: chave
+          });
+        }
+
+        this._atualizarUI();
+
+        const nomeCamada = CONFIG_CAMADAS[idCamada]?.nome || idCamada;
+        const filtroAtivo = window.FILTRO_PORTO_ATUAL !== 'TODOS' ? ` (filtro: ${window.FILTRO_PORTO_ATUAL})` : '';
+        const msgAnt = anteriores > 0 ? ` [${anteriores} anteriores removidas]` : '';
+        UI.toast(`🎯 ${this._selecionadas.length} feições${filtroAtivo} de "${nomeCamada}"${msgAnt}.`);
       },
 
       exportarCSV: function() {
