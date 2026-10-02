@@ -2311,6 +2311,11 @@
     </div>
   </header>
 
+  <!-- Input escondido para importação de arquivos -->
+  <input type="file" id="input-import" style="display:none"
+         accept=".geojson,.json,.zip,.kml,.kmz,.gpkg,.geopackage,.shp,.dbf,.shx,.prj"
+         multiple onchange="ImportManager.processar(this.files)">
+
   <!-- DROPDOWN DE AMBIENTE -->
   <div class="dropdown-homologacao" id="drop-ambiente">
     <div class="drop-item ativo" id="item-env-homolog" onclick="AmbienteManager.definir('homologacao')">
@@ -7568,21 +7573,30 @@ selecionarTudo: async function() {
 
       /* ---------- Teclado ---------- */
       _configurarTeclado: function() {
+        const self = this;
         document.addEventListener('keydown', (ev) => {
-          if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT' || ev.target.tagName === 'TEXTAREA') return;
+          // Ignora se estiver digitando em input/textarea
+          const tag = (ev.target && ev.target.tagName) || '';
+          if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
 
           // ESC limpa seleção
-          if (ev.key === 'Escape' && this.temSelecao()) {
-            this.limpar();
-            ev.stopPropagation();
+          if (ev.key === 'Escape') {
+            // Se houver seleção ativa, limpa
+            if (self._selecionadas && self._selecionadas.length > 0) {
+              console.log('[M2] ESC detectado — limpando', self._selecionadas.length, 'feições');
+              self.limpar();
+              ev.preventDefault();
+              ev.stopPropagation();
+              return;
+            }
           }
 
-          // ✅ Ctrl+Shift+A seleciona tudo (para não conflitar com Ctrl+A do navegador)
+          // Ctrl+Shift+A seleciona tudo
           if ((ev.ctrlKey || ev.metaKey) && ev.shiftKey && ev.key.toLowerCase() === 'a') {
             ev.preventDefault();
-            this.selecionarTudo();
+            self.selecionarTudo();
           }
-        });
+        }, true);   // ← CAPTURE PHASE: garante que roda antes de outros listeners
       }
     };
 
