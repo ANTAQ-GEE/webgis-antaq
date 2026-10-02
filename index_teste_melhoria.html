@@ -8516,11 +8516,13 @@ selecionarTudo: async function() {
         const nomes = { distancia: '📏 Distância total', area: '⬛ Área total', raio: '⭕ Raio' };
         rotulo.textContent = nomes[modo] || 'Medição';
 
-        if (modo === 'area' || modo === 'raio') {
+        if (modo === 'area') {
+          // Área em km²/m²
           valorEl.textContent = valor >= 1_000_000 ? `${(valor / 1_000_000).toFixed(3)} km²`
                              : valor >= 1000 ? `${(valor / 1000).toFixed(2)} km²`
                              : `${valor.toFixed(2)} m²`;
         } else {
+          // Distância (raio ou distância) em km/m
           valorEl.textContent = valor >= 1000 ? `${(valor / 1000).toFixed(3)} km`
                              : `${valor.toFixed(1)} m`;
         }
