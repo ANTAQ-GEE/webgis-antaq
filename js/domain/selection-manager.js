@@ -33,6 +33,9 @@
     },
 
     toggle: function (feature, camadaId) {
+      // Fecha o popup do Leaflet (senão ele fica "grudado" na tela)
+      if (window.mapa && window.mapa.closePopup) window.mapa.closePopup();
+
       const chave = this._chaveDe(feature, camadaId);
       const idx = this._selecionadas.findIndex(s => s.chaveUnica === chave);
 
