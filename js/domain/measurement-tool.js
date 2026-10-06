@@ -209,7 +209,54 @@
       }
       return melhor;
     },
+    /**
+     * Verifica se o clique caiu "dentro" de algum marker visível no mapa.
+     * Retorna o L.LatLng do centro do marker se sim, ou null se não.
+     * Marcadores têm prioridade sobre snap de vértices genéricos.
+     */
+    _detectarMarkerNoClique: function (screenPoint, toleranciaPx) {
+      toleranciaPx = toleranciaPx || 15;
+      let melhor = null;
+      let menorDist = toleranciaPx;
 
+      const verificar = (layer) => {
+        if (!layer || typeof layer.getLatLng !== 'function') return;
+        // Só considera markers — polylines/polygons têm getLatLngs
+        if (typeof layer.getLatLngs === 'function') return;
+
+        try {
+          const ll = layer.getLatLng();
+          const sp = window.mapa.latLngToContainerPoint(ll);
+          const d = sp.distanceTo(screenPoint);
+          // Considera o raio visual do próprio marker (CircleMarker)
+          const raioMarker = (layer.getRadius && layer.getRadius()) || 6;
+          const toleranciaReal = Math.max(toleranciaPx, raioMarker + 3);
+          if (d < toleranciaReal && d < menorDist + raioMarker) {
+            menorDist = d;
+            melhor = ll;
+          }
+        } catch (e) { /* ignora */ }
+      };
+
+      // Percorre todas as camadas visíveis
+      for (const [id, camada] of Object.entries(window.CAMADAS_MAPA)) {
+        if (!window.mapa.hasLayer(camada)) continue;
+        try {
+          if (typeof camada.eachLayer === 'function') {
+            camada.eachLayer(sub => {
+              // Desce um nível pra pegar clusters
+              if (sub && typeof sub.eachLayer === 'function' && typeof sub.getLatLng !== 'function') {
+                sub.eachLayer(inner => verificar(inner));
+              } else {
+                verificar(sub);
+              }
+            });
+          }
+        } catch (e) { /* ignora */ }
+      }
+
+      return melhor;
+    },
     _mostrarIndicadorSnap: function (vertice) {
       this._removerIndicadorSnap();
       if (!vertice) return;
@@ -309,9 +356,33 @@
           // Converte coordenadas de tela → latlng
           const rect = container.getBoundingClientRect();
           const point = L.point(domEvent.clientX - rect.left, domEvent.clientY - rect.top);
-          const latlng = window.mapa.containerPointToLatLng(point);
 
-          console.log('[M1-click] latlng:', latlng, 'target:', domEvent.target.tagName);
+          // ✅ PRIORIDADE 1: clique dentro de um marker (porto, embarcação, etc.)
+          // Se o clique caiu "dentro" de um CircleMarker, usa o centro exato dele
+          const markerExato = self._detectarMarkerNoClique(point, 15);
+
+          // ✅ PRIORIDADE 2: snap em vértices
+          const latlngBase = markerExato || window.mapa.containerPointToLatLng(point);
+          const snapVertice = self._snapPoint
+            ? L.latLng(self._snapPoint.lat, self._snapPoint.lng)
+            : null;
+
+          // Se marcador + snap estiverem perto, marcador vence
+          let latlng = latlngBase;
+          if (snapVertice && markerExato) {
+            const dMarker = window.mapa.latLngToContainerPoint(markerExato).distanceTo(point);
+            const dSnap = window.mapa.latLngToContainerPoint(snapVertice).distanceTo(point);
+            latlng = dMarker <= dSnap ? markerExato : snapVertice;
+          } else if (markerExato) {
+            latlng = markerExato;
+          } else if (snapVertice) {
+            latlng = snapVertice;
+          }
+
+          // Se achou marcador, também atualiza o snapPoint pra ficar consistente
+          if (markerExato) {
+            self._snapPoint = { lat: markerExato.lat, lng: markerExato.lng, camada: 'marker' };
+          }
 
           domEvent.stopPropagation();
           domEvent.preventDefault();
