@@ -8,9 +8,9 @@
   'use strict';
 
   const WebGIS_VERSION = {
-    versao: '0.9.10',
+    versao: '1.0.0',
     canal: 'teste',                    // 'teste' | 'producao'
-    build: '2026.10.05',
+    build: '2026.10.06',
     commit: 'a3f8b2c',                 // ← troque pelo hash real após o commit
     atualizado: '05/10/2026',
     responsavel: 'GEE/SEPH — Gerência Especial de Estudos',
@@ -44,6 +44,7 @@
         ]
       },
       {
+         
         versao: '0.9.0',
         canal: 'teste',
         data: '2026-09-30',
@@ -53,8 +54,19 @@
           'G1 — Agrupamento inteligente de pontos (MarkerCluster)',
           'G3 — Persistência de estado na URL',
           'Impressão — Layout limpo para PDF/papel'
+           
         ]
-      }
+      },
+      {  versao: '1.0.0',
+         canal: 'teste',
+         data: '2026-10-06',
+         notas: [
+            'Marco v1.0 — Fase 1 do roadmap completa',
+            'R1 (modularização), R3 (retry), GD3 (diff), Q1(A) (smoke tests)',
+            'Publicação contínua no GitHub Pages'
+       ]
+      },
+   
     ]
   };
 
