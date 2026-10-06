@@ -56,11 +56,17 @@
         <div class="gaveta-painel" id="gaveta-ven-unificado" style="background:#f8fafc;">
           <div class="linha-ajuste">
             <span>Opacidade:</span>
-            <input type="range" min="0.1" max="1" step="0.05" value="0.9" oninput="VENUnifiedManager.atualizarOpacidade(parseFloat(this.value))">
+            <input type="range" min="0.1" max="1" step="0.05" value="${CONFIG_CAMADAS[this.anoAtivo]?.opacidade ?? 0.9}"
+                   oninput="this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'"
+                   onchange="VENUnifiedManager.atualizarOpacidade(parseFloat(this.value))">
+            <span style="min-width:35px; text-align:right; font-size:10px;">${Math.round((CONFIG_CAMADAS[this.anoAtivo]?.opacidade ?? 0.9) * 100)}%</span>
           </div>
           <div class="linha-ajuste">
             <span>Espessura:</span>
-            <input type="range" min="1" max="8" step="0.5" value="2.8" oninput="VENUnifiedManager.atualizarPeso(parseFloat(this.value))">
+            <input type="range" min="1" max="8" step="0.5" value="${CONFIG_CAMADAS[this.anoAtivo]?.peso ?? 2.8}"
+                   oninput="this.nextElementSibling.innerText = this.value + 'px'"
+                   onchange="VENUnifiedManager.atualizarPeso(parseFloat(this.value))">
+            <span style="min-width:35px; text-align:right; font-size:10px;">${CONFIG_CAMADAS[this.anoAtivo]?.peso ?? 2.8}px</span>
           </div>
         </div>`;
       container.insertBefore(card, container.firstChild);
@@ -156,16 +162,50 @@
       if (window.Styler) window.Styler.atualizarLegenda();
     },
 
-    atualizarOpacidade: function (val) {
-      const ano = this.anoAtivo;
-      if (CONFIG_CAMADAS[ano]) CONFIG_CAMADAS[ano].opacidade = val;
-      if (CAMADAS_MAPA[ano]) CAMADAS_MAPA[ano].setStyle({ opacity: val });
+    atualizarOpacidade: function (val, opcoes) {
+      opcoes = opcoes || {};
+      const ano = opcoes.anoOverride || this.anoAtivo;
+      if (!CONFIG_CAMADAS[ano]) return;
+
+      const valorAnterior = CONFIG_CAMADAS[ano].opacidade;
+
+      if (!opcoes.semHistorico && valorAnterior !== val && window.ActionHistory) {
+        const self = this;
+        window.ActionHistory.registrar({
+          tipo: 'ven-opacidade',
+          descricao: `Alterar opacidade de VEN ${ano.replace('ven_', '')}`,
+          undo: () => self.atualizarOpacidade(valorAnterior, { semHistorico: true, anoOverride: ano }),
+          redo: () => self.atualizarOpacidade(val, { semHistorico: true, anoOverride: ano })
+        });
+      }
+
+      CONFIG_CAMADAS[ano].opacidade = val;
+      if (CAMADAS_MAPA[ano] && CAMADAS_MAPA[ano].setStyle) {
+        CAMADAS_MAPA[ano].setStyle({ opacity: val });
+      }
     },
 
-    atualizarPeso: function (val) {
-      const ano = this.anoAtivo;
-      if (CONFIG_CAMADAS[ano]) CONFIG_CAMADAS[ano].peso = val;
-      if (CAMADAS_MAPA[ano]) CAMADAS_MAPA[ano].setStyle({ weight: val });
+    atualizarPeso: function (val, opcoes) {
+      opcoes = opcoes || {};
+      const ano = opcoes.anoOverride || this.anoAtivo;
+      if (!CONFIG_CAMADAS[ano]) return;
+
+      const valorAnterior = CONFIG_CAMADAS[ano].peso;
+
+      if (!opcoes.semHistorico && valorAnterior !== val && window.ActionHistory) {
+        const self = this;
+        window.ActionHistory.registrar({
+          tipo: 'ven-peso',
+          descricao: `Alterar espessura de VEN ${ano.replace('ven_', '')}`,
+          undo: () => self.atualizarPeso(valorAnterior, { semHistorico: true, anoOverride: ano }),
+          redo: () => self.atualizarPeso(val, { semHistorico: true, anoOverride: ano })
+        });
+      }
+
+      CONFIG_CAMADAS[ano].peso = val;
+      if (CAMADAS_MAPA[ano] && CAMADAS_MAPA[ano].setStyle) {
+        CAMADAS_MAPA[ano].setStyle({ weight: val });
+      }
     }
   };
 
