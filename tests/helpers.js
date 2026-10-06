@@ -3,7 +3,7 @@
  * Última atualização: 2026-10-05
  */
 
-const ARQUIVO_ALVO = '/index_teste_melhoria.html';
+const ARQUIVO_ALVO = '/index.html';
 
 /**
  * Ruídos que NÃO devem falhar o smoke test:

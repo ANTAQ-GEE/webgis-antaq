@@ -87,7 +87,7 @@
         <div style="font-size:10px; color:#64748b; margin-bottom:6px; line-height:1.3;"><i>💡 Camada multicategórica: cores definidas individualmente acima.</i></div>
         <div class="linha-ajuste">
           <span>Opacidade Geral:</span>
-          <input type="range" min="0.1" max="1" step="0.05" value="${cfg.opacidade}" oninput="this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'; Styler.atualizar('${id}', 'opacidade', parseFloat(this.value))">
+          <input type="range" min="0.1" max="1" step="0.05" value="${cfg.opacidade}" oninput="this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'" onchange="Styler.atualizar('${id}', 'opacidade', parseFloat(this.value))">
           <span style="min-width:35px; text-align:right;">${Math.round(cfg.opacidade * 100)}%</span>
         </div>
         <div class="linha-ajuste">
@@ -102,12 +102,12 @@
         </div>
         <div class="linha-ajuste">
           <span>Opacidade:</span>
-          <input type="range" min="0.1" max="1" step="0.05" value="${cfg.opacidade}" oninput="this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'; Styler.atualizar('${id}', 'opacidade', parseFloat(this.value))">
+          <input type="range" min="0.1" max="1" step="0.05" value="${cfg.opacidade}" oninput="this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'" onchange="Styler.atualizar('${id}', 'opacidade', parseFloat(this.value))">
           <span style="min-width:35px; text-align:right;">${Math.round(cfg.opacidade * 100)}%</span>
         </div>
         <div class="linha-ajuste">
           <span>Espessura / Raio:</span>
-          <input type="range" min="1" max="12" step="0.5" value="${cfg.peso}" oninput="this.nextElementSibling.innerText = this.value + 'px'; Styler.atualizar('${id}', 'peso', parseFloat(this.value))">
+          <input type="range" min="1" max="12" step="0.5" value="${cfg.peso}" oninput="this.nextElementSibling.innerText = this.value + 'px'" onchange="Styler.atualizar('${id}', 'peso', parseFloat(this.value))">
           <span style="min-width:35px; text-align:right;">${cfg.peso}px</span>
         </div>`;
 

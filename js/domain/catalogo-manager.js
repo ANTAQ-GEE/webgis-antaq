@@ -22,13 +22,39 @@
       try { localStorage.setItem(this.storageKey, JSON.stringify(lista)); } catch (e) {}
     },
 
-    ocultarCamada: function (id) {
+    ocultarCamada: function (id, opcoes) {
+      opcoes = opcoes || {};
       const cfg = CONFIG_CAMADAS[id];
       const nome = cfg ? cfg.nome : id;
       const chk = document.getElementById(`chk-${id}`);
+      const estavaLigada = chk ? chk.checked : false;
+
+      if (!opcoes.semHistorico && window.ActionHistory) {
+        const self = this;
+        window.ActionHistory.registrar({
+          tipo: 'ocultar-camada',
+          descricao: `Retirar camada "${nome}" do painel`,
+          undo: () => {
+            self.adicionarCamadaAoPainel(id, { semHistorico: true });
+            if (estavaLigada) {
+              const c = document.getElementById(`chk-${id}`);
+              if (c && !c.checked) {
+                c.checked = true;
+                if (typeof window.toggleCamada === 'function') {
+                  window.toggleCamada(id, true, { semHistorico: true });
+                }
+              }
+            }
+          },
+          redo: () => self.ocultarCamada(id, { semHistorico: true })
+        });
+      }
+
       if (chk && chk.checked) {
         chk.checked = false;
-        if (typeof window.toggleCamada === 'function') window.toggleCamada(id, false);
+        if (typeof window.toggleCamada === 'function') {
+          window.toggleCamada(id, false, { semHistorico: true });
+        }
       }
 
       const el = document.getElementById(`item-camada-${id}`);
@@ -42,7 +68,21 @@
       if (window.UI) window.UI.toast(`Camada "${nome}" retirada. Readicione em "➕ Adicionar".`);
     },
 
-    adicionarCamadaAoPainel: function (id) {
+    adicionarCamadaAoPainel: function (id, opcoes) {
+      opcoes = opcoes || {};
+      const cfg = CONFIG_CAMADAS[id];
+      const nome = cfg ? cfg.nome : id;
+
+      if (!opcoes.semHistorico && window.ActionHistory) {
+        const self = this;
+        window.ActionHistory.registrar({
+          tipo: 'adicionar-camada',
+          descricao: `Readicionar camada "${nome}" ao painel`,
+          undo: () => self.ocultarCamada(id, { semHistorico: true }),
+          redo: () => self.adicionarCamadaAoPainel(id, { semHistorico: true })
+        });
+      }
+
       const el = document.getElementById(`item-camada-${id}`);
       if (el) el.style.display = 'flex';
       const ocultas = this.obterOcultas().filter(x => x !== id);

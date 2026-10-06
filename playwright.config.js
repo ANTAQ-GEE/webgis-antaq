@@ -45,7 +45,7 @@ module.exports = defineConfig({
   // Usa Python (já é pré-requisito do projeto).
   webServer: {
     command: `python -m http.server ${PORTA} --bind 127.0.0.1`,
-    url: `${BASE_URL}/index_teste_melhoria.html`,
+    url: `${BASE_URL}/index.html`,
     reuseExistingServer: !process.env.CI,
     timeout: 20_000,
     stdout: 'ignore',
