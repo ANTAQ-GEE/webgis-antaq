@@ -2954,6 +2954,11 @@
   <!-- FIM do painel do Copiloto — SEM duplicação -->
 
   <!-- FERRAMENTA DE MEDIÇÃO (M1) -->
+  <div class="toolbar-medicao" id="toolbar-medicao">
+    <div class="toolbar-medicao-header" onclick="document.getElementById('toolbar-medicao').classList.toggle('recolhida')">
+      <span>📐 Medição</span>
+      <span class="toggle-icon">▼</span>
+    </div>
     <div class="toolbar-medicao-corpo">
       <button class="btn-medicao" id="btn-medir-distancia" onclick="MeasurementTool.ativar('distancia')" title="Medir distância entre pontos">
         📏 Distância
