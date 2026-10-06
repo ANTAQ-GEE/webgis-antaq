@@ -136,21 +136,30 @@
       console.info(`[M1] Snap: ${this._snapTotal} vértices em ${celulas} células (${duracao}ms)`);
     },
 
-    _extrairVerticesDe: function (sub, camadaId) {
+    _extrairVerticesDe: function (sub, camadaId, profundidade) {
       if (!sub) return;
+      profundidade = profundidade || 0;
+      if (profundidade > 5) return; // proteção anti-loop
 
-      // Circle marker / Marker (ponto isolado)
+      // 1) Marker ou CircleMarker com posição única
       if (typeof sub.getLatLng === 'function' && typeof sub.getLatLngs !== 'function') {
         try { this._adicionarVertice(sub.getLatLng(), camadaId); } catch (e) {}
         return;
       }
 
-      // Polyline / Polygon
+      // 2) Polyline / Polygon
       if (typeof sub.getLatLngs === 'function') {
         try { this._percorrerLatLngs(sub.getLatLngs(), camadaId); } catch (e) {}
+        return;
+      }
+
+      // 3) ✅ LayerGroup / FeatureGroup / MarkerClusterGroup — recursão
+      if (typeof sub.eachLayer === 'function') {
+        try {
+          sub.eachLayer(inner => this._extrairVerticesDe(inner, camadaId, profundidade + 1));
+        } catch (e) { /* ignora */ }
       }
     },
-
     _percorrerLatLngs: function (arr, camadaId) {
       if (!Array.isArray(arr)) return;
       for (const item of arr) {

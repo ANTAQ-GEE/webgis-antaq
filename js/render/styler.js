@@ -145,6 +145,8 @@
                   if (l.setStyle && l._origStyle) l.setStyle(l._origStyle);
                 },
                 click: e => {
+                  if (window.MeasurementTool && window.MeasurementTool.modo) return;
+                  if (window.CopilotoIA) window.CopilotoIA.ultimoAtivoInspecionado = f;
                   if (window.CopilotoIA) window.CopilotoIA.ultimoAtivoInspecionado = f;
 
                   if (e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey)) {
