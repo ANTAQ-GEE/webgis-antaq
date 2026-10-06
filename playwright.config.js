@@ -8,7 +8,18 @@ const BASE_URL = `http://127.0.0.1:${PORTA}`;
 module.exports = defineConfig({
   testDir: './tests',
   timeout: 30_000,
-  expect: { timeout: 10_000 },
+  expect: {
+    timeout: 10_000,
+    toHaveScreenshot: {
+      maxDiffPixels: 150,
+      animations: 'disabled',
+      caret: 'hide',
+      scale: 'css'
+    }
+  },
+
+  // Snapshots organizados por spec
+  snapshotPathTemplate: '{testDir}/__screenshots__/{testFileName}-snapshots/{arg}{ext}',
 
   // Smoke test toca um estado global (CONFIG_CAMADAS, mapa Leaflet).
   // Rodar em 1 worker evita condição de corrida entre specs.

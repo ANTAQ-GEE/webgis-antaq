@@ -100,9 +100,199 @@ async function lerGlobal(page, nomeVariavel) {
   }, nomeVariavel);
 }
 
+/**
+ * Prepara a página para screenshot determinístico.
+ * - Espera fontes carregarem
+ * - Desliga animações
+ * - Esconde o relógio do rodapé (muda toda hora)
+ */
+async function prepararParaScreenshot(page) {
+  // Espera fontes
+  await page.evaluate(() => document.fonts && document.fonts.ready);
+
+  // Desliga animações via CSS
+  await page.addStyleTag({
+    content: `
+      *, *::before, *::after {
+        animation-duration: 0s !important;
+        animation-delay: 0s !important;
+        transition-duration: 0s !important;
+        transition-delay: 0s !important;
+      }
+      .notificacao .notif-progresso span {
+        display: none !important;
+      }
+    `
+  });
+
+  // Fecha notificações residuais
+  await page.evaluate(() => {
+    const c = document.getElementById('notificacoes-container');
+    if (c) c.innerHTML = '';
+  });
+
+  await page.waitForTimeout(300);
+}
+
+/**
+ * Mascara elementos que mudam com o tempo (relógios, versões, coords).
+ * Retorna o array pronto pro `toHaveScreenshot({ mask: ... })`.
+ */
+function mascararDinamicos(page) {
+  return [
+    page.locator('#rodape-build'),        // "build 2026.10.06 · hash"
+    page.locator('#rodape-dados'),        // "Dados: 06/10/2026"
+    page.locator('.leaflet-control-coords'),  // LAT/LNG no canto
+    page.locator('.leaflet-control-minimap')  // tiles do minimap
+  ];
+}
+
+/**
+ * Prepara a página para screenshot determinístico.
+ * - Espera fontes carregarem
+ * - Desliga animações
+ * - Esconde o relógio do rodapé (muda toda hora)
+ */
+async function prepararParaScreenshot(page) {
+  // Espera fontes
+  await page.evaluate(() => document.fonts && document.fonts.ready);
+
+  // Desliga animações via CSS
+  await page.addStyleTag({
+    content: `
+      *, *::before, *::after {
+        animation-duration: 0s !important;
+        animation-delay: 0s !important;
+        transition-duration: 0s !important;
+        transition-delay: 0s !important;
+      }
+      .notificacao .notif-progresso span {
+        display: none !important;
+      }
+    `
+  });
+
+  // Fecha notificações residuais
+  await page.evaluate(() => {
+    const c = document.getElementById('notificacoes-container');
+    if (c) c.innerHTML = '';
+  });
+
+  await page.waitForTimeout(300);
+}
+
+/**
+ * Mascara elementos que mudam com o tempo (relógios, versões, coords).
+ * Retorna o array pronto pro `toHaveScreenshot({ mask: ... })`.
+ */
+function mascararDinamicos(page) {
+  return [
+    page.locator('#rodape-build'),        // "build 2026.10.06 · hash"
+    page.locator('#rodape-dados'),        // "Dados: 06/10/2026"
+    page.locator('.leaflet-control-coords'),  // LAT/LNG no canto
+    page.locator('.leaflet-control-minimap')  // tiles do minimap
+  ];
+}
+
+/**
+ * Prepara a página para screenshot determinístico.
+ * - Espera fontes carregarem
+ * - Desliga animações
+ * - Esconde o relógio do rodapé (muda toda hora)
+ */
+async function prepararParaScreenshot(page) {
+  // Espera fontes
+  await page.evaluate(() => document.fonts && document.fonts.ready);
+
+  // Desliga animações via CSS
+  await page.addStyleTag({
+    content: `
+      *, *::before, *::after {
+        animation-duration: 0s !important;
+        animation-delay: 0s !important;
+        transition-duration: 0s !important;
+        transition-delay: 0s !important;
+      }
+      .notificacao .notif-progresso span {
+        display: none !important;
+      }
+    `
+  });
+
+  // Fecha notificações residuais
+  await page.evaluate(() => {
+    const c = document.getElementById('notificacoes-container');
+    if (c) c.innerHTML = '';
+  });
+
+  await page.waitForTimeout(300);
+}
+
+/**
+ * Mascara elementos que mudam com o tempo (relógios, versões, coords).
+ * Retorna o array pronto pro `toHaveScreenshot({ mask: ... })`.
+ */
+function mascararDinamicos(page) {
+  return [
+    page.locator('#rodape-build'),        // "build 2026.10.06 · hash"
+    page.locator('#rodape-dados'),        // "Dados: 06/10/2026"
+    page.locator('.leaflet-control-coords'),  // LAT/LNG no canto
+    page.locator('.leaflet-control-minimap')  // tiles do minimap
+  ];
+}
+
+/**
+ * Prepara a página para screenshot determinístico.
+ * - Espera fontes carregarem
+ * - Desliga animações
+ * - Esconde o relógio do rodapé (muda toda hora)
+ */
+async function prepararParaScreenshot(page) {
+  // Espera fontes
+  await page.evaluate(() => document.fonts && document.fonts.ready);
+
+  // Desliga animações via CSS
+  await page.addStyleTag({
+    content: `
+      *, *::before, *::after {
+        animation-duration: 0s !important;
+        animation-delay: 0s !important;
+        transition-duration: 0s !important;
+        transition-delay: 0s !important;
+      }
+      .notificacao .notif-progresso span {
+        display: none !important;
+      }
+    `
+  });
+
+  // Fecha notificações residuais
+  await page.evaluate(() => {
+    const c = document.getElementById('notificacoes-container');
+    if (c) c.innerHTML = '';
+  });
+
+  await page.waitForTimeout(300);
+}
+
+/**
+ * Mascara elementos que mudam com o tempo (relógios, versões, coords).
+ * Retorna o array pronto pro `toHaveScreenshot({ mask: ... })`.
+ */
+function mascararDinamicos(page) {
+  return [
+    page.locator('#rodape-build'),        // "build 2026.10.06 · hash"
+    page.locator('#rodape-dados'),        // "Dados: 06/10/2026"
+    page.locator('.leaflet-control-coords'),  // LAT/LNG no canto
+    page.locator('.leaflet-control-minimap')  // tiles do minimap
+  ];
+}
+
 module.exports = {
   ARQUIVO_ALVO,
   coletarErrosConsole,
   abrirWebGIS,
-  lerGlobal
+  lerGlobal,
+  prepararParaScreenshot,
+  mascararDinamicos
 };

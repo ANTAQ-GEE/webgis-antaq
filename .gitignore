@@ -15,3 +15,8 @@ Thumbs.db
 *_STAGE*.html
 *_BROKEN.html
 *.bak
+
+# Diferenças visuais geradas pelo Playwright
+tests/**/*-diff.png
+tests/**/*-actual.png
+tests/**/*-expected.png
