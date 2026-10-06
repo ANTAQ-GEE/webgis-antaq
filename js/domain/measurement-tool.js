@@ -1,6 +1,8 @@
 /* ============================================================
    WebGIS ANTAQ — Módulo: MeasurementTool (M1)
    Escopo: medição de distância, área e raio (Turf.js)
+           + snap em vértices (grid espacial)
+           + overlay ao vivo seguindo o cursor
    Dependências: window.UI, window.mapa, turf (global)
    Expõe: window.MeasurementTool
    ============================================================ */
@@ -20,6 +22,20 @@
     _ultimoClickScreen: null,
     _ultimoMove: 0,
 
+    /* ---------- Snap ---------- */
+    _snapAtivo: false,
+    _snapGrid: {},          // { "lat_cell|lng_cell": [{lat,lng,camada}, ...] }
+    _snapTotal: 0,
+    _snapIndicator: null,   // marker visual atual
+    _snapPoint: null,       // { lat, lng, camada } ou null
+    _snapCtrlInvertido: false,
+
+    /* ---------- Overlay ao vivo ---------- */
+    _overlayEl: null,
+
+    /* ============================================================
+       CICLO DE VIDA
+       ============================================================ */
     ativar: function (modo) {
       if (this.modo === modo) { this.desativar(); return; }
 
@@ -34,14 +50,21 @@
       const painel = document.getElementById('painel-medicao-resultados');
       if (painel) painel.classList.add('aberto');
 
+      // Carrega preferência de snap do localStorage
+      this._snapAtivo = localStorage.getItem('antaq_medicao_snap') === 'true';
+      this._atualizarBotaoSnap();
+      if (this._snapAtivo) this._construirGridSnap();
+
       const totalSalvas = this.medicoesSalvas.length;
-      const dicaInicial = totalSalvas > 0
-        ? `Clique para nova medição. ${totalSalvas} medição(ões) finalizada(s) no mapa.`
+      let dicaInicial = totalSalvas > 0
+        ? `Clique para nova medição. ${totalSalvas} medição(ões) no mapa.`
         : 'Clique no mapa para começar. Duplo-clique para finalizar.';
+      if (this._snapAtivo) dicaInicial = `🔗 Snap ativo (${this._snapTotal.toLocaleString('pt-BR')} vértices) · ` + dicaInicial;
       this._atualizarPainel(modo, 0, dicaInicial);
 
       document.getElementById('mapa').style.cursor = 'crosshair';
       this._bindListeners();
+      this._configurarOverlay();
     },
 
     desativar: function () {
@@ -54,35 +77,242 @@
       if (painel) painel.classList.remove('aberto');
       this._unbindListeners();
       this.limparTemporarios();
+      this._ocultarOverlay();
+      this._removerIndicadorSnap();
     },
 
+    /* ============================================================
+       SNAP — CONFIGURAÇÃO E GRID
+       ============================================================ */
+    toggleSnap: function () {
+      this._snapAtivo = !this._snapAtivo;
+      localStorage.setItem('antaq_medicao_snap', String(this._snapAtivo));
+      this._atualizarBotaoSnap();
+
+      if (this._snapAtivo) {
+        this._construirGridSnap();
+        if (window.UI) window.UI.toast(`🔗 Snap ativo — ${this._snapTotal.toLocaleString('pt-BR')} vértices indexados.`);
+      } else {
+        this._removerIndicadorSnap();
+        if (window.UI) window.UI.toast('🔗 Snap desativado.');
+      }
+    },
+
+    _atualizarBotaoSnap: function () {
+      const btn = document.getElementById('btn-medicao-snap');
+      if (!btn) return;
+      if (this._snapAtivo) btn.classList.add('ativo-snap');
+      else btn.classList.remove('ativo-snap');
+    },
+
+    _construirGridSnap: function () {
+      this._snapGrid = {};
+      this._snapTotal = 0;
+
+      const inicio = performance.now();
+
+      for (const [id, layer] of Object.entries(window.CAMADAS_MAPA)) {
+        if (!window.mapa.hasLayer(layer)) continue;
+        try {
+          if (typeof layer.eachLayer === 'function') {
+            layer.eachLayer(sub => this._extrairVerticesDe(sub, id));
+          }
+        } catch (e) { /* camada sem eachLayer */ }
+      }
+
+      const duracao = (performance.now() - inicio).toFixed(0);
+      const celulas = Object.keys(this._snapGrid).length;
+      console.info(`[M1] Snap: ${this._snapTotal} vértices em ${celulas} células (${duracao}ms)`);
+    },
+
+    _extrairVerticesDe: function (sub, camadaId) {
+      if (!sub) return;
+
+      // Circle marker / Marker (ponto isolado)
+      if (typeof sub.getLatLng === 'function' && typeof sub.getLatLngs !== 'function') {
+        try { this._adicionarVertice(sub.getLatLng(), camadaId); } catch (e) {}
+        return;
+      }
+
+      // Polyline / Polygon
+      if (typeof sub.getLatLngs === 'function') {
+        try { this._percorrerLatLngs(sub.getLatLngs(), camadaId); } catch (e) {}
+      }
+    },
+
+    _percorrerLatLngs: function (arr, camadaId) {
+      if (!Array.isArray(arr)) return;
+      for (const item of arr) {
+        if (Array.isArray(item)) {
+          this._percorrerLatLngs(item, camadaId);
+        } else if (item && typeof item.lat === 'number' && typeof item.lng === 'number') {
+          this._adicionarVertice(item, camadaId);
+        }
+      }
+    },
+
+    _adicionarVertice: function (ll, camadaId) {
+      const key = this._chaveGrid(ll.lat, ll.lng);
+      if (!this._snapGrid[key]) this._snapGrid[key] = [];
+      this._snapGrid[key].push({ lat: ll.lat, lng: ll.lng, camada: camadaId });
+      this._snapTotal++;
+    },
+
+    _chaveGrid: function (lat, lng) {
+      // Grid de 0.1° (~11 km) — equilíbrio entre resolução e overhead
+      return `${Math.floor(lat * 10)}|${Math.floor(lng * 10)}`;
+    },
+
+    _encontrarSnap: function (latlng, screenPoint, raioPx) {
+      if (!this._snapTotal) return null;
+
+      const cellLat = Math.floor(latlng.lat * 10);
+      const cellLng = Math.floor(latlng.lng * 10);
+
+      let melhor = null;
+      let menorDist = raioPx;
+
+      for (let dLat = -1; dLat <= 1; dLat++) {
+        for (let dLng = -1; dLng <= 1; dLng++) {
+          const key = `${cellLat + dLat}|${cellLng + dLng}`;
+          const verts = this._snapGrid[key];
+          if (!verts) continue;
+          for (const v of verts) {
+            const sp = window.mapa.latLngToContainerPoint([v.lat, v.lng]);
+            const d = sp.distanceTo(screenPoint);
+            if (d < menorDist) {
+              menorDist = d;
+              melhor = v;
+            }
+          }
+        }
+      }
+      return melhor;
+    },
+
+    _mostrarIndicadorSnap: function (vertice) {
+      this._removerIndicadorSnap();
+      if (!vertice) return;
+
+      this._snapIndicator = L.marker([vertice.lat, vertice.lng], {
+        icon: L.divIcon({
+          className: '',
+          html: '<div class="snap-indicator"></div>',
+          iconSize: [14, 14],
+          iconAnchor: [7, 7]
+        }),
+        interactive: false,
+        pane: 'panePontos'
+      }).addTo(window.mapa);
+    },
+
+    _removerIndicadorSnap: function () {
+      if (this._snapIndicator && window.mapa.hasLayer(this._snapIndicator)) {
+        window.mapa.removeLayer(this._snapIndicator);
+      }
+      this._snapIndicator = null;
+      this._snapPoint = null;
+    },
+
+    /* ============================================================
+       OVERLAY AO VIVO
+       ============================================================ */
+    _configurarOverlay: function () {
+      this._overlayEl = document.getElementById('medicao-live-overlay');
+    },
+
+    _atualizarOverlay: function (parcial, total, hint) {
+      if (!this._overlayEl) return;
+
+      const parcialEl = document.getElementById('live-parcial');
+      const totalEl = document.getElementById('live-total');
+      const hintEl = document.getElementById('live-hint');
+
+      if (parcialEl) parcialEl.textContent = this._fmtDist(parcial);
+      if (totalEl) totalEl.textContent = this._fmtDist(total);
+      if (hintEl) {
+        if (hint) {
+          hintEl.textContent = hint;
+          hintEl.classList.add('visivel');
+        } else {
+          hintEl.classList.remove('visivel');
+        }
+      }
+
+      this._overlayEl.style.display = 'block';
+    },
+
+    _posicionarOverlay: function (e) {
+      if (!this._overlayEl) return;
+      // Offset de 15px pra não cobrir o cursor
+      const x = e.originalEvent ? e.originalEvent.clientX : e.clientX;
+      const y = e.originalEvent ? e.originalEvent.clientY : e.clientY;
+      if (typeof x !== 'number' || typeof y !== 'number') return;
+      this._overlayEl.style.left = (x + 15) + 'px';
+      this._overlayEl.style.top = (y + 15) + 'px';
+    },
+
+    _ocultarOverlay: function () {
+      if (this._overlayEl) this._overlayEl.style.display = 'none';
+    },
+
+    _fmtDist: function (km) {
+      if (!km && km !== 0) return '—';
+      if (km < 1) return `${(km * 1000).toFixed(0)} m`;
+      if (km < 10) return `${km.toFixed(3)} km`;
+      return `${km.toFixed(2)} km`;
+    },
+
+    /* ============================================================
+       LISTENERS
+       ============================================================ */
     _bindListeners: function () {
       this._unbindListeners();
       this._handlers = {
         click: (e) => this._onMapClick(e),
         dblclick: (e) => { L.DomEvent.stop(e); this._finalizar(); },
         mousemove: (e) => this._onMouseMove(e),
-        keydown: (ev) => { if (ev.key === 'Escape') this.desativar(); }
+        mouseout: () => { this._ocultarOverlay(); this._removerIndicadorSnap(); },
+        keydown: (ev) => {
+          if (ev.key === 'Escape') this.desativar();
+          if (ev.key === 'Control' && this._snapAtivo) this._snapCtrlInvertido = true;
+          if (ev.key === 'Alt' && !this._snapAtivo && this._snapTotal > 0) this._snapCtrlInvertido = true;
+        },
+        keyup: (ev) => {
+          if (ev.key === 'Control' || ev.key === 'Alt') this._snapCtrlInvertido = false;
+        }
       };
-      mapa.on('click', this._handlers.click);
-      mapa.on('dblclick', this._handlers.dblclick);
-      mapa.on('mousemove', this._handlers.mousemove);
+      window.mapa.on('click', this._handlers.click);
+      window.mapa.on('dblclick', this._handlers.dblclick);
+      window.mapa.on('mousemove', this._handlers.mousemove);
+      window.mapa.on('mouseout', this._handlers.mouseout);
       document.addEventListener('keydown', this._handlers.keydown);
+      document.addEventListener('keyup', this._handlers.keyup);
     },
 
     _unbindListeners: function () {
       if (!this._handlers) return;
-      mapa.off('click', this._handlers.click);
-      mapa.off('dblclick', this._handlers.dblclick);
-      mapa.off('mousemove', this._handlers.mousemove);
+      window.mapa.off('click', this._handlers.click);
+      window.mapa.off('dblclick', this._handlers.dblclick);
+      window.mapa.off('mousemove', this._handlers.mousemove);
+      window.mapa.off('mouseout', this._handlers.mouseout);
       document.removeEventListener('keydown', this._handlers.keydown);
+      document.removeEventListener('keyup', this._handlers.keyup);
       this._handlers = null;
     },
 
+    /* ============================================================
+       EVENTOS DO MAPA
+       ============================================================ */
     _onMapClick: function (e) {
       if (!this.modo) return;
-      const latlng = e.latlng;
-      const screenPoint = mapa.latLngToContainerPoint(latlng);
+
+      // Usa ponto de snap se disponível, senão o clique cru
+      const latlng = this._snapPoint
+        ? L.latLng(this._snapPoint.lat, this._snapPoint.lng)
+        : e.latlng;
+
+      const screenPoint = window.mapa.latLngToContainerPoint(latlng);
       const agora = Date.now();
 
       if (this._ultimoClickTempo &&
@@ -117,28 +347,71 @@
     },
 
     _onMouseMove: function (e) {
-      if (!this.modo || this.pontos.length === 0) return;
+      if (!this.modo) return;
 
       const agora = Date.now();
       if (this._ultimoMove && (agora - this._ultimoMove) < 33) return;
       this._ultimoMove = agora;
 
-      const ponto = e.latlng;
+      const screenPoint = window.mapa.latLngToContainerPoint(e.latlng);
 
-      if (this.modo === 'raio') {
-        const centro = this.pontos[0];
-        const dist = this._distanciaKm(centro, ponto);
-        this._desenharCirculo(centro, dist);
-        this._atualizarPainel('raio', dist * 1000, `Área ≈ ${(Math.PI * dist * dist).toFixed(2)} km²`);
+      /* ---------- 1. Resolve snap ---------- */
+      const snapAtivoAgora = this._snapAtivo !== this._snapCtrlInvertido;
+      let pontoEfetivo = e.latlng;
+
+      if (snapAtivoAgora && this._snapTotal > 0) {
+        const snap = this._encontrarSnap(e.latlng, screenPoint, 12);
+        if (snap) {
+          this._snapPoint = snap;
+          pontoEfetivo = L.latLng(snap.lat, snap.lng);
+          this._mostrarIndicadorSnap(snap);
+        } else {
+          this._snapPoint = null;
+          this._removerIndicadorSnap();
+        }
+      } else {
+        this._snapPoint = null;
+        this._removerIndicadorSnap();
+      }
+
+      /* ---------- 2. Overlay + preview ---------- */
+      this._posicionarOverlay(e);
+
+      // Hint contextual (snap on/off/ctrl)
+      let hint = '';
+      if (snapAtivoAgora && this._snapPoint) hint = `🔗 vértice (${this._snapPoint.camada})`;
+      else if (this._snapAtivo && this._snapCtrlInvertido) hint = 'snap suspenso (Ctrl)';
+      else if (!this._snapAtivo && this._snapCtrlInvertido && this._snapTotal > 0) hint = 'snap forçado (Alt)';
+
+      // Se não tem pontos ainda, só mostra o overlay básico
+      if (this.pontos.length === 0) {
+        this._atualizarOverlay(0, 0, hint || 'clique para iniciar');
         return;
       }
 
-      const pontosPreview = [...this.pontos, ponto];
+      /* ---------- 3. Preview do próximo segmento ---------- */
+      if (this.modo === 'raio') {
+        const centro = this.pontos[0];
+        const dist = this._distanciaKm(centro, pontoEfetivo);
+        this._desenharCirculo(centro, dist);
+        const areaKm2 = Math.PI * dist * dist;
+        this._atualizarOverlay(dist, dist, hint || `área ≈ ${areaKm2.toFixed(2)} km²`);
+        this._atualizarPainel('raio', dist * 1000, `Área ≈ ${areaKm2.toFixed(2)} km²`);
+        return;
+      }
+
+      const pontosPreview = [...this.pontos, pontoEfetivo];
+      const totalAcumulado = this._calcularDistanciaTotal(this.pontos);
+      const ultimoPonto = this.pontos[this.pontos.length - 1];
+      const distParcial = this._distanciaKm(ultimoPonto, pontoEfetivo);
+
       if (this.modo === 'distancia') {
         this._desenharLinha(pontosPreview, false);
       } else {
         this._desenharPoligono(pontosPreview, false);
       }
+
+      this._atualizarOverlay(distParcial, totalAcumulado + distParcial, hint);
     },
 
     _finalizar: function () {
@@ -146,6 +419,7 @@
 
       this._ultimoClickTempo = 0;
       this._ultimoClickScreen = null;
+      this._removerIndicadorSnap();
 
       if (this.modo === 'raio') {
         if (this.pontos.length < 1 || !this.circuloTemp) { this.desativar(); return; }
@@ -165,7 +439,7 @@
           }),
           interactive: false,
           pane: 'panePontos'
-        }).addTo(mapa);
+        }).addTo(window.mapa);
         this.medicoesSalvas.push(labelRaio);
 
       } else if (this.modo === 'distancia') {
@@ -188,47 +462,50 @@
       });
 
       this.pontos = [];
-      this.marcadoresTemp.forEach(m => mapa.removeLayer(m));
+      this.marcadoresTemp.forEach(m => window.mapa.removeLayer(m));
       this.marcadoresTemp = [];
       this.labelsTemp = [];
 
       const totalSalvas = this.medicoesSalvas.length;
       this._atualizarPainel(this.modo, 0,
-        `Clique para iniciar nova medição. ${totalSalvas} medição(ões) finalizada(s) no mapa.`);
+        `Clique para iniciar nova medição. ${totalSalvas} medição(ões) no mapa.`);
     },
 
+    /* ============================================================
+       DESENHO
+       ============================================================ */
     _desenharPontoTemp: function (latlng) {
       const m = L.circleMarker(latlng, {
         radius: 5, fillColor: '#f59e0b', color: '#ffffff',
         weight: 2, fillOpacity: 1, pane: 'panePontos'
-      }).addTo(mapa);
+      }).addTo(window.mapa);
       this.marcadoresTemp.push(m);
     },
 
     _desenharLinha: function (pontos, permanente) {
-      if (this.linhaTemp) mapa.removeLayer(this.linhaTemp);
+      if (this.linhaTemp) window.mapa.removeLayer(this.linhaTemp);
       this.linhaTemp = L.polyline(pontos, {
         color: '#f59e0b', weight: 3, opacity: 0.95,
         dashArray: permanente ? null : '6, 4', pane: 'paneLinhas'
-      }).addTo(mapa);
+      }).addTo(window.mapa);
       this._calcularEExibirDistancia(pontos);
     },
 
     _desenharPoligono: function (pontos, permanente) {
-      if (this.poligonoTemp) mapa.removeLayer(this.poligonoTemp);
+      if (this.poligonoTemp) window.mapa.removeLayer(this.poligonoTemp);
       this.poligonoTemp = L.polygon(pontos, {
         color: '#f59e0b', weight: 3, fillColor: '#f59e0b',
         fillOpacity: 0.15, pane: 'paneLinhas'
-      }).addTo(mapa);
+      }).addTo(window.mapa);
       this._calcularEExibirArea(pontos);
     },
 
     _desenharCirculo: function (centro, raioKm) {
-      if (this.circuloTemp) mapa.removeLayer(this.circuloTemp);
+      if (this.circuloTemp) window.mapa.removeLayer(this.circuloTemp);
       this.circuloTemp = L.circle(centro, {
         radius: raioKm * 1000, color: '#f59e0b', weight: 3,
         fillColor: '#f59e0b', fillOpacity: 0.12, pane: 'paneLinhas'
-      }).addTo(mapa);
+      }).addTo(window.mapa);
     },
 
     _atualizarFormaTemporaria: function () {
@@ -239,6 +516,9 @@
       }
     },
 
+    /* ============================================================
+       CÁLCULOS
+       ============================================================ */
     _calcularEExibirDistancia: function (pontos) {
       if (pontos.length < 2) {
         this._atualizarPainel('distancia', 0, 'Adicione mais pontos.');
@@ -247,7 +527,7 @@
       let totalKm = 0;
       const coords = pontos.map(p => [p.lng, p.lat]);
 
-      this.labelsTemp.forEach(l => { if (l._tipo === 'segmento') mapa.removeLayer(l); });
+      this.labelsTemp.forEach(l => { if (l._tipo === 'segmento') window.mapa.removeLayer(l); });
       this.labelsTemp = this.labelsTemp.filter(l => l._tipo !== 'segmento');
 
       for (let i = 0; i < coords.length - 1; i++) {
@@ -265,7 +545,7 @@
             }),
             interactive: false,
             pane: 'panePontos'
-          }).addTo(mapa);
+          }).addTo(window.mapa);
           label._tipo = 'segmento';
           this.labelsTemp.push(label);
         } catch (err) {}
@@ -308,6 +588,9 @@
       }
     },
 
+    /* ============================================================
+       PAINEL / LIMPEZA
+       ============================================================ */
     _atualizarPainel: function (modo, valor, dica) {
       const rotulo = document.getElementById('medicao-rotulo');
       const valorEl = document.getElementById('medicao-valor');
@@ -329,41 +612,43 @@
     },
 
     limparTemporarios: function () {
-      if (this.linhaTemp) mapa.removeLayer(this.linhaTemp);
-      if (this.poligonoTemp) mapa.removeLayer(this.poligonoTemp);
-      if (this.circuloTemp) mapa.removeLayer(this.circuloTemp);
+      if (this.linhaTemp) window.mapa.removeLayer(this.linhaTemp);
+      if (this.poligonoTemp) window.mapa.removeLayer(this.poligonoTemp);
+      if (this.circuloTemp) window.mapa.removeLayer(this.circuloTemp);
       this.linhaTemp = this.poligonoTemp = this.circuloTemp = null;
-      this.marcadoresTemp.forEach(m => mapa.removeLayer(m));
+      this.marcadoresTemp.forEach(m => window.mapa.removeLayer(m));
       this.marcadoresTemp = [];
-      this.labelsTemp.forEach(l => mapa.removeLayer(l));
+      this.labelsTemp.forEach(l => window.mapa.removeLayer(l));
       this.labelsTemp = [];
       this.pontos = [];
+      this._removerIndicadorSnap();
     },
 
     limparTudo: function () {
       this.limparTemporarios();
 
-      this.medicoesSalvas.forEach(m => { if (mapa.hasLayer(m)) mapa.removeLayer(m); });
+      this.medicoesSalvas.forEach(m => { if (window.mapa.hasLayer(m)) window.mapa.removeLayer(m); });
       this.medicoesSalvas = [];
 
       const orfaos = [];
-      mapa.eachLayer(layer => {
+      window.mapa.eachLayer(layer => {
         try {
           if (layer instanceof L.Marker &&
               layer.options &&
               layer.options.icon &&
               layer.options.icon.options &&
-              layer.options.icon.options.className === 'label-medicao') {
+              (layer.options.icon.options.className === 'label-medicao' ||
+               (layer.options.icon.options.html || '').indexOf('snap-indicator') !== -1)) {
             orfaos.push(layer);
           }
         } catch (e) {}
       });
-      orfaos.forEach(l => mapa.removeLayer(l));
+      orfaos.forEach(l => window.mapa.removeLayer(l));
 
       if (window.UI) window.UI.toast(`🧹 Medições removidas (${this.medicoesSalvas.length + orfaos.length} elementos).`);
     }
   };
 
   window.MeasurementTool = MeasurementTool;
-  console.info('[js] MeasurementTool carregado');
+  console.info('[js] MeasurementTool carregado (com snap + overlay)');
 })();
