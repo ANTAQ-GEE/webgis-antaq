@@ -265,6 +265,8 @@
      ============================================================ */
   async function toggleCamada(id, ligar, opcoes) {
     opcoes = opcoes || {};
+
+    // ✅ Captura estado ANTES de qualquer await (senão o carregamento async contamina)
     const estadoAnterior = window.mapa.hasLayer(window.CAMADAS_MAPA?.[id]);
 
     if (!window.CAMADAS_MAPA[id] || !window.DADOS_GEOJSON_BRUTOS[id]) {
@@ -275,6 +277,25 @@
         if (window.UI) window.UI.toast(`⚠️ Falha ao carregar ${window.CONFIG_CAMADAS[id]?.nome || id}`);
         return;
       }
+    }
+
+    // ✅ Registra no histórico ANTES de mudar o mapa (usa estadoAnterior capturado)
+    if (!opcoes.semHistorico && estadoAnterior !== ligar) {
+      const nome = window.CONFIG_CAMADAS[id]?.nome || id;
+      window.ActionHistory.registrar({
+        tipo: 'toggle-camada',
+        descricao: `${ligar ? 'Ligar' : 'Desligar'} camada "${nome}"`,
+        undo: () => {
+          const chk = document.getElementById(`chk-${id}`);
+          if (chk) chk.checked = estadoAnterior;
+          toggleCamada(id, estadoAnterior, { semHistorico: true });
+        },
+        redo: () => {
+          const chk = document.getElementById(`chk-${id}`);
+          if (chk) chk.checked = ligar;
+          toggleCamada(id, ligar, { semHistorico: true });
+        }
+      });
     }
 
     if (ligar) {

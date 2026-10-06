@@ -112,7 +112,28 @@
       if (window.Styler) window.Styler.atualizarLegenda();
     },
 
-    toggle: function (ligar) {
+    toggle: function (ligar, opcoes) {
+      opcoes = opcoes || {};
+      const estavaLigado = this.ligado;
+
+      if (!opcoes.semHistorico && window.ActionHistory && estavaLigado !== ligar) {
+        const self = this;
+        window.ActionHistory.registrar({
+          tipo: 'toggle-ven',
+          descricao: `${ligar ? 'Ligar' : 'Desligar'} camada "Vias Navegadas (VEN)"`,
+          undo: () => {
+            const chk = document.getElementById('chk-ven-unificado');
+            if (chk) chk.checked = estavaLigado;
+            self.toggle(estavaLigado, { semHistorico: true });
+          },
+          redo: () => {
+            const chk = document.getElementById('chk-ven-unificado');
+            if (chk) chk.checked = ligar;
+            self.toggle(ligar, { semHistorico: true });
+          }
+        });
+      }
+
       this.ligado = ligar;
       const ano = this.anoAtivo;
 
