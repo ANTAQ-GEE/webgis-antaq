@@ -43,6 +43,10 @@
       this.modo = modo;
       // ✅ Bloqueia popups de atributos durante a medição
       document.body.classList.add('modo-medicao-ativo');
+
+      // ✅ Impede que o duplo-clique dispare zoom em vez de finalizar
+      if (window.mapa && window.mapa.doubleClickZoom) window.mapa.doubleClickZoom.disable();
+      if (window.mapa && window.mapa.boxZoom) window.mapa.boxZoom.disable();
       this.pontos = [];
 
       document.querySelectorAll('.btn-medicao').forEach(b => b.classList.remove('ativo'));
@@ -73,6 +77,9 @@
       this.modo = null;
       // ✅ Restaura popups ao sair da medição
       document.body.classList.remove('modo-medicao-ativo');
+
+      // ✅ Reabilita zoom no duplo-clique
+      if (window.mapa && window.mapa.doubleClickZoom) window.mapa.doubleClickZoom.enable();
       this._ultimoClickTempo = 0;
       this._ultimoClickScreen = null;
       document.querySelectorAll('.btn-medicao').forEach(b => b.classList.remove('ativo'));
@@ -310,6 +317,13 @@
        ============================================================ */
     _onMapClick: function (e) {
       if (!this.modo) return;
+
+      // ✅ Impede o Leaflet de interpretar cliques como ação de navegação
+      if (e.originalEvent) {
+        L.DomEvent.stopPropagation(e.originalEvent);
+        L.DomEvent.preventDefault(e.originalEvent);
+      }
+
       // ✅ Garante que nenhum popup roube a interação
       if (window.mapa && window.mapa.closePopup) window.mapa.closePopup();
 
