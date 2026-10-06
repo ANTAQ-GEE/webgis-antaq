@@ -1,7 +1,6 @@
 {
   "versao": "3.0",
   "projeto": "WebGIS Corporativo ANTAQ - Inteligência e Gestão Aquaviária",
-  "descricao": "Catálogo regulatório oficial focado na infraestrutura aquaviária, navegação interior e intermodalidade",
   "camadas": [
     {
       "id": "instalacoes_portuarias",
@@ -72,12 +71,12 @@
     {
       "id": "linhas_travessias",
       "arquivo": "dados/linhas_travessias.geojson",
-      "nome": "Linhas de Travessias (93)",
+      "nome": "Linhas de Travessias",
       "grupo": "infra",
       "cor": "#f59e0b",
       "peso": 2.0,
       "opacidade": 0.9,
-      "tipoGeo": "linha_tracejada",
+      "tipoGeo": "linha",
       "ativa": true
     },
     {
@@ -132,14 +131,14 @@
       "cor": "#60a5fa",
       "peso": 1.2,
       "opacidade": 0.8,
-      "tipoGeo": "poligono_linha",
+      "tipoGeo": "poligono",
       "ativa": true
     },
     {
       "id": "tis_poligonais",
       "arquivo": "dados/tis_poligonais.geojson",
       "nome": "Terras Indígenas (FUNAI)",
-      "grupo": "restricoes",
+      "grupo": "infra",
       "cor": "#ef4444",
       "peso": 1.5,
       "opacidade": 0.35,
@@ -150,11 +149,11 @@
       "id": "ucs_federais",
       "arquivo": "dados/ucs_federais.geojson",
       "nome": "Unidades de Conservação Federais (ICMBio)",
-      "grupo": "restricoes",
+      "grupo": "infra",
       "cor": "#15803d",
       "peso": 1.5,
       "opacidade": 0.35,
-      "tipoGeo": "poligono",
+      "tipoGeo": "linha",
       "ativa": true
     }
   ]
