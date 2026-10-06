@@ -41,6 +41,8 @@
 
       this.limparTemporarios();
       this.modo = modo;
+      // ✅ Bloqueia popups de atributos durante a medição
+      document.body.classList.add('modo-medicao-ativo');
       this.pontos = [];
 
       document.querySelectorAll('.btn-medicao').forEach(b => b.classList.remove('ativo'));
@@ -69,6 +71,8 @@
 
     desativar: function () {
       this.modo = null;
+      // ✅ Restaura popups ao sair da medição
+      document.body.classList.remove('modo-medicao-ativo');
       this._ultimoClickTempo = 0;
       this._ultimoClickScreen = null;
       document.querySelectorAll('.btn-medicao').forEach(b => b.classList.remove('ativo'));
@@ -306,6 +310,8 @@
        ============================================================ */
     _onMapClick: function (e) {
       if (!this.modo) return;
+      // ✅ Garante que nenhum popup roube a interação
+      if (window.mapa && window.mapa.closePopup) window.mapa.closePopup();
 
       // Usa ponto de snap se disponível, senão o clique cru
       const latlng = this._snapPoint

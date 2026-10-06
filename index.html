@@ -2552,7 +2552,30 @@
         print-color-adjust: exact !important;
       }
     }
-  </style>
+    /* ============================================================
+       M1 — MODO MEDIÇÃO ATIVO: esconde popups/tooltips e desabilita
+       cliques em feições, pra não roubar o clique da medição
+       ============================================================ */
+    body.modo-medicao-ativo .leaflet-popup {
+      display: none !important;
+      pointer-events: none !important;
+    }
+    body.modo-medicao-ativo .leaflet-popup-pane {
+      pointer-events: none !important;
+    }
+    body.modo-medicao-ativo .leaflet-tooltip {
+      display: none !important;
+    }
+    body.modo-medicao-ativo .leaflet-marker-icon,
+    body.modo-medicao-ativo .leaflet-interactive {
+      pointer-events: none !important;
+    }
+    /* Mas o cursor continua crosshair e o container do mapa continua recebendo cliques */
+    body.modo-medicao-ativo #mapa,
+    body.modo-medicao-ativo .leaflet-container {
+      cursor: crosshair !important;
+      pointer-events: auto !important;
+    }  </style>
 
   <!-- CABEÇALHO -->
   <header class="top-header">
