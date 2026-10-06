@@ -1,0 +1,68 @@
+{
+  "versao": "1.0",
+  "camadas": [
+    {
+      "id": "embarcacoes",
+      "nome": "Tráfego de Embarcações / AIS",
+      "categoria": "INFRAESTRUTURA AQUAVIÁRIA (ANTAQ)",
+      "arquivo": "dados/embarcacoes.geojson",
+      "ativa": true
+    },
+    {
+      "id": "instalacoes_portuarias",
+      "nome": "Instalações Portuárias",
+      "categoria": "INFRAESTRUTURA AQUAVIÁRIA (ANTAQ)",
+      "arquivo": "dados/instalacoes_portuarias.geojson",
+      "ativa": true
+    },
+    {
+      "id": "vias_navegadas",
+      "nome": "Vias Economicamente Navegadas",
+      "categoria": "INFRAESTRUTURA AQUAVIÁRIA (ANTAQ)",
+      "arquivo": "dados/vias_economicamente_navegadas.geojson",
+      "ativa": true
+    },
+    {
+      "id": "linhas_travessias",
+      "nome": "Linhas de Travessias",
+      "categoria": "INFRAESTRUTURA AQUAVIÁRIA (ANTAQ)",
+      "arquivo": "dados/linhas_travessias.geojson",
+      "ativa": true
+    },
+    {
+      "id": "regioes",
+      "nome": "Regiões do Brasil",
+      "categoria": "LIMITES TERRITORIAIS",
+      "arquivo": "dados/regioes.geojson",
+      "ativa": true
+    },
+    {
+      "id": "uf",
+      "nome": "Unidades da Federação (IBGE)",
+      "categoria": "LIMITES TERRITORIAIS",
+      "arquivo": "dados/uf.geojson",
+      "ativa": true
+    },
+    {
+      "id": "pais",
+      "nome": "Limite do País",
+      "categoria": "LIMITES TERRITORIAIS",
+      "arquivo": "dados/pais.geojson",
+      "ativa": false
+    },
+    {
+      "id": "tis_poligonais",
+      "nome": "Poligonais Portuárias / TIS",
+      "categoria": "RESTRIÇÕES SOCIOAMBIENTAIS",
+      "arquivo": "dados/tis_poligonais.geojson",
+      "ativa": true
+    },
+    {
+      "id": "estados_amazonia_legal",
+      "nome": "Estados da Amazônia Legal",
+      "categoria": "RESTRIÇÕES SOCIOAMBIENTAIS",
+      "arquivo": "dados/estados_amazonia_legal.geojson",
+      "ativa": true
+    }
+  ]
+}

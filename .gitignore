@@ -1,0 +1,17 @@
+# Dependências npm
+node_modules/
+
+# Artefatos de teste Playwright
+test-results/
+tests/.report/
+playwright-report/
+.playwright/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Backups locais
+*_STAGE*.html
+*_BROKEN.html
+*.bak
