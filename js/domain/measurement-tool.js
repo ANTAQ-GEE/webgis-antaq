@@ -288,9 +288,40 @@
        ============================================================ */
     _bindListeners: function () {
       this._unbindListeners();
+
+      const container = window.mapa.getContainer();
+      const self = this;
+
       this._handlers = {
-        click: (e) => this._onMapClick(e),
-        dblclick: (e) => { L.DomEvent.stop(e); this._finalizar(); },
+        // ✅ Clique DOM em CAPTURE phase (pega ANTES dos layers do Leaflet)
+        clickDom: function (domEvent) {
+          if (!self.modo) return;
+          // Ignora cliques em controles do Leaflet (zoom, coords, escala)
+          if (domEvent.target.closest('.leaflet-control')) return;
+          // Ignora cliques em popups/tooltips
+          if (domEvent.target.closest('.leaflet-popup')) return;
+          if (domEvent.target.closest('.leaflet-tooltip')) return;
+          // Ignora botão direito e cliques com modificadores de navegação
+          if (domEvent.button !== 0) return;
+
+          // Converte coordenadas de tela → latlng
+          const rect = container.getBoundingClientRect();
+          const point = L.point(domEvent.clientX - rect.left, domEvent.clientY - rect.top);
+          const latlng = window.mapa.containerPointToLatLng(point);
+
+          // ✅ Impede o Leaflet de processar o clique como zoom/navegação
+          domEvent.stopPropagation();
+          domEvent.preventDefault();
+
+          self._onMapClick({ latlng: latlng, originalEvent: domEvent });
+        },
+        // Duplo-clique para finalizar (também DOM capture)
+        dblclickDom: function (domEvent) {
+          if (!self.modo) return;
+          domEvent.stopPropagation();
+          domEvent.preventDefault();
+          self._finalizar();
+        },
         mousemove: (e) => this._onMouseMove(e),
         mouseout: () => { this._ocultarOverlay(); this._removerIndicadorSnap(); },
         keydown: (ev) => {
@@ -302,12 +333,33 @@
           if (ev.key === 'Control' || ev.key === 'Alt') this._snapCtrlInvertido = false;
         }
       };
-      window.mapa.on('click', this._handlers.click);
-      window.mapa.on('dblclick', this._handlers.dblclick);
+
+      // Mousemove continua no Leaflet (precisa do latlng do evento)
       window.mapa.on('mousemove', this._handlers.mousemove);
       window.mapa.on('mouseout', this._handlers.mouseout);
+
+      // Click/dblclick em DOM capture (intercepta ANTES do Leaflet)
+      container.addEventListener('click', this._handlers.clickDom, true);
+      container.addEventListener('dblclick', this._handlers.dblclickDom, true);
+
       document.addEventListener('keydown', this._handlers.keydown);
       document.addEventListener('keyup', this._handlers.keyup);
+    },
+
+    _unbindListeners: function () {
+      if (!this._handlers) return;
+
+      const container = window.mapa.getContainer();
+      container.removeEventListener('click', this._handlers.clickDom, true);
+      container.removeEventListener('dblclick', this._handlers.dblclickDom, true);
+
+      window.mapa.off('mousemove', this._handlers.mousemove);
+      window.mapa.off('mouseout', this._handlers.mouseout);
+
+      document.removeEventListener('keydown', this._handlers.keydown);
+      document.removeEventListener('keyup', this._handlers.keyup);
+
+      this._handlers = null;
     },
 
     _unbindListeners: function () {
@@ -326,12 +378,6 @@
        ============================================================ */
     _onMapClick: function (e) {
       if (!this.modo) return;
-
-      // ✅ Impede o Leaflet de interpretar cliques como ação de navegação
-      if (e.originalEvent) {
-        L.DomEvent.stopPropagation(e.originalEvent);
-        L.DomEvent.preventDefault(e.originalEvent);
-      }
 
       // ✅ Garante que nenhum popup roube a interação
       if (window.mapa && window.mapa.closePopup) window.mapa.closePopup();
