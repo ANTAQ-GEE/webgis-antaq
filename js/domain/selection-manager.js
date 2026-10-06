@@ -497,8 +497,12 @@
     _configurarTeclado: function () {
       const self = this;
       document.addEventListener('keydown', (ev) => {
-        const tag = (ev.target && ev.target.tagName) || '';
-        if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+        const alvo = ev.target;
+        const tag = (alvo && alvo.tagName) || '';
+        const tipo = ((alvo && alvo.type) || '').toLowerCase();
+        const ehInputTexto = tag === 'TEXTAREA' ||
+          (tag === 'INPUT' && ['text', 'search', 'email', 'url', 'password', 'number'].includes(tipo));
+        if (ehInputTexto || tag === 'SELECT') return;
 
         if (ev.key === 'Escape') {
           if (self._selecionadas && self._selecionadas.length > 0) {

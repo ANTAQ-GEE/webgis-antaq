@@ -430,8 +430,13 @@
     }
 
     // Atalhos medição
-    document.addEventListener('keydown', (ev) => {
-      if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT') return;
+      document.addEventListener('keydown', (ev) => {
+        const alvo = ev.target;
+        const tag = alvo.tagName;
+        const tipo = (alvo.type || '').toLowerCase();
+        const ehInputTexto = tag === 'TEXTAREA' ||
+          (tag === 'INPUT' && ['text', 'search', 'email', 'url', 'password', 'number'].includes(tipo));
+        if (ehInputTexto || tag === 'SELECT') return;
       if (ev.key === 'd' || ev.key === 'D') window.MeasurementTool.ativar('distancia');
       if (ev.key === 'a' || ev.key === 'A') window.MeasurementTool.ativar('area');
       if (ev.key === 'r' || ev.key === 'R') window.MeasurementTool.ativar('raio');

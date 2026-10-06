@@ -130,7 +130,13 @@
     _configurarAtalhos: function () {
       document.addEventListener('keydown', (ev) => {
         const alvo = ev.target;
-        if (alvo && (alvo.tagName === 'INPUT' || alvo.tagName === 'TEXTAREA' || alvo.tagName === 'SELECT')) return;
+        if (alvo) {
+          const tag = alvo.tagName;
+          const tipo = (alvo.type || '').toLowerCase();
+          const ehInputTexto = tag === 'TEXTAREA' ||
+            (tag === 'INPUT' && ['text', 'search', 'email', 'url', 'password', 'number'].includes(tipo));
+          if (ehInputTexto || tag === 'SELECT') return;
+        }
 
         if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && ev.key.toLowerCase() === 'z') {
           ev.preventDefault();
