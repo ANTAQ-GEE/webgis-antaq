@@ -288,20 +288,22 @@
        ============================================================ */
     _bindListeners: function () {
       this._unbindListeners();
-
-      const container = window.mapa.getContainer();
       const self = this;
 
+      // ✅ Handler em CAPTURE PHASE registrado no document — pega ANTES de tudo
       this._handlers = {
-        // ✅ Clique DOM em CAPTURE phase (pega ANTES dos layers do Leaflet)
         clickDom: function (domEvent) {
           if (!self.modo) return;
-          // Ignora cliques em controles do Leaflet (zoom, coords, escala)
-          if (domEvent.target.closest('.leaflet-control')) return;
-          // Ignora cliques em popups/tooltips
-          if (domEvent.target.closest('.leaflet-popup')) return;
-          if (domEvent.target.closest('.leaflet-tooltip')) return;
-          // Ignora botão direito e cliques com modificadores de navegação
+
+          // Só processa se o clique foi DENTRO do container do mapa
+          const container = window.mapa.getContainer();
+          if (!container.contains(domEvent.target)) return;
+
+          // Ignora cliques em controles do Leaflet
+          if (domEvent.target.closest && domEvent.target.closest('.leaflet-control')) return;
+          if (domEvent.target.closest && domEvent.target.closest('.leaflet-popup')) return;
+
+          // Ignora botão direito / modificadores de navegação
           if (domEvent.button !== 0) return;
 
           // Converte coordenadas de tela → latlng
@@ -309,49 +311,54 @@
           const point = L.point(domEvent.clientX - rect.left, domEvent.clientY - rect.top);
           const latlng = window.mapa.containerPointToLatLng(point);
 
-          // ✅ Impede o Leaflet de processar o clique como zoom/navegação
+          console.log('[M1-click] latlng:', latlng, 'target:', domEvent.target.tagName);
+
           domEvent.stopPropagation();
           domEvent.preventDefault();
 
           self._onMapClick({ latlng: latlng, originalEvent: domEvent });
         },
-        // Duplo-clique para finalizar (também DOM capture)
         dblclickDom: function (domEvent) {
           if (!self.modo) return;
+          const container = window.mapa.getContainer();
+          if (!container.contains(domEvent.target)) return;
+          if (domEvent.target.closest && domEvent.target.closest('.leaflet-control')) return;
+
           domEvent.stopPropagation();
           domEvent.preventDefault();
           self._finalizar();
         },
-        mousemove: (e) => this._onMouseMove(e),
-        mouseout: () => { this._ocultarOverlay(); this._removerIndicadorSnap(); },
+        mousemove: (e) => self._onMouseMove(e),
+        mouseout: () => { self._ocultarOverlay(); self._removerIndicadorSnap(); },
         keydown: (ev) => {
-          if (ev.key === 'Escape') this.desativar();
-          if (ev.key === 'Control' && this._snapAtivo) this._snapCtrlInvertido = true;
-          if (ev.key === 'Alt' && !this._snapAtivo && this._snapTotal > 0) this._snapCtrlInvertido = true;
+          if (ev.key === 'Escape') self.desativar();
+          if (ev.key === 'Control' && self._snapAtivo) self._snapCtrlInvertido = true;
+          if (ev.key === 'Alt' && !self._snapAtivo && self._snapTotal > 0) self._snapCtrlInvertido = true;
         },
         keyup: (ev) => {
-          if (ev.key === 'Control' || ev.key === 'Alt') this._snapCtrlInvertido = false;
+          if (ev.key === 'Control' || ev.key === 'Alt') self._snapCtrlInvertido = false;
         }
       };
 
-      // Mousemove continua no Leaflet (precisa do latlng do evento)
+      // ✅ Registra no document, capture phase
+      document.addEventListener('click', this._handlers.clickDom, true);
+      document.addEventListener('dblclick', this._handlers.dblclickDom, true);
+
+      // Mousemove continua no Leaflet
       window.mapa.on('mousemove', this._handlers.mousemove);
       window.mapa.on('mouseout', this._handlers.mouseout);
 
-      // Click/dblclick em DOM capture (intercepta ANTES do Leaflet)
-      container.addEventListener('click', this._handlers.clickDom, true);
-      container.addEventListener('dblclick', this._handlers.dblclickDom, true);
-
       document.addEventListener('keydown', this._handlers.keydown);
       document.addEventListener('keyup', this._handlers.keyup);
+
+      console.log('[M1] Listeners registrados. Modo:', self.modo);
     },
 
     _unbindListeners: function () {
       if (!this._handlers) return;
 
-      const container = window.mapa.getContainer();
-      container.removeEventListener('click', this._handlers.clickDom, true);
-      container.removeEventListener('dblclick', this._handlers.dblclickDom, true);
+      document.removeEventListener('click', this._handlers.clickDom, true);
+      document.removeEventListener('dblclick', this._handlers.dblclickDom, true);
 
       window.mapa.off('mousemove', this._handlers.mousemove);
       window.mapa.off('mouseout', this._handlers.mouseout);
@@ -360,17 +367,7 @@
       document.removeEventListener('keyup', this._handlers.keyup);
 
       this._handlers = null;
-    },
-
-    _unbindListeners: function () {
-      if (!this._handlers) return;
-      window.mapa.off('click', this._handlers.click);
-      window.mapa.off('dblclick', this._handlers.dblclick);
-      window.mapa.off('mousemove', this._handlers.mousemove);
-      window.mapa.off('mouseout', this._handlers.mouseout);
-      document.removeEventListener('keydown', this._handlers.keydown);
-      document.removeEventListener('keyup', this._handlers.keyup);
-      this._handlers = null;
+      console.log('[M1] Listeners removidos.');
     },
 
     /* ============================================================
