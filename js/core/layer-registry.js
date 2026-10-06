@@ -43,7 +43,7 @@
       const caminhos = ['dados/manifest.json', 'manifest.json', 'dados/manifest_teste.json', 'manifest_teste.json'];
       for (const c of caminhos) {
         try {
-          const r = await window.FetchManager.fetchComRetry(`${c}?_t=${Date.now()}`, {
+          const r = await window.FetchManager.fetchComRetry(c, {
             tentativas: 2,
             timeoutMs: 8000
           });

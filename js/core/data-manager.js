@@ -35,7 +35,7 @@
           const url = cfg.arquivos[i];
 
           try {
-            const j = await window.FetchManager.fetchJSON(`${url}?_t=${Date.now()}`, {
+            const j = await window.FetchManager.fetchJSON(url, {
               onTentativa: (n, total) => {
                 if (n === 1) return;
                 if (cntEl) cntEl.innerText = `(retry ${n}/${total}…)`;

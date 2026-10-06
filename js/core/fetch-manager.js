@@ -29,7 +29,7 @@
         try {
           onTentativa(i + 1, cfg.tentativas);
 
-          const res = await fetch(url, { signal: ac.signal, cache: 'no-store' });
+          const res = await fetch(url, { signal: ac.signal, cache: 'default' });
           clearTimeout(tid);
 
           if (cfg.naoRetryEm.includes(res.status)) return res;

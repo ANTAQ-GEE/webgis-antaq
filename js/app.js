@@ -392,23 +392,25 @@
     window.FilterManager.aoMudarCamada("instalacoes_portuarias");
     window.Styler.atualizarLegenda();
 
-    await window.DataManager.atualizarTodasCamadas(true);
-
-    try {
-      await window.DataManager.carregarCamada('ven_2022');
-      if (window.CAMADAS_MAPA['ven_2022']) {
-        window.CAMADAS_MAPA['ven_2022'].addTo(window.mapa);
-        const qtd = window.DADOS_GEOJSON_BRUTOS['ven_2022']?.features?.length || 0;
-        const cnt = document.getElementById('cnt-ven-unificado');
-        if (cnt) cnt.innerText = qtd > 0 ? `(${qtd})` : '';
-        window.VENUnifiedManager.anoAtivo = 'ven_2022';
-      }
-    } catch (e) { console.warn('VEN 2022 indisponível:', e); }
-
+    // ✅ UI básica IMEDIATAMENTE (mapa já está pronto desde map.js)
     try { await window.URLState.init(); } catch (e) { console.warn('[URLState] init falhou:', e); }
     try { window.WebGISAbout.init(); } catch (e) { console.warn('[WebGISAbout] init falhou:', e); }
     try { window.MapExtras.init(); } catch (e) { console.warn('[MapExtras] init falhou:', e); }
     try { window.SelectionManager.init(); } catch (e) { console.warn('[SelectionManager] init falhou:', e); }
+
+    // ✅ Camadas carregam em BACKGROUND — usuário já interage com o mapa
+    window.DataManager.atualizarTodasCamadas(true)
+      .then(() => window.DataManager.carregarCamada('ven_2022'))
+      .then(() => {
+        if (window.CAMADAS_MAPA['ven_2022']) {
+          window.CAMADAS_MAPA['ven_2022'].addTo(window.mapa);
+          const qtd = window.DADOS_GEOJSON_BRUTOS['ven_2022']?.features?.length || 0;
+          const cnt = document.getElementById('cnt-ven-unificado');
+          if (cnt) cnt.innerText = qtd > 0 ? `(${qtd})` : '';
+          window.VENUnifiedManager.anoAtivo = 'ven_2022';
+        }
+      })
+      .catch(e => console.warn('[boot] Falha ao carregar camadas em background:', e));
 
     // Handlers M5 (notificações)
     document.addEventListener('keydown', (ev) => {
