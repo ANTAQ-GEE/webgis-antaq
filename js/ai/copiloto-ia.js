@@ -952,19 +952,23 @@
       }
     },
     _montarBarraAcoes: function (pergunta, respostaHTML) {
-      // ✅ Se a resposta já trouxe sua própria barra (ex: Top 10 UFs com "CSV (UFs)"),
-      //    não adiciona outra por cima
+      // ✅ Se a resposta já trouxe sua própria barra (ex: Top 10 UFs), não adiciona outra
       if (respostaHTML && respostaHTML.includes('copiloto-acoes-resposta')) {
         return '';
       }
 
+      const perguntaEsc = window.Security.escapeHTML(pergunta);
+
       return `
-        <div class="copiloto-acoes-resposta" data-pergunta="${window.Security.escapeHTML(pergunta)}">
+        <div class="copiloto-acoes-resposta" data-pergunta="${perguntaEsc}">
           <button onclick="CopilotoIA._copiarUltimaResposta(this)" title="Copiar resposta como texto">
             📋 Copiar
           </button>
           <button onclick="CopilotoIA._exportarUltimaResposta(this)" title="Exportar features em CSV">
             💾 CSV
+          </button>
+          <button onclick="CopilotoIA._compartilharConsulta(this)" title="Copiar link que reabre esta consulta">
+            🔗 Compartilhar
           </button>
         </div>
       `;
@@ -1104,7 +1108,106 @@
 
       if (window.UI) window.UI.toast(`💾 CSV exportado com ${entrada.features.length} linhas.`);
     },
+    /* ============================================================
+       1e-2 — URL COMPARTILHÁVEL
+       ============================================================ */
 
+    /**
+     * Gera URL com `?copiloto=<pergunta>` que reabre a consulta.
+     */
+    _gerarUrlConsulta: function (pergunta) {
+      const url = new URL(location.href);
+      // Limpa parâmetros antigos
+      url.searchParams.delete('copiloto');
+      // Adiciona o novo (URLSearchParams faz o encode automaticamente)
+      url.searchParams.set('copiloto', pergunta);
+      return url.toString();
+    },
+
+    /**
+     * Botão "🔗 Compartilhar": copia o link com a consulta.
+     */
+    _compartilharConsulta: function (botao) {
+      const pergunta = botao ? botao.closest('.copiloto-acoes-resposta')?.dataset.pergunta : null;
+      if (!pergunta) {
+        if (window.UI) window.UI.toast('⚠️ Não foi possível identificar a pergunta.');
+        return;
+      }
+
+      const url = this._gerarUrlConsulta(pergunta);
+
+      navigator.clipboard.writeText(url).then(() => {
+        if (window.UI) {
+          window.UI.toast(`🔗 Link copiado! Cole em outra aba ou envie por e-mail.<br><small style="color:#94a3b8;font-size:9px;">${window.Security.escapeHTML(url.slice(0, 80))}${url.length > 80 ? '…' : ''}</small>`);
+        }
+      }).catch(() => {
+        // Fallback: abre prompt pra copiar manualmente
+        window.prompt('Copie o link abaixo:', url);
+      });
+    },
+
+    /**
+     * Verifica se a URL tem `?copiloto=...` e executa a consulta automaticamente.
+     * Chamado no boot da aplicação.
+     */
+    verificarConsultaNaUrl: async function () {
+      const params = new URLSearchParams(location.search);
+      const pergunta = params.get('copiloto');
+      if (!pergunta) return;
+
+      console.info('[Copiloto] Consulta detectada na URL:', pergunta);
+
+      // Abre o painel
+      if (!this.aberto) this.toggle();
+
+      // Espera o painel estar visível
+      await new Promise(r => setTimeout(r, 600));
+
+      // Preenche o input e dispara
+      const inp = document.getElementById('copiloto-input');
+      if (inp) inp.value = pergunta;
+
+      // Pequeno atraso pro DOM estabilizar
+      await new Promise(r => setTimeout(r, 300));
+
+      // Executa a consulta
+      this.enviarComandoPredefinido(pergunta);
+
+      // Remove o parâmetro da URL após executar (evita re-rodar ao dar F5)
+      try {
+        const url = new URL(location.href);
+        url.searchParams.delete('copiloto');
+        history.replaceState(null, '', url.toString());
+      } catch (e) { /* ignora */ }
+    },
+    /**
+     * Executa uma consulta capturada previamente (antes do URLState apagar a URL).
+     * Usado pelo boot do app.js.
+     */
+    _executarConsultaPendente: async function (pergunta) {
+      if (!pergunta) return;
+
+      console.info('[Copiloto] Executando consulta pendente:', pergunta);
+
+      // Limpa a flag imediatamente (evita dupla execução)
+      window._copilotoConsultaPendente = null;
+
+      // Abre o painel do copiloto
+      if (!this.aberto) this.toggle();
+
+      // Espera o painel renderizar
+      await new Promise(r => setTimeout(r, 600));
+
+      // Preenche o input
+      const inp = document.getElementById('copiloto-input');
+      if (inp) inp.value = pergunta;
+
+      // Pequeno atraso pro DOM estabilizar
+      await new Promise(r => setTimeout(r, 300));
+
+      // Executa a consulta
+      this.enviarComandoPredefinido(pergunta);
+    },    
     abrirHistoricoCopiloto: function () {
       const modal = document.getElementById('modal-copiloto-historico');
       if (!modal) return;

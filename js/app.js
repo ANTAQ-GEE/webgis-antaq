@@ -376,6 +376,16 @@
      INICIALIZAÇÃO
      ============================================================ */
   (async function init() {
+    // ✅ 1e-2: captura o parâmetro ?copiloto= ANTES do URLState.init() apagá-lo
+    try {
+      const paramsIniciais = new URLSearchParams(location.search);
+      const perguntaInicial = paramsIniciais.get('copiloto');
+      if (perguntaInicial) {
+        window._copilotoConsultaPendente = perguntaInicial;
+        console.info('[Copiloto] Consulta capturada da URL (pré-boot):', perguntaInicial);
+      }
+    } catch (e) { /* ignora */ }
+
     if (window.location.protocol === 'file:') {
       console.warn('Execução em file:// detectada. Navegadores bloqueiam fetch local.');
       setTimeout(() => {
@@ -397,7 +407,21 @@
     try { window.WebGISAbout.init(); } catch (e) { console.warn('[WebGISAbout] init falhou:', e); }
     try { window.MapExtras.init(); } catch (e) { console.warn('[MapExtras] init falhou:', e); }
     try { window.SelectionManager.init(); } catch (e) { console.warn('[SelectionManager] init falhou:', e); }
+    // ✅ 1e-2: executa a consulta capturada no boot (ou tenta ler da URL, como fallback)
+    setTimeout(() => {
+      try {
+        if (!window.CopilotoIA) return;
 
+        if (window._copilotoConsultaPendente) {
+          window.CopilotoIA._executarConsultaPendente(window._copilotoConsultaPendente);
+        } else {
+          // Fallback: se algo reescreveu a URL, ainda tenta
+          window.CopilotoIA.verificarConsultaNaUrl();
+        }
+      } catch (e) {
+        console.warn('[CopilotoIA] execução da consulta pendente falhou:', e);
+      }
+    }, 2200);
     // ✅ Camadas carregam em BACKGROUND — usuário já interage com o mapa
     window.DataManager.atualizarTodasCamadas(true)
       .then(() => window.DataManager.carregarCamada('ven_2022'))
