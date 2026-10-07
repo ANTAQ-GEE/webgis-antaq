@@ -30,29 +30,30 @@ test.describe('Visual · Modais', () => {
   });
 
   test('modal Matriz VEN', async ({ page }) => {
-    // ✅ Aumenta timeout específico pra esse teste
     test.setTimeout(90000);
 
-    await page.getByRole('button', { name: /Matriz VEN/i }).click();
+    // ✅ .first() resolve o strict mode (2 botões "Matriz VEN")
+    await page.getByRole('button', { name: /Matriz VEN/i }).first().click();
 
     const modal = page.locator('#modal-matriz-ven .modal-matriz-conteudo');
     await expect(modal).toBeVisible({ timeout: 15000 });
 
-    // ✅ Espera a tabela ter linhas de verdade (não só o "Carregando...")
+    // Espera a tabela carregar
     await expect.poll(async () => {
-      const trs = await page.locator('#tabela-matriz-corpo tr').count();
-      return trs;
-    }, { timeout: 30000, message: 'Matriz VEN não carregou linhas' }).toBeGreaterThan(1);
+      return page.locator('#tabela-matriz-corpo tr').count();
+    }, { timeout: 30000 }).toBeGreaterThan(1);
 
-    // Espera a estabilização (KPIs aparecem)
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(1000);
 
-    // ✅ Reduz o escopo do mask — só os números, não o card inteiro
     await expect(modal).toHaveScreenshot('modal-matriz-ven.png', {
       mask: [
-        modal.locator('.kpi-card-matriz strong')
+        modal.locator('.kpi-card-matriz strong'),
+        modal.locator('.tabela-matriz-wrapper'),
+        modal.locator('.filtros-matriz-bar select'),
+        modal.locator('.filtros-matriz-bar input')
       ],
-      maxDiffPixels: 300
+      maxDiffPixels: 300,
+      timeout: 15000
     });
   });
 

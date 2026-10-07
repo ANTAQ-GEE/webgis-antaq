@@ -1,13 +1,10 @@
 /**
- * Helpers reutilizáveis para os smoke tests do WebGIS ANTAQ.
+ * Helpers reutilizáveis para os testes do WebGIS ANTAQ.
  * Última atualização: 2026-10-07
  */
 
 const ARQUIVO_ALVO = '/index.html';
 
-/**
- * Ruídos que NÃO devem falhar o teste.
- */
 const ERROS_IGNORADOS = [
   /tile\.openstreetmap\.org/i,
   /arcgisonline\.com/i,
@@ -76,9 +73,6 @@ async function lerGlobal(page, nomeVariavel) {
   }, nomeVariavel);
 }
 
-/**
- * Prepara a página para screenshot determinístico.
- */
 async function prepararParaScreenshot(page) {
   await page.evaluate(() => document.fonts && document.fonts.ready);
 
@@ -104,9 +98,6 @@ async function prepararParaScreenshot(page) {
   await page.waitForTimeout(300);
 }
 
-/**
- * Mascara elementos que mudam com o tempo.
- */
 function mascararDinamicos(page) {
   return [
     page.locator('#rodape-build'),
@@ -116,13 +107,8 @@ function mascararDinamicos(page) {
   ];
 }
 
-/**
- * Expande temporariamente um elemento com overflow pra screenshot completo.
- * Injeta CSS que remove max-height, tira screenshot, e remove o CSS.
- */
 async function expandirParaScreenshot(page, seletor, alturaMaxima) {
   alturaMaxima = alturaMaxima || 3000;
-  const id = 'screenshot-expand-' + Date.now();
 
   await page.addStyleTag({
     content: `
