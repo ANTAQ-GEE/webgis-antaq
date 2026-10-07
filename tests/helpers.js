@@ -116,11 +116,36 @@ function mascararDinamicos(page) {
   ];
 }
 
+/**
+ * Expande temporariamente um elemento com overflow pra screenshot completo.
+ * Injeta CSS que remove max-height, tira screenshot, e remove o CSS.
+ */
+async function expandirParaScreenshot(page, seletor, alturaMaxima) {
+  alturaMaxima = alturaMaxima || 3000;
+  const id = 'screenshot-expand-' + Date.now();
+
+  await page.addStyleTag({
+    content: `
+      ${seletor} {
+        max-height: ${alturaMaxima}px !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+      ${seletor} > *,
+      ${seletor} * {
+        overflow: visible !important;
+      }
+    `
+  });
+  await page.waitForTimeout(200);
+}
+
 module.exports = {
   ARQUIVO_ALVO,
   coletarErrosConsole,
   abrirWebGIS,
   lerGlobal,
   prepararParaScreenshot,
-  mascararDinamicos
+  mascararDinamicos,
+  expandirParaScreenshot
 };

@@ -38,7 +38,7 @@ test.describe('Visual · Toolbar e Legenda', () => {
   });
 
   test('legenda cartográfica expandida', async ({ page }) => {
-    const legenda = page.locator('.caixa-legenda');
+    const { abrirWebGIS, prepararParaScreenshot, expandirParaScreenshot } = require('../helpers');
     await expect(legenda).toBeVisible();
 
     await expect(legenda).toHaveScreenshot('legenda-expandida.png');
@@ -48,7 +48,7 @@ test.describe('Visual · Toolbar e Legenda', () => {
     await page.locator('.legenda-topo').click();
     await page.waitForTimeout(200);
 
-    const legenda = page.locator('.caixa-legenda');
+    const { abrirWebGIS, prepararParaScreenshot, expandirParaScreenshot } = require('../helpers');
     await expect(legenda).toHaveScreenshot('legenda-minimizada.png');
   });
 });

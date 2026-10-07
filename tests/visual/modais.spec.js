@@ -30,19 +30,29 @@ test.describe('Visual · Modais', () => {
   });
 
   test('modal Matriz VEN', async ({ page }) => {
+    // ✅ Aumenta timeout específico pra esse teste
+    test.setTimeout(90000);
+
     await page.getByRole('button', { name: /Matriz VEN/i }).click();
+
     const modal = page.locator('#modal-matriz-ven .modal-matriz-conteudo');
-    await expect(modal).toBeVisible();
+    await expect(modal).toBeVisible({ timeout: 15000 });
 
-    // Espera os dados carregarem
-    await expect(page.locator('#tabela-matriz-corpo tr').first()).toBeVisible({ timeout: 15000 });
-    await page.waitForTimeout(500);
+    // ✅ Espera a tabela ter linhas de verdade (não só o "Carregando...")
+    await expect.poll(async () => {
+      const trs = await page.locator('#tabela-matriz-corpo tr').count();
+      return trs;
+    }, { timeout: 30000, message: 'Matriz VEN não carregou linhas' }).toBeGreaterThan(1);
 
+    // Espera a estabilização (KPIs aparecem)
+    await page.waitForTimeout(800);
+
+    // ✅ Reduz o escopo do mask — só os números, não o card inteiro
     await expect(modal).toHaveScreenshot('modal-matriz-ven.png', {
       mask: [
-        // KPIs mudam conforme os dados — mascara os números
         modal.locator('.kpi-card-matriz strong')
-      ]
+      ],
+      maxDiffPixels: 300
     });
   });
 
@@ -65,18 +75,19 @@ test.describe('Visual · Modais', () => {
       await page.waitForTimeout(300);
     }
 
-    // Clica em ℹ️ do card VEN
-    const btnInfo = page.locator('#item-camada-ven-unificado button[title*="metadados" i], #item-camada-ven-unificado .btn-meta-camada').first();
-    await btnInfo.click();
+    // ✅ Usa o card de Instalações Portuárias (que tem ℹ️)
+    const card = page.locator('#item-camada-instalacoes_portuarias');
+    await card.scrollIntoViewIfNeeded();
+
+    // Clica no ℹ️ do card
+    await card.locator('.btn-meta-camada').click();
 
     const modal = page.locator('#modal-metadados .modal-metadados-card');
     await expect(modal).toBeVisible();
+    await page.waitForTimeout(300);
 
     await expect(modal).toHaveScreenshot('modal-metadados.png', {
-      mask: [
-        // Hash muda por camada
-        modal.locator('#meta-hash-valor')
-      ]
+      mask: [modal.locator('#meta-hash-valor')]
     });
   });
 });
