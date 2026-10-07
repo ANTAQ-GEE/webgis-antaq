@@ -186,7 +186,25 @@
       }
 
       // ---------- 4. Contagem ----------
-      const matchContagem = texto.match(/\b(quant[oa]s?|numero de|total de|contar|contagem)\b/);
+      const matchDentro = texto.match(/\b(dentro d[ao]|dentro de|contid[oa]s? (?:em|na|no)|inserid[oa]s? (?:em|na|no))\s+(.+?)(?:\?|$)/);
+      if (matchDentro) {
+        const alvoNome = matchDentro[2].trim();
+        const alvo = this._acharCamadaPoligonal(alvoNome);
+        if (alvo) {
+          const camada = acharCamada(texto);
+          return {
+            tipo: 'contido',
+            camada: camada || 'instalacoes_portuarias',
+            alvo: alvo,
+            alvoNome: alvoNome
+          };
+        }
+      }      
+      // ---------- 4. Contagem ----------
+      // ✅ Não casa se a pergunta tiver padrão de contenção ("dentro de", "na região", etc.)
+      //    Nesses casos, o bloco "contido" (7.6) trata com lookup geográfico
+      const temPadraoContencao = /\b(dentro d[ao]|na regi[ãa]o|no regi[ãa]o|na amaz[ôo]nia|no pantanal|no cerrado|na caatinga|na mata atl[âa]ntica|na amaz[ôo]nia legal)\b/.test(texto);
+      const matchContagem = !temPadraoContencao && texto.match(/\b(quant[oa]s?|numero de|total de|contar|contagem)\b/);
       if (matchContagem) {
         const camada = acharCamada(texto);
         const uf = acharUF(texto);
@@ -215,6 +233,22 @@
       if (matchGeo) {
         const camada = acharCamada(texto);
         const alvo = this._acharCamadaAlvo(texto);
+
+        // Se o alvo não foi identificado como camada (TI, UC, etc.),
+        // trata como "buffer em torno de um ponto nomeado"
+        if (!alvo) {
+          const depois = texto.slice(texto.indexOf(matchGeo[0]) + matchGeo[0].length).trim();
+          const matchCidade = depois.match(/^(?:d[eo]|d[ao]|perto d[eo])\s+(.+?)(?:\?|$)/);
+          if (matchCidade) {
+            return {
+              tipo: 'buffer_ponto',
+              camada: camada || 'instalacoes_portuarias',
+              raio: parseInt(matchGeo[1], 10),
+              pontoNome: matchCidade[1].trim()
+            };
+          }
+        }
+
         return {
           tipo: 'geo',
           camada: camada || 'instalacoes_portuarias',
@@ -244,6 +278,48 @@
       }
       if (texto.includes('metodologia') || texto.includes('matriz de tempos') || texto.includes('caminhos mínimos')) {
         return { tipo: 'metodologia_ven' };
+      }
+      // Atalho: "amazônia legal" como região
+      if ((texto.includes('amazônia legal') || texto.includes('amazonia legal')) &&
+          !texto.includes('travessia')) {
+        const camada = acharCamada(texto);
+        return {
+          tipo: 'contido',
+          camada: camada || 'instalacoes_portuarias',
+          alvo: 'estados_amazonia_legal',
+          alvoNome: 'Amazônia Legal'
+        };
+      }
+
+      // ---------- 7.7. Cruzam UFs (travessias) ----------
+      // Detecção de cruza UF (mais tolerante)
+      const palavrasTravessia = ['travessia', 'travessias', 'balsa', 'balsas', 'ferry', 'ferries'];
+      const palavrasCruza = ['cruzam', 'cruza', 'cruzando', 'interestadual', 'interestaduais',
+                             'entre estados', 'entre ufs', 'entre unidades', 'fronteira',
+                             'intermunicipal', 'intermunicipais'];
+      const temTravessia = palavrasTravessia.some(p => texto.includes(p));
+      const temCruza = palavrasCruza.some(p => texto.includes(p));
+      if (temTravessia && temCruza) {
+        return { tipo: 'cruza_uf', camada: 'linhas_travessias' };
+      }
+      // Atalho: só "interestadual" + travessia implícita
+      if ((texto.includes('interestadual') || texto.includes('interestaduais')) && !texto.includes('porto')) {
+        return { tipo: 'cruza_uf', camada: 'linhas_travessias' };
+      }
+
+      // ---------- 7.8. Buffer de ponto específico ----------
+      // "Portos a menos de 100km de Macapá", "Travessias a 50km de Belém"
+            // Aceita: "a menos de 100km de X", "a 50km de X", "50km de X", "num raio de 30km de X"
+      const matchBufferCidade = texto.match(/(?:a menos de|até|ate|dentro de|num raio de|a)?\s*(\d+)\s*km\s+(?:d[eo]|d[ao]|perto d[eo]|em torno d[eo]|próximo a|proximo a)\s+(.+?)(?:\?|$)/);
+      if (matchBufferCidade && !matchGeo) {
+        const camada = acharCamada(texto);
+        const cidade = matchBufferCidade[2].trim();
+        return {
+          tipo: 'buffer_ponto',
+          camada: camada || 'instalacoes_portuarias',
+          raio: parseInt(matchBufferCidade[1], 10),
+          pontoNome: cidade
+        };
       }
 
       // ---------- 8. Perguntas pré-definidas (botões rápidos) ----------
@@ -286,7 +362,14 @@
       if (textoNorm.includes('municipio') || textoNorm.includes('município')) return 'br_municipios_2025';
       return null;
     },
-
+    _acharCamadaPoligonal: function (nome) {
+      const n = normalizar(nome);
+      if (n.includes('amazônia legal') || n.includes('amazonia legal') || n === 'amazonia') return 'estados_amazonia_legal';
+      if (n.includes('amaz') && !n.includes('legal')) return 'estados_amazonia_legal';
+      if (n === 'ti' || n === 'tis' || n.includes('terra ind')) return 'tis_poligonais';
+      if (n === 'uc' || n === 'ucs' || n.includes('conserva')) return 'ucs_federais';
+      return null;
+    },
     /* ---------- Debug ---------- */
     explicar: function (intencao) {
       const linhas = [`**Tipo:** \`${intencao.tipo}\``];

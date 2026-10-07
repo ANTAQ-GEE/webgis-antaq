@@ -201,7 +201,14 @@
             return await this._responderContagem(intencao);
           case 'agrupamento':
             return await this._responderAgrupamento(intencao);
+          case 'contido':
+            return await this._responderContido(intencao);
 
+          case 'cruza_uf':
+            return await this._responderCruzaUF(intencao);
+
+          case 'buffer_ponto':
+            return await this._responderBufferPonto(intencao);
           case 'resumo_ven':
             return this._responderResumoVEN();
 
@@ -744,7 +751,390 @@
         </div>` : ''}
       `;
     },
+    /* ============================================================
+       1c — HANDLERS GEOGRÁFICOS AVANÇADOS
+       ============================================================ */
 
+    _responderContido: async function (intencao) {
+      const dadosOrigem = await this._obterDados(intencao.camada);
+      if (!dadosOrigem?.features?.length) return `Sem dados em <strong>${intencao.camada}</strong>.`;
+
+      // ✅ Verifica se a camada alvo existe nos dados
+      const dadosAlvo = await this._obterDados(intencao.alvo);
+
+      // Se NÃO existe, tenta fallback por região conhecida (ex: Amazônia Legal = lista de UFs)
+      if (!dadosAlvo?.features?.length) {
+        const regioes = {
+          'estados_amazonia_legal': {
+            nome: 'Amazônia Legal',
+            ufs: ['AC','AP','AM','MA','MT','PA','RO','RR','TO']
+          }
+        };
+        const regiao = regioes[intencao.alvo];
+        if (regiao) {
+          return this._responderContidoPorUF(intencao, dadosOrigem, regiao);
+        }
+        return `Camada <strong>${intencao.alvoNome || intencao.alvo}</strong> indisponível.`;
+      }
+
+      if (typeof turf === 'undefined') return 'Turf.js indisponível.';
+
+      // Filtra só polígonos do alvo
+      const poligonos = dadosAlvo.features.filter(f =>
+        f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon')
+      );
+      if (!poligonos.length) {
+        return `A camada <strong>${intencao.alvoNome || intencao.alvo}</strong> não tem polígonos.`;
+      }
+
+      // Testa ponto-em-polígono
+      const dentro = [];
+      for (const f of dadosOrigem.features) {
+        const ponto = this._pontoDe(f);
+        if (!ponto) continue;
+        const ptGeoJSON = { type: 'Point', coordinates: [ponto[1], ponto[0]] };
+        for (const poly of poligonos) {
+          try {
+            if (turf.booleanPointInPolygon(ptGeoJSON, poly)) {
+              dentro.push(f);
+              break;
+            }
+          } catch (e) { /* ignora */ }
+        }
+      }
+
+      const nomeOrigem = window.CONFIG_CAMADAS[intencao.camada]?.nome || intencao.camada;
+      const nomeAlvo = intencao.alvoNome || window.CONFIG_CAMADAS[intencao.alvo]?.nome || intencao.alvo;
+
+      this._ultimaContagem = { camadaId: intencao.camada, features: dentro };
+
+      const pct = dadosOrigem.features.length > 0
+        ? ((dentro.length / dadosOrigem.features.length) * 100).toFixed(1)
+        : '0';
+
+      return `
+        <div style="background:rgba(139,92,246,0.15);border-left:3px solid #8b5cf6;padding:10px 12px;border-radius:6px;">
+          <div style="font-size:11px;color:#c4b5fd;text-transform:uppercase;letter-spacing:0.5px;">Análise espacial · contenção</div>
+          <div style="font-size:22px;color:#a78bfa;font-weight:800;font-family:Consolas,monospace;margin:4px 0;">${dentro.length.toLocaleString('pt-BR')}</div>
+          <div style="font-size:11.5px;color:#e2e8f0;">${nomeOrigem}</div>
+          <div style="font-size:10.5px;color:#94a3b8;margin-top:4px;">
+            Dentro de <strong>${nomeAlvo}</strong> · ${pct}% do total (${dadosOrigem.features.length.toLocaleString('pt-BR')})
+          </div>
+        </div>
+        ${dentro.length > 0 ? `<div style="margin-top:8px;">
+          <button onclick="CopilotoIA._destacarContagem()"
+                  style="background:#8b5cf6;color:#fff;border:none;padding:5px 12px;border-radius:4px;font-weight:700;cursor:pointer;font-size:10.5px;">
+            🗺️ Destacar no mapa
+          </button>
+        </div>` : ''}
+      `;
+    },
+
+    /**
+     * Fallback: contenção por lista de UFs (quando camada poligonal não existe).
+     */
+    /**
+     * Fallback: contenção por lista de UFs (quando camada poligonal não existe).
+     * Se a feição não tem UF nos atributos, faz lookup geográfico pelo centroide.
+     */
+    _responderContidoPorUF: async function (intencao, dadosOrigem, regiao) {
+      // ✅ Carrega a camada de UFs pra lookup geográfico (fallback)
+      const dadosUF = await this._obterDados('uf');
+      const poligonosUF = dadosUF?.features?.filter(f =>
+        f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon')
+      ) || [];
+
+      // Cache: memoiza UF por feição pra não recalcular
+      const cacheUF = new Map();
+
+      const descobrirUF = (f) => {
+        // 1) Tenta pelos atributos
+        let uf = this._extrairUF(f);
+        if (uf) return uf;
+
+        // 2) Fallback geográfico: testa o centroide contra os polígonos de UF
+        if (!poligonosUF.length || typeof turf === 'undefined') return '';
+
+        const ponto = this._pontoDe(f);
+        if (!ponto) return '';
+
+        const ptGeoJSON = { type: 'Point', coordinates: [ponto[1], ponto[0]] };
+
+        for (const ufFeature of poligonosUF) {
+          try {
+            if (turf.booleanPointInPolygon(ptGeoJSON, ufFeature)) {
+              const p = ufFeature.properties || {};
+              const sigla = String(p.SIGLA_UF || p.sigla_uf || p.UF || p.uf || p.CD_UF || '').trim().toUpperCase();
+              if (sigla) return sigla;
+            }
+          } catch (e) { /* ignora */ }
+        }
+        return '';
+      };
+
+      const dentro = [];
+      const semUF = [];
+
+      for (const f of dadosOrigem.features) {
+        const chave = f.id || JSON.stringify(f.properties || {}).slice(0, 100);
+        let uf = cacheUF.get(chave);
+        if (uf === undefined) {
+          uf = descobrirUF(f);
+          cacheUF.set(chave, uf);
+        }
+
+        if (uf && regiao.ufs.includes(uf)) {
+          dentro.push(f);
+        } else if (!uf) {
+          semUF.push(f);
+        }
+      }
+
+      const nomeOrigem = window.CONFIG_CAMADAS[intencao.camada]?.nome || intencao.camada;
+      this._ultimaContagem = { camadaId: intencao.camada, features: dentro };
+
+      const pct = dadosOrigem.features.length > 0
+        ? ((dentro.length / dadosOrigem.features.length) * 100).toFixed(1)
+        : '0';
+
+      // Conta por UF dentro da região
+      const porUF = {};
+      dentro.forEach(f => {
+        const chave = f.id || JSON.stringify(f.properties || {}).slice(0, 100);
+        const uf = cacheUF.get(chave);
+        if (uf) porUF[uf] = (porUF[uf] || 0) + 1;
+      });
+      const topUF = Object.entries(porUF).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const linhasUF = topUF.map(([uf, qtd]) =>
+        `<tr>
+          <td style="padding:2px 6px;color:#e2e8f0;font-size:10.5px;font-weight:700;">${uf}</td>
+          <td style="padding:2px 6px;color:#a78bfa;font-family:Consolas,monospace;font-size:10.5px;text-align:right;">${qtd}</td>
+        </tr>`
+      ).join('');
+
+      const avisoSemUF = semUF.length > 0
+        ? `<div style="margin-top:6px;font-size:9.5px;color:#64748b;font-style:italic;">
+             ℹ️ ${semUF.length} feição(ões) não puderam ser localizadas geograficamente.
+           </div>`
+        : '';
+
+      return `
+        <div style="background:rgba(139,92,246,0.15);border-left:3px solid #8b5cf6;padding:10px 12px;border-radius:6px;">
+          <div style="font-size:11px;color:#c4b5fd;text-transform:uppercase;letter-spacing:0.5px;">Análise por UF</div>
+          <div style="font-size:22px;color:#a78bfa;font-weight:800;font-family:Consolas,monospace;margin:4px 0;">${dentro.length.toLocaleString('pt-BR')}</div>
+          <div style="font-size:11.5px;color:#e2e8f0;">${nomeOrigem}</div>
+          <div style="font-size:10.5px;color:#94a3b8;margin-top:4px;">
+            Na <strong>${regiao.nome}</strong> · ${pct}% do total (${dadosOrigem.features.length.toLocaleString('pt-BR')})
+          </div>
+          ${avisoSemUF}
+        </div>
+        ${topUF.length > 0 ? `
+          <div style="margin-top:10px;font-size:10.5px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">
+            📍 Top 5 UFs (da região)
+          </div>
+          <table style="width:100%;border-collapse:collapse;">
+            <tbody>${linhasUF}</tbody>
+          </table>
+        ` : ''}
+        ${dentro.length > 0 ? `<div style="margin-top:8px;">
+          <button onclick="CopilotoIA._destacarContagem()"
+                  style="background:#8b5cf6;color:#fff;border:none;padding:5px 12px;border-radius:4px;font-weight:700;cursor:pointer;font-size:10.5px;">
+            🗺️ Destacar no mapa
+          </button>
+        </div>` : ''}
+      `;
+    },
+
+    _responderCruzaUF: async function (intencao) {
+      const dados = await this._obterDados(intencao.camada);
+      if (!dados?.features?.length) return `Sem dados em <strong>${intencao.camada}</strong>.`;
+
+      const cruzam = dados.features.filter(f => {
+        const p = f.properties || {};
+        const orig = (p.est_origem || p.EST_ORIGEM || p.estado_origem || '').toString().trim().toUpperCase();
+        const dest = (p.est_estino || p.EST_DESTINO || p.estado_destino || '').toString().trim().toUpperCase();
+        return orig && dest && orig.length === 2 && dest.length === 2 && orig !== dest;
+      });
+
+      const nomeCamada = window.CONFIG_CAMADAS[intencao.camada]?.nome || intencao.camada;
+      const pct = dados.features.length > 0
+        ? ((cruzam.length / dados.features.length) * 100).toFixed(1)
+        : '0';
+
+      this._ultimaContagem = { camadaId: intencao.camada, features: cruzam };
+
+      // Monta lista de pares UF (ex: PA-AP, MA-TO)
+      const paresUF = {};
+      cruzam.forEach(f => {
+        const p = f.properties || {};
+        const orig = (p.est_origem || p.EST_ORIGEM || '').trim().toUpperCase();
+        const dest = (p.est_estino || p.EST_DESTINO || '').trim().toUpperCase();
+        if (orig && dest) {
+          const par = [orig, dest].sort().join('-');
+          paresUF[par] = (paresUF[par] || 0) + 1;
+        }
+      });
+
+      const topPares = Object.entries(paresUF)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8);
+
+      let linhasPares = '';
+      topPares.forEach(([par, qtd]) => {
+        linhasPares += `<tr>
+          <td style="padding:3px 8px;color:#e2e8f0;font-size:11px;font-weight:700;">${par}</td>
+          <td style="padding:3px 8px;color:#38bdf8;font-family:Consolas,monospace;font-size:11px;text-align:right;">${qtd}</td>
+        </tr>`;
+      });
+
+      return `
+        <div style="background:rgba(236,72,153,0.15);border-left:3px solid #ec4899;padding:10px 12px;border-radius:6px;">
+          <div style="font-size:11px;color:#f9a8d4;text-transform:uppercase;letter-spacing:0.5px;">Travessias interestaduais</div>
+          <div style="font-size:22px;color:#f472b6;font-weight:800;font-family:Consolas,monospace;margin:4px 0;">${cruzam.length.toLocaleString('pt-BR')}</div>
+          <div style="font-size:11.5px;color:#e2e8f0;">${nomeCamada}</div>
+          <div style="font-size:10.5px;color:#94a3b8;margin-top:4px;">
+            ${pct}% do total (${dados.features.length.toLocaleString('pt-BR')})
+          </div>
+        </div>
+        ${topPares.length > 0 ? `
+          <div style="margin-top:10px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">
+            🔗 Principais conexões entre UFs
+          </div>
+          <table style="width:100%;border-collapse:collapse;">
+            <tbody>${linhasPares}</tbody>
+          </table>
+        ` : ''}
+        ${cruzam.length > 0 ? `<div style="margin-top:8px;">
+          <button onclick="CopilotoIA._destacarContagem()"
+                  style="background:#ec4899;color:#fff;border:none;padding:5px 12px;border-radius:4px;font-weight:700;cursor:pointer;font-size:10.5px;">
+            🗺️ Destacar no mapa
+          </button>
+        </div>` : ''}
+      `;
+    },
+
+    _responderBufferPonto: async function (intencao) {
+      const ponto = await this._localizarPonto(intencao.pontoNome);
+      if (!ponto) {
+        return `Não encontrei o local "<strong>${window.Security.escapeHTML(intencao.pontoNome)}</strong>".<br>
+                Tente o nome de uma cidade ou porto conhecido.`;
+      }
+
+      const dados = await this._obterDados(intencao.camada);
+      if (!dados?.features?.length) return `Sem dados em <strong>${intencao.camada}</strong>.`;
+      if (typeof turf === 'undefined') return 'Turf.js indisponível.';
+
+      const raioKm = intencao.raio;
+      const dentro = [];
+
+      for (const f of dados.features) {
+        const p = this._pontoDe(f);
+        if (!p) continue;
+        try {
+          const dist = turf.distance(
+            [ponto.lng, ponto.lat],
+            [p[1], p[0]],
+            { units: 'kilometers' }
+          );
+          if (dist <= raioKm) dentro.push(f);
+        } catch (e) { /* ignora */ }
+      }
+
+      const nomeCamada = window.CONFIG_CAMADAS[intencao.camada]?.nome || intencao.camada;
+
+      // Guarda pro botão "Destacar"
+      this._ultimaContagem = { camadaId: intencao.camada, features: dentro };
+      this._ultimoBufferPonto = { lat: ponto.lat, lng: ponto.lng, raioKm };
+
+      return `
+        <div style="background:rgba(245,158,11,0.15);border-left:3px solid #f59e0b;padding:10px 12px;border-radius:6px;">
+          <div style="font-size:11px;color:#fcd34d;text-transform:uppercase;letter-spacing:0.5px;">Raio de proximidade</div>
+          <div style="font-size:22px;color:#fbbf24;font-weight:800;font-family:Consolas,monospace;margin:4px 0;">${dentro.length.toLocaleString('pt-BR')}</div>
+          <div style="font-size:11.5px;color:#e2e8f0;">${nomeCamada}</div>
+          <div style="font-size:10.5px;color:#94a3b8;margin-top:4px;">
+            Até <strong>${raioKm} km</strong> de <strong>${window.Security.escapeHTML(intencao.pontoNome)}</strong>
+          </div>
+        </div>
+        ${dentro.length > 0 ? `<div style="margin-top:8px;display:flex;gap:6px;">
+          <button onclick="CopilotoIA._destacarContagem()"
+                  style="background:#f59e0b;color:#000;border:none;padding:5px 12px;border-radius:4px;font-weight:700;cursor:pointer;font-size:10.5px;">
+            🗺️ Destacar no mapa
+          </button>
+          <button onclick="CopilotoIA._desenharCirculoBuffer()"
+                  style="background:transparent;color:#fbbf24;border:1px solid #f59e0b;padding:5px 12px;border-radius:4px;font-weight:700;cursor:pointer;font-size:10.5px;">
+            ⭕ Mostrar círculo ${raioKm} km
+          </button>
+        </div>` : ''}
+      `;
+    },
+
+    /* ---------- Helpers geográficos ---------- */
+
+    /**
+     * Localiza um ponto (cidade/porto) nas camadas carregadas.
+     * Retorna { lat, lng } ou null.
+     */
+    _localizarPonto: async function (nome) {
+      const alvo = String(nome).trim().toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+      // 1. Busca nas Instalações Portuárias (mais preciso)
+      const portos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
+      if (portos?.features) {
+        for (const f of portos.features) {
+          const p = f.properties || {};
+          const nomeFeicao = String(p.nome || p.NOME_INSTALACAO || p.cidade || p.municipio || '').toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (nomeFeicao.includes(alvo)) {
+            const pt = this._pontoDe(f);
+            if (pt) return { lat: pt[0], lng: pt[1] };
+          }
+        }
+      }
+
+      // 2. Busca em todas as camadas
+      for (const [id, dados] of Object.entries(DADOS_GEOJSON_BRUTOS)) {
+        if (id === 'instalacoes_portuarias' || !dados?.features) continue;
+        for (const f of dados.features) {
+          const p = f.properties || {};
+          const nomeFeicao = String(p.nome || p.NOME || p.cidade || p.municipio || '').toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (nomeFeicao.includes(alvo)) {
+            const pt = this._pontoDe(f);
+            if (pt) return { lat: pt[0], lng: pt[1] };
+          }
+        }
+      }
+
+      // 3. Fallback: geocoding simples (não implementado)
+      return null;
+    },
+
+    /**
+     * Desenha círculo visual do buffer no mapa.
+     */
+    _desenharCirculoBuffer: function () {
+      const buf = this._ultimoBufferPonto;
+      if (!buf) return;
+
+      // Remove círculo anterior
+      if (this._bufferCircle) {
+        try { window.mapa.removeLayer(this._bufferCircle); } catch (e) {}
+      }
+
+      this._bufferCircle = L.circle([buf.lat, buf.lng], {
+        radius: buf.raioKm * 1000,
+        color: '#f59e0b',
+        weight: 3,
+        fillColor: '#f59e0b',
+        fillOpacity: 0.1,
+        dashArray: '6, 6',
+        pane: 'paneLinhas'
+      }).addTo(window.mapa);
+
+      window.mapa.fitBounds(this._bufferCircle.getBounds(), { padding: [40, 40] });
+      if (window.UI) window.UI.toast(`⭕ Círculo de ${buf.raioKm} km desenhado no mapa.`);
+    },
     _responderComparacao: async function (intencao) {
       if (!window.SafraDiffManager) return 'Módulo de comparação indisponível.';
 
