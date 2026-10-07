@@ -235,7 +235,29 @@
         return { tipo: 'nota_tecnica' };
       }
 
-      // ---------- 8. Desconhecido ----------
+      // ---------- 7.5. Perguntas pré-definidas (botões rápidos) ----------
+      if (texto.includes('regulados por tipo') || texto.includes('ativos portuários regulados')) {
+        return { tipo: 'agrupamento', camada: 'instalacoes_portuarias', agruparPor: 'regime' };
+      }
+      if (texto.includes('extensão total do ven') || (texto.includes('ven 2024') && texto.includes('amazônia'))) {
+        return { tipo: 'resumo_ven' };
+      }
+      if (texto.includes('metodologia') || texto.includes('matriz de tempos') || texto.includes('caminhos mínimos')) {
+        return { tipo: 'metodologia_ven' };
+      }
+
+      // ---------- 8. Perguntas pré-definidas (botões rápidos) ----------
+      if (texto.includes('ativos portu') && texto.includes('regulado')) {
+        return { tipo: 'agrupamento', camada: 'instalacoes_portuarias', agruparPor: 'regime' };
+      }
+      if (texto.includes('extens') && texto.includes('ven 2024')) {
+        return { tipo: 'resumo_ven' };
+      }
+      if (texto.includes('metodologia') || texto.includes('matriz de tempos')) {
+        return { tipo: 'metodologia_ven' };
+      }
+
+      // ---------- 9. Desconhecido ----------
       return { tipo: 'desconhecido', textoOriginal: pergunta };
     },
 

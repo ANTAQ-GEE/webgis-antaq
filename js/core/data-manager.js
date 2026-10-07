@@ -97,12 +97,13 @@
                 chunkDelay: 50,
                 iconCreateFunction: (cluster) => {
                   const count = cluster.getChildCount();
-                  let dim = 32;
-                  let fontSize = 11;
-                  if (count >= 100) { dim = 48; fontSize = 14; }
-                  else if (count >= 10) { dim = 40; fontSize = 12; }
+                  let dim = 40;
+                  if (count >= 100) dim = 56;
+                  else if (count >= 10) dim = 46;
+                  else dim = 36;
+
                   return L.divIcon({
-                    html: `<div style="background:${cat.cor}; color:#ffffff; width:${dim}px; height:${dim}px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:${fontSize}px; border:3px solid rgba(255,255,255,0.92); box-shadow:0 2px 8px rgba(0,0,0,0.35); font-family:'Segoe UI',sans-serif;">${count}</div>`,
+                    html: window.MapSymbols.clusterHtml('ancora', cat.cor, count, dim),
                     className: 'marker-cluster-custom',
                     iconSize: L.point(dim, dim)
                   });
@@ -121,12 +122,14 @@
               const lat = f.geometry.coordinates[1];
               const lng = f.geometry.coordinates[0];
               if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-                const m = L.circleMarker([lat, lng], {
-                  pane: 'panePontos', radius: cat.raio, fillColor: cat.cor,
-                  color: '#ffffff', weight: cat.peso,
-                  fillOpacity: CONFIG_CAMADAS.instalacoes_portuarias.opacidade
+                // ✅ Âncora SVG colorida pelo regime
+                const m = L.marker([lat, lng], {
+                  pane: 'panePontos',
+                  icon: window.MapSymbols.ancora(cat.cor, 26),
+                  riseOnHover: true
                 });
                 m.feature = f;
+                m._portoCatId = cat.id;   // usado pra redesenhar ao mudar cor
                 m.on("click", (e) => {
                   if (window.CopilotoIA) window.CopilotoIA.ultimoAtivoInspecionado = f;
 
@@ -162,6 +165,15 @@
               if (chkEl && chkEl.checked) CAMADAS_MAPA[id].addTo(mapa);
             }
             if (cntEl) cntEl.innerText = `(${dados.features.length})`;
+
+            // ✅ Travessias: anexa os markers de ponte ao featureGroup
+            if (id === 'linhas_travessias') {
+              CAMADAS_MAPA[id].eachLayer(layer => {
+                if (layer._ponteMarker) {
+                  CAMADAS_MAPA[id].addLayer(layer._ponteMarker);
+                }
+              });
+            }
           }
 
           if (errEl) errEl.innerText = '';

@@ -16,6 +16,11 @@
     urlLocal: localStorage.getItem('antaq_ia_url') || 'http://localhost:11434/v1',
     ultimoAtivoInspecionado: null,
 
+    /* 1e-1: histórico e última resposta */
+    _historico: [],
+    _maxHistorico: 15,
+    _ultimaResposta: null,   // { pergunta, html, textoPlano, features, camadaId, tipo }
+
     toggle: function () {
       const p = document.getElementById('painel-copiloto');
       if (!p) return;
@@ -76,21 +81,80 @@
       if (inp) inp.value = texto;
       this.enviar();
     },
+    perguntarSeguro: function (texto, botao) {
+      // ✅ Dupla proteção: botão E processamento
+      if (botao) {
+        if (botao.disabled) {
+          console.log('[Copiloto] Botão já desabilitado, ignorando.');
+          return;
+        }
+        botao.disabled = true;
+        botao.style.opacity = '0.5';
+        botao.style.cursor = 'not-allowed';
+        setTimeout(() => {
+          botao.disabled = false;
+          botao.style.opacity = '';
+          botao.style.cursor = '';
+        }, 2000);   // ← aumenta pra 2s
+      }
 
+      if (this._processando) {
+        console.log('[Copiloto] Já processando, ignorando clique.');
+        return;
+      }
+
+      return this.enviarComandoPredefinido(texto);
+    },
     perguntar: function (texto) { return this.enviarComandoPredefinido(texto); },
     enviarMensagem: function () { return this.enviar(); },
 
     enviar: async function () {
       const inp = document.getElementById('copiloto-input');
       if (!inp) return;
+
       const texto = inp.value.trim();
       if (!texto) return;
 
-      this.adicionarMensagem('usuario', window.Security.escapeHTML(texto));
+      // Normaliza pra comparação (remove espaços múltiplos, tabs)
+      const normalizar = (s) => String(s).trim().replace(/\s+/g, ' ');
+      const textoNorm = normalizar(texto);
+      const container = document.getElementById('copiloto-mensagens');
+
+      // BLOQUEIO 1: mesma pergunta já está no chat?
+      if (container) {
+        const ultimasUser = container.querySelectorAll('.msg-usuario');
+        if (ultimasUser.length > 0) {
+          const ultimaPergunta = normalizar(ultimasUser[ultimasUser.length - 1].textContent);
+          if (ultimaPergunta === textoNorm) {
+            console.log('[Copiloto] Pergunta idêntica já no chat, bloqueando.');
+            inp.value = '';
+            return;
+          }
+        }
+      }
+
+      // BLOQUEIO 2: já está processando?
+      if (this._processando) {
+        console.log('[Copiloto] Processando consulta anterior, ignorando.');
+        inp.value = '';
+        return;
+      }
+
+      this._processando = true;
+      this._limparBarrasAntigas();
+
+      // Limpa estado
+      this._ultimaContagem = null;
+      this._ultimoRanking = null;
+      this._ultimaFicha = null;
+      this._ultimoResultadoGeo = null;
+      this._ultimaResposta = null;
+
+      this.adicionarMensagem('usuario', window.Security.escapeHTML(textoNorm));
       inp.value = '';
 
       const idWait = 'msg-wait-' + Date.now();
-      this.adicionarMensagem('ia', `<span id="${idWait}">⏳ Processando consulta espacial e regulatória...</span>`);
+      this.adicionarMensagem('ia', '<span id="' + idWait + '">⏳ Processando consulta espacial e regulatória...</span>');
 
       try {
         let respostaHTML = '';
@@ -100,13 +164,27 @@
         else if (this.provedor === 'local') respostaHTML = await this.chamarOllamaLocal(texto);
 
         const waitEl = document.getElementById(idWait);
-        if (waitEl && waitEl.parentElement) waitEl.parentElement.innerHTML = respostaHTML;
+        if (waitEl && waitEl.parentElement) {
+          const msgDiv = waitEl.parentElement;
+
+          // Remove TODAS as barras de ação (inclusive as que chegaram em paralelo)
+          document.querySelectorAll('#copiloto-mensagens .copiloto-acoes-resposta')
+            .forEach(b => b.remove());
+
+          const acoesHTML = this._montarBarraAcoes(texto, respostaHTML);
+          msgDiv.innerHTML = respostaHTML + acoesHTML;
+        }
+
+        this._registrarNoHistorico(texto, respostaHTML);
       } catch (err) {
         console.error(err);
         const waitEl = document.getElementById(idWait);
         if (waitEl && waitEl.parentElement) {
-          waitEl.parentElement.innerHTML = `⚠️ <strong>Falha na consulta:</strong> ${window.Security.escapeHTML(err.message || 'Erro inesperado')}`;
+          waitEl.parentElement.innerHTML = '⚠️ <strong>Falha na consulta:</strong> ' +
+            window.Security.escapeHTML(err.message || 'Erro inesperado');
         }
+      } finally {
+        this._processando = false;
       }
     },
 
@@ -121,7 +199,14 @@
           case 'contagem':
             
             return await this._responderContagem(intencao);
+          case 'agrupamento':
+            return await this._responderAgrupamento(intencao);
 
+          case 'resumo_ven':
+            return this._responderResumoVEN();
+
+          case 'metodologia_ven':
+            return this._responderMetodologiaVEN();
           case 'ranking':
             return await this._responderRanking(intencao);
 
@@ -167,6 +252,115 @@
               • <code>"Portos a menos de 50km de TIs"</code><br>
               • <code>"O que mudou entre VEN 2022 e 2024?"</code>`;
     },
+
+    /* ============================================================
+       HANDLERS ESPECIAIS (perguntas pré-definidas)
+       ============================================================ */
+
+    _responderAgrupamento: async function (intencao) {
+      const dados = await this._obterDados(intencao.camada);
+      if (!dados?.features?.length) return 'Sem dados carregados.';
+
+      if (intencao.agruparPor === 'regime') {
+        const contagem = {};
+        for (const f of dados.features) {
+          const cat = window.PortClassification.classificar(f.properties || {});
+          contagem[cat.id] = (contagem[cat.id] || 0) + 1;
+        }
+
+        const linhas = Object.entries(contagem)
+          .sort((a, b) => b[1] - a[1])
+          .map(([id, qtd]) => {
+            const cat = window.PortClassification.tipos[id] || { nome: id, cor: '#64748b' };
+            return `
+              <tr>
+                <td style="padding:5px 8px;">
+                  <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${cat.cor};border:2px solid #fff;vertical-align:middle;margin-right:6px;"></span>
+                  <span style="font-size:11px;color:#e2e8f0;">${window.Security.escapeHTML(cat.nome)}</span>
+                </td>
+                <td style="padding:5px 8px;color:#38bdf8;font-family:Consolas,monospace;font-size:12px;font-weight:700;text-align:right;">${qtd}</td>
+                <td style="padding:5px 8px;color:#94a3b8;font-size:10px;text-align:right;">${((qtd / dados.features.length) * 100).toFixed(1)}%</td>
+              </tr>`;
+          }).join('');
+
+        this._ultimaContagem = { camadaId: intencao.camada, features: dados.features };
+
+        return `
+          <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+            ⚓ ${dados.features.length.toLocaleString('pt-BR')} ativos por regime
+          </div>
+          <table style="width:100%;border-collapse:collapse;">
+            <thead><tr style="border-bottom:1px solid #334155;">
+              <th style="text-align:left;padding:4px 8px;color:#94a3b8;font-size:9.5px;">Regime</th>
+              <th style="text-align:right;padding:4px 8px;color:#94a3b8;font-size:9.5px;">Qtd</th>
+              <th style="text-align:right;padding:4px 8px;color:#94a3b8;font-size:9.5px;">%</th>
+            </tr></thead>
+            <tbody>${linhas}</tbody>
+          </table>
+        `;
+      }
+
+      return 'Tipo de agrupamento não implementado.';
+    },
+
+    _responderResumoVEN: function () {
+      return `
+        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+          🌊 Resumo VEN 2024 & Amazônia
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div style="background:rgba(2,132,199,0.15);border-left:3px solid #38bdf8;padding:8px 10px;border-radius:5px;">
+            <div style="font-size:9.5px;color:#94a3b8;text-transform:uppercase;">Extensão total</div>
+            <div style="font-size:18px;color:#38bdf8;font-weight:800;font-family:Consolas,monospace;">20.404 km</div>
+          </div>
+          <div style="background:rgba(16,185,129,0.15);border-left:3px solid #10b981;padding:8px 10px;border-radius:5px;">
+            <div style="font-size:9.5px;color:#94a3b8;text-transform:uppercase;">Amazônia</div>
+            <div style="font-size:18px;color:#34d399;font-weight:800;font-family:Consolas,monospace;">16.837 km</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#cbd5e1;line-height:1.5;">
+          📈 <strong>Crescimento vs 2022:</strong> +213 km (+1.06%)<br>
+          🌳 <strong>Concentração amazônica:</strong> 82.52% da malha navegável nacional<br>
+          ⚙️ <strong>Aderência ao PNV planejado:</strong> 48.91% (41.720 km previstos)
+        </div>
+        <div style="margin-top:10px;">
+          <button onclick="MatrizVENManager.abrirModal()"
+                  style="background:#0284c7;color:#fff;border:none;padding:6px 12px;border-radius:4px;font-weight:700;cursor:pointer;font-size:10.5px;">
+            ⏱️ Abrir Matriz VEN
+          </button>
+        </div>
+      `;
+    },
+
+    _responderMetodologiaVEN: function () {
+      return `
+        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+          📚 Metodologia · Matriz VEN
+        </div>
+        <div style="font-size:11px;color:#cbd5e1;line-height:1.6;">
+          A <strong>Matriz de Navegação VEN</strong> é calculada pelo SIGTAQ/SEPH a partir de:<br><br>
+          <strong>1. Bases de dados federais:</strong><br>
+          &bull; SDP/ANTAQ · atracações e movimentações<br>
+          &bull; Sistema Mercante · manifestos de transporte<br>
+          &bull; DNIT · calados e dragagens<br><br>
+          <strong>2. Modelagem espacial:</strong><br>
+          &bull; Caminhos mínimos O/D com eliminação de sobreposições<br>
+          &bull; Datum: SIRGAS 2000 (CONCAR)<br>
+          &bull; Escalas: 1:1.000.000 e 1:250.000<br><br>
+          <strong>3. Indicadores:</strong><br>
+          &bull; Extensão por trecho (km)<br>
+          &bull; Velocidade comercial média (km/h)<br>
+          &bull; Tempo de percurso estimado (dias/horas)<br>
+          &bull; Eclusas e restrições físicas
+        </div>
+        <div style="margin-top:10px;">
+          <button onclick="MatrizVENManager.abrirModal()"
+                  style="background:#0284c7;color:#fff;border:none;padding:6px 12px;border-radius:4px;font-weight:700;cursor:pointer;font-size:10.5px;">
+            ⏱️ Ver Matriz Completa
+          </button>
+        </div>
+      `;
+    },    
     /* ============================================================
        HANDLERS DE RESPOSTA (Copiloto 1b)
        ============================================================ */
@@ -347,6 +541,14 @@
           </tr>`;
         });
 
+        // ✅ Guarda os dados agrupados pra exportar CSV de UFs
+        this._ultimoRanking = {
+          camadaId,
+          tipo: 'agrupamento_uf',
+          agrupamento: rankingUF,
+          features: []  // ← vazio: não tem features individuais
+        };
+
         return `
           <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">
             🏆 Top ${intencao.n} UFs · ${nomeCamada2}
@@ -362,6 +564,12 @@
             </tr></thead>
             <tbody>${linhasUF}</tbody>
           </table>
+          <div style="margin-top:8px;">
+            <button onclick="CopilotoIA._exportarUltimaResposta(this)"
+                    style="background:rgba(2,132,199,0.15);border:1px solid rgba(56,189,248,0.35);color:#7dd3fc;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;">
+              💾 CSV (UFs)
+            </button>
+          </div>
         `;
       }
 
@@ -729,6 +937,233 @@
       }
       this._desenharDestaque(features, '#10b981');
     },
+    /* ============================================================
+       1e-1 — HISTÓRICO E AÇÕES DE RESPOSTA
+       ============================================================ */
+    _limparBarrasAntigas: function () {
+      try {
+        const container = document.getElementById('copiloto-mensagens');
+        if (!container) return;
+        const barras = container.querySelectorAll('.copiloto-acoes-resposta');
+        barras.forEach(b => b.remove());
+        console.log(`[Copiloto] ${barras.length} barra(s) antiga(s) removida(s).`);
+      } catch (e) {
+        console.warn('[Copiloto] Erro ao limpar barras:', e);
+      }
+    },
+    _montarBarraAcoes: function (pergunta, respostaHTML) {
+      // ✅ Se a resposta já trouxe sua própria barra (ex: Top 10 UFs com "CSV (UFs)"),
+      //    não adiciona outra por cima
+      if (respostaHTML && respostaHTML.includes('copiloto-acoes-resposta')) {
+        return '';
+      }
+
+      return `
+        <div class="copiloto-acoes-resposta" data-pergunta="${window.Security.escapeHTML(pergunta)}">
+          <button onclick="CopilotoIA._copiarUltimaResposta(this)" title="Copiar resposta como texto">
+            📋 Copiar
+          </button>
+          <button onclick="CopilotoIA._exportarUltimaResposta(this)" title="Exportar features em CSV">
+            💾 CSV
+          </button>
+        </div>
+      `;
+    },
+
+    _registrarNoHistorico: function (pergunta, respostaHTML) {
+      // Salva a resposta como texto plano (remove HTML)
+      const textoPlano = String(respostaHTML)
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // Guarda a "última resposta" pra ações de CSV
+      this._ultimaResposta = {
+        pergunta: pergunta,
+        html: respostaHTML,
+        textoPlano: textoPlano,
+        features: (this._ultimaContagem?.features && this._ultimaContagem.features.length > 0) ? this._ultimaContagem.features
+               : (this._ultimoRanking?.features && this._ultimoRanking.features.length > 0) ? this._ultimoRanking.features
+               : (this._ultimoResultadoGeo && this._ultimoResultadoGeo.length > 0) ? this._ultimoResultadoGeo
+               : (this._ultimaFicha?.feature ? [this._ultimaFicha.feature] : null),
+        agrupamento: this._ultimoRanking?.agrupamento || null,   // ✅ NOVO
+        camadaId: this._ultimaContagem?.camadaId
+               || this._ultimoRanking?.camadaId
+               || null,
+        timestamp: new Date()
+      };
+
+      // Adiciona ao histórico (não duplica perguntas idênticas recentes)
+      const ultima = this._historico[0];
+      if (ultima && ultima.pergunta === pergunta) {
+        this._historico[0] = this._ultimaResposta;
+      } else {
+        this._historico.unshift(this._ultimaResposta);
+        if (this._historico.length > this._maxHistorico) {
+          this._historico = this._historico.slice(0, this._maxHistorico);
+        }
+      }
+
+      this._atualizarBotaoHistoricoCopiloto();
+    },
+
+    _atualizarBotaoHistoricoCopiloto: function () {
+      const btn = document.getElementById('btn-copiloto-historico');
+      if (!btn) return;
+      if (this._historico.length > 0) {
+        btn.classList.add('visivel');
+        btn.title = `Histórico (${this._historico.length})`;
+      } else {
+        btn.classList.remove('visivel');
+      }
+    },
+
+    _copiarUltimaResposta: function (botao) {
+      if (!this._ultimaResposta) {
+        if (window.UI) window.UI.toast('⚠️ Nada para copiar.');
+        return;
+      }
+
+      // Se o botão passado foi de uma resposta antiga, pega a pergunta do data attribute
+      const pergunta = botao ? botao.closest('.copiloto-acoes-resposta')?.dataset.pergunta : null;
+      const entrada = pergunta
+        ? this._historico.find(h => h.pergunta === pergunta) || this._ultimaResposta
+        : this._ultimaResposta;
+
+      const texto = `# ${entrada.pergunta}\n\n${entrada.textoPlano}`;
+
+      navigator.clipboard.writeText(texto).then(() => {
+        if (window.UI) window.UI.toast('📋 Resposta copiada para a área de transferência.');
+      }).catch(() => {
+        if (window.UI) window.UI.toast('⚠️ Não foi possível copiar.');
+      });
+    },
+
+    _exportarUltimaResposta: function (botao) {
+      const pergunta = botao ? botao.closest('.copiloto-acoes-resposta')?.dataset.pergunta : null;
+      const entrada = pergunta
+        ? this._historico.find(h => h.pergunta === pergunta) || this._ultimaResposta
+        : this._ultimaResposta;
+
+      // ✅ Caso especial: ranking agrupado por UF → exporta CSV de agrupamento
+      if (entrada && entrada.agrupamento && entrada.agrupamento.length > 0) {
+        const linhas = ['"UF";"Quantidade"'];
+        entrada.agrupamento.forEach(([uf, qtd]) => {
+          linhas.push(`"${uf}";"${qtd}"`);
+        });
+        const csv = '\uFEFF' + linhas.join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const slug = String(entrada.pergunta).toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 40);
+        a.href = url;
+        a.download = `copiloto_${slug}_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        if (window.UI) window.UI.toast(`💾 CSV de agrupamento exportado (${entrada.agrupamento.length} UFs).`);
+        return;
+      }
+
+      if (!entrada || !entrada.features || !entrada.features.length) {
+        if (window.UI) window.UI.toast('⚠️ Esta resposta não tem dados para exportar.');
+        return;
+      }
+
+      // Coleta todas as chaves únicas
+      const chaves = new Set();
+      entrada.features.forEach(f => {
+        Object.keys(f.properties || {}).forEach(k => {
+          if (!['geom', 'geometry'].includes(k.toLowerCase())) chaves.add(k);
+        });
+      });
+      const colunas = [...chaves];
+
+      const linhas = [colunas.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')];
+      entrada.features.forEach(f => {
+        const p = f.properties || {};
+        const row = colunas.map(c => {
+          const v = p[c] !== undefined && p[c] !== null ? p[c] : '';
+          return `"${String(v).replace(/"/g, '""')}"`;
+        });
+        linhas.push(row.join(';'));
+      });
+
+      const csv = '\uFEFF' + linhas.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const slug = String(entrada.pergunta).toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 40);
+      a.href = url;
+      a.download = `copiloto_${slug}_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      if (window.UI) window.UI.toast(`💾 CSV exportado com ${entrada.features.length} linhas.`);
+    },
+
+    abrirHistoricoCopiloto: function () {
+      const modal = document.getElementById('modal-copiloto-historico');
+      if (!modal) return;
+
+      const corpo = document.getElementById('copiloto-historico-corpo');
+      if (!corpo) return;
+
+      if (this._historico.length === 0) {
+        corpo.innerHTML = '<div class="copiloto-historico-vazio">Nenhuma consulta ainda.</div>';
+      } else {
+        corpo.innerHTML = this._historico.map((item, idx) => {
+          const hora = item.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          const data = item.timestamp.toLocaleDateString('pt-BR');
+          return `
+            <div class="copiloto-historico-item" onclick="CopilotoIA._reabrirConsulta(${idx})">
+              <div class="chist-header">
+                <span class="chist-hora">${data} · ${hora}</span>
+                <span class="chist-badge">${item.features ? item.features.length + ' feições' : 'sem dados'}</span>
+              </div>
+              <div class="chist-pergunta">${window.Security.escapeHTML(item.pergunta)}</div>
+              <div class="chist-preview">${window.Security.escapeHTML(item.textoPlano.slice(0, 120))}${item.textoPlano.length > 120 ? '…' : ''}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      modal.classList.add('aberto');
+    },
+
+    fecharHistoricoCopiloto: function () {
+      const modal = document.getElementById('modal-copiloto-historico');
+      if (modal) modal.classList.remove('aberto');
+    },
+
+    _reabrirConsulta: function (idx) {
+      const item = this._historico[idx];
+      if (!item) return;
+
+      this.fecharHistoricoCopiloto();
+
+      // ✅ Limpeza agressiva antes de reinjetar
+      this._limparBarrasAntigas();
+
+      // Injeta pergunta + resposta no painel
+      this.adicionarMensagem('usuario', window.Security.escapeHTML(item.pergunta));
+      const div = document.createElement('div');
+      div.className = 'msg-ia';
+      div.innerHTML = item.html + this._montarBarraAcoes(item.pergunta, item.html);
+
+      const container = document.getElementById('copiloto-mensagens');
+      if (container) {
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+      }
+    
+
+      // Restaura estado pra ações seguintes
+      this._ultimaResposta = item;
+    },    
     gerarMinutaNotaTecnica: function (p) {
       const nome = p.nome || p.NOME_INSTALACAO || 'Instalação Portuária';
       const tipo = p.tipo || p.TIPO_INSTALACAO || 'Terminal Portuário';

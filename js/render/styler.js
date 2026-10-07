@@ -72,7 +72,9 @@
             const inputColor = document.getElementById(`subcolor-${tKey}`);
             if (inputColor) inputColor.value = cor;
             if (window.SUBGRUPOS_PORTOS && window.SUBGRUPOS_PORTOS[tKey]) {
-              window.SUBGRUPOS_PORTOS[tKey].eachLayer(m => { if (m.setStyle) m.setStyle({ fillColor: cor, color: '#ffffff' }); });
+              window.SUBGRUPOS_PORTOS[tKey].eachLayer(m => {
+                if (m.setIcon) m.setIcon(window.MapSymbols.ancora(cor, 26));
+              });
             }
           }
         }
@@ -104,16 +106,23 @@
         pointToLayer: (f, latlng) => {
           if (id === 'instalacoes_portuarias') {
             const cat = window.PortClassification.classificar(f.properties);
-            const m = L.circleMarker(latlng, {
-              pane: 'panePontos', radius: cat.raio, fillColor: cat.cor,
-              color: '#ffffff', weight: cat.peso, fillOpacity: cfg.opacidade
+            const m = L.marker(latlng, {
+              pane: 'panePontos',
+              icon: window.MapSymbols.ancora(cat.cor, 26),
+              riseOnHover: true
             });
-            m.on({
-              mouseover: e => { e.target.setRadius(cat.raio + 3); e.target.setStyle({ color: '#f59e0b', weight: 3 }); },
-              mouseout: e => { e.target.setRadius(cat.raio); e.target.setStyle({ color: '#ffffff', weight: cat.peso }); }
-            });
+            m._portoCatId = cat.id;
             return m;
           }
+          // ✅ Embarcações / AIS → barco azul
+          if (id === 'embarcacoes') {
+            return L.marker(latlng, {
+              pane: 'panePontos',
+              icon: window.MapSymbols.barco(cfg.cor || '#38bdf8', 24),
+              riseOnHover: true
+            });
+          }
+          // ✅ Outros pontos → círculo padrão (comportamento antigo)
           return L.circleMarker(latlng, {
             pane: (cfg.grupo === 'restricoes') ? 'paneRestricoes' : 'panePontos',
             radius: cfg.peso || 5, fillColor: cfg.cor,
@@ -123,6 +132,23 @@
         onEachFeature: (f, layer) => {
           if (f.properties) {
             layer.bindPopup(window.PopupRenderer.gerar(id, f.properties));
+
+            // Travessias: marker de ponte anexado ao layer
+            if (id === 'linhas_travessias' && f.geometry && f.geometry.type === 'LineString') {
+              try {
+                const coords = f.geometry.coordinates;
+                const meio = coords[Math.floor(coords.length / 2)];
+                const latM = meio[1];
+                const lngM = meio[0];
+                const corPonte = '#f59e0b';
+                const iconPonte = window.MapSymbols.ponte(corPonte, 22);
+                layer._ponteMarker = L.marker([latM, lngM], {
+                  pane: 'panePontos',
+                  icon: iconPonte,
+                  interactive: false
+                });
+              } catch (e) { /* ignora */ }
+            }
             const p = f.properties;
             const nomeFeicao = p.nome || p.NOME_INSTALACAO || p.NOME_UC || p.terrai_nom || p.NOME_RIO || p.SIGLA_UF || cfg.nome;
             if (nomeFeicao && id !== 'uf' && !ehLimiteDeFundo) {
@@ -219,7 +245,10 @@
       if (!window.PortClassification.tipos[tKey]) return;
       window.PortClassification.tipos[tKey].cor = novaCor;
       if (window.SUBGRUPOS_PORTOS && window.SUBGRUPOS_PORTOS[tKey]) {
-        window.SUBGRUPOS_PORTOS[tKey].eachLayer(m => { if (m.setStyle) m.setStyle({ fillColor: novaCor, color: '#ffffff' }); });
+        window.SUBGRUPOS_PORTOS[tKey].eachLayer(m => {
+          // ✅ Redesenha a âncora com a nova cor
+          if (m.setIcon) m.setIcon(window.MapSymbols.ancora(novaCor, 26));
+        });
       }
       this.atualizarLegenda();
     },
@@ -243,7 +272,7 @@
             const chkSub = document.getElementById(`chk-sub-${tKey}`);
             const subAtiva = chkSub ? chkSub.checked : true;
             if (subAtiva) {
-              subItensHTML += `<div class="item-legenda-linha"><span class="simbolo-ponto" style="background:${cat.cor}; width:${Math.max(8, cat.raio * 1.6)}px; height:${Math.max(8, cat.raio * 1.6)}px;"></span><span>${cat.nome}</span></div>`;
+              subItensHTML += `<div class="item-legenda-linha"><span style="display:inline-block; margin-right:2px;">${window.MapSymbols.html('ancora', cat.cor, 16)}</span><span>${cat.nome}</span></div>`;
             }
           }
           if (subItensHTML) {
@@ -251,13 +280,20 @@
             corpo.appendChild(l);
           }
         } else if (cfg.tipoGeo === 'linha' || cfg.tipoGeo === 'linha_tracejada') {
-          l.innerHTML = `<div class="item-legenda-linha"><span class="simbolo-linha" style="background:${cfg.cor};"></span><span>${cfg.nome}</span></div>`;
+          // Travessias usam ícone de ponte
+          if (id === 'linhas_travessias') {
+            l.innerHTML = `<div class="item-legenda-linha"><span style="display:inline-block;">${window.MapSymbols.html('ponte', cfg.cor, 16)}</span><span>${cfg.nome}</span></div>`;
+          } else {
+            l.innerHTML = `<div class="item-legenda-linha"><span class="simbolo-linha" style="background:${cfg.cor};"></span><span>${cfg.nome}</span></div>`;
+          }
           corpo.appendChild(l);
         } else if (cfg.tipoGeo === 'ponto') {
-          l.innerHTML = `<div class="item-legenda-linha"><span class="simbolo-ponto" style="background:${cfg.cor};"></span><span>${cfg.nome}</span></div>`;
-          corpo.appendChild(l);
-        } else {
-          l.innerHTML = `<div class="item-legenda-linha"><span class="simbolo-poligono" style="background:${cfg.cor}; opacity:${cfg.opacidade}; border-color:${cfg.cor};"></span><span>${cfg.nome}</span></div>`;
+          // Embarcações usam barco
+          if (id === 'embarcacoes') {
+            l.innerHTML = `<div class="item-legenda-linha"><span style="display:inline-block;">${window.MapSymbols.html('barco', cfg.cor, 16)}</span><span>${cfg.nome}</span></div>`;
+          } else {
+            l.innerHTML = `<div class="item-legenda-linha"><span class="simbolo-ponto" style="background:${cfg.cor};"></span><span>${cfg.nome}</span></div>`;
+          }
           corpo.appendChild(l);
         }
       }

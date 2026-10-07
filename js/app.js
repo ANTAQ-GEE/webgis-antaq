@@ -412,13 +412,13 @@
       })
       .catch(e => console.warn('[boot] Falha ao carregar camadas em background:', e));
 
-    // Handlers M5 (notificações)
+    // ✅ Fecha o histórico do copiloto com ESC
     document.addEventListener('keydown', (ev) => {
       if (ev.key === 'Escape') {
-        const m = document.getElementById('modal-historico-notif');
+        const m = document.getElementById('modal-copiloto-historico');
         if (m && m.classList.contains('aberto')) {
           ev.stopPropagation();
-          window.NotificationManager.fecharHistorico();
+          if (window.CopilotoIA) window.CopilotoIA.fecharHistoricoCopiloto();
         }
       }
     });

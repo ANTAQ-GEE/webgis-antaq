@@ -6,7 +6,7 @@
   <title>WebGIS Corporativo | ANTAQ</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
+  <link rel="icon" href="data:,">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/shpjs@4.0.4/dist/shp.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
@@ -177,6 +177,22 @@
       background: #ffffff; border-radius: 6px; margin-bottom: 4px;
       transition: background 0.15s ease;
     }
+    /* ============================================================
+       SÍMBOLOS INSTITUCIONAIS (âncora, ponte, barco)
+       ============================================================ */
+    .marker-symbol {
+      background: transparent !important;
+      border: none !important;
+    }
+    .marker-symbol svg {
+      transition: transform 0.15s ease;
+    }
+    .marker-symbol:hover svg {
+      transform: scale(1.15);
+    }
+    .marker-cluster-custom svg {
+      display: block;
+    }    
     .item-camada:hover { background: #f8fafc; }
     .item-camada-linha-topo {
       display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -561,7 +577,151 @@
       display: flex; align-items: center; justify-content: center;
     }
     .btn-copiloto-enviar:hover { background: #0369a1; }
+    /* ============================================================
+       1e-1 — COpiloto: botões de ação e histórico
+       ============================================================ */
+    .copiloto-acoes-resposta {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px dashed rgba(148, 163, 184, 0.25);
+    }
+    .copiloto-acoes-resposta button {
+      background: rgba(2, 132, 199, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #7dd3fc;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .copiloto-acoes-resposta button:hover {
+      background: rgba(2, 132, 199, 0.35);
+      border-color: #38bdf8;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
 
+    .btn-copiloto-historico {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 3px;
+      display: none;
+      transition: color 0.15s ease;
+    }
+    .btn-copiloto-historico.visivel { display: inline-block; }
+    .btn-copiloto-historico:hover { color: #38bdf8; background: rgba(255,255,255,0.08); }
+
+    .modal-copiloto-historico {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 25, 47, 0.88);
+      backdrop-filter: blur(6px);
+      z-index: 100005;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .modal-copiloto-historico.aberto { display: flex; }
+
+    .modal-copiloto-historico-card {
+      background: #0b192c;
+      border: 1px solid #0284c7;
+      border-radius: 10px;
+      width: 95%;
+      max-width: 620px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+      overflow: hidden;
+      color: #f8fafc;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+    .modal-copiloto-historico-header {
+      background: #061426;
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(2, 132, 199, 0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-copiloto-historico-header h3 {
+      font-size: 13px;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .modal-copiloto-historico-body {
+      padding: 12px 16px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .copiloto-historico-vazio {
+      text-align: center;
+      padding: 30px 20px;
+      color: #64748b;
+      font-style: italic;
+      font-size: 12px;
+    }
+    .copiloto-historico-item {
+      background: #0f2744;
+      border-left: 3px solid #0284c7;
+      border-radius: 6px;
+      padding: 9px 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .copiloto-historico-item:hover {
+      background: #143457;
+      border-left-color: #38bdf8;
+      transform: translateX(3px);
+    }
+    .copiloto-historico-item .chist-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 9.5px;
+      margin-bottom: 3px;
+    }
+    .copiloto-historico-item .chist-hora {
+      color: #64748b;
+      font-family: Consolas, monospace;
+      letter-spacing: 0.3px;
+    }
+    .copiloto-historico-item .chist-badge {
+      color: #7dd3fc;
+      background: rgba(2, 132, 199, 0.2);
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-weight: 700;
+    }
+    .copiloto-historico-item .chist-pergunta {
+      color: #f1f5f9;
+      font-weight: 700;
+      font-size: 11.5px;
+      margin-bottom: 3px;
+    }
+    .copiloto-historico-item .chist-preview {
+      color: #94a3b8;
+      font-size: 10.5px;
+      line-height: 1.35;
+    }
     .btn-matriz-ven {
       background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
       color: #fff; border: 1px solid #38bdf8;
@@ -3008,11 +3168,26 @@
         </div>
       </div>
       <div style="display:flex; align-items:center; gap:6px;">
+        <button id="btn-copiloto-historico" class="btn-copiloto-historico" onclick="CopilotoIA.abrirHistoricoCopiloto()" title="Histórico de consultas">🕘</button>
         <button class="btn-copiloto-config" onclick="CopilotoIA.toggleConfig()" title="Configurações de IA (Chave de API / Local)" style="background:transparent; border:none; color:#94a3b8; font-size:14px; cursor:pointer;">⚙️</button>
         <span class="btn-copiloto-fechar" onclick="CopilotoIA.toggle()" title="Fechar Assistente" style="color:#94a3b8; cursor:pointer; font-size:18px; font-weight:bold;">&times;</span>
       </div>
     </div>
-
+  <!-- 1e-1 — Modal de Histórico do Copiloto -->
+  <div class="modal-copiloto-historico" id="modal-copiloto-historico">
+    <div class="modal-copiloto-historico-card">
+      <div class="modal-copiloto-historico-header">
+        <h3>
+          <span>🕘</span>
+          <span>Histórico de Consultas</span>
+        </h3>
+        <button class="modal-matriz-fechar" onclick="CopilotoIA.fecharHistoricoCopiloto()">&times;</button>
+      </div>
+      <div class="modal-copiloto-historico-body" id="copiloto-historico-corpo">
+        <div class="copiloto-historico-vazio">Nenhuma consulta ainda.</div>
+      </div>
+    </div>
+  </div>
     <!-- CONFIGURAÇÕES DISCRETAS -->
     <div class="copiloto-config-box" id="copiloto-config-box" style="display:none; background:#0b1d33; padding:12px; border-bottom:1px solid #1e3a5f;">
       <div style="font-weight:700; font-size:11px; color:#38bdf8; margin-bottom:6px;">Configuração do Modelo de IA:</div>
@@ -3046,11 +3221,11 @@
 
     <!-- COMANDOS RÁPIDOS INSTITUCIONAIS -->
     <div style="padding:6px 14px; background:#08192d; border-top:1px solid rgba(2,132,199,0.2); display:flex; gap:5px; flex-wrap:wrap;">
-      <button class="btn-acao-chip" onclick="CopilotoIA.perguntar('Quais são os 1.179 ativos portuários regulados por tipo?')">⚓ Portos por Regime</button>
-      <button class="btn-acao-chip" onclick="CopilotoIA.perguntar('Qual a extensão total do VEN 2024 e o crescimento na Amazônia?')">🌊 VEN 2024 & Amazônia</button>
-      <button class="btn-acao-chip" onclick="CopilotoIA.perguntar('Como é calculada a Matriz de tempos e velocidades do VEN?')">⏱️ Metodologia VEN</button>
+      <button class="btn-acao-chip" onclick="CopilotoIA.perguntarSeguro('Quais são os 1.179 ativos portuários regulados por tipo?', this)">⚓ Portos por Regime</button>
+      <button class="btn-acao-chip" onclick="CopilotoIA.perguntarSeguro('Qual a extensão total do VEN 2024 e o crescimento na Amazônia?', this)">🌊 VEN 2024 & Amazônia</button>
+      <button class="btn-acao-chip" onclick="CopilotoIA.perguntarSeguro('Como é calculada a Matriz de tempos e velocidades do VEN?', this)">⏱️ Metodologia VEN</button>
     </div>
-
+    <!-- 1e-1 — Botão de ações em respostas (não visível diretamente, gerado dinamicamente) -->
     <!-- CAMPO DE DIGITAÇÃO -->
     <div class="copiloto-rodape" style="padding:10px 14px; background:#061426; border-top:1px solid rgba(2,132,199,0.3); display:flex; gap:8px;">
       <input type="text" id="copiloto-input" placeholder="Faça uma pergunta regulatória ou sobre o mapa..." style="flex:1; padding:7px 10px; font-size:11px; border-radius:5px; border:1px solid #1e4976; background:#0c223c; color:#fff;" onkeydown="if(event.key==='Enter') CopilotoIA.enviarMensagem()">
@@ -3534,6 +3709,7 @@
   <script src="js/core/map.js"></script>
   <script src="js/core/action-history.js"></script>
   <script src="js/core/basemap-manager.js"></script>
+  <script src="js/render/map-symbols.js"></script>
   <script src="js/render/popup-renderer.js"></script>
   <!-- Stage 1: dependentes de Security -->
   <script src="js/domain/port-classification.js"></script>
