@@ -324,24 +324,53 @@
         }
       }
 
-      // Se ainda não achou campo, ordena alfabeticamente por nome
-      let ordenado;
+      // ✅ Se NÃO há campo numérico útil, agrupa por UF (mais útil que alfabético)
       if (!campo) {
-        rotulo = 'Nome (ordem alfabética)';
-        formatarValor = () => '—';
-        ordenado = [...dados.features].sort((a, b) => {
-          const na = String(a.properties?.nome || a.properties?.NOME_INSTALACAO || '');
-          const nb = String(b.properties?.nome || b.properties?.NOME_INSTALACAO || '');
-          const cmp = na.localeCompare(nb, 'pt-BR');
-          return intencao.criterio === 'asc' ? cmp : -cmp;
+        const porUF = {};
+        for (const f of dados.features) {
+          const uf = this._extrairUF(f);
+          if (!uf) continue;
+          porUF[uf] = (porUF[uf] || 0) + 1;
+        }
+
+        const rankingUF = Object.entries(porUF)
+          .sort((a, b) => intencao.criterio === 'asc' ? a[1] - b[1] : b[1] - a[1])
+          .slice(0, intencao.n);
+
+        const nomeCamada2 = window.CONFIG_CAMADAS[camadaId]?.nome || camadaId;
+        let linhasUF = '';
+        rankingUF.forEach(([uf, qtd], i) => {
+          linhasUF += `<tr>
+            <td style="text-align:right;color:#64748b;font-family:Consolas,monospace;padding:3px 6px;">${i + 1}º</td>
+            <td style="padding:3px 6px;color:#e2e8f0;font-size:11px;font-weight:700;">${uf}</td>
+            <td style="padding:3px 6px;color:#38bdf8;font-family:Consolas,monospace;font-size:11px;text-align:right;">${qtd.toLocaleString('pt-BR')}</td>
+          </tr>`;
         });
-      } else {
-        ordenado = [...dados.features].sort((a, b) => {
-          const va = parseFloat(a.properties?.[campo]) || 0;
-          const vb = parseFloat(b.properties?.[campo]) || 0;
-          return intencao.criterio === 'asc' ? va - vb : vb - va;
-        });
+
+        return `
+          <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">
+            🏆 Top ${intencao.n} UFs · ${nomeCamada2}
+          </div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:8px;font-style:italic;">
+            ℹ️ Os dados de portos não possuem métrica numérica de tamanho. Mostrando ranking por <strong>quantidade de instalações por UF</strong>.
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:11px;">
+            <thead><tr style="border-bottom:1px solid #334155;">
+              <th style="text-align:right;padding:3px 6px;color:#94a3b8;font-size:9.5px;">#</th>
+              <th style="text-align:left;padding:3px 6px;color:#94a3b8;font-size:9.5px;">UF</th>
+              <th style="text-align:right;padding:3px 6px;color:#94a3b8;font-size:9.5px;">Instalações</th>
+            </tr></thead>
+            <tbody>${linhasUF}</tbody>
+          </table>
+        `;
       }
+
+      // Se achou métrica, ordena normalmente
+      const ordenado = [...dados.features].sort((a, b) => {
+        const va = parseFloat(a.properties?.[campo]) || 0;
+        const vb = parseFloat(b.properties?.[campo]) || 0;
+        return intencao.criterio === 'asc' ? va - vb : vb - va;
+      });
 
       const topN = ordenado.slice(0, intencao.n);
       const nomeCamada = window.CONFIG_CAMADAS[camadaId]?.nome || camadaId;
@@ -539,17 +568,43 @@
 
     _extrairUF: function (f) {
       const p = f.properties || {};
-      for (const k of ['SIGLA_UF','sigla_uf','uf','UF','estado','ESTADO','est_uf','sg_uf','est_origem','EST_ORIGEM','est_destino','EST_DESTINO']) {
+
+      // 1) Sigla direta (2 letras)
+      for (const k of ['SIGLA_UF','sigla_uf','uf','UF','est_uf','sg_uf','est_origem','EST_ORIGEM','est_destino','EST_DESTINO']) {
         const v = p[k];
         if (v && String(v).trim().length === 2) return String(v).trim().toUpperCase();
       }
+
+      // 2) Município no formato "Cidade/UF"
       for (const k of ['municipio','MUNICIPIO','nome_municipio']) {
         const v = p[k];
         if (v && String(v).includes('/')) {
           const partes = String(v).split('/');
-          if (partes.length > 1) return partes[1].trim().toUpperCase();
+          if (partes.length > 1) {
+            const uf = partes[1].trim().toUpperCase();
+            if (uf.length === 2) return uf;
+          }
         }
       }
+
+      // 3) ✅ Estado por extenso ("PARÁ", "Amazonas"...) → sigla
+      const mapaEstados = {
+        'acre':'AC','alagoas':'AL','amapa':'AP','amazonas':'AM','bahia':'BA',
+        'ceara':'CE','distrito federal':'DF','espirito santo':'ES','goias':'GO',
+        'maranhao':'MA','mato grosso':'MT','mato grosso do sul':'MS',
+        'minas gerais':'MG','para':'PA','paraiba':'PB','parana':'PR',
+        'pernambuco':'PE','piaui':'PI','rio de janeiro':'RJ',
+        'rio grande do norte':'RN','rio grande do sul':'RS','rondonia':'RO',
+        'roraima':'RR','santa catarina':'SC','sao paulo':'SP','sergipe':'SE','tocantins':'TO'
+      };
+      for (const k of ['estado','ESTADO','Estado','uf_nome']) {
+        const v = p[k];
+        if (!v) continue;
+        const norm = String(v).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (mapaEstados[norm]) return mapaEstados[norm];
+        if (norm.length === 2) return norm.toUpperCase();
+      }
+
       return '';
     },
 
