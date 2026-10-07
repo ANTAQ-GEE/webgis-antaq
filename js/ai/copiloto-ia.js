@@ -443,15 +443,25 @@
       const p = achado.feature.properties || {};
       const nomeCamada = window.CONFIG_CAMADAS[achado.camadaId]?.nome || achado.camadaId;
 
+      // ✅ Prioriza campos informativos (não corta na 12ª chave)
+      const PRIORITARIOS = ['nome', 'tipo', 'modalidade', 'situacao', 'estado', 'cidade', 'endereco', 'bairro', 'companhia', 'cnpj', 'legislacao', 'observacao', 'fonte', 'gestao'];
+      const todos = Object.keys(p).filter(k =>
+        !['geom', 'geometry', 'id', 'gid', 'objectid'].includes(k.toLowerCase())
+      );
+
+      // Ordena: prioritários primeiro (na ordem da lista), depois os outros
+      const ordenadas = [
+        ...PRIORITARIOS.filter(k => todos.includes(k)),
+        ...todos.filter(k => !PRIORITARIOS.includes(k))
+      ];
+
       let linhas = '';
-      const chaves = Object.keys(p).slice(0, 12);
-      for (const k of chaves) {
-        if (['geom', 'geometry', 'id'].includes(k.toLowerCase())) continue;
+      for (const k of ordenadas.slice(0, 15)) {
         const v = p[k];
         if (v === null || v === undefined || v === '') continue;
-        linhas += `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed rgba(148,163,184,0.15);">
-          <span style="color:#94a3b8;font-size:10px;font-weight:600;">${window.Security.escapeHTML(k)}</span>
-          <span style="color:#e2e8f0;font-size:10.5px;text-align:right;max-width:60%;word-break:break-word;">${window.Security.escapeHTML(v)}</span>
+        linhas += `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed rgba(148,163,184,0.15);gap:8px;">
+          <span style="color:#94a3b8;font-size:10px;font-weight:600;flex-shrink:0;">${window.Security.escapeHTML(k)}</span>
+          <span style="color:#e2e8f0;font-size:10.5px;text-align:right;word-break:break-word;">${window.Security.escapeHTML(v)}</span>
         </div>`;
       }
       // ✅ Guarda a feature encontrada pra destacar
