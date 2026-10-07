@@ -254,9 +254,10 @@
     },
 
     _acharCamadaAlvo: function (textoNorm) {
-      if (textoNorm.includes('terra ind') || textoNorm.includes(' ti ') || textoNorm.includes(' tis ')) return 'tis_poligonais';
-      if (textoNorm.includes('unidade de conserv') || textoNorm.includes(' uc ') || textoNorm.includes(' ucs ')) return 'ucs_federais';
-      if (textoNorm.includes('hidrovia') || textoNorm.includes('ven')) return 'ven';
+      // Usa word boundaries (\b) pra pegar "ti"/"tis"/"uc"/"ucs" em qualquer posição
+      if (textoNorm.includes('terra ind') || /\btis?\b/.test(textoNorm)) return 'tis_poligonais';
+      if (textoNorm.includes('unidade de conserv') || /\bucs?\b/.test(textoNorm)) return 'ucs_federais';
+      if (textoNorm.includes('hidrovia') || /\bven\b/.test(textoNorm)) return 'ven';
       if (textoNorm.includes('travessia')) return 'linhas_travessias';
       if (textoNorm.includes('rodovia')) return 'rodovias';
       if (textoNorm.includes('ferrovia')) return 'ferrovias';
