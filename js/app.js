@@ -266,8 +266,9 @@
   async function toggleCamada(id, ligar, opcoes) {
     opcoes = opcoes || {};
 
-    // ✅ Captura estado ANTES de qualquer await (senão o carregamento async contamina)
-    const estadoAnterior = window.mapa.hasLayer(window.CAMADAS_MAPA?.[id]);
+    // ✅ Captura estado ANTES de qualquer await, com guard contra undefined
+    const layerAtual = window.CAMADAS_MAPA?.[id];
+    const estadoAnterior = layerAtual ? window.mapa.hasLayer(layerAtual) : false;
 
     if (!window.CAMADAS_MAPA[id] || !window.DADOS_GEOJSON_BRUTOS[id]) {
       if (window.UI) window.UI.toast(`Carregando camada "${window.CONFIG_CAMADAS[id]?.nome || id}"...`);
@@ -403,6 +404,7 @@
     window.Styler.atualizarLegenda();
 
     // ✅ UI básica IMEDIATAMENTE (mapa já está pronto desde map.js)
+    // ✅ M9: BufferTool não precisa de init() — é ativado por clique no botão
     try { await window.URLState.init(); } catch (e) { console.warn('[URLState] init falhou:', e); }
     try { window.WebGISAbout.init(); } catch (e) { console.warn('[WebGISAbout] init falhou:', e); }
     try { window.MapExtras.init(); } catch (e) { console.warn('[MapExtras] init falhou:', e); }
