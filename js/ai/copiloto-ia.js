@@ -111,62 +111,449 @@
     },
 
     executarMotorHeuristico: async function (comando) {
-      const c = comando.toLowerCase();
+      // 1. Parser classifica a intenção
+      const intencao = window.IntentParser.interpretar(comando);
+      console.log('[CopilotoIA] Intenção:', intencao);
 
-      if (c.includes('tup') && (c.includes('pará') || c.includes('para') || c.includes(' pa') || c.includes('maranhão') || c.includes(' ma') || c.includes('amazonas') || c.includes(' am'))) {
-        let ufAlvo = 'PA';
-        if (c.includes('maranhão') || c.includes(' ma')) ufAlvo = 'MA';
-        if (c.includes('amazonas') || c.includes(' am')) ufAlvo = 'AM';
+      // 2. Dispatch por tipo
+      try {
+        switch (intencao.tipo) {
+          case 'contagem':
+            return await this._responderContagem(intencao);
 
-        const gPortos = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
-        if (!gPortos || !gPortos.features) return "Camada de Instalações Portuárias ainda não foi baixada.";
+          case 'ranking':
+            return await this._responderRanking(intencao);
 
-        const tups = gPortos.features.filter(f => {
-          const cat = window.PortClassification.classificar(f.properties || {});
-          const uf = window.Analytics ? window.Analytics.extrairUF(f.properties, f) : '';
-          return cat.id === 'TUP' && uf === ufAlvo;
-        });
+          case 'ficha':
+            return await this._responderFicha(intencao);
 
-        if (tups.length > 0) {
-          if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
-          window.CAMADA_DESTAQUE = L.geoJSON({ type: 'FeatureCollection', features: tups }, {
-            pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 10, fillColor: '#10b981', color: '#ffffff', weight: 2.5, fillOpacity: 0.9 })
-          }).addTo(mapa);
-          mapa.fitBounds(window.CAMADA_DESTAQUE.getBounds(), { padding: [50, 50] });
-          return `✓ Localizados <strong>${tups.length} TUPs</strong> no estado do <strong>${ufAlvo}</strong>.<br>Feições destacadas em verde no mapa.`;
+          case 'geo':
+            return await this._responderGeo(intencao);
+
+          case 'comparacao':
+            return await this._responderComparacao(intencao);
+
+          case 'zoom':
+            document.getElementById('input-busca').value = intencao.termo;
+            if (window.SearchEngine) window.SearchEngine.executar();
+            return `🔍 Buscando: <em>"${window.Security.escapeHTML(intencao.termo)}"</em>.`;
+
+          case 'nota_tecnica': {
+            const ativo = this.ultimoAtivoInspecionado ||
+              (DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.[0]);
+            if (!ativo) return "Clique primeiro em uma instalação portuária no mapa.";
+            return this.gerarMinutaNotaTecnica(ativo.properties || {});
+          }
+
+          case 'vazio':
+            return 'Faça uma pergunta. Ex.: "Quantos portos no Pará?"';
+
+          default:
+            return this._respostaGenerica(comando);
         }
-        return `Nenhum TUP localizado para a UF ${ufAlvo}.`;
+      } catch (err) {
+        console.error('[CopilotoIA] Erro ao processar intenção:', err);
+        return `⚠️ <strong>Erro ao processar:</strong> ${window.Security.escapeHTML(err.message || 'desconhecido')}`;
       }
-
-      if ((c.includes('sobreposi') || c.includes('interfer') || c.includes('cruzam')) && (c.includes('uc') || c.includes('conservacao')) && (c.includes('hidro') || c.includes('via'))) {
-        const gVias = DADOS_GEOJSON_BRUTOS['vias_navegadas'] || DADOS_GEOJSON_BRUTOS['ven_2022'];
-        const gUcs = DADOS_GEOJSON_BRUTOS['ucs_todas_mma'] || DADOS_GEOJSON_BRUTOS['ucs_federais'];
-        if (!gVias || !gUcs) return "Para esta análise, ative as camadas <strong>Vias Navegadas</strong> e <strong>Unidades de Conservação</strong> no painel lateral.";
-        if (typeof turf === 'undefined') return "Biblioteca Turf.js carregando. Tente novamente.";
-        return `🌲 <strong>Diagnóstico Socioambiental:</strong><br>• A malha navegada da ANTAQ cruza biomas estratégicos.<br>• Empreendimentos que interceptam UCs de Proteção Integral exigem autorização (Art. 36, Lei 9.985/2000).`;
-      }
-
-      if (c.includes('nota técnica') || c.includes('nota tecnica') || c.includes('parecer')) {
-        const ativo = this.ultimoAtivoInspecionado || (DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.[0]);
-        if (!ativo) return "Clique primeiro em uma instalação portuária no mapa.";
-        return this.gerarMinutaNotaTecnica(ativo.properties || {});
-      }
-
-      if (c.startsWith('zoom') || c.startsWith('ir para') || c.startsWith('localizar')) {
-        const termo = comando.replace(/^(zoom|ir para|localizar|mostrar)\s+/i, '').trim();
-        const inpBusca = document.getElementById('input-busca');
-        if (inpBusca) inpBusca.value = termo;
-        if (window.SearchEngine) window.SearchEngine.executar();
-        return `🔍 Buscando: <em>"${termo}"</em>.`;
-      }
-
-      return `Entendi sua consulta sobre <em>"${window.Security.escapeHTML(comando)}"</em>.<br><br>
-              💡 <strong>Comandos suportados:</strong><br>
-              • <code>"Quais os TUPs do Pará?"</code><br>
-              • <code>"Zoom em Santos"</code><br>
-              • <code>"Gerar nota técnica"</code>`;
     },
 
+    _respostaGenerica: function (comando) {
+      return `Não consegui classificar sua pergunta: <em>"${window.Security.escapeHTML(comando)}"</em>.<br><br>
+              💡 <strong>Tente algo assim:</strong><br>
+              • <code>"Quantos portos no Pará?"</code><br>
+              • <code>"Top 10 maiores portos"</code><br>
+              • <code>"Me fale sobre Santos"</code><br>
+              • <code>"Portos a menos de 50km de TIs"</code><br>
+              • <code>"O que mudou entre VEN 2022 e 2024?"</code>`;
+    },
+    /* ============================================================
+       HANDLERS DE RESPOSTA (Copiloto 1b)
+       ============================================================ */
+
+    _responderContagem: async function (intencao) {
+      const camadaId = intencao.camada;
+      const dados = await this._obterDados(camadaId);
+
+      if (!dados || !dados.features || !dados.features.length) {
+        return `Sem dados carregados para <strong>${camadaId}</strong>.`;
+      }
+
+      // Aplica filtros
+      let features = dados.features;
+      const filtroAplicado = [];
+
+      if (intencao.filtro?.uf) {
+        features = features.filter(f => {
+          const uf = this._extrairUF(f);
+          return uf === intencao.filtro.uf;
+        });
+        filtroAplicado.push(`UF = <strong>${intencao.filtro.uf}</strong>`);
+      }
+
+      if (intencao.filtro?.regime && camadaId === 'instalacoes_portuarias') {
+        features = features.filter(f => {
+          const cat = window.PortClassification.classificar(f.properties || {});
+          return cat.id === intencao.filtro.regime;
+        });
+        const cat = window.PortClassification.tipos[intencao.filtro.regime];
+        filtroAplicado.push(`Regime = <strong>${cat?.nome || intencao.filtro.regime}</strong>`);
+      }
+
+      if (intencao.filtro?.regiao) {
+        const ufsRegiao = {
+          'norte': ['AC','AP','AM','PA','RO','RR','TO'],
+          'nordeste': ['AL','BA','CE','MA','PB','PE','PI','RN','SE'],
+          'centro-oeste': ['DF','GO','MT','MS'],
+          'sudeste': ['ES','MG','RJ','SP'],
+          'sul': ['PR','RS','SC'],
+          'amazonia legal': ['AC','AP','AM','MA','MT','PA','RO','RR','TO']
+        }[intencao.filtro.regiao] || [];
+        features = features.filter(f => ufsRegiao.includes(this._extrairUF(f)));
+        filtroAplicado.push(`Região = <strong>${intencao.filtro.regiao}</strong>`);
+      }
+
+      const nomeCamada = window.CONFIG_CAMADAS[camadaId]?.nome || camadaId;
+      const total = features.length;
+      const totalGeral = dados.features.length;
+      const pct = totalGeral > 0 ? ((total / totalGeral) * 100).toFixed(1) : '0';
+
+      const filtrosTexto = filtroAplicado.length > 0
+        ? `<br><small style="color:#94a3b8;">Filtros: ${filtroAplicado.join(' · ')}</small>`
+        : '';
+
+      return `
+        <div style="background:rgba(2,132,199,0.15);border-left:3px solid #38bdf8;padding:10px 12px;border-radius:6px;">
+          <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Contagem</div>
+          <div style="font-size:22px;color:#38bdf8;font-weight:800;font-family:Consolas,monospace;margin:4px 0;">${total.toLocaleString('pt-BR')}</div>
+          <div style="font-size:11.5px;color:#e2e8f0;">${nomeCamada}</div>
+          <div style="font-size:10.5px;color:#94a3b8;margin-top:4px;">${pct}% do total (${totalGeral.toLocaleString('pt-BR')} feições)${filtrosTexto}</div>
+        </div>
+        ${total > 0 ? `<div style="margin-top:8px;font-size:10.5px;">
+          <button onclick="CopilotoIA._destacarNoMapa('${camadaId}', ${JSON.stringify(JSON.stringify(intencao.filtro))})"
+                  style="background:#0284c7;color:#fff;border:none;padding:5px 12px;border-radius:4px;font-weight:700;cursor:pointer;font-size:10.5px;">
+            🗺️ Destacar no mapa
+          </button>
+        </div>` : ''}
+      `;
+    },
+
+    _responderRanking: async function (intencao) {
+      const camadaId = intencao.camada;
+      const dados = await this._obterDados(camadaId);
+
+      if (!dados || !dados.features || !dados.features.length) {
+        return `Sem dados carregados para <strong>${camadaId}</strong>.`;
+      }
+
+      // Descobre qual campo usar
+      const campoExtensao = camadaId.startsWith('ven_') || camadaId === 'ven' ? 'extensao' : null;
+      const campoArea = 'area_m2';
+      const amostra = dados.features[0].properties || {};
+
+      let campo = null;
+      let rotulo = '';
+
+      if (amostra[campoExtensao]) { campo = campoExtensao; rotulo = 'Extensão (km)'; }
+      else if (amostra[campoArea]) { campo = campoArea; rotulo = 'Área (m²)'; }
+      else if (amostra.extensao) { campo = 'extensao'; rotulo = 'Extensão (km)'; }
+      else { campo = null; rotulo = '(sem métrica)'; }
+
+      // Ordena
+      const ordenado = [...dados.features].sort((a, b) => {
+        const va = parseFloat(a.properties?.[campo]) || 0;
+        const vb = parseFloat(b.properties?.[campo]) || 0;
+        return intencao.criterio === 'asc' ? va - vb : vb - va;
+      });
+
+      const topN = ordenado.slice(0, intencao.n);
+      const nomeCamada = window.CONFIG_CAMADAS[camadaId]?.nome || camadaId;
+
+      let linhas = '';
+      topN.forEach((f, i) => {
+        const p = f.properties || {};
+        const nome = p.nome || p.NOME_INSTALACAO || p.nome_rio || p.NOME_RIO || p.SIGLA_UF || '—';
+        const valor = campo ? parseFloat(p[campo] || 0) : 0;
+        const valorFmt = campo === campoArea
+          ? `${(valor / 1_000_000).toFixed(2)} km²`
+          : valor.toFixed(2);
+        const uf = this._extrairUF(f) || '—';
+
+        linhas += `<tr>
+          <td style="text-align:right;color:#64748b;font-family:Consolas,monospace;padding:3px 6px;">${i + 1}º</td>
+          <td style="padding:3px 6px;color:#e2e8f0;font-size:10.5px;">${window.Security.escapeHTML(nome)}</td>
+          <td style="padding:3px 6px;color:#38bdf8;font-family:Consolas,monospace;font-size:10.5px;text-align:right;">${valorFmt}</td>
+          <td style="padding:3px 6px;color:#94a3b8;font-size:10px;">${uf}</td>
+        </tr>`;
+      });
+
+      return `
+        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">
+          🏆 Top ${intencao.n} · ${nomeCamada}
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px;">
+          <thead><tr style="border-bottom:1px solid #334155;">
+            <th style="text-align:right;padding:3px 6px;color:#94a3b8;font-size:9.5px;">#</th>
+            <th style="text-align:left;padding:3px 6px;color:#94a3b8;font-size:9.5px;">Nome</th>
+            <th style="text-align:right;padding:3px 6px;color:#94a3b8;font-size:9.5px;">${rotulo}</th>
+            <th style="text-align:left;padding:3px 6px;color:#94a3b8;font-size:9.5px;">UF</th>
+          </tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      `;
+    },
+
+    _responderFicha: async function (intencao) {
+      const alvo = intencao.alvo;
+      const buscaNorm = alvo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+      // Busca em todas as camadas
+      let achado = null;
+      for (const [id, dados] of Object.entries(DADOS_GEOJSON_BRUTOS)) {
+        if (!dados || !dados.features) continue;
+        for (const f of dados.features) {
+          const p = f.properties || {};
+          const nome = String(p.nome || p.NOME_INSTALACAO || p.nome_rio || p.NOME_RIO || p.terrai_nom || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (nome.includes(buscaNorm)) {
+            achado = { feature: f, camadaId: id };
+            break;
+          }
+        }
+        if (achado) break;
+      }
+
+      if (!achado) {
+        return `Não encontrei nada com "<strong>${window.Security.escapeHTML(alvo)}</strong>".<br><br>
+                Tente o nome exato de um porto, rio ou travessia.`;
+      }
+
+      const p = achado.feature.properties || {};
+      const nomeCamada = window.CONFIG_CAMADAS[achado.camadaId]?.nome || achado.camadaId;
+
+      let linhas = '';
+      const chaves = Object.keys(p).slice(0, 12);
+      for (const k of chaves) {
+        if (['geom', 'geometry', 'id'].includes(k.toLowerCase())) continue;
+        const v = p[k];
+        if (v === null || v === undefined || v === '') continue;
+        linhas += `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed rgba(148,163,184,0.15);">
+          <span style="color:#94a3b8;font-size:10px;font-weight:600;">${window.Security.escapeHTML(k)}</span>
+          <span style="color:#e2e8f0;font-size:10.5px;text-align:right;max-width:60%;word-break:break-word;">${window.Security.escapeHTML(v)}</span>
+        </div>`;
+      }
+
+      return `
+        <div style="font-size:12px;color:#38bdf8;font-weight:800;margin-bottom:6px;">${window.Security.escapeHTML(p.nome || p.NOME_INSTALACAO || p.nome_rio || alvo)}</div>
+        <div style="font-size:9.5px;color:#64748b;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${nomeCamada}</div>
+        ${linhas}
+        <div style="margin-top:8px;">
+          <button onclick="CopilotoIA._destacarFicha()"
+                  style="background:#0284c7;color:#fff;border:none;padding:5px 12px;border-radius:4px;font-weight:700;cursor:pointer;font-size:10.5px;">
+            🗺️ Ver no mapa
+          </button>
+        </div>
+      `;
+    },
+
+    _responderGeo: async function (intencao) {
+      if (!intencao.alvo) {
+        return `Preciso saber <strong>perto do quê</strong>. Tente:<br>
+                • <code>"Portos a menos de 50km de TIs"</code><br>
+                • <code>"Portos a menos de 100km de UCs"</code>`;
+      }
+
+      const dadosOrigem = await this._obterDados(intencao.camada);
+      const dadosAlvo = await this._obterDados(intencao.alvo);
+
+      if (!dadosOrigem?.features?.length) return `Sem dados em <strong>${intencao.camada}</strong>.`;
+      if (!dadosAlvo?.features?.length) return `Sem dados em <strong>${intencao.alvo}</strong>.`;
+
+      if (typeof turf === 'undefined') return 'Biblioteca Turf.js indisponível.';
+
+      const raioKm = intencao.raio;
+      const resultados = [];
+
+      for (const f of dadosOrigem.features) {
+        const ponto = this._pontoDe(f);
+        if (!ponto) continue;
+
+        let achouPerto = false;
+        for (const alvo of dadosAlvo.features) {
+          const dist = this._distanciaAproximada(ponto, alvo);
+          if (dist !== null && dist <= raioKm) {
+            achouPerto = true;
+            break;
+          }
+        }
+        if (achouPerto) resultados.push(f);
+      }
+
+      const nomeOrigem = window.CONFIG_CAMADAS[intencao.camada]?.nome || intencao.camada;
+      const nomeAlvo = window.CONFIG_CAMADAS[intencao.alvo]?.nome || intencao.alvo;
+
+      // Guarda resultado pro botão "ver no mapa"
+      this._ultimoResultadoGeo = resultados;
+
+      return `
+        <div style="background:rgba(16,185,129,0.12);border-left:3px solid #10b981;padding:10px 12px;border-radius:6px;">
+          <div style="font-size:11px;color:#a7f3d0;text-transform:uppercase;letter-spacing:0.5px;">Análise geoespacial</div>
+          <div style="font-size:22px;color:#34d399;font-weight:800;font-family:Consolas,monospace;margin:4px 0;">${resultados.length.toLocaleString('pt-BR')}</div>
+          <div style="font-size:11.5px;color:#e2e8f0;">${nomeOrigem}</div>
+          <div style="font-size:10.5px;color:#94a3b8;margin-top:4px;">
+            Dentro de <strong>${raioKm} km</strong> de ${nomeAlvo}
+          </div>
+        </div>
+        ${resultados.length > 0 ? `<div style="margin-top:8px;">
+          <button onclick="CopilotoIA._destacarGeo()"
+                  style="background:#10b981;color:#fff;border:none;padding:5px 12px;border-radius:4px;font-weight:700;cursor:pointer;font-size:10.5px;">
+            🗺️ Destacar no mapa
+          </button>
+        </div>` : ''}
+      `;
+    },
+
+    _responderComparacao: async function (intencao) {
+      if (!window.SafraDiffManager) return 'Módulo de comparação indisponível.';
+
+      return `
+        Vou abrir o <strong>comparador de safras VEN</strong>.<br><br>
+        Base: <strong>${intencao.safraA.replace('ven_','')}</strong> ·
+        Comparada: <strong>${intencao.safraB.replace('ven_','')}</strong>
+        <div style="margin-top:8px;">
+          <button onclick="SafraDiffManager.abrir(); setTimeout(() => { document.getElementById('diff-safra-a').value='${intencao.safraA}'; document.getElementById('diff-safra-b').value='${intencao.safraB}'; document.getElementById('btn-diff-comparar').click(); }, 500);"
+                  style="background:#0369a1;color:#fff;border:none;padding:6px 14px;border-radius:4px;font-weight:700;cursor:pointer;font-size:11px;">
+            🔀 Comparar agora
+          </button>
+        </div>
+      `;
+    },
+
+    /* ============================================================
+       HELPERS
+       ============================================================ */
+
+    _obterDados: async function (camadaId) {
+      // Resolve VEN virtual → safra ativa
+      if (camadaId === 'ven') {
+        const ano = window.VENUnifiedManager?.anoAtivo || 'ven_2022';
+        camadaId = ano;
+      }
+
+      // Já carregado?
+      if (DADOS_GEOJSON_BRUTOS[camadaId]) return DADOS_GEOJSON_BRUTOS[camadaId];
+
+      // Carrega sob demanda
+      try {
+        await window.DataManager.carregarCamada(camadaId);
+        return DADOS_GEOJSON_BRUTOS[camadaId];
+      } catch (e) {
+        return null;
+      }
+    },
+
+    _extrairUF: function (f) {
+      const p = f.properties || {};
+      for (const k of ['SIGLA_UF','sigla_uf','uf','UF','estado','ESTADO','est_uf','sg_uf','est_origem','EST_ORIGEM','est_destino','EST_DESTINO']) {
+        const v = p[k];
+        if (v && String(v).trim().length === 2) return String(v).trim().toUpperCase();
+      }
+      for (const k of ['municipio','MUNICIPIO','nome_municipio']) {
+        const v = p[k];
+        if (v && String(v).includes('/')) {
+          const partes = String(v).split('/');
+          if (partes.length > 1) return partes[1].trim().toUpperCase();
+        }
+      }
+      return '';
+    },
+
+    _pontoDe: function (f) {
+      // Point
+      if (f.geometry?.type === 'Point') {
+        const [lng, lat] = f.geometry.coordinates;
+        return [lat, lng];
+      }
+      // LineString → ponto médio
+      if (f.geometry?.type === 'LineString' && f.geometry.coordinates.length > 0) {
+        const c = f.geometry.coordinates;
+        const meio = c[Math.floor(c.length / 2)];
+        return [meio[1], meio[0]];
+      }
+      // Polygon → centroide do primeiro anel
+      if (f.geometry?.type === 'Polygon' && f.geometry.coordinates[0]?.length > 0) {
+        const anel = f.geometry.coordinates[0];
+        const lng = anel.reduce((s, c) => s + c[0], 0) / anel.length;
+        const lat = anel.reduce((s, c) => s + c[1], 0) / anel.length;
+        return [lat, lng];
+      }
+      return null;
+    },
+
+    _distanciaAproximada: function (ponto, alvoFeature) {
+      if (typeof turf === 'undefined') return null;
+      const pontoAlvo = this._pontoDe(alvoFeature);
+      if (!pontoAlvo) return null;
+      try {
+        return turf.distance(
+          [ponto[1], ponto[0]],
+          [pontoAlvo[1], pontoAlvo[0]],
+          { units: 'kilometers' }
+        );
+      } catch (e) {
+        return null;
+      }
+    },
+
+    /* ---------- Ações dos botões ---------- */
+
+    _destacarFicha: function () {
+      // Nada por enquanto — pode ser evoluído
+      console.log('[Copiloto] destacarFicha');
+    },
+
+    _destacarGeo: function () {
+      if (!this._ultimoResultadoGeo || !this._ultimoResultadoGeo.length) return;
+      if (window.CAMADA_DESTAQUE) window.mapa.removeLayer(window.CAMADA_DESTAQUE);
+
+      window.CAMADA_DESTAQUE = L.geoJSON(
+        { type: 'FeatureCollection', features: this._ultimoResultadoGeo },
+        {
+          style: { color: '#10b981', weight: 4, fillOpacity: 0.3, fillColor: '#10b981' },
+          pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+            radius: 10, fillColor: '#10b981', color: '#fff', weight: 2.5, fillOpacity: 0.9
+          })
+        }
+      ).addTo(window.mapa);
+
+      try {
+        window.mapa.fitBounds(window.CAMADA_DESTAQUE.getBounds(), { padding: [40, 40], maxZoom: 12 });
+      } catch (e) {}
+    },
+
+    _destacarNoMapa: function (camadaId, filtroJson) {
+      try {
+        const filtro = JSON.parse(filtroJson);
+        const dados = DADOS_GEOJSON_BRUTOS[camadaId];
+        if (!dados) return;
+
+        let features = dados.features;
+        if (filtro?.uf) features = features.filter(f => this._extrairUF(f) === filtro.uf);
+
+        if (window.CAMADA_DESTAQUE) window.mapa.removeLayer(window.CAMADA_DESTAQUE);
+        window.CAMADA_DESTAQUE = L.geoJSON(
+          { type: 'FeatureCollection', features },
+          {
+            style: { color: '#38bdf8', weight: 3, fillOpacity: 0.4, fillColor: '#38bdf8' },
+            pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+              radius: 8, fillColor: '#38bdf8', color: '#fff', weight: 2, fillOpacity: 0.9
+            })
+          }
+        ).addTo(window.mapa);
+
+        window.mapa.fitBounds(window.CAMADA_DESTAQUE.getBounds(), { padding: [40, 40] });
+      } catch (e) {
+        console.warn('[Copiloto] Erro ao destacar:', e);
+      }
+    },
     gerarMinutaNotaTecnica: function (p) {
       const nome = p.nome || p.NOME_INSTALACAO || 'Instalação Portuária';
       const tipo = p.tipo || p.TIPO_INSTALACAO || 'Terminal Portuário';
