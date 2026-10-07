@@ -119,6 +119,7 @@
       try {
         switch (intencao.tipo) {
           case 'contagem':
+            
             return await this._responderContagem(intencao);
 
           case 'ranking':
@@ -220,7 +221,8 @@
       const filtrosTexto = filtroAplicado.length > 0
         ? `<br><small style="color:#94a3b8;">Filtros: ${filtroAplicado.join(' · ')}</small>`
         : '';
-
+      // ✅ Guarda as features filtradas pra destacar depois
+      this._ultimaContagem = { camadaId, features };
       return `
         <div style="background:rgba(2,132,199,0.15);border-left:3px solid #38bdf8;padding:10px 12px;border-radius:6px;">
           <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Contagem</div>
@@ -229,7 +231,7 @@
           <div style="font-size:10.5px;color:#94a3b8;margin-top:4px;">${pct}% do total (${totalGeral.toLocaleString('pt-BR')} feições)${filtrosTexto}</div>
         </div>
         ${total > 0 ? `<div style="margin-top:8px;font-size:10.5px;">
-          <button onclick="CopilotoIA._destacarNoMapa('${camadaId}', ${JSON.stringify(JSON.stringify(intencao.filtro))})"
+          <button onclick="CopilotoIA._destacarContagem()"
                   style="background:#0284c7;color:#fff;border:none;padding:5px 12px;border-radius:4px;font-weight:700;cursor:pointer;font-size:10.5px;">
             🗺️ Destacar no mapa
           </button>
@@ -245,25 +247,98 @@
         return `Sem dados carregados para <strong>${camadaId}</strong>.`;
       }
 
-      // Descobre qual campo usar
-      const campoExtensao = camadaId.startsWith('ven_') || camadaId === 'ven' ? 'extensao' : null;
-      const campoArea = 'area_m2';
-      const amostra = dados.features[0].properties || {};
+      // ✅ Lista de campos numéricos candidatos (por prioridade)
+      const CAMPOS_EXTENSAO = ['extensao', 'EXTENSAO', 'extensao_km', 'comprimento', 'length', 'length_km'];
+      const CAMPOS_AREA = ['area_m2', 'AREA_M2', 'area', 'AREA', 'area_km2', 'shape_area', 'Shape_Area', 'area_total'];
+      const CAMPOS_OUTROS = ['volume', 'VOLUME', 'carga', 'movimentacao', 'tonelagem'];
 
+      // Inspeciona várias amostras (não só a primeira) pra achar um campo que tenha valor numérico
+      const amostraTamanho = Math.min(10, dados.features.length);
+      const chavesComuns = {};
+
+      for (let i = 0; i < amostraTamanho; i++) {
+        const p = dados.features[i].properties || {};
+        for (const [k, v] of Object.entries(p)) {
+          const num = parseFloat(v);
+          if (Number.isFinite(num) && num > 0 && !chavesComuns[k]) {
+            chavesComuns[k] = num;
+          }
+        }
+      }
+
+      const camposNumericos = Object.keys(chavesComuns);
+      console.log('[Copiloto] Campos numéricos disponíveis:', camposNumericos);
+
+      // Detecta o melhor campo
       let campo = null;
       let rotulo = '';
+      let formatarValor = null;
 
-      if (amostra[campoExtensao]) { campo = campoExtensao; rotulo = 'Extensão (km)'; }
-      else if (amostra[campoArea]) { campo = campoArea; rotulo = 'Área (m²)'; }
-      else if (amostra.extensao) { campo = 'extensao'; rotulo = 'Extensão (km)'; }
-      else { campo = null; rotulo = '(sem métrica)'; }
+      for (const c of CAMPOS_EXTENSAO) {
+        if (camposNumericos.includes(c)) {
+          campo = c;
+          rotulo = 'Extensão (km)';
+          formatarValor = (v) => `${v.toFixed(2)} km`;
+          break;
+        }
+      }
 
-      // Ordena
-      const ordenado = [...dados.features].sort((a, b) => {
-        const va = parseFloat(a.properties?.[campo]) || 0;
-        const vb = parseFloat(b.properties?.[campo]) || 0;
-        return intencao.criterio === 'asc' ? va - vb : vb - va;
-      });
+      if (!campo) {
+        for (const c of CAMPOS_AREA) {
+          if (camposNumericos.includes(c)) {
+            campo = c;
+            rotulo = 'Área';
+            formatarValor = (v) => v >= 1_000_000
+              ? `${(v / 1_000_000).toFixed(2)} km²`
+              : `${(v / 10_000).toFixed(2)} ha`;
+            break;
+          }
+        }
+      }
+
+      if (!campo) {
+        for (const c of CAMPOS_OUTROS) {
+          if (camposNumericos.includes(c)) {
+            campo = c;
+            rotulo = c;
+            formatarValor = (v) => v.toLocaleString('pt-BR');
+            break;
+          }
+        }
+      }
+
+      // Fallback: usa o primeiro campo numérico achado (exceto IDs/códigos)
+      if (!campo) {
+        const IGNORAR = ['id', 'codigo', 'cep', 'cnpj', 'cdi', 'gid', 'objectid', 'idhidrovia', 'idseq'];
+        const candidatoFallback = camposNumericos.find(c => {
+          const cl = c.toLowerCase();
+          return !IGNORAR.some(ig => cl.includes(ig));
+        });
+        if (candidatoFallback) {
+          campo = candidatoFallback;
+          rotulo = campo;
+          formatarValor = (v) => v.toLocaleString('pt-BR');
+        }
+      }
+
+      // Se ainda não achou campo, ordena alfabeticamente por nome
+      let ordenado;
+      if (!campo) {
+        rotulo = 'Nome (ordem alfabética)';
+        formatarValor = () => '—';
+        ordenado = [...dados.features].sort((a, b) => {
+          const na = String(a.properties?.nome || a.properties?.NOME_INSTALACAO || '');
+          const nb = String(b.properties?.nome || b.properties?.NOME_INSTALACAO || '');
+          const cmp = na.localeCompare(nb, 'pt-BR');
+          return intencao.criterio === 'asc' ? cmp : -cmp;
+        });
+      } else {
+        ordenado = [...dados.features].sort((a, b) => {
+          const va = parseFloat(a.properties?.[campo]) || 0;
+          const vb = parseFloat(b.properties?.[campo]) || 0;
+          return intencao.criterio === 'asc' ? va - vb : vb - va;
+        });
+      }
 
       const topN = ordenado.slice(0, intencao.n);
       const nomeCamada = window.CONFIG_CAMADAS[camadaId]?.nome || camadaId;
@@ -273,9 +348,7 @@
         const p = f.properties || {};
         const nome = p.nome || p.NOME_INSTALACAO || p.nome_rio || p.NOME_RIO || p.SIGLA_UF || '—';
         const valor = campo ? parseFloat(p[campo] || 0) : 0;
-        const valorFmt = campo === campoArea
-          ? `${(valor / 1_000_000).toFixed(2)} km²`
-          : valor.toFixed(2);
+        const valorFmt = formatarValor ? formatarValor(valor) : '—';
         const uf = this._extrairUF(f) || '—';
 
         linhas += `<tr>
@@ -286,9 +359,12 @@
         </tr>`;
       });
 
+      // Salva o ranking pra destacar no mapa
+      this._ultimoRanking = { camadaId, features: topN };
+
       return `
         <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">
-          🏆 Top ${intencao.n} · ${nomeCamada}
+          🏆 Top ${intencao.n} · ${nomeCamada} · <span style="color:#38bdf8;">${rotulo}</span>
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:11px;">
           <thead><tr style="border-bottom:1px solid #334155;">
@@ -299,6 +375,12 @@
           </tr></thead>
           <tbody>${linhas}</tbody>
         </table>
+        <div style="margin-top:8px;">
+          <button onclick="CopilotoIA._destacarRanking()"
+                  style="background:#0284c7;color:#fff;border:none;padding:5px 12px;border-radius:4px;font-weight:700;cursor:pointer;font-size:10.5px;">
+            🗺️ Destacar ${topN.length} no mapa
+          </button>
+        </div>
       `;
     },
 
@@ -340,6 +422,8 @@
           <span style="color:#e2e8f0;font-size:10.5px;text-align:right;max-width:60%;word-break:break-word;">${window.Security.escapeHTML(v)}</span>
         </div>`;
       }
+      // ✅ Guarda a feature encontrada pra destacar
+      this._ultimaFicha = achado;
 
       return `
         <div style="font-size:12px;color:#38bdf8;font-weight:800;margin-bottom:6px;">${window.Security.escapeHTML(p.nome || p.NOME_INSTALACAO || p.nome_rio || alvo)}</div>
@@ -503,56 +587,79 @@
       }
     },
 
-    /* ---------- Ações dos botões ---------- */
+     /* ---------- Ações dos botões ---------- */
 
-    _destacarFicha: function () {
-      // Nada por enquanto — pode ser evoluído
-      console.log('[Copiloto] destacarFicha');
+    _limparDestaque: function () {
+      if (window.CAMADA_DESTAQUE) {
+        try { window.mapa.removeLayer(window.CAMADA_DESTAQUE); } catch (e) {}
+        window.CAMADA_DESTAQUE = null;
+      }
     },
 
-    _destacarGeo: function () {
-      if (!this._ultimoResultadoGeo || !this._ultimoResultadoGeo.length) return;
-      if (window.CAMADA_DESTAQUE) window.mapa.removeLayer(window.CAMADA_DESTAQUE);
+    _desenharDestaque: function (features, cor) {
+      cor = cor || '#0284c7';
+      if (!features || !features.length) return;
 
-      window.CAMADA_DESTAQUE = L.geoJSON(
-        { type: 'FeatureCollection', features: this._ultimoResultadoGeo },
-        {
-          style: { color: '#10b981', weight: 4, fillOpacity: 0.3, fillColor: '#10b981' },
-          pointToLayer: (f, latlng) => L.circleMarker(latlng, {
-            radius: 10, fillColor: '#10b981', color: '#fff', weight: 2.5, fillOpacity: 0.9
-          })
-        }
-      ).addTo(window.mapa);
+      this._limparDestaque();
 
       try {
-        window.mapa.fitBounds(window.CAMADA_DESTAQUE.getBounds(), { padding: [40, 40], maxZoom: 12 });
-      } catch (e) {}
-    },
-
-    _destacarNoMapa: function (camadaId, filtroJson) {
-      try {
-        const filtro = JSON.parse(filtroJson);
-        const dados = DADOS_GEOJSON_BRUTOS[camadaId];
-        if (!dados) return;
-
-        let features = dados.features;
-        if (filtro?.uf) features = features.filter(f => this._extrairUF(f) === filtro.uf);
-
-        if (window.CAMADA_DESTAQUE) window.mapa.removeLayer(window.CAMADA_DESTAQUE);
         window.CAMADA_DESTAQUE = L.geoJSON(
           { type: 'FeatureCollection', features },
           {
-            style: { color: '#38bdf8', weight: 3, fillOpacity: 0.4, fillColor: '#38bdf8' },
+            pane: 'paneSelecao',
+            style: { color: cor, weight: 4, fillOpacity: 0.35, fillColor: cor },
             pointToLayer: (f, latlng) => L.circleMarker(latlng, {
-              radius: 8, fillColor: '#38bdf8', color: '#fff', weight: 2, fillOpacity: 0.9
+              pane: 'panePontos',
+              radius: 9, fillColor: cor, color: '#ffffff', weight: 2.5, fillOpacity: 0.95
             })
           }
         ).addTo(window.mapa);
 
-        window.mapa.fitBounds(window.CAMADA_DESTAQUE.getBounds(), { padding: [40, 40] });
+        const bounds = window.CAMADA_DESTAQUE.getBounds();
+        if (bounds.isValid()) {
+          window.mapa.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+        }
+        if (window.UI) window.UI.toast(`✓ ${features.length} feições destacadas no mapa.`);
       } catch (e) {
-        console.warn('[Copiloto] Erro ao destacar:', e);
+        console.warn('[Copiloto] Erro ao desenhar destaque:', e);
+        if (window.UI) window.UI.toast('⚠️ Erro ao destacar no mapa.');
       }
+    },
+
+    _destacarContagem: function () {
+      const dados = this._ultimaContagem;
+      if (!dados || !dados.features || !dados.features.length) {
+        if (window.UI) window.UI.toast('Nada para destacar.');
+        return;
+      }
+      this._desenharDestaque(dados.features, '#0284c7');
+    },
+
+    _destacarRanking: function () {
+      const dados = this._ultimoRanking;
+      if (!dados || !dados.features || !dados.features.length) {
+        if (window.UI) window.UI.toast('Nada para destacar.');
+        return;
+      }
+      this._desenharDestaque(dados.features, '#38bdf8');
+    },
+
+    _destacarFicha: function () {
+      const dados = this._ultimaFicha;
+      if (!dados || !dados.feature) {
+        if (window.UI) window.UI.toast('Nada para destacar.');
+        return;
+      }
+      this._desenharDestaque([dados.feature], '#f59e0b');
+    },
+
+    _destacarGeo: function () {
+      const features = this._ultimoResultadoGeo;
+      if (!features || !features.length) {
+        if (window.UI) window.UI.toast('Nada para destacar.');
+        return;
+      }
+      this._desenharDestaque(features, '#10b981');
     },
     gerarMinutaNotaTecnica: function (p) {
       const nome = p.nome || p.NOME_INSTALACAO || 'Instalação Portuária';
