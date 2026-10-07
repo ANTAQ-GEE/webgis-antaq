@@ -113,7 +113,11 @@
          </span>`);
 
       set('rodape-build', `build ${window.Security.escapeHTML(V.build)} · <span class="mono">${window.Security.escapeHTML(V.commit)}</span>`);
-      set('rodape-dados', `📅 Dados: ${window.Security.escapeHTML(V.atualizado)}`);
+      // ✅ Data de "hoje" no formato do usuário
+      const agora = new Date();
+      const dataFormatada = agora.toLocaleDateString('pt-BR');
+      const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      set('rodape-dados', `📅 Dados: ${window.Security.escapeHTML(V.atualizado)} · Acesso: ${dataFormatada} ${horaFormatada}`);
       set('rodape-responsavel', window.Security.escapeHTML(V.responsavel));
 
       rodape.style.display = 'flex';

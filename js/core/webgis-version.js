@@ -8,11 +8,11 @@
   'use strict';
 
   const WebGIS_VERSION = {
-    versao: '1.0.0',
-    canal: 'teste',                    // 'teste' | 'producao'
-    build: '2026.10.06',
-    commit: 'a3f8b2c',                 // ← troque pelo hash real após o commit
-    atualizado: '05/10/2026',
+    versao: '1.1.0',
+    canal: 'teste',
+    build: '2026.10.07',
+    commit: 'a3f8b2c',
+    atualizado: '07/10/2026',
     responsavel: 'GEE/SEPH — Gerência Especial de Estudos',
     contato: 'gee.seph@antaq.gov.br',
     repositorio: 'https://github.com/antag-gee/webgis-antaq',
@@ -66,7 +66,20 @@
             'Publicação contínua no GitHub Pages'
        ]
       },
-   
+      {
+        versao: '1.1.0',
+        canal: 'teste',
+        data: '2026-10-07',
+        notas: [
+          'M9 — Ferramenta de Buffer geodésico (com dissolve e filtros)',
+          'Copiloto 1c — Comandos geográficos avançados (contenção, cruza UF, buffer por ponto)',
+          'Copiloto 1e — Histórico + CSV + Compartilhar via URL',
+          'Símbolos institucionais: âncora (portos), ponte (travessias), barco (embarcações)',
+          'Clusters com ícone temático + número',
+          'Correção de encoding em nomes de rios e regiões hidrográficas',
+          'Favicon institucional (SVG inline)'
+        ]
+      },   
     ]
   };
 
