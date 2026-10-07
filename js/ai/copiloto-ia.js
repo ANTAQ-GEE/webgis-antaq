@@ -309,7 +309,10 @@
 
       // Fallback: usa o primeiro campo numérico achado (exceto IDs/códigos)
       if (!campo) {
-        const IGNORAR = ['id', 'codigo', 'cep', 'cnpj', 'cdi', 'gid', 'objectid', 'idhidrovia', 'idseq'];
+        const IGNORAR = [
+          'id', 'codigo', 'cep', 'cnpj', 'cdi', 'gid', 'objectid', 'idhidrovia', 'idseq',
+          'numero', 'num', 'n_', 'seq', 'cod', 'matricula', 'registro', 'processo'
+        ];
         const candidatoFallback = camposNumericos.find(c => {
           const cl = c.toLowerCase();
           return !IGNORAR.some(ig => cl.includes(ig));
