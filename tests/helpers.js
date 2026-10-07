@@ -1,15 +1,12 @@
 /**
  * Helpers reutilizáveis para os smoke tests do WebGIS ANTAQ.
- * Última atualização: 2026-10-05
+ * Última atualização: 2026-10-07
  */
 
 const ARQUIVO_ALVO = '/index.html';
 
 /**
- * Ruídos que NÃO devem falhar o smoke test:
- * - tiles externos (OSM minimap, Esri basemap) podem responder devagar
- * - favicon ausente é comportamento padrão do GitHub Pages
- * - logs informativos do próprio WebGIS no console
+ * Ruídos que NÃO devem falhar o teste.
  */
 const ERROS_IGNORADOS = [
   /tile\.openstreetmap\.org/i,
@@ -28,10 +25,6 @@ const ERROS_IGNORADOS = [
   /Manifesto não carregado/i
 ];
 
-/**
- * Anexa listeners na página para capturar erros reais.
- * Retorna um array que vai sendo preenchido conforme o teste roda.
- */
 function coletarErrosConsole(page) {
   const erros = [];
 
@@ -39,24 +32,17 @@ function coletarErrosConsole(page) {
     if (msg.type() !== 'error') return;
     const texto = msg.text();
 
-    // Pega a URL real associada à mensagem (se houver).
-    // Sem isso, erros tipo "Failed to load resource: 404" ficam órfãos
-    // porque o Chromium não inclui a URL no texto — só o status.
     let url = '';
     try {
       const loc = msg.location();
       if (loc && loc.url) url = loc.url;
     } catch (e) { /* ignora */ }
 
-    // Filtro por texto OU por URL
     const ehIgnorado = ERROS_IGNORADOS.some((re) =>
       re.test(texto) || (url && re.test(url))
     );
     if (ehIgnorado) return;
 
-    // Caso especial: "Failed to load resource" 404 genérico.
-    // Só ignora se a URL (quando conhecida) for favicon. Se não sabemos
-    // a URL, é melhor ignorar — falso positivo do Chromium no boot.
     if (/Failed to load resource/i.test(texto) &&
         (/favicon\.ico/i.test(url) || url === '')) {
       return;
@@ -72,11 +58,6 @@ function coletarErrosConsole(page) {
   return erros;
 }
 
-/**
- * Abre a aplicação e aguarda o boot inicial.
- * O rodapé `.rodape-versao` só aparece após `WebGISAbout.init()` rodar,
- * que é a última etapa do IIFE de inicialização.
- */
 async function abrirWebGIS(page) {
   await page.goto(ARQUIVO_ALVO, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.rodape-versao', {
@@ -85,11 +66,6 @@ async function abrirWebGIS(page) {
   });
 }
 
-/**
- * Lê o TIPO de uma variável top-level do `<script>` da página.
- * Retorna a string "object", "function", "undefined", etc. — nunca o objeto
- * em si (Leaflet tem referências circulares que quebram a serialização).
- */
 async function lerGlobal(page, nomeVariavel) {
   return page.evaluate((nome) => {
     try {
@@ -102,15 +78,10 @@ async function lerGlobal(page, nomeVariavel) {
 
 /**
  * Prepara a página para screenshot determinístico.
- * - Espera fontes carregarem
- * - Desliga animações
- * - Esconde o relógio do rodapé (muda toda hora)
  */
 async function prepararParaScreenshot(page) {
-  // Espera fontes
   await page.evaluate(() => document.fonts && document.fonts.ready);
 
-  // Desliga animações via CSS
   await page.addStyleTag({
     content: `
       *, *::before, *::after {
@@ -125,7 +96,6 @@ async function prepararParaScreenshot(page) {
     `
   });
 
-  // Fecha notificações residuais
   await page.evaluate(() => {
     const c = document.getElementById('notificacoes-container');
     if (c) c.innerHTML = '';
@@ -135,156 +105,14 @@ async function prepararParaScreenshot(page) {
 }
 
 /**
- * Mascara elementos que mudam com o tempo (relógios, versões, coords).
- * Retorna o array pronto pro `toHaveScreenshot({ mask: ... })`.
+ * Mascara elementos que mudam com o tempo.
  */
 function mascararDinamicos(page) {
   return [
-    page.locator('#rodape-build'),        // "build 2026.10.06 · hash"
-    page.locator('#rodape-dados'),        // "Dados: 06/10/2026"
-    page.locator('.leaflet-control-coords'),  // LAT/LNG no canto
-    page.locator('.leaflet-control-minimap')  // tiles do minimap
-  ];
-}
-
-/**
- * Prepara a página para screenshot determinístico.
- * - Espera fontes carregarem
- * - Desliga animações
- * - Esconde o relógio do rodapé (muda toda hora)
- */
-async function prepararParaScreenshot(page) {
-  // Espera fontes
-  await page.evaluate(() => document.fonts && document.fonts.ready);
-
-  // Desliga animações via CSS
-  await page.addStyleTag({
-    content: `
-      *, *::before, *::after {
-        animation-duration: 0s !important;
-        animation-delay: 0s !important;
-        transition-duration: 0s !important;
-        transition-delay: 0s !important;
-      }
-      .notificacao .notif-progresso span {
-        display: none !important;
-      }
-    `
-  });
-
-  // Fecha notificações residuais
-  await page.evaluate(() => {
-    const c = document.getElementById('notificacoes-container');
-    if (c) c.innerHTML = '';
-  });
-
-  await page.waitForTimeout(300);
-}
-
-/**
- * Mascara elementos que mudam com o tempo (relógios, versões, coords).
- * Retorna o array pronto pro `toHaveScreenshot({ mask: ... })`.
- */
-function mascararDinamicos(page) {
-  return [
-    page.locator('#rodape-build'),        // "build 2026.10.06 · hash"
-    page.locator('#rodape-dados'),        // "Dados: 06/10/2026"
-    page.locator('.leaflet-control-coords'),  // LAT/LNG no canto
-    page.locator('.leaflet-control-minimap')  // tiles do minimap
-  ];
-}
-
-/**
- * Prepara a página para screenshot determinístico.
- * - Espera fontes carregarem
- * - Desliga animações
- * - Esconde o relógio do rodapé (muda toda hora)
- */
-async function prepararParaScreenshot(page) {
-  // Espera fontes
-  await page.evaluate(() => document.fonts && document.fonts.ready);
-
-  // Desliga animações via CSS
-  await page.addStyleTag({
-    content: `
-      *, *::before, *::after {
-        animation-duration: 0s !important;
-        animation-delay: 0s !important;
-        transition-duration: 0s !important;
-        transition-delay: 0s !important;
-      }
-      .notificacao .notif-progresso span {
-        display: none !important;
-      }
-    `
-  });
-
-  // Fecha notificações residuais
-  await page.evaluate(() => {
-    const c = document.getElementById('notificacoes-container');
-    if (c) c.innerHTML = '';
-  });
-
-  await page.waitForTimeout(300);
-}
-
-/**
- * Mascara elementos que mudam com o tempo (relógios, versões, coords).
- * Retorna o array pronto pro `toHaveScreenshot({ mask: ... })`.
- */
-function mascararDinamicos(page) {
-  return [
-    page.locator('#rodape-build'),        // "build 2026.10.06 · hash"
-    page.locator('#rodape-dados'),        // "Dados: 06/10/2026"
-    page.locator('.leaflet-control-coords'),  // LAT/LNG no canto
-    page.locator('.leaflet-control-minimap')  // tiles do minimap
-  ];
-}
-
-/**
- * Prepara a página para screenshot determinístico.
- * - Espera fontes carregarem
- * - Desliga animações
- * - Esconde o relógio do rodapé (muda toda hora)
- */
-async function prepararParaScreenshot(page) {
-  // Espera fontes
-  await page.evaluate(() => document.fonts && document.fonts.ready);
-
-  // Desliga animações via CSS
-  await page.addStyleTag({
-    content: `
-      *, *::before, *::after {
-        animation-duration: 0s !important;
-        animation-delay: 0s !important;
-        transition-duration: 0s !important;
-        transition-delay: 0s !important;
-      }
-      .notificacao .notif-progresso span {
-        display: none !important;
-      }
-    `
-  });
-
-  // Fecha notificações residuais
-  await page.evaluate(() => {
-    const c = document.getElementById('notificacoes-container');
-    if (c) c.innerHTML = '';
-  });
-
-  await page.waitForTimeout(300);
-}
-
-/**
- * Mascara elementos que mudam com o tempo (relógios, versões, coords).
- * Retorna o array pronto pro `toHaveScreenshot({ mask: ... })`.
- */
-function mascararDinamicos(page) {
-  return [
-    page.locator('#rodape-build'),        // "build 2026.10.06 · hash"
-    page.locator('#rodape-dados'),        // "Dados: 06/10/2026"
-    page.locator('.leaflet-control-coords'),  // LAT/LNG no canto
-    page.locator('.leaflet-control-minimap')  // tiles do minimap
+    page.locator('#rodape-build'),
+    page.locator('#rodape-dados'),
+    page.locator('.leaflet-control-coords'),
+    page.locator('.leaflet-control-minimap')
   ];
 }
 
