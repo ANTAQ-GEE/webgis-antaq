@@ -41,6 +41,11 @@
 
       this.limparTemporarios();
       this.modo = modo;
+      // ✅ Mostra painel de raio só no modo raio
+      const painelRaio = document.getElementById('painel-raio-config');
+      if (painelRaio) {
+        painelRaio.style.display = (modo === 'raio') ? 'block' : 'none';
+      }      
       // ✅ Bloqueia popups de atributos durante a medição
       document.body.classList.add('modo-medicao-ativo');
 
@@ -74,10 +79,13 @@
     },
 
     desativar: function () {
+      // ✅ Esconde painel de raio
+      const painelRaio = document.getElementById('painel-raio-config');
+      if (painelRaio) painelRaio.style.display = 'none';      
       this.modo = null;
       // ✅ Restaura popups ao sair da medição
       document.body.classList.remove('modo-medicao-ativo');
-
+      this._esconderBotaoFinalizarRaio();
       // ✅ Reabilita zoom no duplo-clique
       if (window.mapa && window.mapa.doubleClickZoom) window.mapa.doubleClickZoom.enable();
       this._ultimoClickTempo = 0;
@@ -569,21 +577,36 @@
         const centro = this.pontos[0];
         const raio = this.circuloTemp.getRadius() / 1000;
         const areaKm2 = Math.PI * raio * raio;
+
         this._atualizarPainel('raio', raio * 1000, `Área total ≈ ${areaKm2.toFixed(2)} km²`);
         this.medicoesSalvas.push(this.circuloTemp);
         this.circuloTemp = null;
 
+        // ✅ Label 1: raio (acima do centro)
         const labelRaio = L.marker(centro, {
           icon: L.divIcon({
             className: 'label-medicao',
             html: `⭕ ${raio.toFixed(2)} km`,
-            iconSize: [100, 20],
-            iconAnchor: [50, -12]
+            iconSize: [120, 20],
+            iconAnchor: [60, -12]
           }),
           interactive: false,
           pane: 'panePontos'
         }).addTo(window.mapa);
         this.medicoesSalvas.push(labelRaio);
+
+        // ✅ Label 2: área (abaixo do centro)
+        const labelArea = L.marker(centro, {
+          icon: L.divIcon({
+            className: 'label-medicao label-area',
+            html: `▦ ${areaKm2 >= 1000 ? (areaKm2 / 1000).toFixed(2) + ' mil km²' : areaKm2.toFixed(2) + ' km²'}`,
+            iconSize: [140, 20],
+            iconAnchor: [70, 30]
+          }),
+          interactive: false,
+          pane: 'panePontos'
+        }).addTo(window.mapa);
+        this.medicoesSalvas.push(labelArea);
 
       } else if (this.modo === 'distancia') {
         if (this.pontos.length < 2) { this.desativar(); return; }
@@ -595,10 +618,64 @@
 
       } else if (this.modo === 'area') {
         if (this.pontos.length < 3) { this.desativar(); return; }
+
+        // ✅ Calcula a área final ANTES de limpar os pontos
+        let areaM2 = 0, perimKm = 0;
+        try {
+          const coords = this.pontos.map(p => [p.lng, p.lat]);
+          coords.push(coords[0]);
+          const poly = turf.polygon([coords]);
+          areaM2 = turf.area(poly);
+          perimKm = this._calcularDistanciaTotal(this.pontos);
+        } catch (e) { /* ignora */ }
+
         if (this.poligonoTemp) this.medicoesSalvas.push(this.poligonoTemp);
         this.poligonoTemp = null;
-      }
 
+        // ✅ Label permanente da área no centroide
+        if (areaM2 > 0) {
+          try {
+            // Centroide real via Turf
+            const coords = this.pontos.map(p => [p.lng, p.lat]);
+            coords.push(coords[0]);
+            const poly = turf.polygon([coords]);
+            const centroide = turf.centroid(poly);
+            const [lngC, latC] = centroide.geometry.coordinates;
+
+            const areaKm2 = areaM2 / 1_000_000;
+            const textoArea = areaKm2 >= 1000
+              ? `▦ ${(areaKm2 / 1000).toFixed(2)} mil km²`
+              : `▦ ${areaKm2.toFixed(2)} km²`;
+
+            const labelArea = L.marker([latC, lngC], {
+              icon: L.divIcon({
+                className: 'label-medicao label-area',
+                html: textoArea,
+                iconSize: [160, 22],
+                iconAnchor: [80, 11]
+              }),
+              interactive: false,
+              pane: 'panePontos'
+            }).addTo(window.mapa);
+            this.medicoesSalvas.push(labelArea);
+
+            // ✅ Label secundária: perímetro (abaixo do centroide)
+            const labelPerim = L.marker([latC, lngC], {
+              icon: L.divIcon({
+                className: 'label-medicao label-perimetro',
+                html: `⟲ ${perimKm.toFixed(2)} km`,
+                iconSize: [140, 18],
+                iconAnchor: [70, -14]
+              }),
+              interactive: false,
+              pane: 'panePontos'
+            }).addTo(window.mapa);
+            this.medicoesSalvas.push(labelPerim);
+          } catch (e) { /* ignora */ }
+        }
+      }
+      // ✅ Esconde o botão de fixar raio depois de finalizar
+      this._esconderBotaoFinalizarRaio();
       this.labelsTemp.forEach(l => {
         l._permanente = true;
         this.medicoesSalvas.push(l);
@@ -650,6 +727,65 @@
         fillColor: '#f59e0b', fillOpacity: 0.12, pane: 'paneLinhas'
       }).addTo(window.mapa);
     },
+    /**
+     * Aplica um raio exato digitado no input (em vez de arrastar o mouse).
+     * Usa o primeiro ponto já clicado como centro, ou o centro do mapa se nenhum.
+     */
+    aplicarRaioExato: function () {
+      const input = document.getElementById('raio-input-km');
+      if (!input) return;
+
+      const valorKm = parseFloat(input.value);
+      if (!Number.isFinite(valorKm) || valorKm <= 0) {
+        if (window.UI) window.UI.toast('⚠️ Informe um raio válido em km.');
+        return;
+      }
+
+      // Se não tem centro definido, usa o centro do mapa
+      let centro = this.pontos[0];
+      if (!centro) {
+        const c = window.mapa.getCenter();
+        centro = L.latLng(c.lat, c.lng);
+        this.pontos.push(centro);
+      }
+
+      // Desenha o círculo no raio exato
+      this._desenharCirculo(centro, valorKm);
+
+      // Atualiza o painel
+      const areaKm2 = Math.PI * valorKm * valorKm;
+      this._atualizarPainel('raio', valorKm * 1000,
+        `Área ≈ ${areaKm2.toFixed(2)} km² · Clique em "Finalizar" ou no 2º ponto pra fixar`);
+
+      // Cria o botão de finalizar se não existir
+      this._mostrarBotaoFinalizarRaio();
+    },
+
+    _mostrarBotaoFinalizarRaio: function () {
+      let btn = document.getElementById('btn-finalizar-raio');
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.id = 'btn-finalizar-raio';
+        btn.textContent = '✓ Fixar raio';
+        btn.style.cssText = `
+          position: absolute; bottom: 90px; left: 50%;
+          transform: translateX(-50%); z-index: 1501;
+          background: #10b981; color: #fff; border: 1px solid #34d399;
+          padding: 8px 20px; border-radius: 6px; font-size: 12px;
+          font-weight: 800; cursor: pointer;
+          box-shadow: 0 4px 14px rgba(16,185,129,0.4);
+          font-family: 'Segoe UI', sans-serif;
+        `;
+        btn.onclick = () => this._finalizar();
+        document.body.appendChild(btn);
+      }
+      btn.style.display = 'block';
+    },
+
+    _esconderBotaoFinalizarRaio: function () {
+      const btn = document.getElementById('btn-finalizar-raio');
+      if (btn) btn.style.display = 'none';
+    },    
 
     _atualizarFormaTemporaria: function () {
       if (this.modo === 'distancia' && this.pontos.length >= 2) {

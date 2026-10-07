@@ -304,6 +304,87 @@
       background: #ffffff; border-top: 3px solid var(--antaq-azul-claro);
       box-shadow: 0 -8px 25px rgba(0,0,0,0.3); z-index: 1800; flex-direction: column;
     }
+    .painel-raio-config {
+      position: absolute;
+      bottom: 130px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1500;
+      background: rgba(10, 37, 64, 0.97);
+      backdrop-filter: blur(8px);
+      border: 1px solid #38bdf8;
+      border-radius: 8px;
+      padding: 10px 14px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 12px;
+      color: #f1f5f9;
+      min-width: 320px;
+    }
+    .painel-raio-config .raio-linha {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .painel-raio-config label {
+      color: #94a3b8;
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .painel-raio-config input[type="number"] {
+      background: #061426;
+      border: 1px solid #1e4976;
+      color: #f1f5f9;
+      padding: 6px 10px;
+      border-radius: 5px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'Consolas', monospace;
+      width: 90px;
+      text-align: right;
+      outline: none;
+    }
+    .painel-raio-config input[type="number"]:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+    .painel-raio-config button {
+      background: #0284c7;
+      border: 1px solid #38bdf8;
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .painel-raio-config button:hover {
+      background: #0369a1;
+      transform: translateY(-1px);
+    }
+    .painel-raio-config .raio-hint {
+      font-size: 9.5px;
+      color: #64748b;
+      margin-top: 6px;
+      text-align: center;
+      font-style: italic;
+    }
+
+    /* Distintivo visual para o label de área (diferente do de distância) */
+    .label-medicao.label-area {
+      background: rgba(16, 185, 129, 0.95) !important;
+      border-color: #10b981 !important;
+      font-size: 11.5px !important;
+      font-weight: 800 !important;
+    }
+    .label-medicao.label-perimetro {
+      background: rgba(245, 158, 11, 0.9) !important;
+      border-color: #f59e0b !important;
+      font-size: 10px !important;
+    }    
     .painel-tabela-atributos.aberto { display: flex; }
     .tabela-header {
       background: var(--antaq-azul-escuro); color: #fff; padding: 8px 16px;
@@ -3010,7 +3091,16 @@
     <span class="valor" id="medicao-valor">0</span>
     <span class="dica" id="medicao-dica">Clique no mapa para começar. Duplo-clique para finalizar.</span>
   </div>
-
+  <!-- M1 — Configuração de Raio (aparece só no modo raio) -->
+  <div class="painel-raio-config" id="painel-raio-config" style="display:none;">
+    <div class="raio-linha">
+      <label>Raio exato:</label>
+      <input type="number" id="raio-input-km" min="1" max="2000" step="1" value="100">
+      <span>km</span>
+      <button onclick="MeasurementTool.aplicarRaioExato()">Aplicar</button>
+    </div>
+    <div class="raio-hint">Arraste no mapa ou digite o valor exato</div>
+  </div>
   <!-- M1 — Overlay ao vivo (segue o cursor) -->
   <div class="medicao-live-overlay" id="medicao-live-overlay" style="display:none;">
     <div class="live-linha">
