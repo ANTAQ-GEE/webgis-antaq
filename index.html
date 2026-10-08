@@ -142,7 +142,144 @@
     }
     .buffer-comparativo-tabela tr:last-child td {
       border-bottom: none;
-    }    
+    }
+    /* ============================================================
+       M9.4 — Seleção de feições individuais
+       ============================================================ */
+    .buffer-modos {
+      display: flex;
+      gap: 5px;
+    }
+    .buffer-modo-opcao {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      background: #061426;
+      border: 1px solid #1e4976;
+      border-radius: 6px;
+      padding: 8px 8px;
+      cursor: pointer;
+      font-size: 11px;
+      color: #e2e8f0;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+    .buffer-modo-opcao:hover {
+      border-color: #f59e0b;
+      background: #0b1f33;
+    }
+    .buffer-modo-opcao input[type="radio"] {
+      accent-color: #f59e0b;
+      cursor: pointer;
+      margin: 0;
+    }
+    .buffer-modo-opcao:has(input:checked) {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: #f59e0b;
+      color: #fbbf24;
+    }
+
+    .buffer-selecao-controles {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .buffer-selecao-contador {
+      flex: 1;
+      font-size: 11px;
+      color: #fbbf24;
+      font-weight: 700;
+      font-family: 'Consolas', monospace;
+    }
+    .btn-secundario-small {
+      background: #061426;
+      border: 1px solid #1e4976;
+      color: #94a3b8;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-secundario-small:hover {
+      background: #0b1f33;
+      color: #e2e8f0;
+      border-color: #f59e0b;
+    }
+
+    .buffer-lista-feicoes {
+      background: #061426;
+      border: 1px solid #1e4976;
+      border-radius: 6px;
+      max-height: 240px;
+      overflow-y: auto;
+      margin-top: 6px;
+    }
+    .buffer-feicao-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-bottom: 1px solid rgba(30, 73, 118, 0.4);
+      cursor: pointer;
+      transition: background 0.1s ease;
+      font-size: 11px;
+      color: #cbd5e1;
+    }
+    .buffer-feicao-item:last-child { border-bottom: none; }
+    .buffer-feicao-item:hover {
+      background: rgba(245, 158, 11, 0.08);
+    }
+    .buffer-feicao-item.selecionada {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      font-weight: 700;
+    }
+    .buffer-feicao-item input[type="checkbox"] {
+      accent-color: #f59e0b;
+      cursor: pointer;
+      flex-shrink: 0;
+      margin: 0;
+    }
+    .buffer-feicao-nome {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .buffer-feicao-uf {
+      font-size: 9.5px;
+      color: #64748b;
+      font-family: 'Consolas', monospace;
+      padding: 1px 5px;
+      background: rgba(100, 116, 139, 0.15);
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .buffer-selecao-mapa-info {
+      background: #061426;
+      border: 1px solid #1e4976;
+      border-radius: 6px;
+      padding: 12px 14px;
+      font-size: 11px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+    .buffer-selecao-mapa-info kbd {
+      background: #0b1f33;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: 'Consolas', monospace;
+      color: #fbbf24;
+      border: 1px solid #1e4976;
+    }        
         .buffer-raio-toggle {
       display: flex;
       gap: 8px;
@@ -3998,17 +4135,66 @@
         </div>
 
         <div class="buffer-linha">
-          <label for="buffer-filtro">Filtro da camada</label>
-          <div class="buffer-filtro-linha">
-            <select id="buffer-filtro">
-              <option value="TODOS">Todas as feições</option>
-            </select>
-            <button type="button" class="btn-add-filtro" onclick="BufferTool.adicionarFiltroAtual()" title="Adicionar aos filtros acumulados">
-              ➕ Adicionar
-            </button>
+          <label>Modo de seleção</label>
+          <div class="buffer-modos">
+            <label class="buffer-modo-opcao">
+              <input type="radio" name="buffer-modo-sel" value="filtro" checked onchange="BufferTool.mudarModoSel('filtro')">
+              <span>🔍 Filtro</span>
+            </label>
+            <label class="buffer-modo-opcao">
+              <input type="radio" name="buffer-modo-sel" value="individuais" onchange="BufferTool.mudarModoSel('individuais')">
+              <span>🎯 Feições</span>
+            </label>
+            <label class="buffer-modo-opcao">
+              <input type="radio" name="buffer-modo-sel" value="mapa" onchange="BufferTool.mudarModoSel('mapa')">
+              <span>🗺️ Seleção</span>
+            </label>
           </div>
-          <div class="buffer-filtros-ativos" id="buffer-filtros-ativos">
-            <em style="color:#64748b;font-size:10.5px;">Nenhum filtro acumulado</em>
+        </div>
+
+        <!-- MODO FILTRO -->
+        <div id="buffer-modo-filtro" class="buffer-modo-conteudo">
+          <div class="buffer-linha">
+            <label for="buffer-filtro">Filtro da camada</label>
+            <div class="buffer-filtro-linha">
+              <select id="buffer-filtro">
+                <option value="TODOS">Todas as feições</option>
+              </select>
+              <button type="button" class="btn-add-filtro" onclick="BufferTool.adicionarFiltroAtual()" title="Adicionar aos filtros acumulados">
+                ➕ Adicionar
+              </button>
+            </div>
+            <div class="buffer-filtros-ativos" id="buffer-filtros-ativos">
+              <em style="color:#64748b;font-size:10.5px;">Nenhum filtro acumulado</em>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODO FEIÇÕES INDIVIDUAIS -->
+        <div id="buffer-modo-individuais" class="buffer-modo-conteudo" style="display:none;">
+          <div class="buffer-linha">
+            <label for="buffer-busca-feicao">Buscar feição</label>
+            <input type="text" id="buffer-busca-feicao" placeholder="Digite para filtrar a lista..." oninput="BufferTool.filtrarListaFeicoes(this.value)">
+          </div>
+          <div class="buffer-selecao-controles">
+            <span class="buffer-selecao-contador" id="buffer-contador-feicoes">0 selecionadas</span>
+            <button type="button" class="btn-secundario-small" onclick="BufferTool.selecionarTodasVisiveis(true)">Selecionar visíveis</button>
+            <button type="button" class="btn-secundario-small" onclick="BufferTool.selecionarTodasVisiveis(false)">Limpar</button>
+          </div>
+          <div class="buffer-lista-feicoes" id="buffer-lista-feicoes">
+            <em style="color:#64748b;font-size:10.5px;padding:20px;display:block;text-align:center;">Escolha uma camada primeiro</em>
+          </div>
+        </div>
+
+        <!-- MODO SELEÇÃO DO MAPA -->
+        <div id="buffer-modo-mapa" class="buffer-modo-conteudo" style="display:none;">
+          <div class="buffer-selecao-mapa-info">
+            <div id="buffer-selecao-mapa-status">
+              Nenhuma feição selecionada no mapa.
+            </div>
+            <button type="button" class="btn-add-filtro" onclick="BufferTool.usarSelecaoDoMapa()" style="width:100%;margin-top:8px;">
+              🎯 Usar seleção do mapa
+            </button>
           </div>
         </div>
 

@@ -39,9 +39,11 @@
       this.filtroPorto = 'TODOS';
 
       const amostra = featuresFiltradas[0].properties || {};
-      this.colunas = Object.keys(amostra)
-        .filter(c => !['geom', 'geometry', 'id', '_gpkgtable'].includes(c.toLowerCase()))
-        .slice(0, 15);
+      const todas = Object.keys(amostra)
+        .filter(c => !['geom', 'geometry', 'id', '_gpkgtable'].includes(c.toLowerCase()));
+      const internos = todas.filter(c => c.startsWith('_'));
+      const externos = todas.filter(c => !c.startsWith('_'));
+      this.colunas = [...internos, ...externos].slice(0, 20);
 
       document.getElementById('painel-tabela').classList.add('aberto');
 
@@ -85,9 +87,14 @@
       }
 
       const amostra = g.features[0].properties || {};
-      this.colunas = Object.keys(amostra)
-        .filter(c => !['geom', 'geometry', 'id', '_gpkgtable'].includes(c.toLowerCase()))
-        .slice(0, 15);
+      const todas = Object.keys(amostra)
+        .filter(c => !['geom', 'geometry', 'id', '_gpkgtable'].includes(c.toLowerCase()));
+
+      // ✅ Prioriza campos internos (_) que carregam info de buffer/geração
+      const internos = todas.filter(c => c.startsWith('_'));
+      const externos = todas.filter(c => !c.startsWith('_'));
+
+      this.colunas = [...internos, ...externos].slice(0, 20);
 
       this.aplicarFiltrosInternos();
       document.getElementById('painel-tabela').classList.add('aberto');

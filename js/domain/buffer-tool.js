@@ -12,7 +12,10 @@
 
   const BufferTool = {
     _contador: 0,
-    _filtrosAcumulados: [],   // [{ campo, valor }]
+    _filtrosAcumulados: [],       // [{ campo, valor }]
+    _modoSel: 'filtro',           // 'filtro' | 'individuais' | 'mapa'
+    _feicoesSelecionadas: new Set(),
+    _buscaFeicao: '',
     /**
      * Adiciona o valor selecionado no dropdown atual à lista de filtros acumulados.
      * Evita duplicatas.
@@ -97,6 +100,255 @@
        </button>`;
     },
     /* ============================================================
+       M9.4 — SELEÇÃO DE FEIÇÕES INDIVIDUAIS
+       ============================================================ */
+
+    mudarModoSel: function (modo) {
+      this._modoSel = modo;
+
+      const elFiltro = document.getElementById('buffer-modo-filtro');
+      const elInd = document.getElementById('buffer-modo-individuais');
+      const elMapa = document.getElementById('buffer-modo-mapa');
+
+      if (elFiltro) elFiltro.style.display = (modo === 'filtro') ? '' : 'none';
+      if (elInd) elInd.style.display = (modo === 'individuais') ? '' : 'none';
+      if (elMapa) elMapa.style.display = (modo === 'mapa') ? '' : 'none';
+
+      if (modo === 'individuais') this._renderizarListaFeicoes();
+      if (modo === 'mapa') {
+        // ✅ Sempre atualiza a contagem da seleção atual ao entrar no modo mapa
+        this._atualizarStatusMapa();
+      }
+
+      this._atualizarPreview();
+    },
+
+    _chaveFeicao: function (f) {
+      const p = f.properties || {};
+      let id = p.idhidrovia || p.idseq || p.id || p.ID ||
+               p.gid || p.GID || p.objectid || p.codigo || p.CODIGO ||
+               p.id_trecho_ || p.objectid_1 ||
+               p.idm_origem || p.terrai_cod || p.cd_uc || p.codigo_uc;
+
+      if (!id) {
+        const nome = p.nome || p.NOME || p.NOME_INSTALACAO ||
+                     p.nome_rio || p.NOME_RIO || p.terrai_nom || '';
+        const geoHash = JSON.stringify(f.geometry || '').substring(0, 200);
+        id = `${nome}::${geoHash}`;
+      }
+      return String(id);
+    },
+
+    _nomeFeicao: function (f) {
+      const p = f.properties || {};
+      return p.nome || p.NOME || p.NOME_INSTALACAO || p.cidade ||
+             p.nome_rio || p.NOME_RIO || p.terrai_nom || p.nome_uc ||
+             p.NOME_UC || p.municipio || `Feição #${this._chaveFeicao(f).slice(0, 12)}`;
+    },
+
+    _atualizarContadorFeicoes: function () {
+      const el = document.getElementById('buffer-contador-feicoes');
+      if (!el) return;
+      const n = this._feicoesSelecionadas.size;
+      el.textContent = n === 0 ? '0 selecionadas' : `${n} selecionada${n !== 1 ? 's' : ''}`;
+    },
+    /**
+     * Extrai a UF de uma feição (mesma lógica do CopilotoIA).
+     */
+    _extrairUF: function (f) {
+      const p = f.properties || {};
+
+      // 1) Sigla direta
+      for (const k of ['SIGLA_UF', 'sigla_uf', 'uf', 'UF', 'est_uf', 'sg_uf',
+                       'est_origem', 'EST_ORIGEM', 'est_destino', 'EST_DESTINO']) {
+        const v = p[k];
+        if (v && String(v).trim().length === 2) return String(v).trim().toUpperCase();
+      }
+
+      // 2) Município no formato "Cidade/UF"
+      for (const k of ['municipio', 'MUNICIPIO', 'nome_municipio']) {
+        const v = p[k];
+        if (v && String(v).includes('/')) {
+          const partes = String(v).split('/');
+          if (partes.length > 1) {
+            const uf = partes[1].trim().toUpperCase();
+            if (uf.length === 2) return uf;
+          }
+        }
+      }
+
+      // 3) Estado por extenso
+      const mapa = {
+        'acre':'AC','alagoas':'AL','amapa':'AP','amazonas':'AM','bahia':'BA',
+        'ceara':'CE','distrito federal':'DF','espirito santo':'ES','goias':'GO',
+        'maranhao':'MA','mato grosso':'MT','mato grosso do sul':'MS',
+        'minas gerais':'MG','para':'PA','paraiba':'PB','parana':'PR',
+        'pernambuco':'PE','piaui':'PI','rio de janeiro':'RJ',
+        'rio grande do norte':'RN','rio grande do sul':'RS','rondonia':'RO',
+        'roraima':'RR','santa catarina':'SC','sao paulo':'SP','sergipe':'SE','tocantins':'TO'
+      };
+      for (const k of ['estado', 'ESTADO', 'Estado']) {
+        const v = p[k];
+        if (!v) continue;
+        const norm = String(v).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (mapa[norm]) return mapa[norm];
+        if (norm.length === 2) return norm.toUpperCase();
+      }
+
+      return '';
+    },    
+    _renderizarListaFeicoes: function () {
+      const container = document.getElementById('buffer-lista-feicoes');
+      if (!container) return;
+
+      const selCamada = document.getElementById('buffer-camada');
+      const camadaId = selCamada?.value;
+
+      if (!camadaId) {
+        container.innerHTML = '<em style="color:#64748b;font-size:10.5px;padding:20px;display:block;text-align:center;">Escolha uma camada primeiro</em>';
+        return;
+      }
+
+      const dados = DADOS_GEOJSON_BRUTOS[camadaId];
+      if (!dados?.features?.length) {
+        container.innerHTML = '<em style="color:#64748b;font-size:10.5px;padding:20px;display:block;text-align:center;">Camada sem feições carregadas</em>';
+        return;
+      }
+
+      const busca = (this._buscaFeicao || '').toLowerCase().trim();
+      let features = dados.features;
+
+      if (busca.length >= 2) {
+        features = features.filter(f => {
+          const nome = this._nomeFeicao(f).toLowerCase();
+          if (nome.includes(busca)) return true;
+          const uf = this._extrairUF(f) || '';
+          return uf.toLowerCase().includes(busca);
+        });
+      }
+
+      const LIMITE_VISUAL = 300;
+      const visiveis = features.slice(0, LIMITE_VISUAL);
+
+      if (visiveis.length === 0) {
+        container.innerHTML = '<em style="color:#64748b;font-size:10.5px;padding:20px;display:block;text-align:center;">Nenhuma feição encontrada</em>';
+        return;
+      }
+
+      let html = '';
+      visiveis.forEach(f => {
+        const chave = this._chaveFeicao(f);
+        const selecionada = this._feicoesSelecionadas.has(chave);
+        const nome = this._nomeFeicao(f);
+        const uf = this._extrairUF(f) || '';
+        const chaveEsc = window.Security.escapeHTML(chave).replace(/'/g, "\\'");
+
+        html += `<div class="buffer-feicao-item ${selecionada ? 'selecionada' : ''}" onclick="BufferTool.toggleFeicao('${chaveEsc}', event)">
+          <input type="checkbox" ${selecionada ? 'checked' : ''} onclick="event.stopPropagation(); BufferTool.toggleFeicao('${chaveEsc}')">
+          <span class="buffer-feicao-nome" title="${window.Security.escapeHTML(nome)}">${window.Security.escapeHTML(nome)}</span>
+          ${uf ? `<span class="buffer-feicao-uf">${window.Security.escapeHTML(uf)}</span>` : ''}
+        </div>`;
+      });
+
+      if (features.length > LIMITE_VISUAL) {
+        html += `<div style="padding:8px 10px;text-align:center;font-size:10px;color:#64748b;background:#0b1f33;">
+          Mostrando ${LIMITE_VISUAL} de ${features.length} feições. Refine a busca.
+        </div>`;
+      }
+
+      container.innerHTML = html;
+      this._atualizarContadorFeicoes();
+    },
+
+    toggleFeicao: function (chave, evento) {
+      if (evento) evento.stopPropagation();
+
+      console.log('[Buffer] toggleFeicao recebeu chave:', chave);
+      console.log('[Buffer] Estava selecionada?', this._feicoesSelecionadas.has(chave));
+
+      if (this._feicoesSelecionadas.has(chave)) {
+        this._feicoesSelecionadas.delete(chave);
+      } else {
+        this._feicoesSelecionadas.add(chave);
+      }
+
+      console.log('[Buffer] Set agora tem:', this._feicoesSelecionadas.size, 'itens');
+
+      this._renderizarListaFeicoes();
+      this._atualizarPreview();
+    },
+
+    selecionarTodasVisiveis: function (selecionar) {
+      const selCamada = document.getElementById('buffer-camada');
+      const camadaId = selCamada?.value;
+      if (!camadaId) return;
+
+      const dados = DADOS_GEOJSON_BRUTOS[camadaId];
+      if (!dados?.features?.length) return;
+
+      let features = dados.features;
+      const busca = (this._buscaFeicao || '').toLowerCase().trim();
+
+      if (busca.length >= 2) {
+        features = features.filter(f => {
+          const nome = this._nomeFeicao(f).toLowerCase();
+          if (nome.includes(busca)) return true;
+          const uf = this._extrairUF(f) || '';
+          return uf.toLowerCase().includes(busca);
+        });
+      }
+
+      for (const f of features) {
+        const chave = this._chaveFeicao(f);
+        if (selecionar) this._feicoesSelecionadas.add(chave);
+        else this._feicoesSelecionadas.delete(chave);
+      }
+
+      this._renderizarListaFeicoes();
+      this._atualizarPreview();
+    },
+
+    filtrarListaFeicoes: function (termo) {
+      this._buscaFeicao = termo;
+      this._renderizarListaFeicoes();
+    },
+
+    usarSelecaoDoMapa: function () {
+      if (!window.SelectionManager) {
+        if (window.UI) window.UI.toast('⚠️ Módulo de seleção indisponível.');
+        return;
+      }
+
+      const selecionadas = window.SelectionManager.obterSelecionadas();
+      if (!selecionadas?.length) {
+        if (window.UI) window.UI.toast('⚠️ Nenhuma feição selecionada. Use Ctrl+Clique no mapa.');
+        return;
+      }
+
+      // ✅ Só atualiza a UI — o filtro lê direto do SelectionManager
+      this._atualizarStatusMapa();
+      this._atualizarPreview();
+      if (window.UI) window.UI.toast(`🎯 ${selecionadas.length} feição(ões) prontas para buffer.`);
+    },
+
+    _atualizarStatusMapa: function () {
+      const el = document.getElementById('buffer-selecao-mapa-status');
+      if (!el) return;
+
+      const sel = window.SelectionManager?.obterSelecionadas?.() || [];
+      const qtd = sel.length;
+
+      if (qtd === 0) {
+        el.innerHTML = '<em style="color:#94a3b8;">Nenhuma feição selecionada no mapa.<br>Use <kbd>Ctrl+Clique</kbd> sobre feições para selecioná-las.</em>';
+        return;
+      }
+
+      el.innerHTML = `
+        <div style="color:#fbbf24;font-weight:700;font-size:12px;">🎯 ${qtd} feição(ões) selecionada(s) no mapa</div>
+        <div style="font-size:10.5px;color:#94a3b8;margin-top:4px;">Ao clicar em "Criar Buffer", o buffer será gerado sobre essas feições.</div>
+      `;
+    },      
+    /* ============================================================
        UI
        ============================================================ */
     abrirModal: function () {
@@ -109,6 +361,8 @@
       this._popularSelectCamadas();
       this._popularSelectFiltros();
       this._renderizarChips();
+      this._renderizarListaFeicoes();   // ✅ M9.4
+      this._atualizarContadorFeicoes(); // ✅ M9.4
       this._atualizarPreview();
 
       modal.classList.add('aberto');
@@ -190,10 +444,14 @@
         sel.appendChild(opt);
       }
 
-      // Restaura seleção ou pega a primeira
+      // ✅ Restaura seleção, ou força a primeira como default
       if (valAtual && candidatas.find(c => c.id === valAtual)) {
         sel.value = valAtual;
+      } else if (candidatas.length > 0) {
+        sel.value = candidatas[0].id;
       }
+
+      console.log('[M9.4] Select populado. Valor:', sel.value, '| Opções:', candidatas.length);
     },
     _popularSelectFiltros: function () {
       const selCamada = document.getElementById('buffer-camada');
@@ -542,10 +800,54 @@
       const selCamada = document.getElementById('buffer-camada');
       const selFiltro = document.getElementById('buffer-filtro');
       const chkFiltroAtivo = document.getElementById('buffer-usar-filtro-ativo');
-
       const camadaId = selCamada ? selCamada.value : '';
 
-      // ✅ Modo 1: filtros acumulados (chips) — prioridade máxima
+      // ============================================================
+      // MODO A: feições individuais
+      //   - MODO "individuais": usa o Set local (_feicoesSelecionadas)
+      //   - MODO "mapa": lê SEMPRE do SelectionManager (evita estado antigo)
+      // ============================================================
+      if (this._modoSel === 'individuais' || this._modoSel === 'mapa') {
+        let chavesParaFiltrar;
+
+        if (this._modoSel === 'mapa') {
+          // ✅ Modo mapa: lê direto da seleção ativa no mapa
+          if (!window.SelectionManager) {
+            return { filtradas: [], filtroTexto: '⚠️ SelectionManager indisponível' };
+          }
+          const selecionadas = window.SelectionManager.obterSelecionadas();
+          if (!selecionadas?.length) {
+            return { filtradas: [], filtroTexto: '⚠️ Nenhuma feição selecionada no mapa' };
+          }
+          chavesParaFiltrar = new Set();
+          for (const s of selecionadas) {
+            chavesParaFiltrar.add(this._chaveFeicao(s.feature));
+          }
+          console.log('[Buffer] MODO MAPA — lendo', selecionadas.length, 'feições direto do SelectionManager');
+        } else {
+          // Modo individuais: usa o Set local
+          chavesParaFiltrar = this._feicoesSelecionadas;
+          console.log('[Buffer] MODO INDIVIDUAIS — Set local tem', chavesParaFiltrar.size, 'chaves');
+        }
+
+        if (chavesParaFiltrar.size === 0) {
+          return { filtradas: [], filtroTexto: '⚠️ Nenhuma feição selecionada' };
+        }
+
+        const filtradas = dados.features.filter(f =>
+          chavesParaFiltrar.has(this._chaveFeicao(f))
+        );
+
+        console.log('[Buffer] Features matching:', filtradas.length);
+        return {
+          filtradas,
+          filtroTexto: `${filtradas.length} feição(ões) selecionada(s)`
+        };
+      }
+
+      // ============================================================
+      // MODO B: filtros acumulados (chips)
+      // ============================================================
       if (this._filtrosAcumulados.length > 0) {
         let filtradas = dados.features;
         const aplicados = [];
@@ -565,15 +867,20 @@
         };
       }
 
-      // ✅ Modo 2: usa filtro ativo do painel principal
+      // ============================================================
+      // MODO C: filtro ativo do painel principal
+      // ============================================================
       if (chkFiltroAtivo && chkFiltroAtivo.checked) {
         const filtroTexto = this._obterFiltroAtivoTexto(camadaId);
         const filtradas = this._aplicarFiltroAtivo(dados, camadaId);
         return { filtradas, filtroTexto };
       }
 
-      // ✅ Modo 3: usa filtro do dropdown (único)
+      // ============================================================
+      // MODO D: filtro do dropdown (único)
+      // ============================================================
       if (!selFiltro || selFiltro.value === 'TODOS') {
+        console.log('[Buffer] MODO D (sem filtro) — retornando TODAS as', dados.features.length, 'feições');
         return { filtradas: dados.features, filtroTexto: '' };
       }
 
@@ -648,7 +955,11 @@
       // ✅ Aplica filtros ANTES de processar
       const { filtradas, filtroTexto } = this._aplicarFiltros(dadosBrutos);
       if (filtradas.length === 0) {
-        if (window.UI) window.UI.toast('⚠️ Nenhuma feição corresponde ao filtro.');
+        let msg = '⚠️ Nenhuma feição corresponde ao filtro.';
+        if (this._modoSel === 'individuais' || this._modoSel === 'mapa') {
+          msg = '⚠️ Selecione ao menos 1 feição.';
+        }
+        if (window.UI) window.UI.toast(msg);
         return;
       }
 
@@ -727,7 +1038,31 @@
         const f = features[i];
         try {
           const buffered = turf.buffer(f, raioKm, { units: 'kilometers', steps });
-          if (buffered) buffers.push(buffered);
+          if (buffered) {
+            // ✅ Preserva as properties da feição original
+            const propsOrigem = f.properties || {};
+            const propsLimpas = {};
+            const IGNORAR = ['geom', 'geometry', 'shape', 'shape_leng', 'shape_area', 'objectid_1', 'marcador'];
+            for (const [k, v] of Object.entries(propsOrigem)) {
+              if (IGNORAR.includes(k.toLowerCase())) continue;
+              if (v === null || v === undefined) continue;
+              propsLimpas[k] = v;
+            }
+
+            // Calcula área deste buffer individual
+            let areaM2 = 0;
+            try { areaM2 = turf.area(buffered); } catch (e) { /* ignora */ }
+
+            // ✅ Adiciona campos do buffer (prefixo _)
+            buffered.properties = Object.assign({}, {
+              _buffer_raio_km: raioKm,
+              _buffer_area_km2: +(areaM2 / 1_000_000).toFixed(2),
+              _buffer_area_m2: Math.round(areaM2),
+              _buffer_gerado_em: new Date().toLocaleString('pt-BR')
+            }, propsLimpas);
+
+            buffers.push(buffered);
+          }
         } catch (e) { /* ignora feição inválida */ }
 
         // Yield a cada chunk pra UI respirar
@@ -789,10 +1124,17 @@
 
     _criarCamadaBuffer: function (camadaOrigemId, raioKm, dissolve, geojson) {
       this._contador++;
+
+      // ✅ Garante que o pane dedicado do buffer existe e recebe cliques
+      if (!window.mapa.getPane('paneBuffer')) {
+        window.mapa.createPane('paneBuffer');
+        window.mapa.getPane('paneBuffer').style.zIndex = 650;      // entre pontos (600) e seleção (700)
+        window.mapa.getPane('paneBuffer').style.pointerEvents = 'auto';
+      }
       const nomeBase = window.CONFIG_CAMADAS[camadaOrigemId]?.nome || camadaOrigemId;
       const filtroTexto = geojson._filtroTexto || '';
       const nome = `Buffer ${raioKm}km · ${nomeBase}${filtroTexto ? ` [${filtroTexto}]` : ''}${dissolve ? ' (unificado)' : ''}`;
-      const id = `buffer_${this._contador}_${raioKm}km_${camadaOrigemId}`;
+      const id = `buffer_${Date.now()}_${raioKm}km_${camadaOrigemId}`;
 
       // Cor aleatória distinta
       const cor = window.LayerRegistry.corAleatoria();
@@ -819,7 +1161,9 @@
 
       // Renderiza no mapa
       CAMADAS_MAPA[id] = L.geoJSON(geojson, {
-        pane: 'paneRestricoes',
+        pane: 'paneBuffer',         // ✅ pane dedicada (650) — recebe cliques
+        interactive: true,
+        bubblingMouseEvents: false,
         style: {
           color: cor,
           weight: 2,
@@ -908,7 +1252,12 @@
         if (cntBadge) cntBadge.innerText = `(${geojson.features.length})`;
         setTimeout(() => {
           const item = document.getElementById(`item-camada-${id}`);
-          if (item) item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          if (item) {
+            item.style.display = 'flex';   // ✅ Força visível mesmo se estava "oculta"
+            item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+          // ✅ Confirma que o item foi criado
+          console.log('[Buffer] Item criado:', !!item, '| ID:', id);
         }, 50);
       }
 
