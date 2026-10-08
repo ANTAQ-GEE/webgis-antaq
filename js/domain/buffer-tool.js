@@ -374,11 +374,28 @@
       const chkFiltroAtivo = document.getElementById('buffer-usar-filtro-ativo');
 
       if (selCamada && !selCamada._bufferListeners) {
-        selCamada.addEventListener('change', () => {
-          // ✅ Reseta filtros acumulados ao trocar de camada (não fazem sentido na nova)
+        selCamada.addEventListener('change', async () => {
           this._filtrosAcumulados = [];
+          this._feicoesSelecionadas = new Set();
+          this._buscaFeicao = '';
+          const inpBusca = document.getElementById('buffer-busca-feicao');
+          if (inpBusca) inpBusca.value = '';
+
+          // ✅ Carrega sob demanda
+          const camadaId = selCamada.value;
+          if (camadaId && !DADOS_GEOJSON_BRUTOS[camadaId]?.features?.length) {
+            if (window.UI) window.UI.toast(`⏳ Carregando ${CONFIG_CAMADAS[camadaId]?.nome || camadaId}...`);
+            try {
+              await window.DataManager.carregarCamada(camadaId);
+            } catch (e) {
+              console.warn('[M9] Falha ao carregar:', e);
+            }
+          }
+
           this._renderizarChips();
           this._popularSelectFiltros();
+          this._renderizarListaFeicoes();
+          this._atualizarContadorFeicoes();
           this._atualizarPreview();
         });
         selCamada._bufferListeners = true;
@@ -421,15 +438,16 @@
       const valAtual = sel.value;
       sel.innerHTML = '';
 
-      // Lista todas as camadas carregadas com features
+      // ✅ Lista TODAS as camadas do CONFIG (mesmo não carregadas)
       const candidatas = [];
-      for (const [id, dados] of Object.entries(DADOS_GEOJSON_BRUTOS)) {
-        if (!dados?.features?.length) continue;
-        const nome = window.CONFIG_CAMADAS[id]?.nome || id;
-        candidatas.push({ id, nome, n: dados.features.length });
-      }
+      for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
+        // Ignora camadas geradas
+        if (id.startsWith('buffer_') || id.startsWith('geo_') || id.startsWith('imp_')) continue;
 
-      // Ordena por nome
+        const n = DADOS_GEOJSON_BRUTOS[id]?.features?.length || 0;
+        const nome = cfg.nome || id;
+        candidatas.push({ id, nome, n });
+      }
       candidatas.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
       if (candidatas.length === 0) {
@@ -946,9 +964,22 @@
         raios = [parseFloat(inpRaio.value) || 50];
       }
 
+      // ✅ Carrega sob demanda
+      if (!DADOS_GEOJSON_BRUTOS[camadaId]?.features?.length) {
+        if (window.UI) window.UI.toast(`⏳ Carregando ${CONFIG_CAMADAS[camadaId]?.nome || camadaId}...`);
+        try {
+          await window.DataManager.carregarCamada(camadaId);
+        } catch (e) {
+          if (window.UI) window.UI.toast(`⚠️ Falha ao carregar: ${e.message || e}`);
+          if (btnCriar) { btnCriar.disabled = false; btnCriar.innerHTML = '⭕ Criar Buffer'; }
+          return;
+        }
+      }
+
       const dadosBrutos = DADOS_GEOJSON_BRUTOS[camadaId];
       if (!dadosBrutos?.features?.length) {
         if (window.UI) window.UI.toast('⚠️ Camada sem feições.');
+        if (btnCriar) { btnCriar.disabled = false; btnCriar.innerHTML = '⭕ Criar Buffer'; }
         return;
       }
 

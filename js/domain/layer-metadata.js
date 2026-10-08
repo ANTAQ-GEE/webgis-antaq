@@ -11,8 +11,20 @@
   const LayerMetadata = {
     camadaAtualId: null,
 
-    abrir: function (id) {
+    abrir: async function (id) {
       this.camadaAtualId = id;
+
+      // ✅ Carrega sob demanda (pra mostrar contagem real de feições)
+      if (!DADOS_GEOJSON_BRUTOS[id]?.features?.length) {
+        try {
+          if (window.UI) window.UI.toast(`⏳ Carregando ${CONFIG_CAMADAS[id]?.nome || id}...`);
+          await window.DataManager.carregarCamada(id);
+        } catch (e) {
+          // Não bloqueia — metadados funcionam mesmo sem feições
+          console.warn('[M3] Falha ao carregar camada para metadados:', e);
+        }
+      }
+
       const cfg = CONFIG_CAMADAS[id] || {};
       const meta = METADADOS_CAMADAS[id] || {};
 

@@ -374,23 +374,60 @@ window.toggleModoInterativo = function () {
   /* ============================================================
      ZOOM EM CAMADA
      ============================================================ */
-  function zoomCamada(id) {
-    if (window.CAMADAS_MAPA[id] && window.mapa.hasLayer(window.CAMADAS_MAPA[id])) {
+  async function zoomCamada(id) {
+    // ✅ Carrega sob demanda se ainda não carregou
+    if (!window.DADOS_GEOJSON_BRUTOS[id]?.features?.length) {
+      if (window.UI) window.UI.toast(`⏳ Carregando ${window.CONFIG_CAMADAS[id]?.nome || id}...`);
       try {
-        window.mapa.fitBounds(window.CAMADAS_MAPA[id].getBounds(), { padding: [40, 40], maxZoom: 14 });
+        await window.DataManager.carregarCamada(id);
+      } catch (e) {
+        if (window.UI) window.UI.toast(`⚠️ Falha ao carregar: ${e.message || e}`);
+        return;
+      }
+    }
+
+    // ✅ Liga a camada no mapa se ainda não está visível
+    if (window.CAMADAS_MAPA[id] && !window.mapa.hasLayer(window.CAMADAS_MAPA[id])) {
+      window.CAMADAS_MAPA[id].addTo(window.mapa);
+    }
+
+    if (window.CAMADAS_MAPA[id]) {
+      try {
+        const bounds = window.CAMADAS_MAPA[id].getBounds();
+        if (bounds.isValid()) {
+          window.mapa.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+        }
       } catch (e) {
         if (window.UI) window.UI.toast("Não foi possível calcular os limites da camada.");
       }
-    } else {
-      if (window.UI) window.UI.toast("Ative a camada para aproximar.");
     }
   }
 
   /* ============================================================
      ABRIR TABELA DE ATRIBUTOS
      ============================================================ */
-  function abrirTabela(id) {
-    window.TabelaManager.abrir(id);
+  async function abrirTabela(id) {
+    // ✅ Fecha modais que possam estar cobrindo o painel da tabela
+    const modaisParaFechar = [
+      'modal-buffer',
+      'modal-geo',
+      'modal-metadados',
+      'modal-catalogo-camadas',
+      'modal-sobre',
+      'modal-matriz-ven',
+      'modal-diff-safras',
+      'modal-validacao',
+      'modal-historico-notif',
+      'modal-copiloto-historico'
+    ];
+    modaisParaFechar.forEach(mId => {
+      const m = document.getElementById(mId);
+      if (m && m.classList.contains('aberto')) {
+        m.classList.remove('aberto');
+      }
+    });
+
+    await window.TabelaManager.abrir(id);
   }
 
   /* ============================================================

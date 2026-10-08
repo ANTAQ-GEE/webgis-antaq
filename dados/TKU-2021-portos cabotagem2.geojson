@@ -1,0 +1,7 @@
+{
+"type": "FeatureCollection",
+"name": "TKU-2021-portos cabotagem2",
+"features": [
+{"type":"Feature","properties":{"idi_tuaria":300564,"idseq":0,"cdi_tuaria":"BRPA209","nome":"Base de Oriximiná - BARIX","tipo":"Estação de transbordo de cargas","cdbigrama":"BR","cdtrigrama":"BRP","cdterminal":"BRPA209","situacao":"Em Operação","gestao":"Privada","modalidade":"Estação de transbordo de cargas","companhia":"PETROBRAS DISTRIBUIDORA S.A.","cnpj":"34274233014588","legislacao":"CA 7/2019-MINFRA","pro_didade":null,"endereco":"Margem Direita do Rio Trombetas","com_emento":null,"numero":null,"bairro":"Porto Trombetas","cep":"68275000","idcidade":"1505304","cidade":null,"idestado":null,"estado":null,"idr_rafica":null,"reg_rafica":null,"loc_izacao":"Trombetas","latitude":"-1.46147","longitude":"-56.3841","observacao":"Atualização GAP 03/03/2021\r\n\r\nCadastro GAP 05/11/2019; Processo","fonte":"Antaq","cdc_troide":null},"geometry":{"type":"Point","coordinates":[-56.383899,-1.461621]}}
+]
+}

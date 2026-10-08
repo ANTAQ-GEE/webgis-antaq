@@ -15,10 +15,21 @@
      * Exporta as feições VISÍVEIS de uma camada (respeitando filtros ativos)
      * como um arquivo .geojson para download.
      */
-    exportarGeoJSON: function (idCamada) {
+    exportarGeoJSON: async function (idCamada) {
       if (!idCamada) {
         if (window.UI) window.UI.toast('⚠️ Camada inválida para exportação.');
         return;
+      }
+
+      // ✅ Carrega sob demanda
+      if (!DADOS_GEOJSON_BRUTOS[idCamada]?.features?.length) {
+        if (window.UI) window.UI.toast(`⏳ Carregando ${CONFIG_CAMADAS[idCamada]?.nome || idCamada}...`);
+        try {
+          await window.DataManager.carregarCamada(idCamada);
+        } catch (e) {
+          if (window.UI) window.UI.toast(`⚠️ Falha ao carregar: ${e.message || e}`);
+          return;
+        }
       }
 
       const dados = DADOS_GEOJSON_BRUTOS[idCamada];

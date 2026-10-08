@@ -53,12 +53,31 @@
       this.renderizar();
     },
 
-    abrir: function (id) {
-      const g = DADOS_GEOJSON_BRUTOS[id];
-      if (!g || !g.features || !g.features.length) {
-        if (window.UI) window.UI.toast("Nenhum dado carregado para esta camada.");
-        return;
+    abrir: async function (id) {
+      console.log('[Tabela] abrir() chamado para:', id);
+
+      // ✅ Carrega sob demanda COM timeout
+      if (!DADOS_GEOJSON_BRUTOS[id]?.features?.length) {
+        console.log('[Tabela] Camada fria, carregando...');
+        if (window.UI) window.UI.toast(`⏳ Carregando ${CONFIG_CAMADAS[id]?.nome || id}...`);
+
+        try {
+          const timeoutMs = 20000;
+          await Promise.race([
+            window.DataManager.carregarCamada(id),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('Timeout ao carregar camada (20s)')), timeoutMs))
+          ]);
+          console.log('[Tabela] Camada carregada:', DADOS_GEOJSON_BRUTOS[id]?.features?.length || 0, 'feições');
+        } catch (e) {
+          console.error('[Tabela] Falha ao carregar:', e);
+          if (window.UI) window.UI.toast(`⚠️ Falha ao carregar: ${e.message || e}`);
+          return;
+        }
+      } else {
+        console.log('[Tabela] Camada já carregada, abrindo direto');
       }
+      const g = DADOS_GEOJSON_BRUTOS[id];
+      if (!g || !g.features || !g.features.length) { UI.toast("Nenhum dado carregado para esta camada."); return; }
 
       this.camadaAtualId = id;
       this.features = g.features;
