@@ -12,7 +12,90 @@
 
   const BufferTool = {
     _contador: 0,
+    _filtrosAcumulados: [],   // [{ campo, valor }]
+    /**
+     * Adiciona o valor selecionado no dropdown atual à lista de filtros acumulados.
+     * Evita duplicatas.
+     */
+    adicionarFiltroAtual: function () {
+      const selFiltro = document.getElementById('buffer-filtro');
+      if (!selFiltro) return;
 
+      const valor = selFiltro.value;
+      if (!valor || valor === 'TODOS') {
+        if (window.UI) window.UI.toast('⚠️ Selecione um valor no dropdown antes de adicionar.');
+        return;
+      }
+
+      const [campo, valorCampo] = valor.split('::');
+      if (!campo || !valorCampo) return;
+
+      // Evita duplicata
+      const jaExiste = this._filtrosAcumulados.some(f =>
+        f.campo === campo && f.valor === valorCampo
+      );
+      if (jaExiste) {
+        if (window.UI) window.UI.toast('⚠️ Este filtro já está aplicado.');
+        return;
+      }
+
+      // Mesmo campo: substitui valor anterior (evita AND contraditório)
+      const mesmoCampo = this._filtrosAcumulados.findIndex(f => f.campo === campo);
+      if (mesmoCampo >= 0) {
+        this._filtrosAcumulados[mesmoCampo] = { campo, valor: valorCampo };
+      } else {
+        this._filtrosAcumulados.push({ campo, valor: valorCampo });
+      }
+
+      // Reseta o dropdown pra "TODOS" (força o usuário a escolher o próximo)
+      selFiltro.value = 'TODOS';
+
+      this._renderizarChips();
+      this._atualizarPreview();
+    },
+
+    /**
+     * Remove um filtro da lista pelo índice.
+     */
+    removerFiltro: function (idx) {
+      if (idx >= 0 && idx < this._filtrosAcumulados.length) {
+        this._filtrosAcumulados.splice(idx, 1);
+        this._renderizarChips();
+        this._atualizarPreview();
+      }
+    },
+
+    /**
+     * Limpa todos os filtros acumulados.
+     */
+    limparFiltrosAcumulados: function () {
+      this._filtrosAcumulados = [];
+      this._renderizarChips();
+      this._atualizarPreview();
+    },
+
+    /**
+     * Renderiza os chips no DOM.
+     */
+    _renderizarChips: function () {
+      const container = document.getElementById('buffer-filtros-ativos');
+      if (!container) return;
+
+      if (this._filtrosAcumulados.length === 0) {
+        container.innerHTML = '<em style="color:#64748b;font-size:10.5px;">Nenhum filtro acumulado</em>';
+        return;
+      }
+
+      container.innerHTML = this._filtrosAcumulados.map((f, i) =>
+        `<span class="buffer-chip">
+           ${window.Security.escapeHTML(f.campo)} = "${window.Security.escapeHTML(f.valor)}"
+           <button class="buffer-chip-remover" onclick="BufferTool.removerFiltro(${i})" title="Remover filtro">×</button>
+         </span>`
+      ).join('') +
+      `<button class="btn-acao-chip btn-excluir" style="font-size:9.5px;padding:2px 6px;" onclick="BufferTool.limparFiltrosAcumulados()" title="Limpar todos">
+         🗑️ Limpar
+       </button>`;
+    },
     /* ============================================================
        UI
        ============================================================ */
@@ -20,8 +103,12 @@
       const modal = document.getElementById('modal-buffer');
       if (!modal) return;
 
+      // ✅ Sempre reseta os filtros acumulados ao abrir
+      this._filtrosAcumulados = [];
+
       this._popularSelectCamadas();
       this._popularSelectFiltros();
+      this._renderizarChips();
       this._atualizarPreview();
 
       modal.classList.add('aberto');
@@ -34,6 +121,9 @@
 
       if (selCamada && !selCamada._bufferListeners) {
         selCamada.addEventListener('change', () => {
+          // ✅ Reseta filtros acumulados ao trocar de camada (não fazem sentido na nova)
+          this._filtrosAcumulados = [];
+          this._renderizarChips();
           this._popularSelectFiltros();
           this._atualizarPreview();
         });
@@ -51,6 +141,11 @@
         selFiltro.addEventListener('change', () => this._atualizarPreview());
         selFiltro._bufferListeners = true;
       }
+      const inpLote = document.getElementById('buffer-raios-lote');
+      if (inpLote && !inpLote._bufferListeners) {
+        inpLote.addEventListener('input', () => this._atualizarPreview());
+        inpLote._bufferListeners = true;
+      }      
       if (chkFiltroAtivo && !chkFiltroAtivo._bufferListeners) {
         chkFiltroAtivo.addEventListener('change', () => {
           if (selFiltro) selFiltro.disabled = chkFiltroAtivo.checked;
@@ -315,15 +410,57 @@
 
       const pct = n > 0 ? ((nFiltrado / n) * 100).toFixed(0) : 0;
 
+      // ✅ Verifica modo (único ou lote)
+      const modo = this._obterModoRaio();
+      const comparativoEl = document.getElementById('buffer-comparativo');
+      let textoRaios = '';
+
+      if (modo === 'lote') {
+        const inpLote = document.getElementById('buffer-raios-lote');
+        const raios = this._parseRaiosLote(inpLote?.value || '');
+        if (raios.length === 0) {
+          preview.innerHTML = '<em style="color:#ef4444;">⚠️ Informe ao menos 1 raio válido separado por vírgula.</em>';
+          if (comparativoEl) comparativoEl.style.display = 'none';
+          return;
+        }
+        textoRaios = raios.map(r => `${r} km`).join(', ');
+
+        // ✅ Tabela comparativa (teórica — área π·r²)
+        this._renderizarComparativo(raios);
+        if (comparativoEl) comparativoEl.style.display = 'block';
+      } else {
+        textoRaios = `${raio} km`;
+        if (comparativoEl) comparativoEl.style.display = 'none';
+      }
+
       preview.innerHTML = `
         <div style="font-size:11px;color:#94a3b8;line-height:1.5;">
           Serão processadas <strong style="color:#38bdf8;">${nFiltrado.toLocaleString('pt-BR')}</strong>
           ${nFiltrado !== n ? `<span style="color:#64748b;">de ${n.toLocaleString('pt-BR')} (${pct}%)</span>` : ''}
           feições de <strong style="color:#e2e8f0;">${window.Security.escapeHTML(nome)}</strong>,<br>
-          criando buffers de <strong style="color:#f59e0b;">${raio} km</strong> em torno de cada uma.
+          criando buffers de <strong style="color:#f59e0b;">${textoRaios}</strong> em torno de cada uma.
           ${filtroTexto ? `<br><br><span style="color:#fbbf24;font-size:10px;">🔍 Filtro: ${window.Security.escapeHTML(filtroTexto)}</span>` : ''}
         </div>
       `;
+    },
+
+    /**
+     * Renderiza tabela comparativa (área teórica por raio).
+     */
+    _renderizarComparativo: function (raios) {
+      const tbody = document.getElementById('buffer-comparativo-corpo');
+      if (!tbody) return;
+
+      const linhas = raios.map(r => {
+        const area = Math.PI * r * r;
+        return `<tr>
+          <td>${r}</td>
+          <td>π·${r}²</td>
+          <td>${area >= 1000 ? (area / 1000).toFixed(1) + ' mil km²' : area.toFixed(0) + ' km²'}</td>
+        </tr>`;
+      }).join('');
+
+      tbody.innerHTML = linhas;
     },
     /**
      * Aplica os filtros selecionados no modal.
@@ -391,69 +528,115 @@
     },
 
     /**
-     * Aplica o mesmo filtro que está ativo no painel principal.
+     * Aplica os filtros selecionados no modal.
+     * Prioridade:
+     *   1. Filtros acumulados (chips) — se houver
+     *   2. Checkbox "usar filtro ativo do painel principal"
+     *   3. Dropdown do modal (filtro único, sem +)
      */
-    _aplicarFiltroAtivo: function (dados, camadaId) {
-      if (!dados?.features?.length) return [];
+    _aplicarFiltros: function (dados) {
+      if (!dados?.features?.length) {
+        return { filtradas: [], filtroTexto: '' };
+      }
 
-      let filtradas = dados.features;
+      const selCamada = document.getElementById('buffer-camada');
+      const selFiltro = document.getElementById('buffer-filtro');
+      const chkFiltroAtivo = document.getElementById('buffer-usar-filtro-ativo');
 
-      // Portos: filtro por regime
-      if (camadaId === 'instalacoes_portuarias') {
-        const filtro = window.FILTRO_PORTO_ATUAL || 'TODOS';
-        if (filtro !== 'TODOS') {
+      const camadaId = selCamada ? selCamada.value : '';
+
+      // ✅ Modo 1: filtros acumulados (chips) — prioridade máxima
+      if (this._filtrosAcumulados.length > 0) {
+        let filtradas = dados.features;
+        const aplicados = [];
+
+        for (const { campo, valor } of this._filtrosAcumulados) {
           filtradas = filtradas.filter(f => {
-            const cat = window.PortClassification.classificar(f.properties || {});
-            return cat.id === filtro;
+            const v = f.properties?.[campo];
+            if (v === null || v === undefined) return false;
+            return String(v).trim() === String(valor).trim();
           });
+          aplicados.push(`${campo} = "${valor}"`);
         }
+
+        return {
+          filtradas,
+          filtroTexto: aplicados.join(' E ')
+        };
       }
 
-      // UCs: filtro por esfera
-      if (camadaId === 'ucs_todas_mma' && typeof window.classificarEsfera === 'function') {
-        const filtro = window.FILTRO_UC_ATUAL || 'TODOS';
-        if (filtro !== 'TODOS') {
-          filtradas = filtradas.filter(f => {
-            return window.classificarEsfera(f.properties).id === filtro;
-          });
-        }
+      // ✅ Modo 2: usa filtro ativo do painel principal
+      if (chkFiltroAtivo && chkFiltroAtivo.checked) {
+        const filtroTexto = this._obterFiltroAtivoTexto(camadaId);
+        const filtradas = this._aplicarFiltroAtivo(dados, camadaId);
+        return { filtradas, filtroTexto };
       }
 
-      // Filtro genérico do dropdown dinâmico
-      const selSub = document.getElementById('filtro-subtipo-dinamico');
-      const selCamada = document.getElementById('sel-camada-busca');
-      if (selSub && selSub.value && selSub.value !== 'TODOS' &&
-          selCamada && selCamada.value === camadaId &&
-          camadaId !== 'instalacoes_portuarias' && camadaId !== 'ucs_todas_mma') {
-
-        const col = window.FilterManager?.colunaEsferaAtiva;
-        if (col) {
-          filtradas = filtradas.filter(f =>
-            String(f.properties?.[col] || '').trim() === selSub.value
-          );
-        }
+      // ✅ Modo 3: usa filtro do dropdown (único)
+      if (!selFiltro || selFiltro.value === 'TODOS') {
+        return { filtradas: dados.features, filtroTexto: '' };
       }
 
-      return filtradas;
+      const [campo, valor] = selFiltro.value.split('::');
+      const filtradas = dados.features.filter(f => {
+        const v = f.properties?.[campo];
+        return v !== undefined && v !== null && String(v).trim() === valor;
+      });
+
+      return {
+        filtradas,
+        filtroTexto: `${campo} = "${valor}"`
+      };
     },
+      mudarModo: function (modo) {
+      const unicoW = document.getElementById('buffer-raio-unico-wrapper');
+      const loteW = document.getElementById('buffer-raio-lote-wrapper');
+
+      if (unicoW) unicoW.style.display = (modo === 'unico') ? '' : 'none';
+      if (loteW) loteW.style.display = (modo === 'lote') ? '' : 'none';
+
+      this._atualizarPreview();
+    },
+
+    _obterModoRaio: function () {
+      const sel = document.querySelector('input[name="buffer-modo"]:checked');
+      return sel ? sel.value : 'unico';
+    },
+
+    _parseRaiosLote: function (texto) {
+      return String(texto || '')
+        .split(',')
+        .map(s => parseFloat(s.trim()))
+        .filter(n => Number.isFinite(n) && n > 0 && n <= 1000)
+        .slice(0, 6);   // máximo 6 raios
+    },  
     /* ============================================================
        PROCESSAMENTO
        ============================================================ */
     criar: async function () {
       const selCamada = document.getElementById('buffer-camada');
       const inpRaio = document.getElementById('buffer-raio');
+      const inpLote = document.getElementById('buffer-raios-lote');
       const chkDissolve = document.getElementById('buffer-dissolve');
       const btnCriar = document.getElementById('btn-buffer-criar');
 
       if (!selCamada || !inpRaio) return;
 
       const camadaId = selCamada.value;
-      const raioKm = parseFloat(inpRaio.value) || 50;
       const dissolve = chkDissolve ? chkDissolve.checked : false;
 
-      if (!camadaId) {
-        if (window.UI) window.UI.toast('⚠️ Selecione uma camada de origem.');
-        return;
+      // ✅ Verifica modo
+      const modo = this._obterModoRaio();
+      let raios = [];
+
+      if (modo === 'lote') {
+        raios = this._parseRaiosLote(inpLote?.value || '');
+        if (raios.length === 0) {
+          if (window.UI) window.UI.toast('⚠️ Informe ao menos 1 raio válido no campo de lote.');
+          return;
+        }
+      } else {
+        raios = [parseFloat(inpRaio.value) || 50];
       }
 
       const dadosBrutos = DADOS_GEOJSON_BRUTOS[camadaId];
@@ -480,30 +663,48 @@
       // Desabilita botão durante processamento
       if (btnCriar) {
         btnCriar.disabled = true;
-        btnCriar.innerHTML = '⏳ Processando...';
+        const qtd = raios.length;
+        btnCriar.innerHTML = qtd > 1 ? `⏳ Processando ${qtd} raios...` : '⏳ Processando...';
       }
 
       const inicio = performance.now();
+      let sucessos = 0;
+      let erros = 0;
 
       try {
-        const resultado = await this._processarBuffer(dados, raioKm, dissolve);
+        // ✅ Loop pelos raios
+        for (const raioKm of raios) {
+          try {
+            const resultado = await this._processarBuffer(dados, raioKm, dissolve);
 
-        // ✅ Marca o filtro no geojson pra aparecer no nome da camada
-        if (filtroTexto) resultado._filtroTexto = filtroTexto;
+            // Marca o filtro no geojson pra aparecer no nome da camada
+            if (filtroTexto) resultado._filtroTexto = filtroTexto;
+
+            // Adiciona como nova camada
+            this._criarCamadaBuffer(camadaId, raioKm, dissolve, resultado);
+            sucessos++;
+
+            // Yield pra UI entre raios
+            if (raios.length > 1) await new Promise(r => setTimeout(r, 100));
+          } catch (e) {
+            console.warn(`[M9] Falha no raio ${raioKm}km:`, e);
+            erros++;
+          }
+        }
 
         const duracao = ((performance.now() - inicio) / 1000).toFixed(1);
-        console.info(`[M9] Buffer criado em ${duracao}s: ${resultado.features.length} polígono(s)`);
-
-        // Adiciona como nova camada
-        this._criarCamadaBuffer(camadaId, raioKm, dissolve, resultado);
+        console.info(`[M9] ${sucessos} buffer(s) criado(s) em ${duracao}s${erros > 0 ? ` (${erros} com erro)` : ''}`);
 
         this.fecharModal();
 
         if (window.UI) {
-          window.UI.toast(`✓ Buffer de ${raioKm} km criado (${resultado.features.length} feição(ões) em ${duracao}s).`);
+          const msg = sucessos === 1
+            ? `✓ Buffer de ${raios[0]} km criado em ${duracao}s.`
+            : `✓ ${sucessos} buffers criados em ${duracao}s${erros > 0 ? ` (${erros} falha(s))` : ''}.`;
+          window.UI.toast(msg);
         }
       } catch (e) {
-        console.error('[M9] Falha ao criar buffer:', e);
+        console.error('[M9] Falha crítica ao criar buffer:', e);
         if (window.UI) window.UI.toast('⚠️ Falha ao criar buffer: ' + (e.message || e));
       } finally {
         if (btnCriar) {
@@ -540,16 +741,43 @@
       // Se dissolve, une todos numa só feature
       if (dissolve && buffers.length > 1) {
         try {
-          // turf.union aceita 2 por vez — reduz iterativamente
           let acumulado = buffers[0];
           for (let i = 1; i < buffers.length; i++) {
             acumulado = turf.union(acumulado, buffers[i]);
-            // Yield a cada 20 uniões
             if (i % 20 === 0) await new Promise(r => setTimeout(r, 0));
           }
+
+          // ✅ Herda propriedades da primeira feição original + métricas úteis
+          const propsOrigem = dados.features[0]?.properties || {};
+          const propsLimpas = {};
+          // Copia só campos "úteis" (não geométricos)
+          const IGNORAR = ['geom', 'geometry', 'shape', 'shape_leng', 'shape_area', 'objectid_1', 'marcador'];
+          for (const [k, v] of Object.entries(propsOrigem)) {
+            if (IGNORAR.includes(k.toLowerCase())) continue;
+            if (v === null || v === undefined) continue;
+            propsLimpas[k] = v;
+          }
+
+          // Calcula área total (m²)
+          let areaM2 = 0;
+          try { areaM2 = turf.area(acumulado); } catch (e) { /* ignora */ }
+
+          const propsDissolve = Object.assign({}, propsLimpas, {
+            _dissolved: true,
+            _count: buffers.length,
+            _area_total_m2: Math.round(areaM2),
+            _area_total_km2: +(areaM2 / 1_000_000).toFixed(2),
+            _gerado_por: 'M9 · Buffer + Dissolve',
+            _data_geracao: new Date().toLocaleString('pt-BR')
+          });
+
           return {
             type: 'FeatureCollection',
-            features: [{ type: 'Feature', properties: { _dissolved: true, _count: buffers.length }, geometry: acumulado.geometry }]
+            features: [{
+              type: 'Feature',
+              properties: propsDissolve,
+              geometry: acumulado.geometry
+            }]
           };
         } catch (e) {
           console.warn('[M9] Dissolve falhou, retornando buffers individuais:', e);

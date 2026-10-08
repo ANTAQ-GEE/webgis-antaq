@@ -72,12 +72,12 @@
       tis_poligonais: {
         nome: "Terras Indígenas (FUNAI)", grupo: "restricoes",
         arquivos: ["dados/tis_poligonais.geojson", "./dados/tis_poligonais.geojson", "../dados/tis_poligonais.geojson"],
-        cor: "#ef4444", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: []
+        cor: "#ef4444", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: false, camposVisiveis: []
       },
       ucs_federais: {
         nome: "Unidades de Conservação Federais (ICMBio)", grupo: "restricoes",
         arquivos: ["dados/ucs_federais.geojson", "./dados/ucs_federais.geojson", "../dados/ucs_federais.geojson"],
-        cor: "#15803d", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: true, camposVisiveis: []
+        cor: "#15803d", opacidade: 0.35, peso: 1.5, tipoGeo: "poligono", ativa: false, camposVisiveis: []
       }
     };
 

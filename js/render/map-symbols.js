@@ -123,32 +123,16 @@
      */
     clusterHtml: function (tipo, cor, count, dim) {
       dim = dim || 40;
-      const svgs = { ancora: SVG_ANCORA, ponte: SVG_PONTE, barco: SVG_BARCO };
-      const svgInterno = svgs[tipo] || SVG_ANCORA;
-      const iconSize = Math.round(dim * 0.4);
-
-      return `
-        <div style="
-          position:relative;
-          background:${cor};
-          width:${dim}px; height:${dim}px;
-          border-radius:50%;
-          display:flex; align-items:center; justify-content:center;
-          border:3px solid rgba(255,255,255,0.92);
-          box-shadow:0 2px 10px rgba(0,0,0,0.45);
-          font-family:'Segoe UI', sans-serif;
-          color:#ffffff;
-        ">
-          <svg xmlns="http://www.w3.org/2000/svg" width="${iconSize}" height="${iconSize}"
-               viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2"
-               stroke-linecap="round" stroke-linejoin="round"
-               style="margin-right:2px; opacity:0.95; flex-shrink:0;">
-            ${svgInterno}
-          </svg>
-          <span style="font-size:${Math.round(dim * 0.35)}px; font-weight:800; letter-spacing:-0.5px;">${count}</span>
-        </div>
-      `;
-    },    
+      return `<div style="
+        background:${cor};color:#fff;
+        width:${dim}px;height:${dim}px;border-radius:50%;
+        display:flex;align-items:center;justify-content:center;
+        border:3px solid rgba(255,255,255,0.92);
+        box-shadow:0 2px 6px rgba(0,0,0,0.35);
+        font-family:'Segoe UI',sans-serif;font-weight:700;
+        font-size:${Math.round(dim * 0.35)}px;
+      ">${count}</div>`;
+    },
   };
 
   window.MapSymbols = MapSymbols;

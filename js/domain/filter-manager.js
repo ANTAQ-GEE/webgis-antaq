@@ -178,17 +178,27 @@
         let visiveis = 0;
         const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
         const latlngsVisiveis = [];
+
+        // ✅ Adiciona os clusters DENTRO do featureGroup, não direto no mapa
+        const featureGroup = CAMADAS_MAPA['instalacoes_portuarias'];
+        const featureGroupNoMapa = featureGroup && mapa.hasLayer(featureGroup);
+
+        for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
+        const fgPai = CAMADAS_MAPA['instalacoes_portuarias'];
         for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
           const chkSub = document.getElementById(`chk-sub-${tKey}`);
           const deveLigar = (valor === 'TODOS' || tKey === valor);
           if (chkSub) chkSub.checked = deveLigar;
+
+          // ✅ Manipula DENTRO do featureGroup pai
           if (deveLigar) {
-            if (!mapa.hasLayer(fg)) fg.addTo(mapa);
+            if (fgPai && !fgPai.hasLayer(fg)) fgPai.addLayer(fg);
             visiveis += fg.getLayers().length;
             fg.eachLayer(m => { if (m.getLatLng) latlngsVisiveis.push(m.getLatLng()); });
           } else {
-            if (mapa.hasLayer(fg)) mapa.removeLayer(fg);
+            if (fgPai && fgPai.hasLayer(fg)) fgPai.removeLayer(fg);
           }
+        }
         }
         const cntEl = document.getElementById('cnt-instalacoes_portuarias');
         if (cntEl) cntEl.innerText = (valor === 'TODOS' || visiveis === total) ? `(${total})` : `(${visiveis}/${total})`;

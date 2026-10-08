@@ -130,11 +130,24 @@
 
       const inicio = performance.now();
 
+      // ✅ Só indexa o que está visível no viewport atual (evita indexar 7673 rodovias fora da tela)
+      const bounds = window.mapa.getBounds();
+      let limitados = 0;
+
       for (const [id, layer] of Object.entries(window.CAMADAS_MAPA)) {
         if (!window.mapa.hasLayer(layer)) continue;
         try {
           if (typeof layer.eachLayer === 'function') {
-            layer.eachLayer(sub => this._extrairVerticesDe(sub, id));
+            layer.eachLayer(sub => {
+              // Filtro rápido por bbox
+              try {
+                if (sub.getBounds && !bounds.intersects(sub.getBounds())) return;
+                if (sub.getLatLng && !bounds.contains(sub.getLatLng())) return;
+              } catch (e) { /* ignora */ }
+
+              limitados++;
+              this._extrairVerticesDe(sub, id);
+            });
           }
         } catch (e) { /* camada sem eachLayer */ }
       }

@@ -112,7 +112,106 @@
       const m = document.getElementById('modal-catalogo-camadas');
       if (m) m.classList.remove('aberto');
     },
+    /**
+     * Exclui PERMANENTEMENTE uma camada gerada (buffer, importada).
+     * Diferente de ocultarCamada(), remove do mapa, memória e painel.
+     * NÃO funciona em camadas do sistema (infra, limites, etc.).
+     */
+    excluirPermanentemente: function (id) {
+      const cfg = CONFIG_CAMADAS[id];
+      if (!cfg) return;
 
+      // ✅ Só permite excluir camadas geradas
+      const ehGerada = cfg._isBuffer || cfg.grupo === 'importadas' || id.startsWith('imp_') || id.startsWith('buffer_');
+      if (!ehGerada) {
+        if (window.UI) window.UI.toast('⚠️ Esta camada é do sistema e não pode ser excluída.');
+        return;
+      }
+
+      const nome = cfg.nome || id;
+      if (!confirm(`Excluir permanentemente "${nome}"?\n\nEsta ação remove a camada do mapa, do painel e da memória. Não pode ser desfeita.`)) {
+        return;
+      }
+
+      // 1. Remove do mapa
+      if (CAMADAS_MAPA[id]) {
+        try { window.mapa.removeLayer(CAMADAS_MAPA[id]); } catch (e) {}
+        delete CAMADAS_MAPA[id];
+      }
+
+      // 2. Remove dos dados brutos
+      delete DADOS_GEOJSON_BRUTOS[id];
+
+      // 3. Remove da config
+      delete CONFIG_CAMADAS[id];
+
+      // 4. Remove do localStorage (se estava oculta)
+      const ocultas = this.obterOcultas().filter(x => x !== id);
+      this.salvarOcultas(ocultas);
+
+      // 5. Remove do DOM
+      const item = document.getElementById(`item-camada-${id}`);
+      if (item) item.remove();
+
+      // 6. Remove do painel do copiloto (se aparecer lá)
+      if (window.FilterManager) {
+        try { window.FilterManager.atualizarSeletorCamadas(); } catch (e) {}
+      }
+
+      // 7. Atualiza legenda
+      if (window.Styler) {
+        try { window.Styler.atualizarLegenda(); } catch (e) {}
+      }
+
+      // 8. Re-renderiza catálogo (se estiver aberto)
+      this.renderizarCatalogo();
+
+      console.info(`[Catálogo] Camada "${nome}" excluída permanentemente.`);
+      if (window.UI) window.UI.toast(`🗑️ Camada "${nome}" excluída permanentemente.`);
+    },
+
+    /**
+     * Exclui TODAS as camadas geradas de uma vez.
+     */
+    excluirTodasGeradas: function () {
+      const geradas = Object.keys(CONFIG_CAMADAS).filter(id => {
+        const cfg = CONFIG_CAMADAS[id];
+        return cfg._isBuffer || id.startsWith('imp_') || id.startsWith('buffer_') || cfg.grupo === 'importadas';
+      });
+
+      if (geradas.length === 0) {
+        if (window.UI) window.UI.toast('Nenhuma camada gerada para excluir.');
+        return;
+      }
+
+      if (!confirm(`Excluir permanentemente ${geradas.length} camada(s) gerada(s)?\n\nEsta ação não pode ser desfeita.`)) {
+        return;
+      }
+
+      for (const id of geradas) {
+        // Remove sem confirmar individualmente
+        const cfg = CONFIG_CAMADAS[id];
+        if (!cfg) continue;
+
+        if (CAMADAS_MAPA[id]) {
+          try { window.mapa.removeLayer(CAMADAS_MAPA[id]); } catch (e) {}
+          delete CAMADAS_MAPA[id];
+        }
+        delete DADOS_GEOJSON_BRUTOS[id];
+        delete CONFIG_CAMADAS[id];
+
+        const item = document.getElementById(`item-camada-${id}`);
+        if (item) item.remove();
+      }
+
+      this.salvarOcultas([]);
+
+      if (window.FilterManager) window.FilterManager.atualizarSeletorCamadas();
+      if (window.Styler) window.Styler.atualizarLegenda();
+      this.renderizarCatalogo();
+
+      if (window.UI) window.UI.toast(`🗑️ ${geradas.length} camada(s) excluída(s).`);
+    },
     renderizarCatalogo: function () {
       const container = document.getElementById('catalogo-conteudo-grupos');
       if (!container) return;

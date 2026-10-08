@@ -92,11 +92,17 @@
       else if (cfg.grupo === 'restricoes') paneAlvo = 'paneRestricoes';
       else if (cfg.grupo === 'limites') paneAlvo = 'paneLimites';
 
+      // ✅ Limita interatividade pra features pesadas (melhora pan/mousemove)
       const ehLimiteDeFundo = (id === 'pais' || id === 'regioes' || id === 'estados_amazonia_legal');
+      const ehPesadaLeve = (id === 'tis_poligonais' || id === 'ucs_federais');
+      const modoCompleto = window._modoInterativo === true;   // toggle global
+
+      // Só é interativa se NÃO for limite de fundo E (não for pesada OU modo completo ativo)
+      const ehInterativa = !ehLimiteDeFundo && (!ehPesadaLeve || modoCompleto);
 
       return {
         pane: paneAlvo,
-        interactive: !ehLimiteDeFundo,
+        interactive: ehInterativa,
         style: f => {
           const s = { pane: paneAlvo, color: cfg.cor, weight: cfg.peso, opacity: cfg.opacidade, fillColor: cfg.cor, fillOpacity: cfg.opacidade };
           if (cfg.tipoGeo === 'linha_tracejada') { s.dashArray = '6, 6'; s.fill = false; }
@@ -106,20 +112,42 @@
         pointToLayer: (f, latlng) => {
           if (id === 'instalacoes_portuarias') {
             const cat = window.PortClassification.classificar(f.properties);
-            const m = L.marker(latlng, {
+            const usarIcone = false;   // ✅ SEMPRE circleMarker
+            if (usarIcone) {
+              const m = L.marker(latlng, {
+                pane: 'panePontos',
+                icon: window.MapSymbols.ancora(cat.cor, 26)
+                // ✅ riseOnHover removido
+              });
+              m._portoCatId = cat.id;
+              return m;
+            }
+            return L.circleMarker(latlng, {
               pane: 'panePontos',
-              icon: window.MapSymbols.ancora(cat.cor, 26),
-              riseOnHover: true
+              radius: cat.raio || 5,
+              fillColor: cat.cor,
+              color: '#ffffff',
+              weight: 2,
+              fillOpacity: 0.95
             });
-            m._portoCatId = cat.id;
-            return m;
           }
-          // ✅ Embarcações / AIS → barco azul
+          // ✅ Embarcações / AIS → barco apenas em zoom alto
           if (id === 'embarcacoes') {
-            return L.marker(latlng, {
+            const usarIcone = false;
+            if (usarIcone) {
+              return L.marker(latlng, {
+                pane: 'panePontos',
+                icon: window.MapSymbols.barco(cfg.cor || '#38bdf8', 24),
+                riseOnHover: true
+              });
+            }
+            return L.circleMarker(latlng, {
               pane: 'panePontos',
-              icon: window.MapSymbols.barco(cfg.cor || '#38bdf8', 24),
-              riseOnHover: true
+              radius: 5,
+              fillColor: cfg.cor || '#38bdf8',
+              color: '#ffffff',
+              weight: 1.5,
+              fillOpacity: 0.9
             });
           }
           // ✅ Outros pontos → círculo padrão (comportamento antigo)
@@ -131,7 +159,15 @@
         },
         onEachFeature: (f, layer) => {
           if (f.properties) {
-            layer.bindPopup(window.PopupRenderer.gerar(id, f.properties));
+            // ✅ Camadas pesadas só ganham popup se modo interativo estiver ligado
+            const ehPesada = (id === 'tis_poligonais' || id === 'ucs_federais');
+            if (!ehPesada || window._modoInterativo === true) {
+              layer.bindPopup(window.PopupRenderer.gerar(id, f.properties));
+            } else {
+              // Popup leve: só nome + tipo (sem todos os atributos)
+              const nome = f.properties.nome || f.properties.terrai_nom || f.properties.NOME_UC || 'Feição';
+              layer.bindPopup(`<div class="pop-topo">${window.Security.escapeHTML(nome)}</div><div class="pop-corpo"><p style="color:#64748b;font-size:10.5px;">Ative o modo interativo para ver atributos completos.</p></div>`);
+            }
 
             // Travessias: marker de ponte anexado ao layer
             if (id === 'linhas_travessias' && f.geometry && f.geometry.type === 'LineString') {
@@ -151,7 +187,13 @@
             }
             const p = f.properties;
             const nomeFeicao = p.nome || p.NOME_INSTALACAO || p.NOME_UC || p.terrai_nom || p.NOME_RIO || p.SIGLA_UF || cfg.nome;
-            if (nomeFeicao && id !== 'uf' && !ehLimiteDeFundo) {
+            // ✅ Só bindTooltip em zoom alto E para camadas leves
+            const zoomAtual = window.mapa.getZoom();
+            const camadasLeves = ['linhas_travessias', 'embarcacoes', 'instalacoes_portuarias'];
+            const temPoucasFeicoes = (DADOS_GEOJSON_BRUTOS[id]?.features?.length || 0) < 500;
+            const podeTerTooltip = camadasLeves.includes(id) || temPoucasFeicoes;
+
+            if (nomeFeicao && id !== 'uf' && !ehLimiteDeFundo && zoomAtual >= 10 && podeTerTooltip) {
               layer.bindTooltip(`<strong>${window.Security.escapeHTML(nomeFeicao)}</strong><br><small style="color:#0284c7;">${cfg.nome}</small>`, { sticky: true, className: 'rotulo-hover-feicao' });
             } else if (id === 'uf') {
               const sigla = window.Security.escapeHTML(p.SIGLA_UF || p.sigla || p.UF || p.nome);

@@ -10,8 +10,8 @@ test.describe('M1 · Medição', () => {
     await page.waitForFunction(() => !!window.MeasurementTool, { timeout: 15000 });
   });
 
-  test('toolbar de medição mostra 5 botões', async ({ page }) => {
-    await expect(page.locator('#toolbar-medicao .btn-medicao')).toHaveCount(5);
+  test('toolbar de medição mostra 6 botões (com Buffer)', async ({ page }) => {
+    await expect(page.locator('#toolbar-medicao .btn-medicao')).toHaveCount(6);
   });
 
   test('atalho "d" ativa modo distância', async ({ page }) => {

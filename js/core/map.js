@@ -11,7 +11,12 @@
     center: [-14.0, -52.0],
     zoom: 4,
     zoomControl: false,
-    preferCanvas: true
+    preferCanvas: true,
+    // ✅ Otimizações de performance
+    updateWhenIdle: true,        // Só redesenha quando parar de mover
+    updateWhenZooming: false,    // Não atualiza durante zoom (só no fim)
+    keepBuffer: 2,               // Mantém 2 tiles extras no buffer
+    wheelDebounceTime: 40        // Debounce do scroll wheel
   });
 
   L.control.zoom({ position: 'bottomright' }).addTo(mapa);

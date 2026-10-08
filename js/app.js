@@ -132,6 +132,9 @@
         <button class="btn-acao-chip" title="Tabela de Atributos" onclick="abrirTabela('${id}')">📋 Tabela</button>
         <button class="btn-acao-chip" title="Zoom" onclick="zoomCamada('${id}')">🔍</button>
         <button class="btn-acao-chip" title="Exportar GeoJSON" onclick="ExportManager.exportarGeoJSON('${id}')">💾</button>
+        ${cfg._isBuffer || id.startsWith('imp_') || id.startsWith('buffer_') ? `
+          <button class="btn-acao-chip btn-excluir" title="Excluir permanentemente" onclick="CatalogoManager.excluirPermanentemente('${id}')">🗑️ Excluir</button>
+        ` : ''}
         <button class="btn-acao-chip btn-retirar" title="Retirar do painel" onclick="CatalogoManager.ocultarCamada('${id}')">✕ Retirar</button>
       </div>
       ${subpaletaHTML}
@@ -187,8 +190,14 @@
   function toggleSubcamadaUC(esfId, ligar) {
     if (!window.SUBGRUPOS_UCS || !window.SUBGRUPOS_UCS[esfId]) return;
     const fg = window.SUBGRUPOS_UCS[esfId];
-    if (ligar) { if (!window.mapa.hasLayer(fg)) fg.addTo(window.mapa); }
-    else { if (window.mapa.hasLayer(fg)) window.mapa.removeLayer(fg); }
+    const fgPai = window.CAMADAS_MAPA['ucs_todas_mma'] || window.CAMADAS_MAPA['ucs_federais'];
+
+    // ✅ Manipula DENTRO do featureGroup pai
+    if (ligar) {
+      if (fgPai && !fgPai.hasLayer(fg)) fgPai.addLayer(fg);
+    } else {
+      if (fgPai && fgPai.hasLayer(fg)) fgPai.removeLayer(fg);
+    }
 
     let ativos = 0;
     const total = window.DADOS_GEOJSON_BRUTOS['ucs_todas_mma']?.features?.length || 0;
@@ -200,15 +209,37 @@
     if (cntEl) cntEl.innerText = (ativos === total) ? `(${total})` : `(${ativos}/${total})`;
     window.Styler.atualizarLegenda();
   }
-
+window.toggleModoInterativo = function () {
+  window._modoInterativo = !window._modoInterativo;
+  if (window.UI) {
+    window.UI.toast(window._modoInterativo
+      ? '🎛️ Modo interativo ativo — camadas pesadas respondem a clique'
+      : '🎛️ Modo interativo desligado — pan mais rápido');
+  }
+  // Recarrega camadas pesadas
+  ['tis_poligonais', 'ucs_federais'].forEach(id => {
+    if (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) {
+      mapa.removeLayer(CAMADAS_MAPA[id]);
+      delete DADOS_GEOJSON_BRUTOS[id];
+      delete CAMADAS_MAPA[id];
+      if (window.DataManager) window.DataManager.carregarCamada(id);
+    }
+  });
+};
   function toggleTodasSubcamadasUC(ligar) {
     for (const k of ['Federal', 'Estadual', 'Municipal', 'Privada', 'Outros']) {
       const chk = document.getElementById(`chk-sub-uc-${k}`);
       if (chk) chk.checked = ligar;
       if (window.SUBGRUPOS_UCS && window.SUBGRUPOS_UCS[k]) {
         const fg = window.SUBGRUPOS_UCS[k];
-        if (ligar) { if (!window.mapa.hasLayer(fg)) fg.addTo(window.mapa); }
-        else { if (window.mapa.hasLayer(fg)) window.mapa.removeLayer(fg); }
+        const fgPai = window.CAMADAS_MAPA['ucs_todas_mma'] || window.CAMADAS_MAPA['ucs_federais'];
+
+        // ✅ Manipula DENTRO do featureGroup pai
+        if (ligar) {
+          if (fgPai && !fgPai.hasLayer(fg)) fgPai.addLayer(fg);
+        } else {
+          if (fgPai && fgPai.hasLayer(fg)) fgPai.removeLayer(fg);
+        }
       }
     }
     const total = window.DADOS_GEOJSON_BRUTOS['ucs_todas_mma']?.features?.length || 0;
@@ -220,8 +251,14 @@
   function toggleSubcamadaPorto(subtipo, ligar) {
     if (!window.SUBGRUPOS_PORTOS || !window.SUBGRUPOS_PORTOS[subtipo]) return;
     const fg = window.SUBGRUPOS_PORTOS[subtipo];
-    if (ligar) { if (!window.mapa.hasLayer(fg)) fg.addTo(window.mapa); }
-    else { if (window.mapa.hasLayer(fg)) window.mapa.removeLayer(fg); }
+    const fgPai = window.CAMADAS_MAPA['instalacoes_portuarias'];
+
+    // ✅ Manipula DENTRO do featureGroup pai (evita duplicação)
+    if (ligar) {
+      if (fgPai && !fgPai.hasLayer(fg)) fgPai.addLayer(fg);
+    } else {
+      if (fgPai && fgPai.hasLayer(fg)) fgPai.removeLayer(fg);
+    }
 
     let ativos = 0;
     const total = window.DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
@@ -243,13 +280,20 @@
   }
 
   function toggleTodasSubcamadasPortos(ligar) {
+    const fgPai = window.CAMADAS_MAPA['instalacoes_portuarias'];
+
     for (const tKey of Object.keys(window.PortClassification.tipos)) {
       const chk = document.getElementById(`chk-sub-${tKey}`);
       if (chk) chk.checked = ligar;
       if (window.SUBGRUPOS_PORTOS && window.SUBGRUPOS_PORTOS[tKey]) {
         const fg = window.SUBGRUPOS_PORTOS[tKey];
-        if (ligar) { if (!window.mapa.hasLayer(fg)) fg.addTo(window.mapa); }
-        else { if (window.mapa.hasLayer(fg)) window.mapa.removeLayer(fg); }
+
+        // ✅ Manipula DENTRO do featureGroup pai
+        if (ligar) {
+          if (fgPai && !fgPai.hasLayer(fg)) fgPai.addLayer(fg);
+        } else {
+          if (fgPai && fgPai.hasLayer(fg)) fgPai.removeLayer(fg);
+        }
       }
     }
     const total = window.DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
@@ -424,19 +468,21 @@
         console.warn('[CopilotoIA] execução da consulta pendente falhou:', e);
       }
     }, 2200);
-    // ✅ Camadas carregam em BACKGROUND — usuário já interage com o mapa
-    window.DataManager.atualizarTodasCamadas(true)
-      .then(() => window.DataManager.carregarCamada('ven_2022'))
-      .then(() => {
-        if (window.CAMADAS_MAPA['ven_2022']) {
-          window.CAMADAS_MAPA['ven_2022'].addTo(window.mapa);
-          const qtd = window.DADOS_GEOJSON_BRUTOS['ven_2022']?.features?.length || 0;
-          const cnt = document.getElementById('cnt-ven-unificado');
-          if (cnt) cnt.innerText = qtd > 0 ? `(${qtd})` : '';
-          window.VENUnifiedManager.anoAtivo = 'ven_2022';
-        }
-      })
-      .catch(e => console.warn('[boot] Falha ao carregar camadas em background:', e));
+    // ✅ Boot leve: carrega SÓ as camadas essenciais
+    const essenciais = ['instalacoes_portuarias', 'uf', 'ven_2022'];
+    Promise.allSettled(essenciais.map(id =>
+      window.DataManager.carregarCamada(id).catch(() => {})
+    )).then(() => {
+      if (window.CAMADAS_MAPA['ven_2022']) {
+        window.CAMADAS_MAPA['ven_2022'].addTo(window.mapa);
+        const qtd = window.DADOS_GEOJSON_BRUTOS['ven_2022']?.features?.length || 0;
+        const cnt = document.getElementById('cnt-ven-unificado');
+        if (cnt) cnt.innerText = qtd > 0 ? `(${qtd})` : '';
+        window.VENUnifiedManager.anoAtivo = 'ven_2022';
+      }
+      console.info('[boot] Camadas essenciais carregadas.');
+    });
+    // ⚠️ NÃO carregar as outras no boot — só sob demanda
 
     // ✅ Fecha o histórico do copiloto com ESC
     document.addEventListener('keydown', (ev) => {

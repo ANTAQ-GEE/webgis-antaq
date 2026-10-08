@@ -7,13 +7,13 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%230a2540'/%3E%3Ctext x='12' y='16' font-size='14' text-anchor='middle' fill='%2338bdf8' font-family='Arial' font-weight='bold'%3EA%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="icon" href="data:,">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/shpjs@4.0.4/dist/shp.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/sql-wasm.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@ngageoint/geopackage@4.2.3/dist/geopackage.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/shpjs@4.0.4/dist/shp.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/sql-wasm.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@ngageoint/geopackage@4.2.3/dist/geopackage.min.js"></script>
 
   <!-- Leaflet MarkerCluster CSS (o JS é carregado no final do body) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
@@ -32,6 +32,149 @@
       --borda: #e2e8f0;
       --texto-escuro: #0f172a;
       --texto-claro: #64748b;
+    }
+    .buffer-filtro-linha {
+      display: flex;
+      gap: 6px;
+      align-items: stretch;
+    }
+    .buffer-filtro-linha select {
+      flex: 1;
+    }
+    .btn-add-filtro {
+      background: #0284c7;
+      border: 1px solid #38bdf8;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .btn-add-filtro:hover {
+      background: #0369a1;
+      transform: translateY(-1px);
+    }
+    .btn-add-filtro:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .buffer-filtros-ativos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 6px;
+      padding: 6px 8px;
+      background: #061426;
+      border: 1px solid #1e4976;
+      border-radius: 6px;
+      min-height: 34px;
+      align-items: center;
+    }
+    .buffer-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(245, 158, 11, 0.18);
+      border: 1px solid #f59e0b;
+      color: #fbbf24;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 10.5px;
+      font-weight: 600;
+      font-family: 'Consolas', monospace;
+    }
+    .buffer-chip-remover {
+      background: transparent;
+      border: none;
+      color: #f87171;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 0 2px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .buffer-chip-remover:hover {
+      color: #ffffff;
+    }    
+    .buffer-comparativo {
+      background: #061426;
+      border: 1px solid #1e4976;
+      border-radius: 8px;
+      padding: 10px 12px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .buffer-comparativo-titulo {
+      font-size: 10.5px;
+      color: #fbbf24;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .buffer-comparativo-tabela {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    .buffer-comparativo-tabela th {
+      color: #64748b;
+      font-size: 9.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 6px;
+      text-align: left;
+      border-bottom: 1px solid #1e293b;
+    }
+    .buffer-comparativo-tabela td {
+      color: #e2e8f0;
+      padding: 4px 6px;
+      border-bottom: 1px dashed rgba(148,163,184,0.15);
+      font-family: 'Consolas', monospace;
+    }
+    .buffer-comparativo-tabela td:first-child {
+      color: #fbbf24;
+      font-weight: 700;
+    }
+    .buffer-comparativo-tabela tr:last-child td {
+      border-bottom: none;
+    }    
+        .buffer-raio-toggle {
+      display: flex;
+      gap: 8px;
+    }
+    .raio-opcao {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: #061426;
+      border: 1px solid #1e4976;
+      border-radius: 6px;
+      padding: 7px 10px;
+      cursor: pointer;
+      font-size: 11.5px;
+      color: #e2e8f0;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+    .raio-opcao:hover {
+      border-color: #f59e0b;
+      background: #0b1f33;
+    }
+    .raio-opcao input[type="radio"] {
+      accent-color: #f59e0b;
+      cursor: pointer;
+    }
+    .raio-opcao:has(input:checked) {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: #f59e0b;
+      color: #fbbf24;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body, html, #mapa {
@@ -56,6 +199,16 @@
       padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;
       display: inline-flex; align-items: center; gap: 4px;
     }
+    .btn-acao-chip.btn-excluir {
+      color: #f87171;
+      border-color: #7f1d1d;
+      background: #450a0a;
+    }
+    .btn-acao-chip.btn-excluir:hover {
+      background: #7f1d1d;
+      border-color: #ef4444;
+      color: #ffffff;
+    }    
     .btn-importar:hover { background: #059669; }
 
     #dropzone {
@@ -3027,7 +3180,7 @@
           <span class="badge-undo" id="badge-redo-count"></span>
         </button>
       </div>
-      <button class="btn-atualizar" id="btn-sync" onclick="DataManager.atualizarTodasCamadas()" style="background:#0284c7; border:1px solid #38bdf8;" title="Sincronizar e recarregar dados do servidor">
+      <button class="btn-atualizar" id="btn-sync" onclick="DataManager.atualizarTodasCamadas(true, { mostrarToasts: true })" style="background:#0284c7; border:1px solid #38bdf8;" title="Sincronizar e recarregar dados do servidor">
         <span id="ico-sync">🔄</span> Atualizar
       </button>
     </div>
@@ -3202,13 +3355,18 @@
         <button class="modal-matriz-fechar" onclick="CatalogoManager.fecharModal()">&times;</button>
       </div>
       <div class="modal-catalogo-body">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; gap:8px; flex-wrap:wrap;">
           <p style="font-size:11px; color:#94a3b8; margin:0;">
-            Adicione ou retire camadas do seu painel lateral para manter a área de trabalho focada no seu estudo.
+            Adicione ou retire camadas do seu painel lateral. Camadas <strong>geradas</strong> (buffers, importadas) podem ser excluídas permanentemente.
           </p>
-          <button class="btn-barra-acao" onclick="CatalogoManager.mostrarTodas()" style="background:#0284c7; color:#fff; border:none; padding:4px 10px;">
-            Exibir Todas no Painel
-          </button>
+          <div style="display:flex; gap:6px;">
+            <button class="btn-barra-acao" onclick="CatalogoManager.mostrarTodas()" style="background:#0284c7; color:#fff; border:none; padding:4px 10px;">
+              👁️ Exibir Todas
+            </button>
+            <button class="btn-barra-acao" onclick="CatalogoManager.excluirTodasGeradas()" style="background:#7f1d1d; color:#fecaca; border:1px solid #ef4444; padding:4px 10px;" title="Exclui todos os buffers e camadas importadas">
+              🗑️ Excluir Geradas
+            </button>
+          </div>
         </div>
         <div id="catalogo-conteudo-grupos"></div>
       </div>
@@ -3705,10 +3863,13 @@
   </div>
 
   <!-- PAINEL LATERAL DE CAMADAS -->
+   
   <button class="btn-flutuante-abrir-painel" id="btn-flutuante-painel" onclick="UI.abrirPainelLateral()">
     <span>🗺️ Abrir Painel de Camadas</span>
   </button>
-
+  <button class="btn-barra-acao" onclick="BufferTool.toggleModoInterativo()" title="Ativar/desativar popups em camadas pesadas">
+      <span>🎛️ Modo Interativo</span>
+  </button>
   <aside class="painel-lateral" id="painel-camadas-lateral">
     <div class="painel-header">
       <div style="display:flex; align-items:center; gap:8px;">
@@ -3812,15 +3973,43 @@
         </div>
 
         <div class="buffer-linha">
+          <label>Tipo de raio</label>
+          <div class="buffer-raio-toggle">
+            <label class="raio-opcao">
+              <input type="radio" name="buffer-modo" value="unico" checked onchange="BufferTool.mudarModo(this.value)">
+              <span>Único</span>
+            </label>
+            <label class="raio-opcao">
+              <input type="radio" name="buffer-modo" value="lote" onchange="BufferTool.mudarModo(this.value)">
+              <span>Lote (múltiplos raios)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="buffer-linha" id="buffer-raio-unico-wrapper">
           <label for="buffer-raio">Raio (km)</label>
           <input type="number" id="buffer-raio" min="1" max="1000" step="5" value="50">
         </div>
 
+        <div class="buffer-linha" id="buffer-raio-lote-wrapper" style="display:none;">
+          <label for="buffer-raios-lote">Raios em lote (km)</label>
+          <input type="text" id="buffer-raios-lote" value="25, 50, 100, 200" placeholder="Ex: 10, 50, 100, 200">
+          <small style="font-size:10px;color:#64748b;margin-top:4px;">Separe por vírgula. Máximo 6 raios.</small>
+        </div>
+
         <div class="buffer-linha">
           <label for="buffer-filtro">Filtro da camada</label>
-          <select id="buffer-filtro">
-            <option value="TODOS">Todas as feições</option>
-          </select>
+          <div class="buffer-filtro-linha">
+            <select id="buffer-filtro">
+              <option value="TODOS">Todas as feições</option>
+            </select>
+            <button type="button" class="btn-add-filtro" onclick="BufferTool.adicionarFiltroAtual()" title="Adicionar aos filtros acumulados">
+              ➕ Adicionar
+            </button>
+          </div>
+          <div class="buffer-filtros-ativos" id="buffer-filtros-ativos">
+            <em style="color:#64748b;font-size:10.5px;">Nenhum filtro acumulado</em>
+          </div>
         </div>
 
         <div class="buffer-linha buffer-checkbox">
@@ -3842,6 +4031,21 @@
         <div class="buffer-preview" id="buffer-preview">
           <em style="color:#64748b;">Selecione uma camada para ver o preview.</em>
         </div>
+        <div class="buffer-comparativo" id="buffer-comparativo" style="display:none;">
+          <div class="buffer-comparativo-titulo">
+            📊 <strong>Comparativo de áreas por raio</strong>
+          </div>
+          <table class="buffer-comparativo-tabela" id="buffer-comparativo-tabela">
+            <thead>
+              <tr>
+                <th>Raio (km)</th>
+                <th>Feições</th>
+                <th>Área total</th>
+              </tr>
+            </thead>
+            <tbody id="buffer-comparativo-corpo"></tbody>
+          </table>
+        </div>        
       </div>
 
       <div class="modal-buffer-footer">
@@ -3927,70 +4131,63 @@
   </div>
 
   <!-- Leaflet JS + MarkerCluster + MiniMap (ordem importa!) -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-  <script src="https://unpkg.com/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.js"></script>
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script defer src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script defer src="https://unpkg.com/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.js"></script>
 
   <!-- ============================================================ -->
   <!-- R1 — Módulos extraídos (ordem de dependência é crítica)      -->
   <!-- ============================================================ -->
   <!-- Stage 1: fundação -->
-  <script src="js/utils/security.js"></script>
-  <script src="js/utils/geom-type-detector.js"></script>
-  <script src="js/core/fetch-manager.js"></script>
-  <script src="js/core/state.js"></script>
+  <script defer src="js/utils/security.js"></script>
+  <script defer src="js/utils/geom-type-detector.js"></script>
+  <script defer src="js/core/fetch-manager.js"></script>
+  <script defer src="js/core/state.js"></script>
   <!-- Stage 2: mapa + infra -->
-  <script src="js/core/map.js"></script>
-  <script src="js/core/action-history.js"></script>
-  <script src="js/core/basemap-manager.js"></script>
-  <script src="js/render/map-symbols.js"></script>
-  <script src="js/render/popup-renderer.js"></script>
+  <script defer src="js/core/map.js"></script>
+  <script defer src="js/core/action-history.js"></script>
+  <script defer src="js/core/basemap-manager.js"></script>
+  <script defer src="js/render/popup-renderer.js"></script>
+  <script defer src="js/render/map-symbols.js"></script>
   <!-- Stage 1: dependentes de Security -->
-  <script src="js/domain/port-classification.js"></script>
-  <script src="js/core/notification-manager.js"></script>
+  <script defer src="js/domain/port-classification.js"></script>
+  <script defer src="js/core/notification-manager.js"></script>
   <!-- Stage 3: catálogo + estilo + ordem + dados -->
-  <script src="js/core/layer-registry.js"></script>
-  <script src="js/render/styler.js"></script>
-  <script src="js/core/layer-order-manager.js"></script>
-  <script src="js/core/data-manager.js"></script>
-  <!-- Stage 3: catálogo + estilo + ordem + dados -->
-  <script src="js/core/layer-registry.js"></script>
-  <script src="js/render/styler.js"></script>
-  <script src="js/core/layer-order-manager.js"></script>
-  <script src="js/core/data-manager.js"></script>
+  <script defer src="js/core/layer-registry.js"></script>
+  <script defer src="js/render/styler.js"></script>
+  <script defer src="js/core/layer-order-manager.js"></script>
+  <script defer src="js/core/data-manager.js"></script>
   <!-- Stage 4: UI + filtros + busca + ambiente -->
-  <script src="js/core/ui.js"></script>
-  <script src="js/core/ambiente-manager.js"></script>
-  <script src="js/domain/filter-manager.js"></script>
-  <script src="js/domain/search-engine.js"></script>
+  <script defer src="js/core/ui.js"></script>
+  <script defer src="js/core/ambiente-manager.js"></script>
+  <script defer src="js/domain/filter-manager.js"></script>
+  <script defer src="js/domain/search-engine.js"></script>
   <!-- Stage 5a: análise -->
-  <script src="js/analytics/analytics.js"></script>
-  <script src="js/analytics/matriz-ven-manager.js"></script>
+  <script defer src="js/analytics/analytics.js"></script>
+  <script defer src="js/analytics/matriz-ven-manager.js"></script>
   <!-- Stage 5b: dinâmica + IA -->
-  <script src="js/domain/ven-unified-manager.js"></script>
-  <script src="js/domain/ven-unified-manager.js"></script>
-  <script src="js/domain/safra-diff-manager.js"></script>
-  <script src="js/domain/safra-diff-manager.js"></script>
-  <script src="js/ai/intent-parser.js"></script>
-  <script src="js/ai/copiloto-ia.js"></script>  
-  <script src="js/ai/copiloto-ia.js"></script>
+  <script defer src="js/domain/ven-unified-manager.js"></script>
+  <script defer src="js/domain/safra-diff-manager.js"></script>
+  <script defer src="js/ai/intent-parser.js"></script>
+  <script defer src="js/ai/copiloto-ia.js"></script>
   <!-- Stage 6a: I/O + metadados -->
-  <script src="js/domain/layer-metadata.js"></script>
-  <script src="js/io/export-manager.js"></script>
-  <script src="js/io/import-manager.js"></script>
-<!-- Stage 6b: tabela + catálogo -->
-  <script src="js/domain/tabela-manager.js"></script>
-  <script src="js/domain/catalogo-manager.js"></script>
- <!-- Stage 6c: seleção + medição -->
-  <script src="js/domain/measurement-tool.js"></script>
-  <script src="js/domain/selection-manager.js"></script>
+  <script defer src="js/domain/layer-metadata.js"></script>
+  <script defer src="js/io/export-manager.js"></script>
+  <script defer src="js/io/import-manager.js"></script>
+  <!-- Stage 6b: tabela + catálogo -->
+  <script defer src="js/domain/tabela-manager.js"></script>
+  <script defer src="js/domain/catalogo-manager.js"></script>
+  <!-- Stage 6c: seleção + medição -->
+  <script defer src="js/domain/measurement-tool.js"></script>
+  <script defer src="js/domain/selection-manager.js"></script>
   <!-- Stage 6d: extras + URL state -->
-  <script src="js/domain/map-extras.js"></script>
-  <script src="js/domain/buffer-tool.js"></script>
-  <script src="js/core/url-state.js"></script>
-  <script src="js/core/webgis-version.js"></script>
-  <script src="js/core/webgis-about.js"></script>
-  <script src="js/app.js"></script>
+  <script defer src="js/domain/map-extras.js"></script>
+  <script defer src="js/core/url-state.js"></script>
+  <!-- Stage 7: versionamento + about + app -->
+  <script defer src="js/core/webgis-version.js"></script>
+  <script defer src="js/core/webgis-about.js"></script>
+  <script defer src="js/domain/buffer-tool.js"></script>
+  <script defer src="js/app.js"></script>
 
 </body>
 </html>
