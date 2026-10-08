@@ -1,0 +1,78 @@
+{
+  "versao": "2.0",
+  "atualizado": "2026-10-08",
+  "estudos": [
+    {
+      "id": "tku_2025_relatorio",
+      "titulo": "Relatório TKU 2025 — Tonelada-Quilômetro Útil (V2)",
+      "categoria": "TKU",
+      "ano": 2025,
+      "autores": "Paulo Perni / SEPH — ANTAQ",
+      "descricao": "Relatório oficial da safra 2025 com metodologia de cálculo e análise de fluxo de carga por trecho hidroviário.",
+      "tipo": "externo",
+      "url": "https://www.gov.br/antaq/pt-br/central-de-conteudos/estudos-e-pesquisas-da-antaq-1/20260816_Relatorio_TKU_2025_V2___PAULO_PERNY___NAO_DIAGRAMADO.pdf",
+      "tags": ["TKU", "2025", "carga", "cabotagem"],
+      "publicado": "2025-08-16"
+    },
+    {
+      "id": "tku_estudos_v09",
+      "titulo": "Estudos TKU — Versão 0.9 (Consolidado)",
+      "categoria": "TKU",
+      "ano": 2024,
+      "autores": "SEPH — ANTAQ",
+      "descricao": "Documento consolidado com série histórica de TKU nas 3 navegações (Cabotagem, Interior e Longo Curso).",
+      "tipo": "externo",
+      "url": "https://www.gov.br/antaq/pt-br/central-de-conteudos/estudos-e-pesquisas-da-antaq-1/Estudos_TKU_v09.pdf",
+      "tags": ["TKU", "série histórica", "navegação"],
+      "publicado": "2024-01-01"
+    },
+    {
+      "id": "tku_aps_diretoria",
+      "titulo": "TKU — Final APS aprovado pela Diretoria",
+      "categoria": "TKU",
+      "ano": 2024,
+      "autores": "SEPH — ANTAQ",
+      "descricao": "Documento final da Análise Preliminar de Sustentabilidade (APS) do projeto TKU, aprovado pela Diretoria Colegiada.",
+      "tipo": "externo",
+      "url": "https://www.gov.br/antaq/pt-br/central-de-conteudos/estudos-e-pesquisas-da-antaq-1/FinalapsaprovaodaDiretoria.pdf",
+      "tags": ["TKU", "APS", "diretoria"],
+      "publicado": "2024-06-01"
+    },
+    {
+      "id": "ven_2022",
+      "titulo": "VEN 2022 — Vias Economicamente Navegadas",
+      "categoria": "VEN",
+      "ano": 2022,
+      "autores": "SEPH / GEE — ANTAQ",
+      "descricao": "Atualização da matriz de transporte hidroviário de origem e destino (Matriz O/D) consolidada em 2022.",
+      "tipo": "externo",
+      "url": "https://www.gov.br/antaq/pt-br/central-de-conteudos/estudos-e-pesquisas-da-antaq-1/copy3_of_VEN_2022.pdf",
+      "tags": ["VEN", "2022", "matriz OD"],
+      "publicado": "2023-05-01"
+    },
+    {
+      "id": "ven_2020",
+      "titulo": "VEN 2020 — Vias Economicamente Navegadas",
+      "categoria": "VEN",
+      "ano": 2020,
+      "autores": "SEPH / GEE — ANTAQ",
+      "descricao": "Safra 2020 da série histórica das Vias Economicamente Navegadas, com dados de navegação interior e cabotagem.",
+      "tipo": "externo",
+      "url": "https://www.gov.br/antaq/pt-br/central-de-conteudos/estudos-e-pesquisas-da-antaq-1/VEN2020final.pdf",
+      "tags": ["VEN", "2020", "série histórica"],
+      "publicado": "2021-05-01"
+    },
+    {
+      "id": "ven_2024_pacote",
+      "titulo": "VEN 2024 — Estudo + Shapefile (Pacote Oficial)",
+      "categoria": "VEN",
+      "ano": 2024,
+      "autores": "SEPH — ANTAQ",
+      "descricao": "Pacote ZIP oficial contendo o relatório VEN 2024 (Oficial V4) e os shapefiles dos trechos navegáveis. Safra mais recente publicada.",
+      "tipo": "externo",
+      "url": "https://www.gov.br/antaq/pt-br/central-de-conteudos/estudos-e-pesquisas-da-antaq-1/VEN2024eSHP.zip",
+      "tags": ["VEN", "2024", "shapefile", "pacote"],
+      "publicado": "2025-09-15"
+    }
+  ]
+}
