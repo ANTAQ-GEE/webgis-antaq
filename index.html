@@ -33,6 +33,135 @@
       --texto-escuro: #0f172a;
       --texto-claro: #64748b;
     }
+    /* AIS desabilitado por enquanto */
+    .aba-btn[data-aba="ais"] {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .aba-btn[data-aba="ais"]:hover {
+      background: transparent;
+      color: #94a3b8;
+    }    
+    /* ============================================================
+       M11 — BARRA DE ABAS
+       ============================================================ */
+    .barra-abas {
+      position: fixed;
+      top: 52px;
+      left: 0;
+      right: 0;
+      height: 44px;
+      background: linear-gradient(180deg, #061426 0%, #0a2540 100%);
+      border-bottom: 2px solid #0284c7;
+      display: flex;
+      align-items: stretch;
+      padding: 0 16px;
+      gap: 4px;
+      z-index: 1999;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    .aba-btn {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 18px;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      letter-spacing: 0.3px;
+    }
+    .aba-btn:hover {
+      background: rgba(2, 132, 199, 0.12);
+      color: #bae6fd;
+    }
+    .aba-btn.ativo {
+      color: #38bdf8;
+      border-bottom-color: #38bdf8;
+      background: rgba(2, 132, 199, 0.15);
+    }
+    .aba-btn.ativo .aba-emoji {
+      transform: scale(1.15);
+    }
+
+    .aba-emoji {
+      font-size: 16px;
+      line-height: 1;
+      transition: transform 0.2s ease;
+    }
+    .aba-nome {
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .aba-badge {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: rgba(245, 158, 11, 0.9);
+      color: #000;
+      font-size: 8px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    /* ============================================================
+       M11 — TRANSIÇÕES DE ABA (animação suave ao trocar)
+       ============================================================ */
+    body[data-aba-ativa] .painel-camadas-lateral,
+    body[data-aba-ativa] .painel-graficos,
+    body[data-aba-ativa] .barra-busca-atributos,
+    body[data-aba-ativa] .toolbar-medicao,
+    body[data-aba-ativa] .caixa-legenda,
+    body[data-aba-ativa] .painel-tabela {
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    /* Ajusta o resto da UI pro novo top (52 header + 44 abas = 96px) */
+    body {
+      --topo-total: 96px;
+    }
+
+    #mapa {
+      margin-top: var(--topo-total) !important;
+      height: calc(100% - var(--topo-total)) !important;
+    }
+
+    .barra-busca-atributos {
+      top: calc(var(--topo-total) + 12px) !important;
+    }
+
+    .painel-lateral {
+      top: calc(var(--topo-total) + 12px) !important;
+      max-height: calc(100vh - var(--topo-total) - 140px) !important;
+    }
+
+    .btn-flutuante-abrir-painel {
+      top: calc(var(--topo-total) + 12px) !important;
+    }
+
+    .notificacoes-container {
+      top: calc(var(--topo-total) + 8px) !important;
+    }
+
+    .leaflet-control-minimap {
+      margin-top: calc(var(--topo-total) + 10px) !important;
+    }
+
+    .painel-graficos {
+      top: calc(var(--topo-total) + 10px) !important;
+    }    
     .buffer-filtro-linha {
       display: flex;
       gap: 6px;
@@ -3530,6 +3659,103 @@
       background: #1e293b;
       color: #f1f5f9;
     }
+    /* ============================================================
+       M11 — CORREÇÃO FINAL: elementos abaixo da barra de abas
+       (deve ser a ÚLTIMA regra do <style>)
+       ============================================================ */
+    body .barra-busca-atributos,
+    body[data-aba-ativa] .barra-busca-atributos {
+      top: 108px !important;   /* 52 header + 44 abas + 12 margem */
+      left: 16px !important;
+    }
+
+    body .painel-camadas-lateral,
+    body[data-aba-ativa] .painel-camadas-lateral {
+      top: 108px !important;
+      max-height: calc(100vh - 108px - 140px) !important;
+    }
+
+    body .btn-flutuante-abrir-painel,
+    body[data-aba-ativa] .btn-flutuante-abrir-painel {
+      top: 108px !important;
+    }
+
+    body .painel-graficos,
+    body[data-aba-ativa] .painel-graficos {
+      top: 108px !important;
+    }
+
+    body .leaflet-control-minimap,
+    body[data-aba-ativa] .leaflet-control-minimap {
+      margin-top: 106px !important;
+    }
+
+    body .notificacoes-container,
+    body[data-aba-ativa] .notificacoes-container {
+      top: 108px !important;
+    }
+
+    body #mapa,
+    body[data-aba-ativa] #mapa {
+      margin-top: 96px !important;
+      height: calc(100% - 96px) !important;
+    }
+
+    body .painel-medicao-resultados,
+    body[data-aba-ativa] .painel-medicao-resultados {
+      bottom: 50px !important;
+    }
+
+    body .painel-selecao,
+    body[data-aba-ativa] .painel-selecao {
+      bottom: 50px !important;
+    }  
+    /* ============================================================
+       M11 — AJUSTE FINAL: painel lateral não sobrepõe barra de abas
+       ============================================================ */
+    body .painel-camadas-lateral,
+    body[data-aba-ativa] .painel-camadas-lateral {
+      top: 128px !important;   /* era 108px — 20px de respiro */
+      max-height: calc(100vh - 128px - 120px) !important;
+      z-index: 1800 !important;
+    }
+
+    /* Mesma correção pros elementos que acompanham o painel */
+    body .btn-flutuante-abrir-painel,
+    body[data-aba-ativa] .btn-flutuante-abrir-painel {
+      top: 128px !important;
+      z-index: 1799 !important;
+    }
+
+    body .barra-busca-atributos,
+    body[data-aba-ativa] .barra-busca-atributos {
+      top: 128px !important;
+    }
+
+    body .painel-graficos,
+    body[data-aba-ativa] .painel-graficos {
+      top: 128px !important;
+    }
+
+    body .leaflet-control-minimap,
+    body[data-aba-ativa] .leaflet-control-minimap {
+      margin-top: 126px !important;
+    }
+
+    body .notificacoes-container,
+    body[data-aba-ativa] .notificacoes-container {
+      top: 140px !important;
+    }  
+    /* ============================================================
+       M11 — FIX DEFINITIVO (usa ID = especificidade máxima)
+       ============================================================ */
+    #painel-camadas-lateral {
+      top: 128px !important;
+    }
+
+    #btn-flutuante-painel {
+      top: 128px !important;
+    }        
     </style>
 
   <!-- CABEÇALHO -->
@@ -3539,13 +3765,13 @@
       <div class="brand-sub">SUPERINTENDÊNCIA DE ESTUDOS E PROJETOS HIDROVIÁRIOS &mdash; GEE</div>
     </div>
     <div class="actions-area">
-      <button class="btn-matriz-ven" onclick="MatrizVENManager.abrirModal()" title="Visualizar Matriz Operacional do VEN com Tempos de Viagem e Extensões" style="background:#0284c7; border:1px solid #38bdf8;">
+      <button class="btn-matriz-ven" onclick="TabManager.trocar('geo'); setTimeout(() => MatrizVENManager.abrirModal(), 100);" title="Visualizar Matriz Operacional do VEN com Tempos de Viagem e Extensões" style="background:#0284c7; border:1px solid #38bdf8;">
         ⏱️ Matriz VEN
       </button>
-      <button class="btn-matriz-ven" onclick="if (typeof SafraDiffManager !== 'undefined') SafraDiffManager.abrir(); else UI.toast('⚠️ Módulo de comparação ainda não carregou.');" title="Comparar safras do VEN — atalho: Ctrl+Shift+D" style="background:#0369a1; border:1px solid #0ea5e9;">
+      <button class="btn-matriz-ven" onclick="TabManager.trocar('geo'); setTimeout(() => { if (typeof SafraDiffManager !== 'undefined') SafraDiffManager.abrir(); else UI.toast('⚠️ Módulo ainda carregando.'); }, 100);" title="Comparar safras do VEN — atalho: Ctrl+Shift+D" style="background:#0369a1; border:1px solid #0ea5e9;">
         🔀 Comparar Safras
       </button>
-      <button class="btn-graficos" onclick="UI.toggleGraficos()" style="background:#0369a1; border:1px solid #0284c7;" title="Abrir Estúdio Analítico Institucional da ANTAQ">
+      <button class="btn-graficos" onclick="TabManager.trocar('analise'); setTimeout(() => UI.toggleGraficos(), 50);" style="background:#0369a1; border:1px solid #0284c7;" title="Abrir Estúdio Analítico Institucional da ANTAQ">
         📊 Painel Analítico
       </button>
       <button class="btn-copiloto-ia" onclick="CopilotoIA.toggle()" title="Abrir Assistente Regulatório e Territorial" style="background:#0f2744; border:1px solid #38bdf8;">
@@ -3567,12 +3793,33 @@
       <button class="btn-atualizar" id="btn-sync" onclick="DataManager.atualizarTodasCamadas(true, { mostrarToasts: true })" style="background:#0284c7; border:1px solid #38bdf8;" title="Sincronizar e recarregar dados do servidor">
         <span id="ico-sync">🔄</span> Atualizar
       </button>
-      <button class="btn-geo" onclick="GeoTools.abrirModal()" title="Geoprocessamento: intersecção, diferença e união entre camadas">
+      <button class="btn-geo" onclick="TabManager.trocar('geo'); setTimeout(() => GeoTools.abrirModal(), 100);" title="Abrir ferramentas de geoprocessamento (troca pra aba Geo)">
         ⚙️ Geo
-      </button>      
+      </button>     
     </div>
   </header>
-
+  <!-- ============================================================
+       M11 — BARRA DE ABAS (Mapa · Análise · Geo · AIS)
+       ============================================================ -->
+  <nav class="barra-abas" id="barra-abas">
+    <button class="aba-btn ativo" data-aba="mapa" onclick="TabManager.trocar('mapa')" title="Visualização de camadas e mapa">
+      <span class="aba-emoji">🗺️</span>
+      <span class="aba-nome">Mapa</span>
+    </button>
+    <button class="aba-btn" data-aba="analise" onclick="TabManager.trocar('analise')" title="Painel analítico, matriz VEN e gráficos">
+      <span class="aba-emoji">📊</span>
+      <span class="aba-nome">Análise</span>
+    </button>
+    <button class="aba-btn" data-aba="geo" onclick="TabManager.trocar('geo')" title="Buffer, geoprocessamento e diff de safras">
+      <span class="aba-emoji">⚙️</span>
+      <span class="aba-nome">Geo</span>
+    </button>
+    <button class="aba-btn" data-aba="ais" onclick="TabManager.trocar('ais')" title="Tráfego de embarcações em tempo real (em breve)">
+      <span class="aba-emoji">🚢</span>
+      <span class="aba-nome">AIS</span>
+      <span class="aba-badge">em breve</span>
+    </button>
+  </nav>
   <!-- Input escondido de importação (usado por ambos os botões) -->
   <input type="file" id="input-import" style="display:none"
          accept=".geojson,.json,.zip,.kml,.kmz,.gpkg,.geopackage,.shp,.dbf,.shx,.prj"
@@ -4701,6 +4948,7 @@
   <!-- Stage 6d: extras + URL state -->
   <script defer src="js/domain/map-extras.js"></script>
   <script defer src="js/core/url-state.js"></script>
+  <script defer src="js/core/tab-manager.js"></script>
   <!-- Stage 7: versionamento + about + app -->
   <script defer src="js/core/webgis-version.js"></script>
   <script defer src="js/core/webgis-about.js"></script>

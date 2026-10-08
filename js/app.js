@@ -453,6 +453,8 @@ window.toggleModoInterativo = function () {
     try { window.WebGISAbout.init(); } catch (e) { console.warn('[WebGISAbout] init falhou:', e); }
     try { window.MapExtras.init(); } catch (e) { console.warn('[MapExtras] init falhou:', e); }
     try { window.SelectionManager.init(); } catch (e) { console.warn('[SelectionManager] init falhou:', e); }
+    // ✅ M11: Inicializa sistema de abas
+    try { window.TabManager.init(); } catch (e) { console.warn('[TabManager] init falhou:', e); }    
     // ✅ 1e-2: executa a consulta capturada no boot (ou tenta ler da URL, como fallback)
     setTimeout(() => {
       try {

@@ -59,6 +59,11 @@
         const radioBase = document.querySelector('input[name="basemap"]:checked');
         if (radioBase && radioBase.value === 'escuro') p.set('base', 'escuro');
 
+        // ✅ M11: salva aba ativa na URL
+        if (window.TabManager && window.TabManager.abaAtiva && window.TabManager.abaAtiva !== 'mapa') {
+          p.set('aba', window.TabManager.abaAtiva);
+        }        
+
         const qs = p.toString();
         const novaURL = location.pathname + (qs ? '?' + qs : '');
 
@@ -107,6 +112,13 @@
             window.BasemapManager.trocar('escuro');
             console.info('[URLState] Basemap restaurado para escuro.');
           }
+        }
+        
+        // ✅ M11: restaura aba ativa
+        const abaUrl = params.get('aba');
+        if (abaUrl && window.TabManager && ['mapa', 'analise', 'geo', 'ais'].includes(abaUrl)) {
+          window.TabManager.trocar(abaUrl);
+          console.info(`[URLState] Aba restaurada: ${abaUrl}`);
         }
 
         const camada = params.get('camada');
