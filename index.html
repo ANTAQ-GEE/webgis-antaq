@@ -3121,6 +3121,253 @@
     body.modo-medicao-ativo .leaflet-container {
       cursor: crosshair !important;
     }  
+    /* ============================================================
+       M10 — GEOPROCESSAMENTO
+       ============================================================ */
+    .btn-geo {
+      background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+      color: #fff;
+      border: 1px solid #a78bfa;
+      padding: 6px 13px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+    }
+    .btn-geo:hover {
+      background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+      border-color: #c4b5fd;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.5);
+    }
+
+    .modal-geo {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 25, 47, 0.85);
+      backdrop-filter: blur(6px);
+      z-index: 999998;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .modal-geo.aberto { display: flex; }
+
+    .modal-geo-card {
+      background: #0b192c;
+      border: 1px solid #7c3aed;
+      border-radius: 12px;
+      width: 95%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+      overflow: hidden;
+      color: #f8fafc;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    .modal-geo-header {
+      background: linear-gradient(135deg, #061426 0%, #0a2540 100%);
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(124, 58, 237, 0.4);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-geo-header h3 {
+      font-size: 14px;
+      color: #c4b5fd;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .modal-geo-body {
+      padding: 18px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .geo-linha {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .geo-linha label {
+      font-size: 11px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+    }
+    .geo-linha select {
+      background: #061426;
+      border: 1px solid #1e4976;
+      color: #f1f5f9;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      outline: none;
+      font-family: 'Segoe UI', sans-serif;
+      cursor: pointer;
+    }
+    .geo-linha select:focus {
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.25);
+    }
+    .geo-linha select:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .geo-operacoes {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .geo-op-opcao {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      background: #061426;
+      border: 2px solid #1e4976;
+      border-radius: 8px;
+      padding: 12px 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+    .geo-op-opcao:hover {
+      border-color: #7c3aed;
+      background: #0b1f33;
+    }
+    .geo-op-opcao input[type="radio"] {
+      display: none;
+    }
+    .geo-op-opcao:has(input:checked) {
+      background: rgba(124, 58, 237, 0.18);
+      border-color: #a78bfa;
+      box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.4);
+    }
+    .geo-op-opcao .op-simbolo {
+      font-size: 20px;
+      font-weight: 900;
+      color: #c4b5fd;
+      line-height: 1;
+    }
+    .geo-op-opcao .op-nome {
+      font-size: 10px;
+      color: #94a3b8;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .geo-op-opcao:has(input:checked) .op-nome {
+      color: #fbbf24;
+    }
+    .geo-op-opcao .op-desc {
+      font-size: 9px;
+      color: #64748b;
+      font-weight: 400;
+      margin-top: 2px;
+    }
+
+    .geo-preview {
+      background: #061426;
+      border: 1px dashed #1e4976;
+      border-radius: 6px;
+      padding: 12px 14px;
+      min-height: 60px;
+    }
+
+    .geo-dissolve-linha {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: #061426;
+      border: 1px solid #1e4976;
+      border-radius: 6px;
+    }
+    .geo-dissolve-linha input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #7c3aed;
+      cursor: pointer;
+      margin: 0;
+    }
+    .geo-dissolve-linha label {
+      font-size: 11.5px;
+      color: #e2e8f0;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .geo-dissolve-linha label small {
+      font-size: 10px;
+      color: #64748b;
+      font-weight: 400;
+      margin-top: 2px;
+    }
+
+    .modal-geo-footer {
+      padding: 12px 22px;
+      border-top: 1px solid #1e293b;
+      background: #061426;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .modal-geo-footer button {
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .modal-geo-footer .btn-secundario {
+      background: transparent;
+      color: #94a3b8;
+      border: 1px solid #334155;
+    }
+    .modal-geo-footer .btn-secundario:hover {
+      background: #1e293b;
+      color: #f1f5f9;
+    }
+    .modal-geo-footer .btn-primario {
+      background: #7c3aed;
+      color: #fff;
+      border: 1px solid #a78bfa;
+    }
+    .modal-geo-footer .btn-primario:hover:not(:disabled) {
+      background: #6d28d9;
+      border-color: #c4b5fd;
+      transform: translateY(-1px);
+    }
+    .modal-geo-footer .btn-primario:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }    
         /* ============================================================
        M9 — MODAL DE BUFFER
        ============================================================ */
@@ -3320,6 +3567,9 @@
       <button class="btn-atualizar" id="btn-sync" onclick="DataManager.atualizarTodasCamadas(true, { mostrarToasts: true })" style="background:#0284c7; border:1px solid #38bdf8;" title="Sincronizar e recarregar dados do servidor">
         <span id="ico-sync">🔄</span> Atualizar
       </button>
+      <button class="btn-geo" onclick="GeoTools.abrirModal()" title="Geoprocessamento: intersecção, diferença e união entre camadas">
+        ⚙️ Geo
+      </button>      
     </div>
   </header>
 
@@ -4091,6 +4341,88 @@
     </div>
   </aside>
   <!-- ============================================================
+       M10 — MODAL DE GEOPROCESSAMENTO
+       ============================================================ -->
+  <div class="modal-geo" id="modal-geo">
+    <div class="modal-geo-card">
+      <div class="modal-geo-header">
+        <h3>
+          <span style="font-size:20px;">⚙️</span>
+          <span>Geoprocessamento entre Camadas</span>
+        </h3>
+        <button class="modal-matriz-fechar" onclick="GeoTools.fecharModal()">&times;</button>
+      </div>
+
+      <div class="modal-geo-body">
+        <div class="geo-linha">
+          <label for="geo-camada-a">Camada A (origem)</label>
+          <select id="geo-camada-a"></select>
+        </div>
+
+        <div class="geo-linha">
+          <label>Operação</label>
+          <div class="geo-operacoes">
+            <label class="geo-op-opcao">
+              <input type="radio" name="geo-op" value="intersecao" checked>
+              <span class="op-simbolo">∩</span>
+              <span class="op-nome">Intersecção</span>
+              <span class="op-desc">Polígonos × Linhas</span>
+            </label>
+            <label class="geo-op-opcao">
+              <input type="radio" name="geo-op" value="diferenca">
+              <span class="op-simbolo">−</span>
+              <span class="op-nome">Diferença</span>
+              <span class="op-desc">A − B</span>
+            </label>
+            <label class="geo-op-opcao">
+              <input type="radio" name="geo-op" value="uniao">
+              <span class="op-simbolo">∪</span>
+              <span class="op-nome">União</span>
+              <span class="op-desc">A + B</span>
+            </label>
+            <label class="geo-op-opcao">
+              <input type="radio" name="geo-op" value="pontos_em">
+              <span class="op-simbolo">🎯</span>
+              <span class="op-nome">Pontos em</span>
+              <span class="op-desc">Pontos × Polígonos</span>
+            </label>
+          </div>
+          <select id="geo-operacao" style="display:none;">
+            <option value="intersecao">Intersecção</option>
+            <option value="diferenca">Diferença</option>
+            <option value="uniao">União</option>
+            <option value="pontos_em">Pontos em</option>
+          </select>
+        </div>
+
+        <div class="geo-linha">
+          <label for="geo-camada-b">Camada B (referência)</label>
+          <select id="geo-camada-b"></select>
+        </div>
+
+        <div class="geo-preview" id="geo-preview">
+          <em style="color:#64748b;">Selecione duas camadas.</em>
+        </div>
+
+        <div class="geo-dissolve-linha">
+          <input type="checkbox" id="geo-dissolve">
+          <label for="geo-dissolve">
+            Unificar resultado (dissolve)
+            <small>Junta todas as geometrias resultantes num único polígono</small>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-geo-footer">
+        <button class="btn-secundario" onclick="GeoTools.fecharModal()">Cancelar</button>
+        <button class="btn-primario" id="btn-geo-calcular" onclick="GeoTools.calcular()">
+          ⚙️ Calcular
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
        M9 — MODAL DE CRIAÇÃO DE BUFFER
        ============================================================ -->
   <div class="modal-buffer" id="modal-buffer">
@@ -4373,6 +4705,7 @@
   <script defer src="js/core/webgis-version.js"></script>
   <script defer src="js/core/webgis-about.js"></script>
   <script defer src="js/domain/buffer-tool.js"></script>
+  <script defer src="js/domain/geo-tools.js"></script>  
   <script defer src="js/app.js"></script>
 
 </body>
