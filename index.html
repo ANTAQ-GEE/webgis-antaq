@@ -3944,7 +3944,214 @@
     /* Painel lateral fica ABAIXO do painel de seleção */
     .painel-camadas-lateral {
       z-index: 1800 !important;
-    }                    
+    } 
+    /* ============================================================
+       M13 — Cards de Estudo (aba Estudos)
+       ============================================================ */
+    .estudo-card {
+      transition: all 0.15s ease;
+    }
+    .estudo-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    [data-estudo-cat] {
+      transition: all 0.15s ease;
+    }
+    [data-estudo-cat].ativo {
+      box-shadow: 0 0 0 2px #0284c7;
+      transform: scale(1.05);
+    }  
+    /* ============================================================
+       M13 — MODAL DE ADICIONAR ESTUDO
+       ============================================================ */
+    .modal-estudo {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 25, 47, 0.88);
+      backdrop-filter: blur(6px);
+      z-index: 9999999;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .modal-estudo.aberto { display: flex; }
+
+    .modal-estudo-card {
+      background: #0b192c;
+      border: 1px solid #0284c7;
+      border-radius: 12px;
+      width: 95%;
+      max-width: 640px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+      overflow: hidden;
+      color: #f8fafc;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    .modal-estudo-header {
+      background: linear-gradient(135deg, #061426 0%, #0a2540 100%);
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(2,132,199,0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-estudo-header h3 {
+      font-size: 14px;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .modal-estudo-body {
+      padding: 18px 22px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .estudo-linha {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .estudo-linha label {
+      font-size: 10.5px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+    }
+    .estudo-linha input[type="text"],
+    .estudo-linha input[type="number"],
+    .estudo-linha input[type="url"],
+    .estudo-linha select,
+    .estudo-linha textarea,
+    .estudo-linha input[type="file"] {
+      background: #061426;
+      border: 1px solid #1e4976;
+      color: #f1f5f9;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      outline: none;
+      font-family: 'Segoe UI', sans-serif;
+      width: 100%;
+    }
+    .estudo-linha textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+    .estudo-linha input:focus,
+    .estudo-linha select:focus,
+    .estudo-linha textarea:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+    }
+
+    .estudo-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .estudo-fontes {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .estudo-fonte-opcao {
+      flex: 1;
+      display: block;
+      cursor: pointer;
+    }
+    .estudo-fonte-opcao input[type="radio"] {
+      display: none;
+    }
+    .estudo-fonte-conteudo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #061426;
+      border: 2px solid #1e4976;
+      border-radius: 8px;
+      padding: 10px 12px;
+      transition: all 0.15s ease;
+    }
+    .estudo-fonte-opcao:hover .estudo-fonte-conteudo {
+      border-color: #0284c7;
+    }
+    .estudo-fonte-opcao input:checked + .estudo-fonte-conteudo {
+      background: rgba(2, 132, 199, 0.18);
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.3);
+    }
+    .estudo-fonte-emoji {
+      font-size: 22px;
+    }
+    .estudo-fonte-conteudo strong {
+      display: block;
+      font-size: 12px;
+      color: #f1f5f9;
+    }
+    .estudo-fonte-conteudo small {
+      display: block;
+      font-size: 9.5px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .modal-estudo-footer {
+      padding: 12px 22px;
+      border-top: 1px solid #1e293b;
+      background: #061426;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .modal-estudo-footer button {
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .modal-estudo-footer .btn-secundario {
+      background: transparent;
+      color: #94a3b8;
+      border: 1px solid #334155;
+    }
+    .modal-estudo-footer .btn-secundario:hover {
+      background: #1e293b;
+      color: #f1f5f9;
+    }
+    .modal-estudo-footer .btn-primario {
+      background: #0284c7;
+      color: #fff;
+      border: 1px solid #38bdf8;
+    }
+    .modal-estudo-footer .btn-primario:hover:not(:disabled) {
+      background: #0369a1;
+      transform: translateY(-1px);
+    }
+    .modal-estudo-footer .btn-primario:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }                         
     </style>
 FV
   <!-- CABEÇALHO -->
@@ -4616,8 +4823,10 @@ FV
         </div>
       </div>
 
+      <!-- ══════════════════════════════════════════════════════════════
+           ABA: TKU — Tonelada-Quilômetro Útil
+           ══════════════════════════════════════════════════════════════ -->
       <div id="aba-tku" class="aba-grafico-conteudo" style="display:none;">
-        <!-- KPIs — 4 em linha (responsivo via CSS) -->
         <div class="kpis-container" id="tku-kpis" style="margin-bottom:8px;">
           <div class="kpi-card" style="padding:6px 9px;">
             <div class="kpi-label" style="font-size:9px;">2021</div>
@@ -4640,102 +4849,7 @@ FV
             <div class="kpi-sub" style="font-size:8.5px; color:#166534;" id="tku-kpi-cresc-sub">—</div>
           </div>
         </div>
-      <div id="aba-relatorios" class="aba-grafico-conteudo" style="display:none;">
-        <div style="font-size:11.5px; color:#94a3b8; margin-bottom:14px; line-height:1.5;">
-          📚 Acervo técnico consolidado da SEPH/GEE. Estudos metodológicos, relatórios oficiais e documentação de referência para as camadas regulatórias.
-        </div>
 
-        <!-- SEÇÃO: TKU -->
-        <div style="background:linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border:1px solid #fdba74; border-radius:8px; padding:14px 16px; margin-bottom:12px;">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-size:18px;">📦</span>
-            <strong style="font-size:13px; color:#9a3412;">TKU — Tonelada-Quilômetro Útil</strong>
-            <span style="background:#9a3412; color:#fff; font-size:9px; padding:2px 6px; border-radius:3px; font-weight:700;">ANTAQ</span>
-          </div>
-
-          <p style="font-size:11px; color:#7c2d12; line-height:1.5; margin-bottom:10px;">
-            Medida de intensidade de carga transportada por quilômetro navegado. Consolida dados de
-            <strong>2021</strong>, <strong>2023</strong> e <strong>2025</strong> nas 3 navegações
-            (Cabotagem, Interior e Longo Curso).
-          </p>
-
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:10.5px; line-height:1.5;">
-            <div style="background:#fff; border-radius:6px; padding:10px 12px; border:1px solid #fed7aa;">
-              <strong style="color:#9a3412; display:block; margin-bottom:6px;">📊 Fontes de Dados</strong>
-              <ul style="padding-left:16px; margin:0; color:#7c2d12;">
-                <li><strong>SDP (ANTAQ):</strong> atracações e movimentações</li>
-                <li><strong>Sistema Mercante:</strong> manifestos de carga</li>
-                <li><strong>LabTrans/UFSC:</strong> estudo de demanda</li>
-                <li><strong>DNIT:</strong> calados e dragagem</li>
-              </ul>
-            </div>
-            <div style="background:#fff; border-radius:6px; padding:10px 12px; border:1px solid #fed7aa;">
-              <strong style="color:#9a3412; display:block; margin-bottom:6px;">🔬 Metodologia</strong>
-              <ul style="padding-left:16px; margin:0; color:#7c2d12;">
-                <li><strong>Modelagem:</strong> caminhos mínimos O/D</li>
-                <li><strong>Eliminação:</strong> sobreposições de trechos</li>
-                <li><strong>Datum:</strong> SIRGAS 2000 (EPSG:4674)</li>
-                <li><strong>Escala:</strong> 1:1.000.000</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <!-- SEÇÃO: VEN -->
-        <div style="background:linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border:1px solid #93c5fd; border-radius:8px; padding:14px 16px; margin-bottom:12px;">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-size:18px;">🌊</span>
-            <strong style="font-size:13px; color:#1e40af;">VEN — Vias Economicamente Navegadas</strong>
-            <span style="background:#1e40af; color:#fff; font-size:9px; padding:2px 6px; border-radius:3px; font-weight:700;">ANTAQ</span>
-          </div>
-
-          <p style="font-size:11px; color:#1e3a8a; line-height:1.5; margin-bottom:10px;">
-            Trechos hidroviários com tráfego comercial comprovado por manifestos.
-            Série histórica oficial consolidada pela ANTAQ (2013, 2018, 2020, 2022 e 2024).
-          </p>
-
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:10.5px; line-height:1.5;">
-            <div style="background:#fff; border-radius:6px; padding:10px 12px; border:1px solid #bfdbfe;">
-              <strong style="color:#1e40af; display:block; margin-bottom:6px;">📊 Safras Disponíveis</strong>
-              <ul style="padding-left:16px; margin:0; color:#1e3a8a;">
-                <li><strong>2013:</strong> marco inicial</li>
-                <li><strong>2018:</strong> revisão metodológica</li>
-                <li><strong>2020:</strong> atualização bianual</li>
-                <li><strong>2022:</strong> 20.125 km</li>
-                <li><strong>2024:</strong> 20.404 km (Oficial V4)</li>
-              </ul>
-            </div>
-            <div style="background:#fff; border-radius:6px; padding:10px 12px; border:1px solid #bfdbfe;">
-              <strong style="color:#1e40af; display:block; margin-bottom:6px;">🔬 Conceitos-Chave</strong>
-              <ul style="padding-left:16px; margin:0; color:#1e3a8a;">
-                <li><strong>Aderência PNV:</strong> 48.91%</li>
-                <li><strong>Amazônia:</strong> 82.52% da malha</li>
-                <li><strong>Crescimento 22→24:</strong> +1.06%</li>
-                <li><strong>Datum:</strong> SIRGAS 2000</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <!-- SEÇÃO: Links oficiais -->
-        <div style="background:#061426; border:1px solid #1e3a5f; border-radius:8px; padding:12px 16px;">
-          <strong style="font-size:12px; color:#38bdf8; display:flex; align-items:center; gap:6px; margin-bottom:8px;">
-            <span>🔗</span> Publicações Oficiais ANTAQ
-          </strong>
-          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:8px; font-size:10.5px;">
-            <a href="https://www.gov.br/antaq/pt-br/central-de-conteudos/publicacoes" target="_blank" rel="noopener" style="display:block; background:#0a2540; padding:8px 10px; border-radius:6px; color:#7dd3fc; text-decoration:none; border:1px solid #0284c7;">
-              📄 Central de Publicações ANTAQ
-            </a>
-            <a href="https://www.gov.br/antaq/pt-br/assuntos/estatisticas" target="_blank" rel="noopener" style="display:block; background:#0a2540; padding:8px 10px; border-radius:6px; color:#7dd3fc; text-decoration:none; border:1px solid #0284c7;">
-              📊 Estatísticas Aquaviárias
-            </a>
-            <a href="https://www.gov.br/antaq/pt-br/assuntos/estudos" target="_blank" rel="noopener" style="display:block; background:#0a2540; padding:8px 10px; border-radius:6px; color:#7dd3fc; text-decoration:none; border:1px solid #0284c7;">
-              🔬 Estudos SEPH/GEE
-            </a>
-          </div>
-        </div>
-      </div>
-        <!-- Gráfico 1 + 2 (responsivo via CSS) -->
         <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:10px; margin-bottom:10px;">
           <div class="grafico-canvas-box" style="height:200px; padding:8px; background:#0f172a; border-radius:8px; border:1px solid #1e293b;">
             <div style="font-size:10.5px; font-weight:700; color:#fbbf24; margin-bottom:6px; display:flex; justify-content:space-between;">
@@ -4754,6 +4868,99 @@ FV
           </div>
         </div>
 
+        <div style="background:#0f172a; border:1px solid #1e293b; border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+          <div style="font-size:10.5px; font-weight:700; color:#fbbf24; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span>🏆 Top 10 Trechos por Fluxo</span>
+            <select id="tku-top-ano" onchange="AnalyticsTKU.renderizarTop()" style="background:#0c213b; border:1px solid #1e4976; color:#f1f5f9; padding:3px 7px; border-radius:4px; font-size:10px;">
+              <option value="2025">2025</option>
+              <option value="2023">2023</option>
+              <option value="2021">2021</option>
+            </select>
+          </div>
+          <div id="tku-top-lista" style="font-size:11px; color:#cbd5e1; max-height:320px; overflow-y:auto;">
+            <em style="color:#64748b;">Carregando...</em>
+          </div>
+        </div>
+
+        <div style="background:rgba(245,158,11,0.08); border-left:3px solid #f59e0b; border-radius:6px; padding:10px 14px; font-size:10.5px; color:#fde68a; line-height:1.5;">
+          <strong>📖 Como ler:</strong> cada barra representa <strong>toneladas × km navegados</strong> em todos os trechos da safra. Trechos com <strong>fluxo muito alto</strong> indicam corredores logísticos de grande volume. A ausência de <strong>Longo Curso 2023</strong> reflete a série oficial.
+        </div>
+      </div>
+      <!-- ✅ #aba-tku FECHADA CORRETAMENTE -->
+
+      <!-- ══════════════════════════════════════════════════════════════
+           ABA: ESTUDOS / RELATÓRIOS OFICIAIS
+           ══════════════════════════════════════════════════════════════ -->
+      <div id="aba-relatorios" class="aba-grafico-conteudo" style="display:none;">
+        <div style="font-size:11.5px; color:#94a3b8; margin-bottom:14px; line-height:1.5;">
+          📚 Acervo técnico consolidado da SEPH/GEE. Estudos metodológicos, relatórios oficiais e documentação de referência.
+        </div>
+
+        <!-- ═══ SEÇÃO: ESTUDOS PUBLICADOS (PDFs) ═══ -->
+        <div style="background:#fff; border:1px solid #cbd5e1; border-radius:8px; padding:14px 16px; margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+            <div>
+              <strong style="font-size:13px; color:#0f172a; display:flex; align-items:center; gap:6px;">
+                <span>📚</span> Estudos Publicados
+              </strong>
+              <span id="estudos-contador" style="font-size:10.5px; color:#64748b;">0 estudos</span>
+            </div>
+            <button type="button" onclick="EstudosManager.abrirModalAdicionar()"
+                    style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; border:none; padding:7px 14px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:5px;">
+              ➕ Adicionar Estudo
+            </button>
+          </div>
+
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; align-items:center;">
+            <button type="button" data-estudo-cat="TODOS" class="ativo" onclick="EstudosManager.filtrarPorCategoria('TODOS')" style="background:#0f172a; color:#fff; border:1px solid #334155; padding:4px 10px; border-radius:12px; font-size:10.5px; font-weight:700; cursor:pointer;">Todos</button>
+            <button type="button" data-estudo-cat="TKU" onclick="EstudosManager.filtrarPorCategoria('TKU')" style="background:#fff7ed; color:#9a3412; border:1px solid #fdba74; padding:4px 10px; border-radius:12px; font-size:10.5px; font-weight:700; cursor:pointer;">📦 TKU</button>
+            <button type="button" data-estudo-cat="VEN" onclick="EstudosManager.filtrarPorCategoria('VEN')" style="background:#eff6ff; color:#1e40af; border:1px solid #93c5fd; padding:4px 10px; border-radius:12px; font-size:10.5px; font-weight:700; cursor:pointer;">🌊 VEN</button>
+            <button type="button" data-estudo-cat="Geral" onclick="EstudosManager.filtrarPorCategoria('Geral')" style="background:#e0e7ff; color:#3730a3; border:1px solid #a5b4fc; padding:4px 10px; border-radius:12px; font-size:10.5px; font-weight:700; cursor:pointer;">📚 Geral</button>
+            <input type="text" id="estudos-busca" placeholder="Buscar..." oninput="EstudosManager.buscar(this.value)" style="flex:1; min-width:140px; padding:5px 10px; font-size:11px; border:1px solid #cbd5e1; border-radius:12px; outline:none;">
+          </div>
+
+          <div id="estudos-lista">
+            <div style="text-align:center; padding:20px; color:#64748b; font-size:11px;">
+              <em>Abrindo catálogo de estudos...</em>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ SEÇÃO: TKU (metodologia) ═══ -->
+        <div style="background:linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border:1px solid #fdba74; border-radius:8px; padding:14px 16px; margin-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-size:18px;">📦</span>
+            <strong style="font-size:13px; color:#9a3412;">TKU — Tonelada-Quilômetro Útil</strong>
+          </div>
+          <p style="font-size:11px; color:#7c2d12; line-height:1.5; margin:0;">
+            Medida de intensidade de carga transportada por quilômetro navegado. Consolida dados de <strong>2021</strong>, <strong>2023</strong> e <strong>2025</strong>.
+          </p>
+        </div>
+
+        <!-- ═══ SEÇÃO: VEN (metodologia) ═══ -->
+        <div style="background:linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border:1px solid #93c5fd; border-radius:8px; padding:14px 16px; margin-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-size:18px;">🌊</span>
+            <strong style="font-size:13px; color:#1e40af;">VEN — Vias Economicamente Navegadas</strong>
+          </div>
+          <p style="font-size:11px; color:#1e3a8a; line-height:1.5; margin:0;">
+            Trechos hidroviários com tráfego comercial comprovado. Série histórica: 2013, 2018, 2020, 2022 e 2024.
+          </p>
+        </div>
+
+        <!-- ═══ SEÇÃO: LINKS EXTERNOS ═══ -->
+        <div style="background:#061426; border:1px solid #1e3a5f; border-radius:8px; padding:12px 16px;">
+          <strong style="font-size:12px; color:#38bdf8; display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+            <span>🔗</span> Publicações Oficiais ANTAQ
+          </strong>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:8px; font-size:10.5px;">
+            <a href="https://www.gov.br/antaq/pt-br/central-de-conteudos/publicacoes" target="_blank" rel="noopener" style="display:block; background:#0a2540; padding:8px 10px; border-radius:6px; color:#7dd3fc; text-decoration:none; border:1px solid #0284c7;">📄 Central de Publicações</a>
+            <a href="https://www.gov.br/antaq/pt-br/assuntos/estatisticas" target="_blank" rel="noopener" style="display:block; background:#0a2540; padding:8px 10px; border-radius:6px; color:#7dd3fc; text-decoration:none; border:1px solid #0284c7;">📊 Estatísticas</a>
+            <a href="https://www.gov.br/antaq/pt-br/assuntos/estudos" target="_blank" rel="noopener" style="display:block; background:#0a2540; padding:8px 10px; border-radius:6px; color:#7dd3fc; text-decoration:none; border:1px solid #0284c7;">🔬 Estudos SEPH/GEE</a>
+          </div>
+        </div>
+      </div>
+      <!-- ✅ #aba-relatorios FECHADA CORRETAMENTE -->
         <!-- Top 10 — mais compacto -->
         <div style="background:#0f172a; border:1px solid #1e293b; border-radius:8px; padding:10px 12px; margin-bottom:10px;">
           <div style="font-size:10.5px; font-weight:700; color:#fbbf24; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
@@ -5241,6 +5448,112 @@ FV
       </div>
     </div>
   </div>
+  <!-- ============================================================
+       M13 — MODAL DE ADICIONAR ESTUDO (Híbrido)
+       ============================================================ -->
+  <div class="modal-estudo" id="modal-estudo">
+    <div class="modal-estudo-card">
+      <div class="modal-estudo-header">
+        <h3>
+          <span style="font-size:20px;">📚</span>
+          <span>Adicionar Estudo / Publicação</span>
+        </h3>
+        <button class="modal-matriz-fechar" onclick="EstudosManager.fecharModalAdicionar()">&times;</button>
+      </div>
+
+      <div class="modal-estudo-body">
+        <!-- Metadados -->
+        <div class="estudo-linha">
+          <label for="estudo-titulo">Título *</label>
+          <input type="text" id="estudo-titulo" placeholder="Ex: Relatório TKU 2025">
+        </div>
+
+        <div class="estudo-grid-2">
+          <div class="estudo-linha">
+            <label for="estudo-categoria">Categoria *</label>
+            <select id="estudo-categoria">
+              <option value="TKU">📦 TKU</option>
+              <option value="VEN">🌊 VEN</option>
+              <option value="Geral" selected>📚 Geral</option>
+            </select>
+          </div>
+          <div class="estudo-linha">
+            <label for="estudo-ano">Ano</label>
+            <input type="number" id="estudo-ano" min="1970" max="2099" placeholder="2025" value="2026">
+          </div>
+        </div>
+
+        <div class="estudo-linha">
+          <label for="estudo-autores">Autores / Responsável</label>
+          <input type="text" id="estudo-autores" placeholder="Ex: SEPH / GEE — ANTAQ">
+        </div>
+
+        <div class="estudo-linha">
+          <label for="estudo-descricao">Descrição</label>
+          <textarea id="estudo-descricao" rows="3" placeholder="Breve resumo do estudo..."></textarea>
+        </div>
+
+        <div class="estudo-linha">
+          <label for="estudo-tags">Tags (separadas por vírgula)</label>
+          <input type="text" id="estudo-tags" placeholder="Ex: TKU, cabotagem, carga">
+        </div>
+
+        <div class="estudo-linha">
+          <label for="estudo-processo">Processo SEI (opcional)</label>
+          <input type="text" id="estudo-processo" placeholder="Ex: SEI 50300.007913/2023-45">
+        </div>
+
+        <!-- Fonte do PDF -->
+        <div class="estudo-linha" style="border-top:1px solid #1e293b; padding-top:14px; margin-top:6px;">
+          <label>📎 Fonte do arquivo *</label>
+          <div class="estudo-fontes">
+            <label class="estudo-fonte-opcao">
+              <input type="radio" name="estudo-fonte" value="externo" checked onchange="EstudosManager.mudarFonte('externo')">
+              <div class="estudo-fonte-conteudo">
+                <span class="estudo-fonte-emoji">🔗</span>
+                <div>
+                  <strong>Link externo</strong>
+                  <small>URL de PDF/ZIP já publicado (gov.br, SEI, etc)</small>
+                </div>
+              </div>
+            </label>
+            <label class="estudo-fonte-opcao">
+              <input type="radio" name="estudo-fonte" value="local" onchange="EstudosManager.mudarFonte('local')">
+              <div class="estudo-fonte-conteudo">
+                <span class="estudo-fonte-emoji">📁</span>
+                <div>
+                  <strong>Upload local</strong>
+                  <small>Arquivo em docs/estudos/ (só na sessão)</small>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Campo Link (visível por padrão) -->
+        <div class="estudo-linha" id="estudo-fonte-externo-campo">
+          <label for="estudo-url">URL do arquivo *</label>
+          <input type="url" id="estudo-url" placeholder="https://www.gov.br/antaq/...">
+          <small style="font-size:10px; color:#64748b; margin-top:4px;">Cole a URL completa do PDF ou ZIP publicado</small>
+        </div>
+
+        <!-- Campo Upload (oculto por padrão) -->
+        <div class="estudo-linha" id="estudo-fonte-local-campo" style="display:none;">
+          <label for="estudo-arquivo">Arquivo</label>
+          <input type="file" id="estudo-arquivo" accept=".pdf,.zip">
+          <small style="font-size:10px; color:#64748b; margin-top:4px;">Máx 50MB · PDF ou ZIP · persistência apenas na sessão atual</small>
+          <div id="estudo-arquivo-preview" style="margin-top:8px;"></div>
+        </div>
+      </div>
+
+      <div class="modal-estudo-footer">
+        <button class="btn-secundario" onclick="EstudosManager.fecharModalAdicionar()">Cancelar</button>
+        <button class="btn-primario" id="btn-estudo-salvar" onclick="EstudosManager.salvarEstudo()">
+          💾 Adicionar Estudo
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Leaflet JS + MarkerCluster + MiniMap (ordem importa!) -->
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -5280,6 +5593,7 @@ FV
   <script defer src="js/analytics/analytics.js"></script>
   <script defer src="js/analytics/matriz-ven-manager.js"></script>
   <script defer src="js/analytics/analytics-tku.js"></script>  
+  <script defer src="js/domain/estudos-manager.js"></script>  
   <!-- Stage 5b: dinâmica + IA -->
   <script defer src="js/domain/ven-unified-manager.js"></script>
   <script defer src="js/domain/safra-diff-manager.js"></script>
