@@ -35,6 +35,7 @@
         else if (id.includes('ferrovia')) emoji = '🚆';
         else if (id.includes('embarcac') || id.includes('ais')) emoji = '🚢';
         else if (id.includes('snv')) emoji = '📜';
+        else if (id === 'tku') emoji = '📦';        
         sel.appendChild(new Option(`${emoji} ${cfg.nome}`, id));
       }
 

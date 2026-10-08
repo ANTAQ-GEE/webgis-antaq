@@ -83,9 +83,136 @@
       this.atualizarLegenda();
       if (window.UI && UI.toast) UI.toast(`Paleta aplicada: ${preset.nome}`);
     },
+    /**
+     * M12 — Opções específicas da camada TKU (choropleth linear).
+     * Espessura e cor proporcionais ao campo `fluxo`.
+     */
+    _obterOpcoesTKU: function (cfg) {
+      // Cache das faixas (calculado 1× na primeira chamada)
+      if (!this._tkuFaixas) {
+        this._tkuFaixas = this._calcularFaixasTKU();
+      }
 
+      const calcularPeso = (fluxo) => {
+        if (!fluxo || fluxo <= 0) return 1;
+        if (fluxo > this._tkuFaixas.p90) return 10;   // mais intenso — mais grosso
+        if (fluxo > this._tkuFaixas.p70) return 8;
+        if (fluxo > this._tkuFaixas.p50) return 6;
+        if (fluxo > this._tkuFaixas.p30) return 4;
+        return 2.5;
+      };
+
+      const calcularCor = (fluxo) => {
+        if (!fluxo || fluxo <= 0) return '#94a3b8';   // cinza (sem fluxo)
+        if (fluxo > this._tkuFaixas.p90) return '#dc2626';   // vermelho (mais intenso)
+        if (fluxo > this._tkuFaixas.p70) return '#f97316';   // laranja
+        if (fluxo > this._tkuFaixas.p50) return '#f59e0b';   // âmbar
+        if (fluxo > this._tkuFaixas.p30) return '#84cc16';   // verde claro
+        return '#10b981';   // verde (menor fluxo)
+      };
+
+      return {
+        pane: 'paneLinhas',
+        interactive: true,
+        style: (f) => {
+          const fluxo = Number(f.properties?.fluxo) || 0;
+          return {
+            pane: 'paneLinhas',
+            color: calcularCor(fluxo),
+            weight: calcularPeso(fluxo),
+            opacity: 0.85,
+            fill: false,
+            lineCap: 'round'
+          };
+        },
+        onEachFeature: (f, layer) => {
+          // Popup customizado com info TKU
+          const p = f.properties || {};
+          const fluxoFmt = p.fluxo >= 1000
+            ? `${(p.fluxo / 1000).toFixed(0)} mil`
+            : (p.fluxo || 0).toFixed(0);
+          const fluxoBruto = p.fluxo ? Number(p.fluxo).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '—';
+
+          const badgeCor = calcularCor(Number(p.fluxo) || 0);
+
+          const linhas = `
+            <div class="pop-linha"><span class="pop-lbl">Ano:</span><span class="pop-val"><strong>${p.ano || '—'}</strong></span></div>
+            <div class="pop-linha"><span class="pop-lbl">Navegação:</span><span class="pop-val">${window.Security.escapeHTML(p.navegacao || '—')}</span></div>
+            <div class="pop-linha"><span class="pop-lbl">Trecho:</span><span class="pop-val">${window.Security.escapeHTML(p.nome || '—')}</span></div>
+            <div class="pop-linha"><span class="pop-lbl">OD:</span><span class="pop-val">${window.Security.escapeHTML((p.municipio_origem || '?') + '/' + (p.uf_origem || '?'))} → ${window.Security.escapeHTML((p.municipio_destino || '—') + (p.uf_destino ? '/' + p.uf_destino : ''))}</span></div>
+            <div class="pop-linha"><span class="pop-lbl">Rio:</span><span class="pop-val">${window.Security.escapeHTML(p.nome_rio || '—')}</span></div>
+            <div class="pop-linha"><span class="pop-lbl">Extensão:</span><span class="pop-val">${p.extensao ? p.extensao.toFixed(1) + ' km' : '—'}</span></div>
+            <div class="pop-linha"><span class="pop-lbl">Velocidade:</span><span class="pop-val">${p.velocidade ? p.velocidade + ' km/h' : '—'}</span></div>
+          `;
+
+          const html = `
+            <div class="pop-topo" style="background:linear-gradient(135deg, #0a2540 0%, ${badgeCor} 100%);">
+              🚢 TKU · Tonelada-Quilômetro Útil
+            </div>
+            <div class="pop-corpo">
+              <div style="background:${badgeCor}22;border-left:4px solid ${badgeCor};padding:10px 12px;border-radius:6px;margin-bottom:10px;">
+                <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;">Fluxo de Carga</div>
+                <div style="font-size:22px;color:${badgeCor};font-weight:800;font-family:Consolas,monospace;margin-top:2px;">
+                  ${fluxoFmt} <span style="font-size:11px;opacity:0.7;">t·km</span>
+                </div>
+                <div style="font-size:10.5px;color:#64748b;font-family:Consolas,monospace;">${fluxoBruto}</div>
+              </div>
+              ${linhas}
+            </div>
+            <div class="pop-rodape-auditoria">
+              <span>Fonte: ANTAQ / Mercante</span>
+              <span>Verificado: ${new Date().toLocaleDateString('pt-BR')}</span>
+            </div>
+          `;
+
+          layer.bindPopup(html);
+
+          // Tooltip
+          if (p.nome) {
+            layer.bindTooltip(
+              `<strong>${window.Security.escapeHTML(p.nome.slice(0, 40))}</strong><br>
+               <small style="color:${badgeCor};">${p.ano} · ${window.Security.escapeHTML(p.navegacao || '')} · ${fluxoFmt} t·km</small>`,
+              { sticky: true, className: 'rotulo-hover-feicao' }
+            );
+          }
+        }
+      };
+    },
+
+    /**
+     * Calcula os percentis do fluxo TKU (p30, p50, p70, p90).
+     */
+    _calcularFaixasTKU: function () {
+      const dados = window.DADOS_GEOJSON_BRUTOS['tku'];
+      if (!dados?.features?.length) {
+        return { p30: 100000, p50: 300000, p70: 600000, p90: 900000 };
+      }
+
+      const fluxos = dados.features
+        .map(f => Number(f.properties?.fluxo) || 0)
+        .filter(v => v > 0)
+        .sort((a, b) => a - b);
+
+      const p = (n) => fluxos[Math.floor(fluxos.length * n)] || 0;
+
+      const faixas = {
+        p30: p(0.30),
+        p50: p(0.50),
+        p70: p(0.70),
+        p90: p(0.90)
+      };
+
+      console.info('[M12] Faixas TKU calculadas:', faixas);
+      return faixas;
+    },
     obterOpcoes: function (id) {
       const cfg = CONFIG_CAMADAS[id] || {};
+      // ══════════════════════════════════════════════════════════════
+      // M12 — TKU: choropleth linear por intensidade de fluxo
+      // ══════════════════════════════════════════════════════════════
+      if (id === 'tku') {
+        return this._obterOpcoesTKU(cfg);
+      }      
       let paneAlvo = 'overlayPane';
       if (id === 'instalacoes_portuarias' || cfg.tipoGeo === 'ponto') paneAlvo = 'panePontos';
       else if (cfg.tipoGeo === 'linha' || cfg.tipoGeo === 'linha_tracejada' || cfg.grupo === 'infra') paneAlvo = 'paneLinhas';
@@ -141,6 +268,7 @@
                 riseOnHover: true
               });
             }
+            
             return L.circleMarker(latlng, {
               pane: 'panePontos',
               radius: 5,
@@ -150,6 +278,7 @@
               fillOpacity: 0.9
             });
           }
+          
           // ✅ Outros pontos → círculo padrão (comportamento antigo)
           return L.circleMarker(latlng, {
             pane: (cfg.grupo === 'restricoes') ? 'paneRestricoes' : 'panePontos',
@@ -321,6 +450,7 @@
             l.innerHTML = `<div style="display:flex; flex-direction:column; gap:4px; width:100%; border-bottom:1px dashed #cbd5e1; padding-bottom:6px;"><span style="font-weight:700; color:#0f172a; font-size:11px;">Instalações Portuárias:</span>${subItensHTML}</div>`;
             corpo.appendChild(l);
           }
+          
         } else if (cfg.tipoGeo === 'linha' || cfg.tipoGeo === 'linha_tracejada') {
           // Travessias usam ícone de ponte
           if (id === 'linhas_travessias') {

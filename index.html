@@ -3761,9 +3761,172 @@
        ============================================================ */
     #painel-tabela {
       z-index: 2100 !important;
-    }            
-    </style>
+    }  
+    /* ============================================================
+       FIX DEFINITIVO — Painel de Tabela sempre visível
+       ============================================================ */
+    .painel-tabela-atributos {
+      bottom: 26px !important;      /* acima do rodapé */
+      right: 0 !important;          /* largura total até a borda */
+      left: 0 !important;
+      height: 280px !important;
+      z-index: 2200 !important;     /* acima do rodapé (2000) */
+      box-shadow: 0 -8px 25px rgba(0,0,0,0.35) !important;
+    }
 
+    .painel-tabela-atributos.aberto {
+      display: flex !important;
+    }
+
+    /* Quando o painel lateral está aberto, deixa espaço à direita */
+    body:not(.painel-lateral-recolhido) .painel-tabela-atributos {
+      right: 380px !important;
+    }  
+    /* ============================================================
+       M12 — AJUSTE DE LAYOUT RESPONSIVO (Painel Analítico)
+       ============================================================ */
+
+    /* Painel se adapta à viewport */
+    .painel-graficos {
+      width: min(900px, calc(100vw - 100px)) !important;
+      max-height: calc(100vh - 120px) !important;
+    }
+
+    .graficos-header {
+      padding: 8px 14px !important;
+    }
+    .graficos-header > div:first-child {
+      font-size: 12px !important;
+    }
+
+    .graficos-tabs {
+      padding: 0 6px !important;
+    }
+    .grafico-tab-btn {
+      padding: 6px 10px !important;
+      font-size: 10px !important;
+    }
+
+    /* KPIs compactos — sempre 4 em 1 linha */
+    .painel-graficos .kpis-container {
+      grid-template-columns: repeat(4, 1fr) !important;
+      gap: 8px !important;
+      margin-bottom: 10px !important;
+    }
+    .painel-graficos .kpi-card {
+      padding: 7px 10px !important;
+    }
+    .painel-graficos .kpi-label {
+      font-size: 9px !important;
+      letter-spacing: 0.3px !important;
+    }
+    .painel-graficos .kpi-valor {
+      font-size: 15px !important;
+      margin-top: 1px !important;
+    }
+    .painel-graficos .kpi-sub {
+      font-size: 9px !important;
+      margin-top: 0 !important;
+    }
+
+    /* Gráficos mais baixos */
+    .painel-graficos .grafico-canvas-box {
+      height: 200px !important;
+      padding: 8px !important;
+    }
+
+    /* Corpo do painel com scroll visível */
+    .graficos-corpo {
+      padding: 10px 12px !important;
+      gap: 10px !important;
+    }
+
+    /* Responsividade pra telas pequenas */
+    @media (max-width: 1100px) {
+      .painel-graficos {
+        width: calc(100vw - 60px) !important;
+        left: 30px !important;
+      }
+      .painel-graficos .kpis-container {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+
+    @media (max-width: 800px) {
+      .painel-graficos {
+        width: 100vw !important;
+        left: 0 !important;
+        top: 96px !important;
+        max-height: calc(100vh - 96px) !important;
+        border-radius: 0 !important;
+      }
+      .painel-graficos .kpis-container {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+
+    /* Layout 2 colunas dos gráficos vira 1 em telas pequenas */
+    @media (max-width: 1000px) {
+      #aba-tku > div[style*="grid-template-columns: 1.2fr 1fr"] {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+    }
+
+    /* Top 10 mais denso */
+    #tku-top-lista > div {
+      padding: 5px 0 !important;
+    }  
+    /* ============================================================
+       FIX — Sem overlap embaixo do painel analítico
+       ============================================================ */
+    .painel-graficos {
+      display: none;
+      flex-direction: column;
+      max-height: calc(100vh - 100px) !important;
+      top: 96px !important;
+      bottom: 30px !important;
+      height: auto !important;
+      overflow: hidden;
+    }
+
+    .painel-graficos.aberto {
+      display: flex !important;
+    }
+
+    /* Tab bar não encolhe */
+    .graficos-header,
+    .graficos-tabs {
+      flex-shrink: 0;
+    }
+
+    /* Corpo com scroll próprio e espaço extra no fundo */
+    .graficos-corpo {
+      flex: 1 1 auto;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      padding: 12px 14px 60px 14px !important;   /* ← 60px de respiro embaixo */
+      scrollbar-width: thin;
+      scrollbar-color: #38bdf8 #0f172a;
+    }
+
+    .graficos-corpo::-webkit-scrollbar {
+      width: 10px;
+    }
+    .graficos-corpo::-webkit-scrollbar-track {
+      background: #0f172a;
+      border-radius: 5px;
+    }
+    .graficos-corpo::-webkit-scrollbar-thumb {
+      background: #38bdf8;
+      border-radius: 5px;
+      border: 2px solid #0f172a;
+    }
+    .graficos-corpo::-webkit-scrollbar-thumb:hover {
+      background: #0284c7;
+    }                  
+    </style>
+FV
   <!-- CABEÇALHO -->
   <header class="top-header">
     <div class="brand-area">
@@ -4273,10 +4436,11 @@
     </div>
 
     <div class="graficos-tabs">
-      <button class="grafico-tab-btn ativo" id="tab-btn-ven" onclick="Analytics.trocarAba('ven')">🌊 Vias Navegadas (VEN)</button>
-      <button class="grafico-tab-btn" id="tab-btn-portos" onclick="Analytics.trocarAba('portos')">⚓ Instalações Portuárias (1.179)</button>
-      <button class="grafico-tab-btn" id="tab-btn-travessias" onclick="Analytics.trocarAba('travessias')">⛴️ Linhas de Travessias (93)</button>
-      <button class="grafico-tab-btn" id="tab-btn-relatorios" onclick="Analytics.trocarAba('relatorios')">📚 Relatórios Oficiais & Metodologia (2020-2024)</button>
+      <button type="button" class="grafico-tab-btn ativo" id="tab-btn-ven" onclick="Analytics.trocarAba('ven')">🌊 VEN</button>
+      <button type="button" class="grafico-tab-btn" id="tab-btn-portos" onclick="Analytics.trocarAba('portos')">⚓ Portos</button>
+      <button type="button" class="grafico-tab-btn" id="tab-btn-travessias" onclick="Analytics.trocarAba('travessias')">⛴️ Travessias</button>
+      <button type="button" class="grafico-tab-btn" id="tab-btn-tku" onclick="Analytics.trocarAba('tku')">📦 TKU</button>
+      <button type="button" class="grafico-tab-btn" id="tab-btn-relatorios" onclick="Analytics.trocarAba('relatorios')">📚 Estudos</button>
     </div>
 
     <div class="graficos-corpo">
@@ -4432,10 +4596,167 @@
         </div>
       </div>
 
-      <div id="aba-relatorios" class="aba-grafico-conteudo" style="display:none;">
-        <div style="font-size:11px; color:#94a3b8; margin-bottom:12px; line-height:1.4;">
-          Consulte o acervo técnico de publicações oficiais das <strong>Vias Economicamente Navegadas (VEN)</strong> desenvolvidas pela ANTAQ.
+      <div id="aba-tku" class="aba-grafico-conteudo" style="display:none;">
+        <!-- KPIs — 4 em linha (responsivo via CSS) -->
+        <div class="kpis-container" id="tku-kpis" style="margin-bottom:8px;">
+          <div class="kpi-card" style="padding:6px 9px;">
+            <div class="kpi-label" style="font-size:9px;">2021</div>
+            <div class="kpi-valor" style="color:#3b82f6; font-size:14px; margin-top:1px;" id="tku-kpi-2021">—</div>
+            <div class="kpi-sub" style="font-size:8.5px;" id="tku-kpi-2021-sub">—</div>
+          </div>
+          <div class="kpi-card" style="padding:6px 9px;">
+            <div class="kpi-label" style="font-size:9px;">2023</div>
+            <div class="kpi-valor" style="color:#f59e0b; font-size:14px; margin-top:1px;" id="tku-kpi-2023">—</div>
+            <div class="kpi-sub" style="font-size:8.5px;" id="tku-kpi-2023-sub">—</div>
+          </div>
+          <div class="kpi-card" style="padding:6px 9px;">
+            <div class="kpi-label" style="font-size:9px;">2025</div>
+            <div class="kpi-valor" style="color:#dc2626; font-size:14px; margin-top:1px;" id="tku-kpi-2025">—</div>
+            <div class="kpi-sub" style="font-size:8.5px;" id="tku-kpi-2025-sub">—</div>
+          </div>
+          <div class="kpi-card" style="padding:6px 9px; background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-color:#86efac;">
+            <div class="kpi-label" style="font-size:9px; color:#166534;">Δ 21→25</div>
+            <div class="kpi-valor" style="color:#10b981; font-size:14px; margin-top:1px;" id="tku-kpi-cresc">—</div>
+            <div class="kpi-sub" style="font-size:8.5px; color:#166534;" id="tku-kpi-cresc-sub">—</div>
+          </div>
         </div>
+      <div id="aba-relatorios" class="aba-grafico-conteudo" style="display:none;">
+        <div style="font-size:11.5px; color:#94a3b8; margin-bottom:14px; line-height:1.5;">
+          📚 Acervo técnico consolidado da SEPH/GEE. Estudos metodológicos, relatórios oficiais e documentação de referência para as camadas regulatórias.
+        </div>
+
+        <!-- SEÇÃO: TKU -->
+        <div style="background:linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border:1px solid #fdba74; border-radius:8px; padding:14px 16px; margin-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-size:18px;">📦</span>
+            <strong style="font-size:13px; color:#9a3412;">TKU — Tonelada-Quilômetro Útil</strong>
+            <span style="background:#9a3412; color:#fff; font-size:9px; padding:2px 6px; border-radius:3px; font-weight:700;">ANTAQ</span>
+          </div>
+
+          <p style="font-size:11px; color:#7c2d12; line-height:1.5; margin-bottom:10px;">
+            Medida de intensidade de carga transportada por quilômetro navegado. Consolida dados de
+            <strong>2021</strong>, <strong>2023</strong> e <strong>2025</strong> nas 3 navegações
+            (Cabotagem, Interior e Longo Curso).
+          </p>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:10.5px; line-height:1.5;">
+            <div style="background:#fff; border-radius:6px; padding:10px 12px; border:1px solid #fed7aa;">
+              <strong style="color:#9a3412; display:block; margin-bottom:6px;">📊 Fontes de Dados</strong>
+              <ul style="padding-left:16px; margin:0; color:#7c2d12;">
+                <li><strong>SDP (ANTAQ):</strong> atracações e movimentações</li>
+                <li><strong>Sistema Mercante:</strong> manifestos de carga</li>
+                <li><strong>LabTrans/UFSC:</strong> estudo de demanda</li>
+                <li><strong>DNIT:</strong> calados e dragagem</li>
+              </ul>
+            </div>
+            <div style="background:#fff; border-radius:6px; padding:10px 12px; border:1px solid #fed7aa;">
+              <strong style="color:#9a3412; display:block; margin-bottom:6px;">🔬 Metodologia</strong>
+              <ul style="padding-left:16px; margin:0; color:#7c2d12;">
+                <li><strong>Modelagem:</strong> caminhos mínimos O/D</li>
+                <li><strong>Eliminação:</strong> sobreposições de trechos</li>
+                <li><strong>Datum:</strong> SIRGAS 2000 (EPSG:4674)</li>
+                <li><strong>Escala:</strong> 1:1.000.000</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEÇÃO: VEN -->
+        <div style="background:linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border:1px solid #93c5fd; border-radius:8px; padding:14px 16px; margin-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-size:18px;">🌊</span>
+            <strong style="font-size:13px; color:#1e40af;">VEN — Vias Economicamente Navegadas</strong>
+            <span style="background:#1e40af; color:#fff; font-size:9px; padding:2px 6px; border-radius:3px; font-weight:700;">ANTAQ</span>
+          </div>
+
+          <p style="font-size:11px; color:#1e3a8a; line-height:1.5; margin-bottom:10px;">
+            Trechos hidroviários com tráfego comercial comprovado por manifestos.
+            Série histórica oficial consolidada pela ANTAQ (2013, 2018, 2020, 2022 e 2024).
+          </p>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:10.5px; line-height:1.5;">
+            <div style="background:#fff; border-radius:6px; padding:10px 12px; border:1px solid #bfdbfe;">
+              <strong style="color:#1e40af; display:block; margin-bottom:6px;">📊 Safras Disponíveis</strong>
+              <ul style="padding-left:16px; margin:0; color:#1e3a8a;">
+                <li><strong>2013:</strong> marco inicial</li>
+                <li><strong>2018:</strong> revisão metodológica</li>
+                <li><strong>2020:</strong> atualização bianual</li>
+                <li><strong>2022:</strong> 20.125 km</li>
+                <li><strong>2024:</strong> 20.404 km (Oficial V4)</li>
+              </ul>
+            </div>
+            <div style="background:#fff; border-radius:6px; padding:10px 12px; border:1px solid #bfdbfe;">
+              <strong style="color:#1e40af; display:block; margin-bottom:6px;">🔬 Conceitos-Chave</strong>
+              <ul style="padding-left:16px; margin:0; color:#1e3a8a;">
+                <li><strong>Aderência PNV:</strong> 48.91%</li>
+                <li><strong>Amazônia:</strong> 82.52% da malha</li>
+                <li><strong>Crescimento 22→24:</strong> +1.06%</li>
+                <li><strong>Datum:</strong> SIRGAS 2000</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEÇÃO: Links oficiais -->
+        <div style="background:#061426; border:1px solid #1e3a5f; border-radius:8px; padding:12px 16px;">
+          <strong style="font-size:12px; color:#38bdf8; display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+            <span>🔗</span> Publicações Oficiais ANTAQ
+          </strong>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:8px; font-size:10.5px;">
+            <a href="https://www.gov.br/antaq/pt-br/central-de-conteudos/publicacoes" target="_blank" rel="noopener" style="display:block; background:#0a2540; padding:8px 10px; border-radius:6px; color:#7dd3fc; text-decoration:none; border:1px solid #0284c7;">
+              📄 Central de Publicações ANTAQ
+            </a>
+            <a href="https://www.gov.br/antaq/pt-br/assuntos/estatisticas" target="_blank" rel="noopener" style="display:block; background:#0a2540; padding:8px 10px; border-radius:6px; color:#7dd3fc; text-decoration:none; border:1px solid #0284c7;">
+              📊 Estatísticas Aquaviárias
+            </a>
+            <a href="https://www.gov.br/antaq/pt-br/assuntos/estudos" target="_blank" rel="noopener" style="display:block; background:#0a2540; padding:8px 10px; border-radius:6px; color:#7dd3fc; text-decoration:none; border:1px solid #0284c7;">
+              🔬 Estudos SEPH/GEE
+            </a>
+          </div>
+        </div>
+      </div>
+        <!-- Gráfico 1 + 2 (responsivo via CSS) -->
+        <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:10px; margin-bottom:10px;">
+          <div class="grafico-canvas-box" style="height:200px; padding:8px; background:#0f172a; border-radius:8px; border:1px solid #1e293b;">
+            <div style="font-size:10.5px; font-weight:700; color:#fbbf24; margin-bottom:6px; display:flex; justify-content:space-between;">
+              <span>📈 Evolução do Fluxo (2021 → 2025)</span>
+              <span style="font-size:9px; color:#94a3b8;">t·km</span>
+            </div>
+            <canvas id="canvas-tku-evolucao"></canvas>
+          </div>
+
+          <div class="grafico-canvas-box" style="height:200px; padding:8px; background:#0f172a; border-radius:8px; border:1px solid #1e293b;">
+            <div style="font-size:10.5px; font-weight:700; color:#fbbf24; margin-bottom:6px; display:flex; justify-content:space-between;">
+              <span>🚢 Por Navegação (2025)</span>
+              <span style="font-size:9px; color:#94a3b8;">Composição</span>
+            </div>
+            <canvas id="canvas-tku-nav"></canvas>
+          </div>
+        </div>
+
+        <!-- Top 10 — mais compacto -->
+        <div style="background:#0f172a; border:1px solid #1e293b; border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+          <div style="font-size:10.5px; font-weight:700; color:#fbbf24; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span>🏆 Top 10 Trechos por Fluxo</span>
+            <select id="tku-top-ano" onchange="AnalyticsTKU.renderizarTop()" style="background:#0c213b; border:1px solid #1e4976; color:#f1f5f9; padding:3px 7px; border-radius:4px; font-size:10px;">
+              <option value="2025">2025</option>
+              <option value="2023">2023</option>
+              <option value="2021">2021</option>
+            </select>
+          </div>
+          <div id="tku-top-lista" style="font-size:11px; color:#cbd5e1; max-height:320px; overflow-y:auto;">
+            <em style="color:#64748b;">Carregando...</em>
+          </div>
+        </div>
+
+        <!-- Nota metodológica -->
+        <div style="background:rgba(245,158,11,0.08); border-left:3px solid #f59e0b; border-radius:6px; padding:10px 14px; font-size:10.5px; color:#fde68a; line-height:1.5;">
+          <strong>📖 Como ler:</strong> cada barra representa a soma de <strong>toneladas × km navegados</strong> em todos os trechos da safra.
+          Trechos com <strong>fluxo muito alto</strong> indicam corredores logísticos de grande volume (ex: soja, minério, combustível).
+          A ausência de <strong>Longo Curso 2023</strong> reflete a série oficial disponível.
+        </div>
+      </div>
+
 
         <div style="background:#061426; border:1px solid #1e3a5f; border-radius:8px; padding:12px 16px;">
           <strong style="font-size:12px; color:#38bdf8; display:block; margin-bottom:6px;">🔬 Metodologia de Cálculo e Fontes de Dados</strong>
@@ -4926,6 +5247,8 @@
   <!-- Stage 3: catálogo + estilo + ordem + dados -->
   <script defer src="js/core/layer-registry.js"></script>
   <script defer src="js/render/styler.js"></script>
+  <script defer src="js/render/styler-tku.js"></script> 
+  <script defer src="js/domain/tku-manager.js"></script>    
   <script defer src="js/core/layer-order-manager.js"></script>
   <script defer src="js/core/data-manager.js"></script>
   <!-- Stage 4: UI + filtros + busca + ambiente -->
@@ -4936,6 +5259,7 @@
   <!-- Stage 5a: análise -->
   <script defer src="js/analytics/analytics.js"></script>
   <script defer src="js/analytics/matriz-ven-manager.js"></script>
+  <script defer src="js/analytics/analytics-tku.js"></script>  
   <!-- Stage 5b: dinâmica + IA -->
   <script defer src="js/domain/ven-unified-manager.js"></script>
   <script defer src="js/domain/safra-diff-manager.js"></script>

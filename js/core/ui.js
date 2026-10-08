@@ -75,6 +75,14 @@
       const b = document.getElementById('btn-flutuante-painel');
       if (p) p.classList.add('recolhido');
       if (b) b.style.display = 'flex';
+
+      // ✅ Avisa o body pra ajustar a largura da tabela
+      document.body.classList.add('painel-lateral-recolhido');
+
+      // ✅ Redimensiona o mapa
+      if (window.mapa && window.mapa.invalidateSize) {
+        setTimeout(() => window.mapa.invalidateSize(), 300);
+      }
     },
 
     abrirPainelLateral: function () {
@@ -82,6 +90,13 @@
       const b = document.getElementById('btn-flutuante-painel');
       if (p) p.classList.remove('recolhido');
       if (b) b.style.display = 'none';
+
+      // ✅ Remove a classe (tabela volta à largura normal)
+      document.body.classList.remove('painel-lateral-recolhido');
+
+      if (window.mapa && window.mapa.invalidateSize) {
+        setTimeout(() => window.mapa.invalidateSize(), 300);
+      }
     }
   };
 

@@ -45,8 +45,66 @@
           </div>
           ${listaSubHTML}
         </div>`;
+      } else if (id === 'tku') {
+        // ✅ M12 — Filtros específicos do TKU
+        subpaletaHTML = `
+          <div style="margin-top:6px; padding:10px 12px; background:linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border:1px solid #fdba74; border-radius:6px; font-size:11px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-weight:800; color:#9a3412;">📅 Anos:</span>
+              <div style="display:flex; gap:5px;">
+                <button type="button" class="btn-acao-chip" style="background:#fff;border:1px solid #fdba74;color:#9a3412;font-size:9px;padding:2px 6px;" onclick="TKUManager.filtrarAno(2021)">2021</button>
+                <button type="button" class="btn-acao-chip" style="background:#fff;border:1px solid #fdba74;color:#9a3412;font-size:9px;padding:2px 6px;" onclick="TKUManager.filtrarAno(2023)">2023</button>
+                <button type="button" class="btn-acao-chip" style="background:#fff;border:1px solid #fdba74;color:#9a3412;font-size:9px;padding:2px 6px;" onclick="TKUManager.filtrarAno(2025)">2025</button>
+                <button type="button" class="btn-acao-chip" style="background:#fff;border:1px solid #fdba74;color:#9a3412;font-size:9px;padding:2px 6px;" onclick="TKUManager.mostrarTodos()">Todos</button>
+              </div>
+            </div>
 
-    } else if (id === 'ucs_todas_mma') {
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+              <label style="display:flex; align-items:center; gap:4px; font-weight:600; color:#7c2d12;">
+                <input type="checkbox" id="tku-ano-2021" checked onchange="TKUManager.aplicarFiltro()">
+                <span>2021</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:4px; font-weight:600; color:#7c2d12;">
+                <input type="checkbox" id="tku-ano-2023" checked onchange="TKUManager.aplicarFiltro()">
+                <span>2023</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:4px; font-weight:600; color:#7c2d12;">
+                <input type="checkbox" id="tku-ano-2025" checked onchange="TKUManager.aplicarFiltro()">
+                <span>2025</span>
+              </label>
+            </div>
+
+            <div style="border-top:1px dashed #fdba74; margin:6px 0; padding-top:6px;">
+              <div style="font-weight:800; color:#9a3412; margin-bottom:4px;">🚢 Navegação:</div>
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                <label style="display:flex; align-items:center; gap:4px; font-weight:600; color:#7c2d12;">
+                  <input type="checkbox" id="tku-nav-cabotagem" checked onchange="TKUManager.aplicarFiltro()">
+                  <span>Cabotagem</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:4px; font-weight:600; color:#7c2d12;">
+                  <input type="checkbox" id="tku-nav-interior" checked onchange="TKUManager.aplicarFiltro()">
+                  <span>Interior</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:4px; font-weight:600; color:#7c2d12;">
+                  <input type="checkbox" id="tku-nav-longo" checked onchange="TKUManager.aplicarFiltro()">
+                  <span>Longo Curso</span>
+                </label>
+              </div>
+            </div>
+
+            <div style="border-top:1px dashed #fdba74; margin:8px 0 4px; padding-top:8px;">
+              <button type="button" id="btn-tku-modo-cor"
+                      onclick="TKUManager.alternarModoCor()"
+                      style="width:100%; padding:6px 10px; border:none; border-radius:5px; font-size:10.5px; font-weight:800; color:#fff; cursor:pointer; background:linear-gradient(135deg, #f97316 0%, #dc2626 100%); letter-spacing:0.3px;">
+                🎨 Cor por: FLUXO
+              </button>
+              <div style="font-size:9px; color:#9a3412; margin-top:4px; font-style:italic; text-align:center;">
+                Alterne entre <strong>fluxo</strong> (gradiente) e <strong>ano</strong> (2021=azul, 2023=âmbar, 2025=vermelho)
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (id === 'ucs_todas_mma') {
       const esferasUC = [
         { id: 'Federal', nome: '🏛️ Federal (ICMBio/União)', cor: '#15803d' },
         { id: 'Estadual', nome: '🏢 Estadual (OEMA)', cor: '#059669' },
@@ -407,26 +465,6 @@ window.toggleModoInterativo = function () {
      ABRIR TABELA DE ATRIBUTOS
      ============================================================ */
   async function abrirTabela(id) {
-    // ✅ Fecha modais que possam estar cobrindo o painel da tabela
-    const modaisParaFechar = [
-      'modal-buffer',
-      'modal-geo',
-      'modal-metadados',
-      'modal-catalogo-camadas',
-      'modal-sobre',
-      'modal-matriz-ven',
-      'modal-diff-safras',
-      'modal-validacao',
-      'modal-historico-notif',
-      'modal-copiloto-historico'
-    ];
-    modaisParaFechar.forEach(mId => {
-      const m = document.getElementById(mId);
-      if (m && m.classList.contains('aberto')) {
-        m.classList.remove('aberto');
-      }
-    });
-
     await window.TabelaManager.abrir(id);
   }
 

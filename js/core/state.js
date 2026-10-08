@@ -49,6 +49,12 @@
         arquivos: ["dados/snv_1973.geojson", "./dados/snv_1973.geojson", "../dados/snv_1973.geojson"],
         cor: "#94a3b8", opacidade: 0.75, peso: 1.8, tipoGeo: "linha", ativa: false, camposVisiveis: []
       },
+    tku: {
+      nome: "TKU — Tonelada-Quilômetro Útil", grupo: "infra",
+      arquivos: ["dados/tku.geojson", "./dados/tku.geojson", "../dados/tku.geojson"],
+      cor: "#f97316", opacidade: 0.85, peso: 3, tipoGeo: "linha", ativa: false,
+      camposVisiveis: ['nome', 'navegacao', 'ano', 'fluxo', 'extensao', 'velocidade', 'regiao_hidrografica', 'uf_origem', 'uf_destino']
+    },  
       embarcacoes: {
         nome: "Tráfego de Embarcações / AIS", grupo: "infra",
         arquivos: ["dados/embarcacoes.geojson", "./dados/embarcacoes.geojson", "../dados/embarcacoes.geojson"],
@@ -154,21 +160,22 @@
           "2024-06 — Atualização anual conforme IBGE",
           "2023-05 — Nenhuma alteração de limite"
         ]
-      },
-      tis_poligonais: {
-        descricao: "Poligonais de Terras Indígenas oficialmente reconhecidas pela FUNAI. Camada crítica para análise de interferência socioambiental de empreendimentos aquaviários.",
-        fonte: "FUNAI — Fundação Nacional dos Povos Indígenas",
-        escala: "1:250.000",
+      }      ,
+      tku: {
+        descricao: "TKU (Tonelada-Quilômetro Útil) — medida de intensidade de carga transportada por quilômetro navegado em cada trecho hidroviário. Consolida dados de 2021, 2023 e 2025 nas 3 navegações (Cabotagem, Interior, Longo Curso).",
+        fonte: "SDP / SEPH / Sistema Mercante · ANTAQ",
+        escala: "1:1.000.000",
         datum: "SIRGAS 2000 (EPSG:4674)",
-        atualizacao: "Mensal",
-        responsavel: "GEE-SEPH",
-        processo: "Download da base pública FUNAI",
-        numero_features: "Todas as TIs homologadas, declaradas e em estudo",
+        atualizacao: "Anual (consolidação por safra)",
+        responsavel: "GEE/SEPH — Gerência Especial de Estudos",
+        processo: "Consulta pública contínua via SEI",
+        numero_features: "≈ 1.345 trechos (2021+2023+2025)",
         changelog: [
-          "2026-09 — Atualização conforme publicação FUNAI",
-          "Camada obrigatória para análise de RID (Raio de Influência Direta)"
+          "2026-10 — Consolidação das safras 2021, 2023 e 2025",
+          "Cálculo de fluxo em toneladas × km por trecho OD"
         ]
       },
+      
       ucs_federais: {
         descricao: "Unidades de Conservação Federais geridas pelo ICMBio. Base para aplicação do Art. 36 da Lei nº 9.985/2000 (SNUC) em análises de licenciamento e outorga.",
         fonte: "ICMBio — Cadastro Nacional de UCs",
