@@ -5,6 +5,92 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 Versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ---
+## [1.2.0] — 2026-10-08 · canal `teste`
+
+### ✨ Adicionado
+
+**M9 — Ferramenta de Buffer Geodésico (completo em 5 sub-etapas)**
+
+- **M9.0 — Base**: modal com raio, dissolve e processamento em chunks (100 feições)
+- **M9.1 — Filtros dinâmicos**: dropdown por camada com UF, tipo, modalidade, situação
+  - Detecção automática de campos filtráveis (2-60 valores únicos, ≥30% preenchido)
+  - Ignora valores corrompidos (URLs, e-mails, CNPJs)
+  - Mapa `FILTROS_POR_CAMADA` com filtros específicos por camada
+- **M9.2 — Buffer em lote**: múltiplos raios em uma execução (até 6)
+  - Tabela comparativa com áreas teóricas (π·r²)
+- **M9.3 — Chips acumulativos**: múltiplos filtros em AND visualizados como chips
+  - Evita contradições no mesmo campo (substitui valor anterior)
+  - Trocar de camada limpa os chips automaticamente
+- **M9.4 — Feições individuais**:
+  - Modo **🎯 Feições**: lista com checkboxes + busca textual + botão "Selecionar visíveis"
+  - Modo **🗺️ Seleção**: integra com `SelectionManager` (Ctrl+Clique no mapa)
+  - `_extrairUF` local + `_chaveFeicao` para identidade robusta
+- Preserva propriedades da feição origem no resultado (`_buffer_raio_km`, `_buffer_area_km2`, `_buffer_gerado_em`)
+- Popup customizado com raio, área e origem
+- Botão **🗑️ Excluir permanentemente** em camadas geradas (buffers + importadas)
+
+**M10 — Geoprocessamento entre camadas**
+
+- **∩ Intersecção**: geometrias que existem em A e B (polígonos × linhas, polígonos × polígonos)
+- **− Diferença**: A menos B com flag `_recortada` e área calculada
+- **∪ União**: fusão iterativa de todas as feições de A + B
+- **🎯 Pontos em Polígono**: spatial join com `turf.booleanPointInPolygon`
+  - Detecção automática de tipos geométricos (ponto/linha/polígono)
+  - Validação com aviso visual quando combinação é inválida
+  - Preserva props com prefixos `A_*` e `B_*`
+- Dissolve opcional (unifica resultado num único polígono)
+- Pane dedicada `paneBuffer` (z-index 650) para receber cliques corretamente
+- Popup mostra props de ambas as camadas + área calculada
+
+**M11 — Sistema de abas (Mapa · Análise · Geo · AIS)**
+
+- Barra de abas com 4 contextos funcionais:
+  - 🗺️ **Mapa**: painel lateral, busca, medição, legenda
+  - 📊 **Análise**: painel analítico + gráficos + matriz VEN
+  - ⚙️ **Geo**: ferramentas geoespaciais + comparação de safras
+  - 🚢 **AIS**: placeholder (dados em tempo real no futuro)
+- `TabManager` com `_aplicarVisibilidade` por regras
+- Atalhos de teclado: `Ctrl+1` (Mapa), `Ctrl+2` (Análise), `Ctrl+3` (Geo), `Ctrl+4` (AIS)
+- Memória de aba em `localStorage` (`antaq_aba_ativa`)
+- Sincronização com `URLState` (`?aba=geo`)
+- Botões do header (Matriz VEN, Comparar Safras, Geo) trocam de aba + abrem modal automaticamente
+- Assistente IA disponível em todas as abas (global)
+
+### 🔧 Corrigido
+
+- **Encoding**: `repararTexto` reescrito em 7 camadas
+  - Camada 1: `.normalize('NFC')` (resolve Unicode duplo)
+  - Camada 2: mojibake UTF-8 ↔ Latin-1 (`Ã§` → `ç`)
+  - Camada 3: nomes próprios corrompidos (`\uFFFD`)
+  - Camada 4: palavras comuns ANTAQ (`Hidrogrfica` → `Hidrográfica`)
+  - Camada 5: específicos (`amazônicaa` → `Amazônica`, `Pr-Projeto` → `Pré-Projeto`)
+  - Camada 6: reconstrução genérica
+  - Camada 7: acentos faltantes (`maritima` → `marítima`, `Vitria` → `Vitória`)
+  - Preserva capitalização (`Municipio` → `Município`, `municipio` → `município`)
+- **Duplicação de clusters**: `toggleSubcamadaPorto` agora manipula dentro do featureGroup pai
+- **Rodovias e ferrovias** não ligavam (guard contra `undefined` em `toggleCamada`)
+- **Copiloto IA — perguntas dos botões rápidos** agora reconhecidas (`agrupamento`, `resumo_ven`, `metodologia_ven`)
+- **Copiloto IA — duplicação** resolvida com bloqueio em 3 camadas + `perguntarSeguro`
+- **`_acharCamadaAlvo`**: regex com `\b` (pega `ti`/`tis`/`uc`/`ucs` em qualquer posição)
+- **Rodovias sem filtro no buffer**: usa `sg_uf` em vez de `uf`
+- **Modal Matriz VEN**: `.first()` resolve strict mode
+- **Baselines visuais** regenerados (aparência mudou com símbolos institucionais)
+
+### 🎨 Melhorado
+
+- Favicon institucional inline (SVG "A" ANTAQ — zero request HTTP)
+- Rodapé mostra versão + canal + data de acesso em tempo real
+- Modal "Sobre" com changelog completo
+- `Security.repararTexto` com `\u` (Unicode escapes) para blindar contra encoding duplo
+
+### 🐛 Conhecido / Roadmap
+
+- **TKU (Tonelada-Quilômetro Útil)**: dados prontos, aguardando integração na aba Análise (3 safras)
+- **AIS em tempo real**: depende de convênio (Marinha/Clarksons)
+- **Arquitetura de abas**: sub-abas internas da aba Análise para TKU anual
+
+---
+
 
 ## [1.1.0] — 2026-10-07 · canal `teste`
 
