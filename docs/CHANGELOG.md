@@ -5,6 +5,53 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 Versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ---
+## [1.3.0] — 2026-10-08 · canal `teste`
+
+### ✨ Adicionado
+
+**M12 — Integração TKU (Tonelada-Quilômetro Útil)**
+
+- Camada `tku` consolidada: **1.345 trechos** das safras **2021 + 2023 + 2025**
+- **Choropleth linear**: espessura e cor proporcionais ao `fluxo` (5 faixas por percentis p30/p50/p70/p90)
+- **Filtros por ano** (checkboxes 2021/2023/2025) e **por navegação** (Cabotagem/Interior/Longo Curso)
+- **Modo de colorir**: alterna entre "por fluxo" (gradiente) e "por ano" (azul/âmbar/vermelho)
+- **Popup especial** com fluxo em destaque (formato humano: "125 mi t·km")
+- **Legenda dinâmica** que muda conforme o modo
+- **KPIs na aba Análise**: fluxo total por ano + crescimento % + maior trecho
+- **Gráfico de evolução** (linha): 2021 → 2023 → 2025
+- **Gráfico de composição** (doughnut): navegações na safra mais recente
+- **Top 10 trechos** por fluxo com barras horizontais
+- **Aba Estudos** reformulada: cards TKU + VEN + links oficiais ANTAQ
+
+**Pipeline Python TKU**
+
+- `pipeline_tku.py` — consolida 8 arquivos TKU num único `tku.geojson`
+- Normaliza campos (`FLUXO`/`Fluxo` → `fluxo`, `NOME`/`nome` → `nome`, etc.)
+- Adiciona `ano` e `navegacao` normalizados
+- Ignora campos temporários (`camada sim`, `id`)
+
+**Melhorias de UI**
+
+- Painel analítico responsivo (breakpoints 1100px / 800px)
+- Scrollbar customizada no corpo dos gráficos
+- Cards de KPI compactos (4 em linha em telas grandes, 2×2 em pequenas)
+- Top 10 com scroll interno (não estoura mais o painel)
+
+### 🔧 Corrigido
+
+- **Sobrecarga visual**: painel analítico ajustado pra não cortar em telas pequenas
+- **Overlap do rodapé**: tabela de atributos e painel analítico ganharam espaço extra embaixo
+- **Aba Estudos**: botão voltou a funcionar + estrutura completa de cards
+
+### 📦 Dados
+
+- **18 arquivos TKU** exportados do QGIS (2021/2023/2025, navegações variadas)
+- **1 arquivo `tku.geojson`** consolidado (~2 MB)
+- **1 duplicata identificada** para remoção: `instalacoes_portuarias_1179_feicoes_2026-10-08.geojson`
+
+---
+
+
 ## [1.2.0] — 2026-10-08 · canal `teste`
 
 ### ✨ Adicionado
