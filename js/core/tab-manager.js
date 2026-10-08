@@ -56,11 +56,12 @@
         }, 150);
       }
 
-      // 6. Avisa o usuário em abas com aviso
+      // M14 — Liga/desliga a camada AIS de verdade
       if (aba === 'ais') {
-        if (window.UI && window.UI.toast) {
-          window.UI.toast('🚢 Módulo AIS em desenvolvimento. Dados de tráfego em tempo real chegam em breve.');
-        }
+        const chkAis = document.getElementById('chk-ais');
+        const deveLigar = !window.AISManager._visivel;
+        if (chkAis) chkAis.checked = deveLigar;
+        window.AISManager.toggle();
       }
     },
     _configurarAtalhos: function () {

@@ -366,7 +366,32 @@ window.toggleModoInterativo = function () {
      TOGGLE DE CAMADA (ligar/desligar)
      ============================================================ */
   async function toggleCamada(id, ligar, opcoes) {
-    opcoes = opcoes || {};
+  // ============================================================
+  // M14 — AIS: fluxo especial (não passa por DataManager/GeoJSON)
+  // ============================================================
+  if (id === 'ais') {
+    if (ligar && !window.AISManager._pronto) {
+      const ok = await window.AISManager.carregar();
+      if (!ok) {
+        const chk = document.getElementById('chk-ais');
+        if (chk) chk.checked = false;
+        return;
+      }
+    }
+    window.AISManager._visivel = ligar;
+    if (window.AISLayer) {
+      ligar ? window.AISLayer.mostrar() : window.AISLayer.esconder();
+    }
+    // Atualiza contador no card
+    const cnt = document.getElementById('cnt-ais');
+    if (cnt) {
+      cnt.innerText = ligar
+        ? `(${window.AISManager.getUltimasPosicoes().length})`
+        : '';
+    }
+    return;
+  }
+  opcoes = opcoes || {};  
 
     // ✅ Captura estado ANTES de qualquer await, com guard contra undefined
     const layerAtual = window.CAMADAS_MAPA?.[id];
@@ -531,7 +556,9 @@ window.toggleModoInterativo = function () {
     // ✅ M11: Inicializa sistema de abas
     try { window.TabManager.init(); } catch (e) { console.warn('[TabManager] init falhou:', e); }
       // ✅ M13: Inicializa estudos/PDFs
-    try { window.EstudosManager.init(); } catch (e) { console.warn('[EstudosManager] init falhou:', e); }      
+    try { window.EstudosManager.init(); } catch (e) { console.warn('[EstudosManager] init falhou:', e); } 
+  // ✅ M14: Inicializa camada AIS (dados carregados sob demanda no primeiro toggle)
+    try { window.AISLayer.init(window.mapa); } catch (e) { console.warn('[AISLayer] init falhou:', e); }       
     // ✅ 1e-2: executa a consulta capturada no boot (ou tenta ler da URL, como fallback)
     setTimeout(() => {
       try {

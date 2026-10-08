@@ -33,15 +33,13 @@
       --texto-escuro: #0f172a;
       --texto-claro: #64748b;
     }
-    /* AIS desabilitado por enquanto */
+    /* M14 — AIS ativo */
     .aba-btn[data-aba="ais"] {
-      opacity: 0.55;
-      cursor: not-allowed;
+      opacity: 1;
     }
     .aba-btn[data-aba="ais"]:hover {
-      background: transparent;
-      color: #94a3b8;
-    }    
+      background: rgba(56, 189, 248, 0.15);
+    }   
     /* ============================================================
        M11 — BARRA DE ABAS
        ============================================================ */
@@ -4210,10 +4208,9 @@ FV
       <span class="aba-emoji">⚙️</span>
       <span class="aba-nome">Geo</span>
     </button>
-    <button class="aba-btn" data-aba="ais" onclick="TabManager.trocar('ais')" title="Tráfego de embarcações em tempo real (em breve)">
+    <button class="aba-btn" data-aba="ais" onclick="AISManager.clicarAba()" title="Tráfego de embarcações — AIS (dados sintéticos)">
       <span class="aba-emoji">🚢</span>
       <span class="aba-nome">AIS</span>
-      <span class="aba-badge">em breve</span>
     </button>
   </nav>
   <!-- Input escondido de importação (usado por ambos os botões) -->
@@ -4618,7 +4615,7 @@ FV
       </button>
       <button class="btn-medicao" onclick="BufferTool.abrirModal()" title="Criar buffer geodésico em torno de uma camada">
         ⭕ Buffer
-      </button>
+      </button>    
     </div>
   </div>
 
@@ -4954,9 +4951,9 @@ FV
             <span>🔗</span> Publicações Oficiais ANTAQ
           </strong>
           <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:8px; font-size:10.5px;">
-            <a href="https://www.gov.br/antaq/pt-br/central-de-conteudos/publicacoes" target="_blank" rel="noopener" style="display:block; background:#0a2540; padding:8px 10px; border-radius:6px; color:#7dd3fc; text-decoration:none; border:1px solid #0284c7;">📄 Central de Publicações</a>
-            <a href="https://www.gov.br/antaq/pt-br/assuntos/estatisticas" target="_blank" rel="noopener" style="display:block; background:#0a2540; padding:8px 10px; border-radius:6px; color:#7dd3fc; text-decoration:none; border:1px solid #0284c7;">📊 Estatísticas</a>
-            <a href="https://www.gov.br/antaq/pt-br/assuntos/estudos" target="_blank" rel="noopener" style="display:block; background:#0a2540; padding:8px 10px; border-radius:6px; color:#7dd3fc; text-decoration:none; border:1px solid #0284c7;">🔬 Estudos SEPH/GEE</a>
+            <a href="https://www.gov.br/antaq/pt-br/central-de-conteudos/estudos-e-pesquisas-da-antaq-1" target="_blank" rel="noopener" style="display:block; background:#0a2540; padding:8px 10px; border-radius:6px; color:#7dd3fc; text-decoration:none; border:1px solid #0284c7;">📄 Central de Publicações</a>
+            <a href="https://aquarela.antaq.gov.br/single/?appid=56c32604-37bd-4993-9904-1b2c87706808&sheet=NnpdyU&bookmark=6ac0a531-792e-470a-8056-dbbfbc36d93e&opt=currsel%2Cctxmenu" target="_blank" rel="noopener" style="display:block; background:#0a2540; padding:8px 10px; border-radius:6px; color:#7dd3fc; text-decoration:none; border:1px solid #0284c7;">📊 Estatísticas</a>
+            <a href="https://www.gov.br/antaq/pt-br/central-de-conteudos/estudos-e-pesquisas-da-antaq-1" target="_blank" rel="noopener" style="display:block; background:#0a2540; padding:8px 10px; border-radius:6px; color:#7dd3fc; text-decoration:none; border:1px solid #0284c7;">🔬 Estudos SEPH/GEE</a>
           </div>
         </div>
       </div>
@@ -5594,6 +5591,12 @@ FV
   <script defer src="js/analytics/matriz-ven-manager.js"></script>
   <script defer src="js/analytics/analytics-tku.js"></script>  
   <script defer src="js/domain/estudos-manager.js"></script>  
+<!-- ============================================================
+     M14 — AIS
+     ============================================================ -->
+  <script src="js/io/ais-loader.js"></script>
+  <script src="js/domain/ais-manager.js"></script>
+  <script src="js/render/ais-layer.js"></script>  
   <!-- Stage 5b: dinâmica + IA -->
   <script defer src="js/domain/ven-unified-manager.js"></script>
   <script defer src="js/domain/safra-diff-manager.js"></script>

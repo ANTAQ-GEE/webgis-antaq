@@ -1,0 +1,48 @@
+{
+  "versao": "1.0",
+  "atualizado": "2026-10-08",
+  "aviso": "Dados sintéticos para desenvolvimento. Repositório público — não contém AIS real.",
+  "cadastro": {
+    "arquivo": "dados/ais/embarcacoes_cadastro.csv",
+    "campos": ["mmsi", "imo", "nome", "tipo_codigo", "tipo", "operador", "bandeira", "comprimento_m", "calado_m", "ano_construcao"],
+    "chave": "mmsi"
+  },
+  "posicoes": {
+    "arquivo": "dados/ais/posicoes_sinteticas.csv",
+    "campos": ["mmsi", "timestamp", "lat", "lon", "sog", "cog", "heading", "nav_status", "rota"],
+    "periodo": { "dias": 7, "intervalo_min": 60 },
+    "tipos": {
+      "70": "Carga Geral",
+      "71": "Carga Perigosa (Hazmat)",
+      "80": "Tanque",
+      "60": "Passageiros",
+      "31": "Rebocador",
+      "32": "Empurrador",
+      "52": "Balsa",
+      "30": "Pesca"
+    }
+  },
+  "fontes_reais_futuras": [
+    {
+      "nome": "AISStream.io",
+      "url": "https://aisstream.io",
+      "cobertura": "Manaus, Barcarena",
+      "tipo": "websocket",
+      "custo": "gratuito"
+    },
+    {
+      "nome": "Global Fishing Watch",
+      "url": "https://globalfishingwatch.org",
+      "cobertura": "Global (agregado H3)",
+      "tipo": "api",
+      "custo": "gratuito com cadastro"
+    },
+    {
+      "nome": "SNPTA / ANTAQ",
+      "url": "https://www.gov.br/antaq",
+      "cobertura": "Cadastro nacional de embarcações",
+      "tipo": "csv",
+      "custo": "público"
+    }
+  ]
+}
