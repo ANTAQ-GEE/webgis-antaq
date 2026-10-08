@@ -529,7 +529,9 @@ window.toggleModoInterativo = function () {
     try { window.MapExtras.init(); } catch (e) { console.warn('[MapExtras] init falhou:', e); }
     try { window.SelectionManager.init(); } catch (e) { console.warn('[SelectionManager] init falhou:', e); }
     // ✅ M11: Inicializa sistema de abas
-    try { window.TabManager.init(); } catch (e) { console.warn('[TabManager] init falhou:', e); }    
+    try { window.TabManager.init(); } catch (e) { console.warn('[TabManager] init falhou:', e); }
+      // ✅ M13: Inicializa estudos/PDFs
+    try { window.EstudosManager.init(); } catch (e) { console.warn('[EstudosManager] init falhou:', e); }      
     // ✅ 1e-2: executa a consulta capturada no boot (ou tenta ler da URL, como fallback)
     setTimeout(() => {
       try {
