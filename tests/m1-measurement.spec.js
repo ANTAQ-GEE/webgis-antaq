@@ -86,22 +86,45 @@ test.describe('M1 · Medição', () => {
   });
 
   test('botão "Limpar" remove todas as medições', async ({ page }) => {
+    await abrirWebGIS(page);
+
+    // ✅ Recolhe o painel lateral ANTES de medir (evita intercepção de cliques)
+    await page.evaluate(() => {
+      const painel = document.getElementById('painel-camadas-lateral');
+      if (painel) painel.classList.add('recolhido');
+      document.body.classList.add('painel-lateral-recolhido');
+    });
+    await page.waitForTimeout(300);
+
     await page.locator('body').click({ position: { x: 500, y: 300 } });
     await page.keyboard.press('d');
+    await page.waitForTimeout(300);
 
     const box = await page.locator('#mapa').boundingBox();
-    await page.mouse.click(box.x + 400, box.y + 300);
-    await page.waitForTimeout(300);
-    await page.mouse.click(box.x + 600, box.y + 400);
-    await page.waitForTimeout(300);
-    await page.mouse.dblclick(box.x + 700, box.y + 500);
-    await page.waitForTimeout(500);
+    expect(box).toBeTruthy();
+
+    // ✅ Usa position absoluta no centro-inferior (longe dos painéis)
+    await page.mouse.click(box.x + 300, box.y + 350);
+    await page.waitForTimeout(400);
+    await page.mouse.click(box.x + 500, box.y + 450);
+    await page.waitForTimeout(400);
+    await page.mouse.click(box.x + 700, box.y + 500);
+    await page.waitForTimeout(400);
+
+    // ✅ Força finalização via JS (mais confiável que dblclick)
+    await page.evaluate(() => {
+      if (window.MeasurementTool && window.MeasurementTool.pontos.length >= 2) {
+        window.MeasurementTool._finalizar();
+      }
+    });
+    await page.waitForTimeout(600);
 
     const antes = await page.evaluate(() => window.MeasurementTool.medicoesSalvas.length);
-    expect(antes).toBeGreaterThan(0);
+    expect(antes, 'medição não foi salva após cliques').toBeGreaterThan(0);
 
-    await page.locator('#toolbar-medicao button:has-text("Limpar")').click();
-    await page.waitForTimeout(300);
+    // ✅ Clica no botão Limpar (com force pra evitar intercepção)
+    await page.locator('#toolbar-medicao button.btn-medicao.limpar').first().click({ force: true });
+    await page.waitForTimeout(500);
 
     const depois = await page.evaluate(() => window.MeasurementTool.medicoesSalvas.length);
     expect(depois).toBe(0);

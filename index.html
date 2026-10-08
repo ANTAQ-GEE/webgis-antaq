@@ -3924,7 +3924,27 @@
     }
     .graficos-corpo::-webkit-scrollbar-thumb:hover {
       background: #0284c7;
-    }                  
+    }  
+    /* ============================================================
+       FIX — Painéis inferiores não se sobrepõem
+       ============================================================ */
+    .painel-selecao {
+      bottom: 40px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      z-index: 2600 !important;   /* acima do painel lateral (1900) */
+    }
+
+    /* Quando o painel lateral está oculto, centraliza de verdade */
+    body.painel-lateral-recolhido .painel-selecao,
+    body[data-aba-ativa="geo"] .painel-selecao {
+      left: 50vw !important;
+    }
+
+    /* Painel lateral fica ABAIXO do painel de seleção */
+    .painel-camadas-lateral {
+      z-index: 1800 !important;
+    }                    
     </style>
 FV
   <!-- CABEÇALHO -->
