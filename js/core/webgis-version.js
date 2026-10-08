@@ -8,11 +8,11 @@
   'use strict';
 
   const WebGIS_VERSION = {
-    versao: '1.1.0',
+    versao: '1.2.0',
     canal: 'teste',
-    build: '2026.10.07',
+    build: '2026.10.08',
     commit: 'a3f8b2c',
-    atualizado: '07/10/2026',
+    atualizado: '08/10/2026',
     responsavel: 'GEE/SEPH — Gerência Especial de Estudos',
     contato: 'gee.seph@antaq.gov.br',
     repositorio: 'https://github.com/antag-gee/webgis-antaq',
@@ -79,7 +79,22 @@
           'Correção de encoding em nomes de rios e regiões hidrográficas',
           'Favicon institucional (SVG inline)'
         ]
-      },   
+      },
+      {
+        versao: '1.2.0',
+        canal: 'teste',
+        data: '2026-10-08',
+        notas: [
+          'M9 — Ferramenta de Buffer completo (filtros + lote + chips + feições)',
+          'M10 — Geoprocessamento: intersecção, diferença, união e pontos em polígono',
+          'M11 — Sistema de abas (Mapa, Análise, Geo, AIS)',
+          'Atalhos Ctrl+1/2/3/4 para trocar de aba',
+          'Integração com URL state e memória em localStorage',
+          'Correção definitiva de encoding em nomes de rios e regiões',
+          'Rodovias e ferrovias agora ligam corretamente',
+          'Copiloto IA: bloqueio de duplicação em 3 camadas'
+        ]
+      },         
     ]
   };
 
