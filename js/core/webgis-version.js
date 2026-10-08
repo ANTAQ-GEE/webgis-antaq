@@ -8,7 +8,7 @@
   'use strict';
 
   const WebGIS_VERSION = {
-    versao: '1.2.0',
+    versao: '1.3.0',
     canal: 'teste',
     build: '2026.10.08',
     commit: 'a3f8b2c',
@@ -21,15 +21,17 @@
 
     changelog: [
       {
-        versao: '0.9.10',
+        versao: '1.3.0',
         canal: 'teste',
-        data: '2026-10-05',
+        data: '2026-10-08',
         notas: [
-          'R1 — Modularização completa: 30+ módulos extraídos para js/',
-          'R3 — FetchManager com retry, backoff exponencial e timeout',
-          'Q1 — Smoke tests em Playwright (10 testes, cobre boot + módulos)',
-          'CHANGELOG.md criado com formato Keep a Changelog',
-          'Sem build step: classic scripts, ordem de carga documentada'
+          'M12 — Integração TKU com 1.345 trechos (2021/2023/2025)',
+          'Choropleth linear por intensidade de fluxo',
+          'Filtros por ano e navegação + modo "cor por ano"',
+          'KPIs e gráficos de evolução na aba Análise',
+          'Aba Estudos com cards TKU + VEN + links oficiais',
+          'Pipeline Python para consolidação TKU',
+          'Painel analítico responsivo'
         ]
       },
       {
