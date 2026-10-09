@@ -78,7 +78,59 @@
       const res = await fetch(BASE + 'manifest_ais.json?t=' + Date.now());
       if (!res.ok) throw new Error('Falha ao ler manifest_ais.json');
       return res.json();
-    }
+    },
+    async carregarProgramacao() {
+      const txt = await fetchTexto(BASE + 'programacao.csv');
+      const rows = parseCSV(txt);
+      return rows.map(r => ({
+        mmsi: parseInt(r.mmsi, 10),
+        nome: r.nome || '',
+        ordem: parseInt(r.ordem, 10) || 0,
+        porto: r.porto || '',
+        eta_programada: r.eta_programada || '',
+        etd_programada: r.etd_programada || '',
+        duracao_trecho_h: parseFloat(r.duracao_trecho_h) || 0,
+        km: parseFloat(r.km) || 0,
+        velocidade: parseFloat(r.velocidade) || 0,
+        hidrovia: r.hidrovia || ''
+      }));
+    },
+
+    async carregarViagens() {
+      const txt = await fetchTexto(BASE + 'viagens.csv');
+      const rows = parseCSV(txt);
+      return rows.map(r => ({
+        mmsi: parseInt(r.mmsi, 10),
+        nome: r.nome || '',
+        ordem: parseInt(r.ordem, 10) || 0,
+        porto: r.porto || '',
+        eta_programada: r.eta_programada || '',
+        etd_programada: r.etd_programada || '',
+        eta_real: r.eta_real || '',
+        etd_real: r.etd_real || '',
+        atraso_h: parseFloat(r.atraso_h) || 0,
+        atraso_leg_h: parseFloat(r.atraso_leg_h) || 0,
+        incidente: r.incidente === '1',
+        status: r.status || 'no_prazo',
+        km: parseFloat(r.km) || 0,
+        hidrovia: r.hidrovia || ''
+      }));
+    },
+
+    async carregarAlertas() {
+      const txt = await fetchTexto(BASE + 'alertas.csv');
+      const rows = parseCSV(txt);
+      return rows.map(r => ({
+        mmsi: parseInt(r.mmsi, 10),
+        nome: r.nome || '',
+        tipo: r.tipo || '',
+        severidade: r.severidade || 'atencao',
+        porto: r.porto || '',
+        descricao: r.descricao || '',
+        timestamp: r.timestamp || '',
+        atraso_h: parseFloat(r.atraso_h) || 0
+      }));
+    }    
   };
 
   window.AISLoader = AISLoader;

@@ -17,7 +17,7 @@
      * @param {string} aba — 'mapa' | 'analise' | 'geo' | 'ais'
      */
     trocar: function (aba) {
-      if (!['mapa', 'analise', 'geo', 'ais'].includes(aba)) {
+      if (!['mapa', 'analise', 'geo', 'ais', 'controle', 'painel'].includes(aba)) {
         console.warn('[TabManager] Aba inválida:', aba);
         return;
       }
@@ -63,6 +63,7 @@
         if (chkAis) chkAis.checked = deveLigar;
         window.AISManager.toggle();
       }
+      
     },
     _configurarAtalhos: function () {
       document.addEventListener('keydown', (ev) => {
@@ -141,6 +142,12 @@
             'painel-tabela'
           ]
         },
+        controle: {
+          mostrar: [
+            'painel-camadas-lateral'
+          ],
+          // O painel-controle-ais é gerenciado pelo próprio ControleAIS
+        },      
         ais: {
           mostrar: [
             'painel-camadas-lateral',

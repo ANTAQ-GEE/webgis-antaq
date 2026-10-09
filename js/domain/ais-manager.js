@@ -9,7 +9,10 @@
     _pronto: false,
     _carregando: false,
     _cadastro: new Map(),   // mmsi → dados
-    _posicoes: [],          // todas as posições
+    _posicoes: [],
+    _programacao: [],
+    _viagens: [],
+    _alertas: [],          // todas as posições
     _ultimaPorMmsi: new Map(), // mmsi → última posição
     _tipos: {},             // mmsi → último tipo (para filtros rápidos)
     _filtros: {
@@ -19,20 +22,34 @@
       rota: ''
     },
     _visivel: false,
-
+    _modoTrilha: false,
     /* -------------------- Carregamento -------------------- */
     async carregar() {
       if (this._pronto || this._carregando) return;
       this._carregando = true;
 
       try {
-        if (window.UI) window.UI.toast('📡 Carregando dados AIS...');
+        if (window.UI) {
+          window.UI.toast(
+            '✅ AIS: ' + this._cadastro.size + ' barcos · ' +
+            this._posicoes.length + ' pts · ' +
+            this._viagens.length + ' legs · ' +
+            this._alertas.length + ' alertas'
+          );
+        }
 
-        const [cadastro, posicoes, manifest] = await Promise.all([
+        const [cadastro, posicoes, programacao, viagens, alertas, manifest] = await Promise.all([
           window.AISLoader.carregarCadastro(),
           window.AISLoader.carregarPosicoes(),
+          window.AISLoader.carregarProgramacao().catch(() => []),
+          window.AISLoader.carregarViagens().catch(() => []),
+          window.AISLoader.carregarAlertas().catch(() => []),
           window.AISLoader.carregarManifest().catch(() => null)
         ]);
+
+        this._programacao = programacao;
+        this._viagens = viagens;
+        this._alertas = alertas;
 
         this._cadastro = cadastro;
         this._posicoes = posicoes;
@@ -103,7 +120,128 @@
         .filter(p => p.mmsi === mmsi)
         .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
     },
+/* ============================================================
+   M15 — Viagens / Programação / Alertas
+   ============================================================ */
 
+    getViagensPorMmsi: function (mmsi) {
+      return this._viagens
+        .filter(v => v.mmsi === mmsi)
+        .sort((a, b) => a.ordem - b.ordem);
+    },
+
+    getProgramacaoPorMmsi: function (mmsi) {
+      return this._programacao
+        .filter(p => p.mmsi === mmsi)
+        .sort((a, b) => a.ordem - b.ordem);
+    },
+
+    getAlertasPorMmsi: function (mmsi) {
+      return this._alertas
+        .filter(a => a.mmsi === mmsi)
+        .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+    },
+
+    getTodosAlertas: function () {
+      return this._alertas.slice().sort((a, b) => {
+        const peso = { critico: 0, atencao: 1, info: 2 };
+        const pA = peso[a.severidade] ?? 3;
+        const pB = peso[b.severidade] ?? 3;
+        if (pA !== pB) return pA - pB;
+        return (b.timestamp || '').localeCompare(a.timestamp || '');
+      });
+    },
+
+    /** Status ATUAL de cada embarcação, baseado na última viagem. */
+    getStatusPorEmbarcacao: function () {
+      const out = new Map();
+      this._cadastro.forEach((cad, mmsi) => {
+        const viagens = this.getViagensPorMmsi(mmsi);
+        const prog = this.getProgramacaoPorMmsi(mmsi);
+        const ultimaViagem = viagens[viagens.length - 1];
+        const proxima = prog[viagens.length]; // próxima parada agendada
+
+        const atrasoAtual = ultimaViagem?.atraso_h ?? 0;
+        const status = ultimaViagem?.status ?? 'no_prazo';
+
+        out.set(mmsi, {
+          mmsi,
+          nome: cad.nome,
+          tipo: cad.tipo,
+          perfil: cad.perfil || '',
+          status,
+          atraso_h: atrasoAtual,
+          ultimaViagem,
+          proximaParada: proxima ? {
+            porto: proxima.porto,
+            eta_programada: proxima.eta_programada,
+          } : null,
+          totalViagens: viagens.length,
+          totalAlertas: this._alertas.filter(a => a.mmsi === mmsi).length
+        });
+      });
+      return out;
+    },
+
+    /** Resumo agregado pra KPI cards do dashboard. */
+    getResumo: function () {
+      const statusMap = this.getStatusPorEmbarcacao();
+      const resumo = {
+        total: statusMap.size,
+        no_prazo: 0,
+        atencao: 0,
+        atrasado: 0,
+        atraso_medio_h: 0,
+        alertas_criticos: 0,
+        alertas_atencao: 0,
+        total_viagens: this._viagens.length
+      };
+
+      let somaAtraso = 0;
+      statusMap.forEach(s => {
+        resumo[s.status] = (resumo[s.status] || 0) + 1;
+        somaAtraso += s.atraso_h;
+      });
+      resumo.atraso_medio_h = statusMap.size ? (somaAtraso / statusMap.size) : 0;
+
+      this._alertas.forEach(a => {
+        if (a.severidade === 'critico') resumo.alertas_criticos++;
+        else if (a.severidade === 'atencao') resumo.alertas_atencao++;
+      });
+
+      return resumo;
+    },
+
+    /** KPIs por embarcação: quantas viagens no prazo vs atrasadas. */
+    getKpisPorEmbarcacao: function (mmsi) {
+      const viagens = this.getViagensPorMmsi(mmsi);
+      const total = viagens.length || 1;
+      let noPrazo = 0, atencao = 0, atrasado = 0;
+      let somaAtraso = 0, maxAtraso = 0;
+
+      viagens.forEach(v => {
+        if (v.status === 'no_prazo') noPrazo++;
+        else if (v.status === 'atencao') atencao++;
+        else atrasado++;
+        somaAtraso += v.atraso_h;
+        maxAtraso = Math.max(maxAtraso, v.atraso_h);
+      });
+
+      return {
+        total: viagens.length,
+        no_prazo: noPrazo,
+        atencao,
+        atrasado,
+        pct_no_prazo: Math.round((noPrazo / total) * 100),
+        pct_atencao: Math.round((atencao / total) * 100),
+        pct_atrasado: Math.round((atrasado / total) * 100),
+        atraso_medio_h: somaAtraso / total,
+        atraso_max_h: maxAtraso
+      };
+    },    
+    getTodasPosicoes: function () {
+       return this._posicoes;
+  },
     /** Lista de rotas existentes (para filtro). */
     getRotas() {
       const set = new Set();
@@ -198,11 +336,29 @@ clicarAba: function () {
     },
 
     /* -------------------- Renderização -------------------- */
-    _renderizar() {
+    _renderizar: function () {
       if (!this._visivel || !window.AISLayer) return;
-      window.AISLayer.renderizar(this.getUltimasPosicoes());
-    }
-  };
 
-  window.AISManager = AISManager;
+      if (this._modoTrilha) {
+        window.AISLayer.renderizarTrilhas(this.getTodasPosicoes());
+      } else {
+        window.AISLayer.renderizar(this.getUltimasPosicoes());
+      }
+    },
+
+    toggleModoTrilha: function () {
+      this._modoTrilha = !this._modoTrilha;
+      if (window.AISLayer) {
+        // Limpa trilha destacada (conflita com modo trilha)
+        window.AISLayer.limparTrilha();
+      }
+      this._renderizar();
+      if (window.UI) {
+        window.UI.toast(this._modoTrilha
+          ? '🛤️ Modo trilha: vendo todas as rotas'
+          : '📍 Modo ponto: só última posição');
+      }
+    }
+  }
+    window.AISManager = AISManager;
 })();
