@@ -44,16 +44,17 @@
       try { localStorage.setItem('antaq_aba_ativa', aba); } catch (e) {}
       // 5. Auto-abre painéis específicos
       if (aba === 'analise') {
-        setTimeout(() => {
-          const painel = document.getElementById('painel-graficos');
-          if (painel && !painel.classList.contains('aberto')) {
-            painel.classList.add('aberto');
-            if (window.Analytics) {
-              window.Analytics.atualizarSeletores();
-              window.Analytics.trocarAba(window.Analytics.abaAtiva);
-            }
+        const painel = document.getElementById('painel-graficos');
+        if (painel && !painel.classList.contains('aberto')) {
+          painel.classList.add('aberto');
+        }
+        // 1 frame de espera só pro Chart.js medir o tamanho do canvas
+        requestAnimationFrame(() => {
+          if (window.Analytics) {
+            window.Analytics.atualizarSeletores();
+            window.Analytics.trocarAba(window.Analytics.abaAtiva);
           }
-        }, 150);
+        });
       }
 
       // M14 — Liga/desliga a camada AIS de verdade
@@ -102,66 +103,77 @@
 
       // Elementos específicos por aba
       // ✅ O copiloto NUNCA é escondido por aba (é global)
-      const regras = {
-        mapa: {
-          mostrar: [
-            'painel-camadas-lateral',
-            'btn-flutuante-abrir-painel',
-            'barra-busca-atributos',
-            'toolbar-medicao',
-            'caixa-legenda',
-            'painel-tabela'
-          ],
-          esconder: [
-            'painel-graficos'
-          ]
-        },
-        analise: {
-          mostrar: [
-            'painel-graficos',
-            'painel-camadas-lateral',
-            'btn-flutuante-abrir-painel'
-          ],
-          esconder: [
-            'barra-busca-atributos',
-            'toolbar-medicao',
-            'caixa-legenda',
-            'painel-tabela'
-          ]
-        },
-        geo: {
-          mostrar: [
-            'painel-camadas-lateral',
-            'btn-flutuante-abrir-painel',
-            'toolbar-medicao',
-            'caixa-legenda'
-          ],
-          esconder: [
-            'barra-busca-atributos',
-            'painel-graficos',
-            'painel-tabela'
-          ]
-        },
-        controle: {
-          mostrar: [
-            'painel-camadas-lateral'
-          ],
-          // O painel-controle-ais é gerenciado pelo próprio ControleAIS
-        },      
-        ais: {
-          mostrar: [
-            'painel-camadas-lateral',
-            'btn-flutuante-abrir-painel'
-          ],
-          esconder: [
-            'barra-busca-atributos',
-            'toolbar-medicao',
-            'caixa-legenda',
-            'painel-graficos',
-            'painel-tabela'
-          ]
-        }
-      };
+const regras = {
+  mapa: {
+    mostrar: [
+      'painel-camadas-lateral',
+      'btn-flutuante-abrir-painel',
+      'barra-busca-atributos',
+      'toolbar-medicao',
+      'caixa-legenda',
+      'painel-tabela'
+    ],
+    esconder: [
+      'painel-graficos',
+      'btn-header-matriz-ven',
+      'btn-header-comparar-safras',
+      'btn-header-painel-analitico'
+    ]
+  },
+  analise: {
+    mostrar: [
+      'painel-graficos',
+      'painel-camadas-lateral',
+      'btn-flutuante-abrir-painel',
+      'btn-header-matriz-ven',
+      'btn-header-comparar-safras',
+      'btn-header-painel-analitico'
+    ],
+    esconder: [
+      'barra-busca-atributos',
+      'toolbar-medicao',
+      'caixa-legenda',
+      'painel-tabela'
+    ]
+  },
+  geo: {
+    mostrar: [
+      'painel-camadas-lateral',
+      'btn-flutuante-abrir-painel',
+      'toolbar-medicao',
+      'caixa-legenda'
+    ],
+    esconder: [
+      'barra-busca-atributos',
+      'painel-graficos',
+      'painel-tabela',
+      'btn-header-matriz-ven',
+      'btn-header-comparar-safras',
+      'btn-header-painel-analitico'
+    ]
+  },
+  controle: {
+    mostrar: [
+      'painel-camadas-lateral'
+    ]
+  },
+  ais: {
+    mostrar: [
+      'painel-camadas-lateral',
+      'btn-flutuante-abrir-painel'
+    ],
+    esconder: [
+      'barra-busca-atributos',
+      'toolbar-medicao',
+      'caixa-legenda',
+      'painel-graficos',
+      'painel-tabela',
+      'btn-header-matriz-ven',
+      'btn-header-comparar-safras',
+      'btn-header-painel-analitico'
+    ]
+  }
+};
 
       const regra = regras[aba] || regras.mapa;
 

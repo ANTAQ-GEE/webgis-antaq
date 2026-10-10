@@ -1,16 +1,12 @@
 /* ============================================================
-   M14 — AIS Loader
-   Carrega CSVs sintéticos (cadastro + posições)
+   M15+M16 — AIS Loader
+   Carrega cadastro + posições + programação + viagens + alertas + cruzamento VEN
    ============================================================ */
 (function () {
   'use strict';
 
   const BASE = 'dados/ais/';
 
-  /**
-   * Parser CSV simples (suporta aspas duplas opcionais).
-   * Nosso CSV não tem vírgulas nos campos, então é seguro.
-   */
   function parseCSV(texto) {
     const linhas = texto.replace(/\r/g, '').split('\n').filter(l => l.trim());
     if (!linhas.length) return [];
@@ -32,7 +28,6 @@
   }
 
   const AISLoader = {
-    /** Carrega cadastro e retorna Map(mmsi → objeto). */
     async carregarCadastro() {
       const txt = await fetchTexto(BASE + 'embarcacoes_cadastro.csv');
       const rows = parseCSV(txt);
@@ -50,13 +45,13 @@
           bandeira: r.bandeira || '',
           comprimento_m: parseFloat(r.comprimento_m) || 0,
           calado_m: parseFloat(r.calado_m) || 0,
-          ano_construcao: parseInt(r.ano_construcao, 10) || 0
+          ano_construcao: parseInt(r.ano_construcao, 10) || 0,
+          perfil: r.perfil || ''
         });
       });
       return map;
     },
 
-    /** Carrega posições e retorna array de objetos. */
     async carregarPosicoes() {
       const txt = await fetchTexto(BASE + 'posicoes_sinteticas.csv');
       const rows = parseCSV(txt);
@@ -69,16 +64,14 @@
         cog: parseFloat(r.cog),
         heading: parseFloat(r.heading),
         nav_status: parseInt(r.nav_status, 10) || 0,
-        rota: r.rota || ''
+        porto_origem: r.porto_origem || '',
+        porto_destino: r.porto_destino || '',
+        porto_proximo: r.porto_proximo || '',
+        atraso_h: parseFloat(r.atraso_h) || 0,
+        status: r.status || 'no_prazo'
       })).filter(p => !isNaN(p.lat) && !isNaN(p.lon));
     },
 
-    /** Carrega manifest AIS. */
-    async carregarManifest() {
-      const res = await fetch(BASE + 'manifest_ais.json?t=' + Date.now());
-      if (!res.ok) throw new Error('Falha ao ler manifest_ais.json');
-      return res.json();
-    },
     async carregarProgramacao() {
       const txt = await fetchTexto(BASE + 'programacao.csv');
       const rows = parseCSV(txt);
@@ -130,7 +123,41 @@
         timestamp: r.timestamp || '',
         atraso_h: parseFloat(r.atraso_h) || 0
       }));
-    }    
+    },
+
+    /* ============================================================
+       M16 — Cruzamento AIS × VEN
+       ============================================================ */
+    async carregarCruzamento() {
+      const txt = await fetchTexto(BASE + 'cruzamento_ven.csv');
+      const rows = parseCSV(txt);
+      return rows.map(r => ({
+        mmsi: parseInt(r.mmsi, 10),
+        timestamp: r.timestamp,
+        lat: parseFloat(r.lat),
+        lon: parseFloat(r.lon),
+        trecho_ven: this._limparNome(r.trecho_ven),
+        dist_ven_km: parseFloat(r.distancia_km) || 0,
+        classificacao: r.classificacao || 'dentro'
+      })).filter(r => !isNaN(r.lat) && !isNaN(r.lon));
+    },
+
+    _limparNome(s) {
+      if (!s) return '';
+      // Corrige U+FFFD (encoding quebrado) nos nomes de hidrovias
+      return String(s)
+        .replace(/Solim\uFFFDes/g, 'Solimões')
+        .replace(/Tapaj\uFFFDFs/g, 'Tapajós')
+        .replace(/Tocantins-Araguaia/g, 'Tocantins-Araguaia')
+        .replace(/\uFFFD/g, '')
+        .trim();
+    },
+
+    async carregarManifest() {
+      const res = await fetch(BASE + 'manifest_ais.json?t=' + Date.now());
+      if (!res.ok) throw new Error('Falha ao ler manifest_ais.json');
+      return res.json();
+    }
   };
 
   window.AISLoader = AISLoader;

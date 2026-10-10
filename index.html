@@ -6093,7 +6093,6 @@
       border-left: 3px solid #38bdf8;
     }
   </style>
-  FV
   <!-- CABEÇALHO -->
   <header class="top-header">
     <div class="brand-area">
@@ -6101,18 +6100,19 @@
       <div class="brand-sub">SUPERINTENDÊNCIA DE ESTUDOS E PROJETOS HIDROVIÁRIOS &mdash; GEE</div>
     </div>
     <div class="actions-area">
-      <button class="btn-matriz-ven"
-        onclick="TabManager.trocar('geo'); setTimeout(() => MatrizVENManager.abrirModal(), 100);"
+      <button class="btn-matriz-ven" id="btn-header-matriz-ven"
+        onclick="MatrizVENManager.abrirModal();"
         title="Visualizar Matriz Operacional do VEN com Tempos de Viagem e Extensões"
         style="background:#0284c7; border:1px solid #38bdf8;">
         ⏱️ Matriz VEN
       </button>
-      <button class="btn-matriz-ven"
-        onclick="TabManager.trocar('geo'); setTimeout(() => { if (typeof SafraDiffManager !== 'undefined') SafraDiffManager.abrir(); else UI.toast('⚠️ Módulo ainda carregando.'); }, 100);"
+      <button class="btn-matriz-ven" id="btn-header-comparar-safras"
+        onclick="if (typeof SafraDiffManager !== 'undefined') SafraDiffManager.abrir(); else UI.toast('⚠️ Módulo ainda carregando.');"
         title="Comparar safras do VEN — atalho: Ctrl+Shift+D" style="background:#0369a1; border:1px solid #0ea5e9;">
         🔀 Comparar Safras
       </button>
-      <button class="btn-graficos" onclick="TabManager.trocar('analise'); setTimeout(() => UI.toggleGraficos(), 50);"
+      <button class="btn-graficos" id="btn-header-painel-analitico"
+        onclick="UI.toggleGraficos();"
         style="background:#0369a1; border:1px solid #0284c7;" title="Abrir Estúdio Analítico Institucional da ANTAQ">
         📊 Painel Analítico
       </button>
@@ -6192,6 +6192,7 @@
   <!-- BARRA DE BUSCA E FILTROS DINÂMICOS CONTEXTUAIS -->
   <div class="barra-busca-atributos">
     <select class="select-camada-busca" id="sel-camada-busca" onchange="FilterManager.aoMudarCamada(this.value)">
+      <option value="TODAS_VISIVEIS">🌐 Todas as camadas visíveis</option>
       <option value="instalacoes_portuarias">⚓ Instalações Portuárias</option>
     </select>
     <div style="position:relative;">
@@ -7723,6 +7724,7 @@
   <!-- Stage 3: catálogo + estilo + ordem + dados -->
   <script defer src="js/core/layer-registry.js"></script>
   <script defer src="js/render/styler.js"></script>
+  <script src="js/render/port-symbology.js"></script>
   <script defer src="js/render/styler-tku.js"></script>
   <script defer src="js/domain/tku-manager.js"></script>
   <script defer src="js/core/layer-order-manager.js"></script>

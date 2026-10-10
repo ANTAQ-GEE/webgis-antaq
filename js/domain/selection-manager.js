@@ -18,6 +18,38 @@
     _rectAtivo: false,
     _startPoint: null,
 
+    /* ✅ Verifica se a camada está REALMENTE visível no mapa */
+    _camadaVisivel(camadaId) {
+      if (!window.mapa || !window.CAMADAS_MAPA) return false;
+
+      const layerPai = window.CAMADAS_MAPA[camadaId];
+      if (!layerPai) return false;
+      if (!window.mapa.hasLayer(layerPai)) return false;
+
+      if (layerPai.getLayers) {
+        const temFilhoVisivel = layerPai.getLayers().some(sub => {
+          if (sub.options && sub.options.opacity === 0) return false;
+          if (sub._path && sub._path.style.display === 'none') return false;
+          if (sub._container && sub._container.style.display === 'none') return false;
+          return true;
+        });
+        if (!temFilhoVisivel) return false;
+      }
+
+      return true;
+    },
+    /* ✅ Lista todas as camadas visíveis no momento */
+    _listarCamadasVisiveis() {
+      const visiveis = [];
+      if (!window.CAMADAS_MAPA || !window.mapa) return visiveis;
+
+      Object.keys(window.CAMADAS_MAPA).forEach(id => {
+        // ✅ Inclui buffers, imports e resultados de geoprocessamento
+        // (útil para limpar/gerenciar resultados depois)
+        if (this._camadaVisivel(id)) visiveis.push(id);
+      });
+      return visiveis;
+    },
     init: function () {
       if (!this._paneCriado) {
         mapa.createPane('paneSelecao');
@@ -75,6 +107,12 @@
       if (!selCamada) return;
 
       const idVirtual = selCamada.value;
+
+      // ✅ NOVO: modo TODAS_VISIVEIS
+      if (idVirtual === 'TODAS_VISIVEIS') {
+        return this._selecionarTudoVisiveis();
+      }
+
       let idCamada = idVirtual;
 
       if (idVirtual === 'ven') {
@@ -84,6 +122,23 @@
         const safraSub = selSub ? selSub.value : null;
         const safraInterna = window.VENUnifiedManager ? window.VENUnifiedManager.anoAtivo : null;
         idCamada = safraPainel || safraSub || safraInterna || 'ven_2022';
+      }
+
+      // ✅ Camada precisa estar visível
+      if (!this._camadaVisivel(idCamada)) {
+        if (window.UI) {
+          window.UI.toast(`⚠️ A camada "${CONFIG_CAMADAS?.[idCamada]?.nome || idCamada}" está desligada. Ligue no painel para usar Selecionar Tudo.`);
+        }
+        return;
+      }
+
+      // ✅ AIS isolado bloqueia
+      if (window.ControleAIS?._aberto && window.ControleAIS?._isolarAIS) {
+        const permitidosAIS = window.ControleAIS?._camadasSalvas || [];
+        if (permitidosAIS.length && !permitidosAIS.includes(idCamada)) {
+          if (window.UI) window.UI.toast('⚠️ Em modo AIS isolado, só a camada AIS é selecionável.');
+          return;
+        }
       }
 
       if (!DADOS_GEOJSON_BRUTOS[idCamada]) {
@@ -172,7 +227,70 @@
       const features = this._selecionadas.map(s => s.feature);
       if (window.TabelaManager) window.TabelaManager.abrirFiltrado(camadaId, features);
     },
+    _selecionarTudoVisiveis: async function () {
+      let camadasAlvo = this._listarCamadasVisiveis();
+      if (!camadasAlvo.length) {
+        if (window.UI) window.UI.toast('⚠️ Nenhuma camada visível no mapa.');
+        return;
+      }
 
+      // AIS isolado
+      if (window.ControleAIS?._aberto && window.ControleAIS?._isolarAIS) {
+        const permitidosAIS = window.ControleAIS?._camadasSalvas || [];
+        if (permitidosAIS.length) {
+          camadasAlvo = camadasAlvo.filter(c => permitidosAIS.includes(c));
+          if (!camadasAlvo.length) {
+            if (window.UI) window.UI.toast('⚠️ Em modo AIS isolado, só a camada AIS é selecionável.');
+            return;
+          }
+        }
+      }
+
+      this._selecionadas = [];
+      if (this._highlightLayer && mapa.hasLayer(this._highlightLayer)) {
+        mapa.removeLayer(this._highlightLayer);
+        this._highlightLayer = null;
+      }
+
+      let total = 0;
+      for (const camadaId of camadasAlvo) {
+        if (!DADOS_GEOJSON_BRUTOS[camadaId]) {
+          try {
+            await window.DataManager.carregarCamada(camadaId);
+          } catch (e) {
+            console.warn(`[M2] Falha ao carregar ${camadaId}:`, e.message);
+            continue;
+          }
+        }
+        const dados = DADOS_GEOJSON_BRUTOS[camadaId];
+        if (!dados || !dados.features) continue;
+
+        let features = dados.features;
+
+        // Filtro específico de portos (mantém comportamento atual)
+        if (camadaId === 'instalacoes_portuarias') {
+          const fp = window.FILTRO_PORTO_ATUAL || 'TODOS';
+          if (fp !== 'TODOS') {
+            features = features.filter(f =>
+              window.PortClassification.classificar(f.properties || {}).id === fp
+            );
+          }
+        }
+
+        for (const f of features) {
+          const chave = this._chaveDe(f, camadaId);
+          this._selecionadas.push({ feature: f, camadaId, chaveUnica: chave });
+        }
+        total += features.length;
+      }
+
+      this._atualizarUI();
+
+      const nomeadas = camadasAlvo.length;
+      if (window.UI) {
+        window.UI.toast(`🎯 ${total} feições selecionadas de ${nomeadas} camada(s) visível(is).`);
+      }
+    },
     exportarCSV: function () {
       if (!this._selecionadas.length) {
         if (window.UI) window.UI.toast('⚠️ Nenhuma feição selecionada.');
@@ -202,7 +320,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `selecao_${this._selecionadas.length}_feicoes_${new Date().toISOString().slice(0,10)}.csv`;
+      a.download = `selecao_${this._selecionadas.length}_feicoes_${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(url);
       if (window.UI) window.UI.toast(`📥 CSV com ${this._selecionadas.length} feições exportado.`);
@@ -221,7 +339,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `selecao_${this._selecionadas.length}_feicoes_${new Date().toISOString().slice(0,10)}.geojson`;
+      a.download = `selecao_${this._selecionadas.length}_feicoes_${new Date().toISOString().slice(0, 10)}.geojson`;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(url);
       if (window.UI) window.UI.toast(`💾 GeoJSON com ${this._selecionadas.length} feições exportado.`);
@@ -319,12 +437,12 @@
       const p = feature.properties || {};
 
       let id = p.idhidrovia || p.idseq || p.id || p.ID ||
-               p.gid || p.GID || p.objectid || p.codigo || p.CODIGO ||
-               p.idm_origem || p.terrai_cod || p.cd_uc || p.codigo_uc;
+        p.gid || p.GID || p.objectid || p.codigo || p.CODIGO ||
+        p.idm_origem || p.terrai_cod || p.cd_uc || p.codigo_uc;
 
       if (!id) {
         const nome = p.nome || p.NOME || p.NOME_INSTALACAO ||
-                     p.nome_rio || p.NOME_RIO || p.terrai_nom || '';
+          p.nome_rio || p.NOME_RIO || p.terrai_nom || '';
         const geoHash = JSON.stringify(feature.geometry || '').substring(0, 200);
         id = `${nome}::${geoHash}`;
       }
@@ -408,53 +526,43 @@
         return;
       }
 
-      let camadaId = camadaIdVirtual;
-      if (camadaIdVirtual === 'ven') {
-        camadaId = (window.VENUnifiedManager && window.VENUnifiedManager.anoAtivo)
-          ? window.VENUnifiedManager.anoAtivo
-          : 'ven_2022';
-      }
-
-      const dados = DADOS_GEOJSON_BRUTOS[camadaId];
-      if (!dados || !dados.features) {
-        if (window.UI) window.UI.toast(`⚠️ Camada "${camadaId}" não carregada.`);
-        return;
-      }
-
-      let featuresBase = dados.features;
-
-      if (camadaId === 'instalacoes_portuarias') {
-        const filtroPorto = window.FILTRO_PORTO_ATUAL || 'TODOS';
-        if (filtroPorto !== 'TODOS') {
-          featuresBase = featuresBase.filter(f =>
-            window.PortClassification.classificar(f.properties || {}).id === filtroPorto
-          );
+      // ✅ NOVO: opção "TODAS" → itera por todas visíveis
+      let camadasAlvo = [];
+      if (camadaIdVirtual === 'TODAS_VISIVEIS') {
+        camadasAlvo = this._listarCamadasVisiveis();
+        if (!camadasAlvo.length) {
+          if (window.UI) window.UI.toast('⚠️ Nenhuma camada visível no mapa.');
+          return;
         }
-      }
-
-      if (camadaId === 'ucs_todas_mma' && typeof window.classificarEsfera === 'function') {
-        const filtroUC = window.FILTRO_UC_ATUAL || 'TODOS';
-        if (filtroUC !== 'TODOS') {
-          featuresBase = featuresBase.filter(f =>
-            window.classificarEsfera(f.properties).id === filtroUC
-          );
+      } else {
+        let camadaId = camadaIdVirtual;
+        if (camadaIdVirtual === 'ven') {
+          camadaId = (window.VENUnifiedManager && window.VENUnifiedManager.anoAtivo)
+            ? window.VENUnifiedManager.anoAtivo : 'ven_2022';
         }
+        if (!this._camadaVisivel(camadaId)) {
+          if (window.UI) {
+            window.UI.toast(`⚠️ A camada "${CONFIG_CAMADAS?.[camadaId]?.nome || camadaId}" está desligada.`);
+          }
+          return;
+        }
+        camadasAlvo = [camadaId];
       }
 
-      const selSub = document.getElementById('filtro-subtipo-dinamico');
-      if (selSub && selSub.value && selSub.value !== 'TODOS' &&
-          camadaId !== 'instalacoes_portuarias' && camadaId !== 'ucs_todas_mma' &&
-          !camadaId.startsWith('ven_')) {
-        const colunaFiltro = window.FilterManager ? window.FilterManager.colunaEsferaAtiva : null;
-        if (colunaFiltro) {
-          featuresBase = featuresBase.filter(f =>
-            String(f.properties?.[colunaFiltro] || '').trim() === selSub.value
-          );
+      // ✅ AIS isolado bloqueia camadas externas
+      if (window.ControleAIS?._aberto && window.ControleAIS?._isolarAIS) {
+        const permitidos = window.ControleAIS?._camadasSalvas || [];
+        if (permitidos.length) {
+          camadasAlvo = camadasAlvo.filter(c => permitidos.includes(c));
+          if (!camadasAlvo.length) {
+            if (window.UI) window.UI.toast('⚠️ Em modo AIS isolado, só a camada AIS é selecionável.');
+            return;
+          }
         }
       }
 
       if (typeof turf === 'undefined') {
-        if (window.UI) window.UI.toast('⚠️ Turf.js indisponível. Recarregue a página.');
+        if (window.UI) window.UI.toast('⚠️ Turf.js indisponível.');
         return;
       }
 
@@ -462,36 +570,59 @@
       const boundsGeoJSON = {
         type: 'Polygon',
         coordinates: [[
-          [bounds.getWest()  - tol, bounds.getSouth() - tol],
-          [bounds.getEast()  + tol, bounds.getSouth() - tol],
-          [bounds.getEast()  + tol, bounds.getNorth() + tol],
-          [bounds.getWest()  - tol, bounds.getNorth() + tol],
-          [bounds.getWest()  - tol, bounds.getSouth() - tol]
+          [bounds.getWest() - tol, bounds.getSouth() - tol],
+          [bounds.getEast() + tol, bounds.getSouth() - tol],
+          [bounds.getEast() + tol, bounds.getNorth() + tol],
+          [bounds.getWest() - tol, bounds.getNorth() + tol],
+          [bounds.getWest() - tol, bounds.getSouth() - tol]
         ]]
       };
 
-      const dentro = [];
-      for (const f of featuresBase) {
-        try {
-          const tempLayer = L.geoJSON(f);
-          const b = tempLayer.getBounds();
-          if (!b.isValid() || !bounds.intersects(b)) continue;
+      let totalAdicionadas = 0;
+      const resumoPorCamada = [];
 
+      camadasAlvo.forEach(camadaId => {
+        const dados = DADOS_GEOJSON_BRUTOS[camadaId];
+        if (!dados || !dados.features) return;
+
+        let featuresBase = dados.features;
+
+        // Filtro portos
+        if (camadaId === 'instalacoes_portuarias') {
+          const fp = window.FILTRO_PORTO_ATUAL || 'TODOS';
+          if (fp !== 'TODOS') {
+            featuresBase = featuresBase.filter(f =>
+              window.PortClassification.classificar(f.properties || {}).id === fp
+            );
+          }
+        }
+
+        const dentro = [];
+        for (const f of featuresBase) {
           try {
-            if (turf.booleanIntersects(f, boundsGeoJSON)) {
+            const tempLayer = L.geoJSON(f);
+            const b = tempLayer.getBounds();
+            if (!b.isValid() || !bounds.intersects(b)) continue;
+            try {
+              if (turf.booleanIntersects(f, boundsGeoJSON)) dentro.push(f);
+            } catch (eTurf) {
               dentro.push(f);
             }
-          } catch (eTurf) {
-            dentro.push(f);
-          }
-        } catch (e) { /* ignora */ }
-      }
+          } catch (e) { /* ignora */ }
+        }
 
-      if (dentro.length === 0) {
+        if (dentro.length) {
+          this.adicionarMultiplas(dentro, camadaId);
+          totalAdicionadas += dentro.length;
+          resumoPorCamada.push(`${CONFIG_CAMADAS?.[camadaId]?.nome || camadaId}: ${dentro.length}`);
+        }
+      });
+
+      if (totalAdicionadas === 0) {
         if (window.UI) window.UI.toast('Nenhuma feição na área selecionada.');
-        return;
+      } else if (camadasAlvo.length > 1) {
+        if (window.UI) window.UI.toast(`🎯 Selecionadas ${totalAdicionadas} feições de ${camadasAlvo.length} camadas.`);
       }
-      this.adicionarMultiplas(dentro, camadaId);
     },
 
     _configurarTeclado: function () {

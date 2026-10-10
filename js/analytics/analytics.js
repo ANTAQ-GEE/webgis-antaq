@@ -14,6 +14,7 @@
     chartVenHist: null, chartVenBacias: null, chartVenTempos: null,
     chartPortosRegimes: null, chartPortosUfs: null,
     chartTravessiasRegioes: null, chartTravessiasEstados: null,
+    _cacheValido: { ven: false, portos: false, travessias: false },
 
     trocarAba: function (aba) {
       this.abaAtiva = aba;
@@ -23,9 +24,21 @@
         if (elBtn) elBtn.classList.toggle('ativo', a === aba);
         if (elAba) elAba.style.display = (a === aba) ? 'block' : 'none';
       });
-      if (aba === 'ven') this.gerarGraficosVEN();
-      else if (aba === 'portos') this.gerarGraficosPortos();
-      else if (aba === 'travessias') this.gerarGraficosTravessias();
+
+      // ✅ Só regenera se o cache estiver inválido
+      if (aba === 'ven' && !this._cacheValido.ven) this.gerarGraficosVEN();
+      else if (aba === 'portos' && !this._cacheValido.portos) this.gerarGraficosPortos();
+      else if (aba === 'travessias' && !this._cacheValido.travessias) this.gerarGraficosTravessias();
+      else {
+        // Cache válido → só redimensiona (instantâneo)
+        requestAnimationFrame(() => {
+          [this.chartVenHist, this.chartVenBacias, this.chartVenTempos,
+           this.chartPortosRegimes, this.chartPortosUfs,
+           this.chartTravessiasRegioes, this.chartTravessiasEstados].forEach(c => {
+            if (c && c.resize) { try { c.resize(); } catch (e) {} }
+          });
+        });
+      }
     },
 
     atualizarSeletores: function () { this.trocarAba(this.abaAtiva); },
@@ -136,6 +149,7 @@
           }
         });
       }
+      this._cacheValido.ven = true;      
     },
 
     gerarGraficosPortos: function () {
@@ -180,6 +194,7 @@
           }
         });
       }
+      this._cacheValido.portos = true;      
     },
 
     gerarGraficosTravessias: function () {
@@ -217,9 +232,41 @@
           }
         });
       }
-    }
+       this._cacheValido.travessias = true;     
+    },
+    // ✅ Pré-renderiza os gráficos escondidos no boot (primeira abertura fica instantânea)
+    preRenderizar: function () {
+      const painel = document.getElementById('painel-graficos');
+      if (!painel) return;
+
+      const estavaAberto = painel.classList.contains('aberto');
+      const visOriginal = painel.style.visibility;
+
+      // Abre escondido — Chart.js precisa medir o canvas
+      painel.style.visibility = 'hidden';
+      painel.classList.add('aberto');
+
+      try {
+        this.gerarGraficosVEN();
+        this.gerarGraficosPortos();
+        this.gerarGraficosTravessias();
+      } catch (e) {
+        console.warn('[Analytics] Erro na pré-renderização:', e);
+      }
+
+      // Restaura estado original
+      painel.style.visibility = visOriginal || '';
+      if (!estavaAberto) painel.classList.remove('aberto');
+    },    
   };
 
   window.Analytics = Analytics;
   console.info('[js] Analytics carregado');
+  // Pré-renderiza depois da página carregar
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      try { Analytics.preRenderizar(); }
+      catch (e) { console.warn('[Analytics] preRenderizar falhou:', e); }
+    }, 300);
+  });  
 })();

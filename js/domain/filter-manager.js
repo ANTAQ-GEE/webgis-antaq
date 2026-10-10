@@ -35,7 +35,7 @@
         else if (id.includes('ferrovia')) emoji = '🚆';
         else if (id.includes('embarcac') || id.includes('ais')) emoji = '🚢';
         else if (id.includes('snv')) emoji = '📜';
-        else if (id === 'tku') emoji = '📦';        
+        else if (id === 'tku') emoji = '📦';
         sel.appendChild(new Option(`${emoji} ${cfg.nome}`, id));
       }
 
@@ -45,6 +45,23 @@
     },
 
     aoMudarCamada: async function (idCamada) {
+      // ✅ Suporte à opção "Todas as camadas visíveis"
+      if (idCamada === 'TODAS_VISIVEIS') {
+        const inputBusca = document.getElementById('input-busca');
+        if (inputBusca) {
+          inputBusca.placeholder = `Buscar em todas as camadas visíveis...`;
+          inputBusca.value = '';
+          const listaEl = document.getElementById('resultados-busca');
+          if (listaEl) listaEl.style.display = 'none';
+        }
+        const selSub = document.getElementById('filtro-subtipo-dinamico');
+        if (selSub) {
+          selSub.innerHTML = '<option value="TODOS">🌐 Sem filtro por subtipo</option>';
+          selSub.value = 'TODOS';
+        }
+        this.colunaEsferaAtiva = null;
+        return;
+      }
       const selSub = document.getElementById('filtro-subtipo-dinamico');
       const inputBusca = document.getElementById('input-busca');
       const cfg = CONFIG_CAMADAS[idCamada] || {};
@@ -58,7 +75,7 @@
 
       if (!DADOS_GEOJSON_BRUTOS[idCamada] && idCamada !== 'ven') {
         if (selSub) { selSub.style.display = 'inline-block'; selSub.innerHTML = '<option value="">Carregando dados...</option>'; }
-        try { await window.DataManager.carregarCamada(idCamada); } catch (e) {}
+        try { await window.DataManager.carregarCamada(idCamada); } catch (e) { }
       }
 
       this.colunaEsferaAtiva = null;
@@ -77,7 +94,7 @@
 
           if (inputBusca) {
             const anoAtivo = window.VENUnifiedManager ? window.VENUnifiedManager.anoAtivo : 'ven_2022';
-            inputBusca.placeholder = `Buscar trecho VEN ${anoAtivo.replace('ven_','')} (rio, município, eclusa)…`;
+            inputBusca.placeholder = `Buscar trecho VEN ${anoAtivo.replace('ven_', '')} (rio, município, eclusa)…`;
           }
         } else if (idCamada === 'instalacoes_portuarias') {
           selSub.innerHTML = '<option value="TODOS">⚓ Todos os Regimes Portuários</option>';
@@ -185,21 +202,21 @@
         const featureGroupNoMapa = featureGroup && mapa.hasLayer(featureGroup);
 
         for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
-        const fgPai = CAMADAS_MAPA['instalacoes_portuarias'];
-        for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
-          const chkSub = document.getElementById(`chk-sub-${tKey}`);
-          const deveLigar = (valor === 'TODOS' || tKey === valor);
-          if (chkSub) chkSub.checked = deveLigar;
+          const fgPai = CAMADAS_MAPA['instalacoes_portuarias'];
+          for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
+            const chkSub = document.getElementById(`chk-sub-${tKey}`);
+            const deveLigar = (valor === 'TODOS' || tKey === valor);
+            if (chkSub) chkSub.checked = deveLigar;
 
-          // ✅ Manipula DENTRO do featureGroup pai
-          if (deveLigar) {
-            if (fgPai && !fgPai.hasLayer(fg)) fgPai.addLayer(fg);
-            visiveis += fg.getLayers().length;
-            fg.eachLayer(m => { if (m.getLatLng) latlngsVisiveis.push(m.getLatLng()); });
-          } else {
-            if (fgPai && fgPai.hasLayer(fg)) fgPai.removeLayer(fg);
+            // ✅ Manipula DENTRO do featureGroup pai
+            if (deveLigar) {
+              if (fgPai && !fgPai.hasLayer(fg)) fgPai.addLayer(fg);
+              visiveis += fg.getLayers().length;
+              fg.eachLayer(m => { if (m.getLatLng) latlngsVisiveis.push(m.getLatLng()); });
+            } else {
+              if (fgPai && fgPai.hasLayer(fg)) fgPai.removeLayer(fg);
+            }
           }
-        }
         }
         const cntEl = document.getElementById('cnt-instalacoes_portuarias');
         if (cntEl) cntEl.innerText = (valor === 'TODOS' || visiveis === total) ? `(${total})` : `(${visiveis}/${total})`;
@@ -215,7 +232,7 @@
         if (selSub) selSub.value = valor;
 
         if (window.TabelaManager && window.TabelaManager.camadaAtualId === 'instalacoes_portuarias' &&
-            document.getElementById('painel-tabela').classList.contains('aberto')) {
+          document.getElementById('painel-tabela').classList.contains('aberto')) {
           const selP = document.getElementById('filtro-porto-tabela');
           if (selP) selP.value = valor;
           window.TabelaManager.filtroPorto = valor;

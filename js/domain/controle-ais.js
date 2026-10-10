@@ -3,23 +3,23 @@
    Substitui controle-ais.js e painel-ais.js
    ============================================================ */
 (function () {
-    'use strict';
+  'use strict';
 
-    const CSS_ID = 'ais-workspace-css';
+  const CSS_ID = 'ais-workspace-css';
 
-    /* ============================================================
-       CSS
-       ============================================================ */
-    function injetarCSS() {
-        ['controle-ais-css', 'controle-ais-css-v2', 'controle-ais-css-v3', 'ais-workspace-css-v1', 'painel-ais-css'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el && id !== CSS_ID) el.remove();
-        });
-        if (document.getElementById(CSS_ID)) return;
+  /* ============================================================
+     CSS
+     ============================================================ */
+  function injetarCSS() {
+    ['controle-ais-css', 'controle-ais-css-v2', 'controle-ais-css-v3', 'ais-workspace-css-v1', 'painel-ais-css'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && id !== CSS_ID) el.remove();
+    });
+    if (document.getElementById(CSS_ID)) return;
 
-        const s = document.createElement('style');
-        s.id = CSS_ID;
-        s.textContent = `
+    const s = document.createElement('style');
+    s.id = CSS_ID;
+    s.textContent = `
       /* ---------- Painel ---------- */
       .aw-painel {
         position: fixed; top: 88px; right: 10px; bottom: 10px;
@@ -98,7 +98,7 @@
 
       /* ---------- Filtros ---------- */
       .aw-filtros {
-        display: grid; grid-template-columns: 1fr 1fr 1fr auto;
+        display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto;
         gap: 6px; padding: 8px 10px; background: #061426;
         border-bottom: 1px solid #1e293b; flex-shrink: 0;
       }
@@ -313,202 +313,222 @@
       }
       .aw-dash-card-linha b { color: #cbd5e1; }
     `;
-        document.head.appendChild(s);
-    }
+    document.head.appendChild(s);
+  }
 
-    /* ============================================================
-       OBJETO
-       ============================================================ */
-    const ControleAIS = {
-        _aberto: false,
-        _isolarAIS: true,        // ← nova linha
-        _camadasSalvas: null,    // ← nova linha
-        _modo: 'monitor',         // 'monitor' | 'simulador' | 'dashboard'
-        _emb: null,
-        _fullscreen: false,
-        _filtros: { status: '', tipo: '', perfil: '' },
-        _sim: { mmsi: null, rodando: false },
-        _tl: {
-            playing: false, tAtual: 0, tInicio: 0, tFim: 0,
-            vel: 6, _timer: null, _passo: 200, _janela: 24,
-            _contexto: 'global'     // 'global' | 'vessel'
-        },
+  /* ============================================================
+     OBJETO
+     ============================================================ */
+  const ControleAIS = {
+    _aberto: false,
+    _isolarAIS: true,        // ← nova linha
+    _camadasSalvas: null,    // ← nova linha
+    _modo: 'monitor',         // 'monitor' | 'simulador' | 'dashboard'
+    _emb: null,
+    _fullscreen: false,
+    _filtros: { status: '', tipo: '', perfil: '', corredor: '' },
+    _sim: { mmsi: null, rodando: false },
+    _tl: {
+      playing: false, tAtual: 0, tInicio: 0, tFim: 0,
+      vel: 6, _timer: null, _passo: 200, _janela: 24,
+      _contexto: 'global'     // 'global' | 'vessel'
+    },
 
-        /* ------------------------------------------------------------
-           ABRIR / FECHAR
-           ------------------------------------------------------------ */
-        async abrir() {
-            injetarCSS();
-            this._garantirHTML();
+    /* ------------------------------------------------------------
+       ABRIR / FECHAR
+       ------------------------------------------------------------ */
+    async abrir() {
+      this._camadasSalvas = null;   // ← ADICIONA ESSA LINHA
+      if (window.PainelAIS && window.PainelAIS._aberto) {
+        window.PainelAIS.fechar();
+      }
+      injetarCSS();
+      this._garantirHTML();
 
-            const p = document.getElementById('aw-painel');
-            if (p) { p.classList.add('aberto'); p.style.display = 'flex'; }
-            this._aberto = true;
-            this._emb = null;
-            this._fullscreen = false;
+      const p = document.getElementById('aw-painel');
+      if (p) { p.classList.add('aberto'); p.style.display = 'flex'; }
+      this._aberto = true;
+      this._emb = null;
+      this._fullscreen = false;
 
-            const pc = document.getElementById('painel-camadas-lateral');
-            if (pc) pc.style.display = 'none';
-            this._desligarCamadas();
-            if (!window.AISManager || !window.AISManager._pronto) {
-                if (!window.AISManager) return;
-                const ok = await window.AISManager.carregar();
-                if (!ok) { if (window.UI) window.UI.toast('❌ Falha ao carregar AIS'); return; }
-            }
-            if (!window.AISManager._visivel) {
-                window.AISManager._visivel = true;
-                if (window.AISLayer) window.AISLayer.mostrar();
-            }
+      const pc = document.getElementById('painel-camadas-lateral');
+      if (pc) pc.style.display = 'none';
+      this._desligarCamadas();
+      if (!window.AISManager || !window.AISManager._pronto) {
+        if (!window.AISManager) return;
+        const ok = await window.AISManager.carregar();
+        if (!ok) { if (window.UI) window.UI.toast('❌ Falha ao carregar AIS'); return; }
+      }
+      if (!window.AISManager._visivel) {
+        window.AISManager._visivel = true;
+        if (window.AISLayer) window.AISLayer.mostrar();
+      }
 
-            this._garantirRangeGlobal();
-            this.trocarModo('monitor');
+      this._garantirRangeGlobal();
+      this.trocarModo('monitor');
 
-            document.querySelectorAll('.aba-btn').forEach(b => b.classList.remove('ativo', 'ativa', 'active'));
-            const btn = document.querySelector('.aba-btn[data-aba="ais"]');
-            if (btn) btn.classList.add('ativo');
-        },
-        _desligarCamadas() {
-            if (!this._isolarAIS) return;
-            if (!window.CAMADAS_MAPA || !window.mapa) return;
+      document.querySelectorAll('.aba-btn').forEach(b => b.classList.remove('ativo', 'ativa', 'active'));
+      const btn = document.querySelector('.aba-btn[data-aba="ais"]');
+      if (btn) btn.classList.add('ativo');
+    },
+    _desligarCamadas() {
+      if (!this._isolarAIS) return;
+      if (!window.CAMADAS_MAPA || !window.mapa) return;
 
-            // ✅ Já tem camadas salvas? Não sobrescreve
-            if (this._camadasSalvas && this._camadasSalvas.length) {
-                console.log('[AIS] já isolado, não sobrescreve');
-                return;
-            }
+      // Sempre coleta o que está REALMENTE visível agora
+      const salvas = [];
+      Object.entries(window.CAMADAS_MAPA).forEach(([id, layer]) => {
+        if (!layer) return;
+        if (window.mapa.hasLayer(layer)) {
+          salvas.push(id);
+          window.mapa.removeLayer(layer);
+        }
+      });
 
-            const salvas = [];
-            Object.entries(window.CAMADAS_MAPA).forEach(([id, layer]) => {
-                if (!layer) return;
-                if (window.mapa.hasLayer(layer)) {
-                    salvas.push(id);
-                    window.mapa.removeLayer(layer);
-                }
-            });
+      // Faz merge com o que já tinha salvo (nunca perde referência)
+      if (this._camadasSalvas && this._camadasSalvas.length) {
+        const merged = new Set([...this._camadasSalvas, ...salvas]);
+        this._camadasSalvas = [...merged];
+      } else {
+        this._camadasSalvas = salvas;
+      }
 
-            if (salvas.length) {
-                this._camadasSalvas = salvas;
-                console.log('[AIS] camadas isoladas:', salvas);
-            }
-        },
-        _restaurarCamadas() {
-            if (!this._camadasSalvas || !window.CAMADAS_MAPA || !window.mapa) return;
-            this._camadasSalvas.forEach(id => {
-                const layer = window.CAMADAS_MAPA[id];
-                if (layer && !window.mapa.hasLayer(layer)) {
-                    layer.addTo(window.mapa);
-                }
-            });
-            console.log('[AIS] camadas restauradas:', this._camadasSalvas.length);
-            this._camadasSalvas = null;
-        },
+      console.log('[AIS] camadas isoladas:', this._camadasSalvas);
+    },
+    _restaurarCamadas() {
+      if (!this._camadasSalvas || !this._camadasSalvas.length) {
+        console.log('[AIS] nada para restaurar');
+        return;
+      }
+      if (!window.CAMADAS_MAPA || !window.mapa) return;
 
-        toggleIsolarAIS() {
-            this._isolarAIS = !this._isolarAIS;
-            const btn = document.getElementById('aw-btn-isolar');
-            if (btn) {
-                btn.style.background = this._isolarAIS ? '#0284c7' : 'transparent';
-                btn.style.color = this._isolarAIS ? '#fff' : '#cbd5e1';
-                btn.title = this._isolarAIS ? 'Camadas isoladas — clique pra manter todas visíveis' : 'Manter todas camadas visíveis';
-            }
-            if (window.UI) {
-                window.UI.toast(this._isolarAIS
-                    ? '🔒 Camadas isoladas ao abrir AIS'
-                    : '🔓 Camadas mantidas');
-            }
-            // Se desligou, restaura as camadas que estavam salvas
-            if (!this._isolarAIS && this._camadasSalvas) {
-                this._restaurarCamadas();
-            }
-            // Se ligou e o painel está aberto, isola agora
-            if (this._isolarAIS && this._aberto) {
-                this._desligarCamadas();
-            }
-        },
-        limparVisualizacao() {
-            if (window.AISLayer) window.AISLayer.limparTrilha();
-            if (this._emb) {
-                this._emb = null;
-                this._mostrarPrincipal();
-                this.renderMonitor();
-                this._contextoGlobal();
-                this._atualizarFrame();
-            }
-            if (window.UI) window.UI.toast('🧹 Visualização limpa');
-        },
-        fechar() {
-            this._pausar();
-            this._restaurarCamadas();   // ← nova linha
-            const p = document.getElementById('aw-painel');
-            if (p) { p.classList.remove('aberto', 'fullscreen'); p.style.display = 'none'; }
-            const pc = document.getElementById('painel-camadas-lateral');
-            if (pc) pc.style.display = '';
+      let restauradas = 0;
+      this._camadasSalvas.forEach(id => {
+        const layer = window.CAMADAS_MAPA[id];
+        if (!layer) {
+          console.warn('[AIS] layer não existe mais:', id);
+          return;
+        }
+        if (!window.mapa.hasLayer(layer)) {
+          layer.addTo(window.mapa);
+          restauradas++;
+        }
+      });
 
-            if (window.AISManager && window.AISManager._visivel) {
-                window.AISManager._visivel = false;
-                if (window.AISLayer) window.AISLayer.esconder();
-            }
-            this._garantirRangeGlobal();
-            this.trocarModo('monitor');
-            this._desligarCamadas();   // ← nova linha
-            document.querySelectorAll('.aba-btn').forEach(b => b.classList.remove('ativo', 'ativa', 'active'));
-            const bm = document.querySelector('.aba-btn[data-aba="mapa"]');
-            if (bm) bm.classList.add('ativo');
+      console.log('[AIS] camadas restauradas:', restauradas, 'de', this._camadasSalvas.length);
+      this._camadasSalvas = null;  // limpa SEMPRE, mesmo se restaurou 0
+    },
 
-            this._aberto = false;
-            this._emb = null;
-            this._fullscreen = false;
-        },
+    toggleIsolarAIS() {
+      this._isolarAIS = !this._isolarAIS;
+      const btn = document.getElementById('aw-btn-isolar');
+      if (btn) {
+        btn.style.background = this._isolarAIS ? '#0284c7' : 'transparent';
+        btn.style.color = this._isolarAIS ? '#fff' : '#cbd5e1';
+        btn.title = this._isolarAIS ? 'Camadas isoladas — clique pra manter todas visíveis' : 'Manter todas camadas visíveis';
+      }
+      if (window.UI) {
+        window.UI.toast(this._isolarAIS
+          ? '🔒 Camadas isoladas ao abrir AIS'
+          : '🔓 Camadas mantidas');
+      }
+      // Se desligou, restaura as camadas que estavam salvas
+      if (!this._isolarAIS && this._camadasSalvas) {
+        this._restaurarCamadas();
+      }
+      // Se ligou e o painel está aberto, isola agora
+      if (this._isolarAIS && this._aberto) {
+        this._desligarCamadas();
+      }
+    },
+    forcarRestauracao() {
+      if (!this._camadasSalvas || !this._camadasSalvas.length) {
+        if (window.UI) window.UI.toast('ℹ️ Nenhuma camada para restaurar');
+        return;
+      }
+      this._restaurarCamadas();
+      if (window.UI) window.UI.toast('🔄 Camadas restauradas');
+    },
+    limparVisualizacao() {
+      if (window.AISLayer) window.AISLayer.limparTrilha();
+      if (this._emb) {
+        this._emb = null;
+        this._mostrarPrincipal();
+        this.renderMonitor();
+        this._contextoGlobal();
+        this._atualizarFrame();
+      }
+      if (window.UI) window.UI.toast('🧹 Visualização limpa');
+    },
+    fechar() {
+      this._pausar();
+      this._restaurarCamadas();
+      const p = document.getElementById('aw-painel');
+      if (p) { p.classList.remove('aberto', 'fullscreen'); p.style.display = 'none'; }
+      const pc = document.getElementById('painel-camadas-lateral');
+      if (pc) pc.style.display = '';
 
-        /* ------------------------------------------------------------
-           MODO
-           ------------------------------------------------------------ */
-        trocarModo(modo) {
-            this._modo = modo;
-            document.querySelectorAll('.aw-tab').forEach(t => t.classList.toggle('on', t.dataset.modo === modo));
-            document.querySelectorAll('.aw-modo').forEach(m => m.classList.toggle('on', m.dataset.modo === modo));
+      if (window.AISManager && window.AISManager._visivel) {
+        window.AISManager._visivel = false;
+        if (window.AISLayer) window.AISLayer.esconder();
+      }
+      this._garantirRangeGlobal();
+      this.trocarModo('monitor');
 
-            const tl = document.getElementById('aw-timeline');
-            if (tl) tl.style.display = (modo === 'dashboard') ? 'none' : '';
+      this._aberto = false;
+      this._emb = null;
+      this._fullscreen = false;
+    },
 
-            const p = document.getElementById('aw-painel');
-            if (p) p.classList.toggle('fullscreen', modo === 'dashboard' && this._fullscreen);
+    /* ------------------------------------------------------------
+       MODO
+       ------------------------------------------------------------ */
+    trocarModo(modo) {
+      this._modo = modo;
+      document.querySelectorAll('.aw-tab').forEach(t => t.classList.toggle('on', t.dataset.modo === modo));
+      document.querySelectorAll('.aw-modo').forEach(m => m.classList.toggle('on', m.dataset.modo === modo));
 
-            if (modo === 'monitor') {
-                this._contextoGlobal();
-                this.renderMonitor();
-                this._atualizarFrame();
-            } else if (modo === 'simulador') {
-                this._renderSimuladorForm();
-            } else if (modo === 'dashboard') {
-                this._renderDashboard();
-            }
-        },
+      const tl = document.getElementById('aw-timeline');
+      if (tl) tl.style.display = (modo === 'dashboard') ? 'none' : '';
 
-        toggleFullscreen() {
-            this._fullscreen = !this._fullscreen;
-            const p = document.getElementById('aw-painel');
-            if (p) p.classList.toggle('fullscreen', this._fullscreen);
-            if (window.mapa && window.mapa.invalidateSize) {
-                setTimeout(() => window.mapa.invalidateSize(), 150);
-            }
-        },
+      const p = document.getElementById('aw-painel');
+      if (p) p.classList.toggle('fullscreen', modo === 'dashboard' && this._fullscreen);
 
-        _contextoGlobal() {
-            this._tl._contexto = 'global';
-            this._emb = null;
-            this._garantirRangeGlobal();
-        },
+      if (modo === 'monitor') {
+        this._contextoGlobal();
+        this.renderMonitor();
+        this._atualizarFrame();
+      } else if (modo === 'simulador') {
+        this._renderSimuladorForm();
+      } else if (modo === 'dashboard') {
+        this._renderDashboard();
+      }
+    },
 
-        /* ------------------------------------------------------------
-           HTML
-           ------------------------------------------------------------ */
-        _garantirHTML() {
-            if (document.getElementById('aw-painel')) return;
-            const el = document.createElement('div');
-            el.id = 'aw-painel';
-            el.className = 'aw-painel';
-            el.innerHTML = `
+    toggleFullscreen() {
+      this._fullscreen = !this._fullscreen;
+      const p = document.getElementById('aw-painel');
+      if (p) p.classList.toggle('fullscreen', this._fullscreen);
+      if (window.mapa && window.mapa.invalidateSize) {
+        setTimeout(() => window.mapa.invalidateSize(), 150);
+      }
+    },
+
+    _contextoGlobal() {
+      this._tl._contexto = 'global';
+      this._emb = null;
+      this._garantirRangeGlobal();
+    },
+
+    /* ------------------------------------------------------------
+       HTML
+       ------------------------------------------------------------ */
+    _garantirHTML() {
+      if (document.getElementById('aw-painel')) return;
+      const el = document.createElement('div');
+      el.id = 'aw-painel';
+      el.className = 'aw-painel';
+      el.innerHTML = `
         <div class="aw-header">
           <span class="aw-header-ico">🎛️</span>
           <div class="aw-header-txt">
@@ -517,9 +537,10 @@
           </div>
           <button class="aw-btn-h" id="aw-btn-isolar" onclick="ControleAIS.toggleIsolarAIS()" title="Camadas isoladas ao abrir AIS" style="background:#0284c7;color:#fff;">🔒</button>
           <button class="aw-btn-h" onclick="ControleAIS.limparVisualizacao()" title="Limpar trilhas do mapa">🧹</button>
+          <button class="aw-btn-h" onclick="ControleAIS.forcarRestauracao()" title="Forçar restauração de camadas">🔄</button>
           <button class="aw-btn-h" onclick="ControleAIS.toggleFullscreen()" id="aw-btn-full" title="Alternar tela cheia">⛶</button>
           <button class="aw-btn-h" onclick="ControleAIS.exportarCSV()" title="Exportar CSV">⬇ CSV</button>
-          <button class="aw-btn-x" onclick="ControleAIS.fechar()" title="Fechar">&times;</button>
+          <button class="aw-btn-x" onclick="ControleAIS.fechar(); if(window.TabManager) TabManager.trocar('mapa');" title="Fechar">&times;</button>
         </div>
 
         <div class="aw-tabs">
@@ -533,34 +554,59 @@
           <div class="aw-modo on" data-modo="monitor">
             <div id="aw-principal" style="display:flex;flex-direction:column;flex:1;min-height:0;">
               <div class="aw-kpis" id="aw-kpis"></div>
-              <div class="aw-filtros">
-                <div class="aw-fg"><label>Status</label>
-                  <select id="aw-filtro-status" onchange="ControleAIS.aplicarFiltros()">
-                    <option value="">Todos</option>
-                    <option value="no_prazo">🟢 No prazo</option>
-                    <option value="atencao">🟡 Atenção</option>
-                    <option value="atrasado">🔴 Atrasado</option>
-                  </select>
-                </div>
-                <div class="aw-fg"><label>Tipo</label>
-                  <select id="aw-filtro-tipo" onchange="ControleAIS.aplicarFiltros()">
-                    <option value="">Todos</option>
-                    <option value="Carga Geral">Carga Geral</option>
-                    <option value="Passageiros">Passageiros</option>
-                    <option value="Tanque">Tanque</option>
-                  </select>
-                </div>
-                <div class="aw-fg"><label>Perfil</label>
-                  <select id="aw-filtro-perfil" onchange="ControleAIS.aplicarFiltros()">
-                    <option value="">Todos</option>
-                    <option value="pontual">Pontual</option>
-                    <option value="regular">Regular</option>
-                    <option value="irregular">Irregular</option>
-                    <option value="problematica">Problemática</option>
-                  </select>
-                </div>
-                <button class="aw-btn-limpar" onclick="ControleAIS.limparFiltros()">Limpar</button>
-              </div>
+<div class="aw-filtros">
+  <div class="aw-fg"><label>Status</label>
+    <select id="aw-filtro-status" onchange="ControleAIS.aplicarFiltros()">
+      <option value="">Todos</option>
+      <option value="no_prazo">🟢 No prazo</option>
+      <option value="atencao">🟡 Atenção</option>
+      <option value="atrasado">🔴 Atrasado</option>
+    </select>
+  </div>
+  <div class="aw-fg"><label>Tipo</label>
+    <select id="aw-filtro-tipo" onchange="ControleAIS.aplicarFiltros()">
+      <option value="">Todos</option>
+      <option value="Carga Geral">Carga Geral</option>
+      <option value="Passageiros">Passageiros</option>
+      <option value="Tanque">Tanque</option>
+    </select>
+  </div>
+  <div class="aw-fg"><label>Perfil</label>
+    <select id="aw-filtro-perfil" onchange="ControleAIS.aplicarFiltros()">
+      <option value="">Todos</option>
+      <option value="pontual">Pontual</option>
+      <option value="regular">Regular</option>
+      <option value="irregular">Irregular</option>
+      <option value="problematica">Problemática</option>
+    </select>
+  </div>
+<div class="aw-fg">
+  <label title="Filtra pela distância até os trechos VEN (onde houve movimentação de carga nas safras 2022/2024)">
+    Vias Navegadas (VEN) <span style="cursor:help;color:#38bdf8;">ⓘ</span>
+  </label>
+  <select id="aw-filtro-corredor" onchange="ControleAIS.aplicarFiltros()"
+          title="🟢 Em trecho VEN: até 2 km de trecho com navegação de carga comprovada&#10;🟡 Próximo: 2 a 5 km — nas margens do trecho VEN&#10;🔴 Fora: mais de 5 km — sem histórico de carga no local">
+    <option value="">Todos</option>
+    <option value="dentro">🟢 Em trecho VEN</option>
+    <option value="atencao">🟡 Próximo ao trecho</option>
+    <option value="fora">🔴 Fora do trecho</option>
+  </select>
+</div>
+  <button class="aw-btn-limpar" onclick="ControleAIS.limparFiltros()">Limpar</button>
+    <button class="aw-btn-limpar" onclick="ControleAIS.limparFiltros()">Limpar</button>
+</div>
+<div class="aw-legenda-corredor" style="display:flex;gap:14px;align-items:center;
+     padding:6px 12px;background:#0a1424;border-bottom:1px solid #1e293b;
+     font-size:9.5px;color:#94a3b8;flex-shrink:0;">
+  <span style="color:#64748b;font-weight:700;letter-spacing:0.4px;">VIAS NAVEGADAS (VEN):</span>
+  <span><span style="color:#10b981;">●</span> Em trecho &lt; 2 km</span>
+  <span><span style="color:#f59e0b;">●</span> Próximo 2–5 km</span>
+  <span><span style="color:#ef4444;">●</span> Fora &gt; 5 km</span>
+  <span style="margin-left:auto;font-style:italic;color:#64748b;">
+    Trechos com movimentação de carga registrada nas safras VEN (2022 · 2024)
+  </span>
+</div>
+</div>
               <div class="aw-scroll">
                 <div class="aw-secao emb">
                   <div class="aw-sec-tit"><span>🚢 Embarcações</span><span class="aw-badge" id="aw-total-emb">0</span></div>
@@ -602,133 +648,143 @@
                  oninput="ControleAIS.seek(this.value)" class="aw-slider">
         </div>
       `;
-            document.body.appendChild(el);
-        },
+      document.body.appendChild(el);
+    },
 
-        /* ============================================================
-           MODO MONITOR
-           ============================================================ */
-        renderMonitor() {
-            if (!this._aberto || this._modo !== 'monitor') return;
-            if (this._emb) {
-                this._renderDetalhe(this._emb);
-            } else {
-                this._mostrarPrincipal();
-                this._renderKpis();
-                this._renderEmb();
-                this._renderAlertas();
-            }
-        },
+    /* ============================================================
+       MODO MONITOR
+       ============================================================ */
+    renderMonitor() {
+      if (!this._aberto || this._modo !== 'monitor') return;
+      if (this._emb) {
+        this._renderDetalhe(this._emb);
+      } else {
+        this._mostrarPrincipal();
+        this._renderKpis();
+        this._renderEmb();
+        this._renderAlertas();
+      }
+    },
 
-        _mostrarPrincipal() {
-            const p = document.getElementById('aw-principal');
-            const d = document.getElementById('aw-detalhe');
-            if (p) p.style.display = 'flex';
-            if (d) d.style.display = 'none';
-        },
-        _mostrarDetalhe() {
-            const p = document.getElementById('aw-principal');
-            const d = document.getElementById('aw-detalhe');
-            if (p) p.style.display = 'none';
-            if (d) d.style.display = 'flex';
-        },
+    _mostrarPrincipal() {
+      const p = document.getElementById('aw-principal');
+      const d = document.getElementById('aw-detalhe');
+      if (p) p.style.display = 'flex';
+      if (d) d.style.display = 'none';
+    },
+    _mostrarDetalhe() {
+      const p = document.getElementById('aw-principal');
+      const d = document.getElementById('aw-detalhe');
+      if (p) p.style.display = 'none';
+      if (d) d.style.display = 'flex';
+    },
 
-        _renderKpis() {
-            const el = document.getElementById('aw-kpis');
-            if (!el) return;
-            const sm = window.AISManager.getStatusPorEmbarcacao();
-            const ok = this._mmsisFiltrados();
-            let total = 0, v = 0, a = 0, r = 0;
-            sm.forEach(s => {
-                if (!ok.has(s.mmsi)) return;
-                total++;
-                if (s.status === 'no_prazo') v++;
-                else if (s.status === 'atencao') a++;
-                else r++;
-            });
-            el.innerHTML = `
+    _renderKpis() {
+      const el = document.getElementById('aw-kpis');
+      if (!el) return;
+      const sm = window.AISManager.getStatusPorEmbarcacao();
+      const ok = this._mmsisFiltrados();
+      let total = 0, v = 0, a = 0, r = 0;
+      sm.forEach(s => {
+        if (!ok.has(s.mmsi)) return;
+        total++;
+        if (s.status === 'no_prazo') v++;
+        else if (s.status === 'atencao') a++;
+        else r++;
+      });
+      el.innerHTML = `
         <div class="aw-kpi"><div class="aw-kpi-valor" style="color:#38bdf8;">${total}</div><div class="aw-kpi-label">Total</div></div>
         <div class="aw-kpi v"><div class="aw-kpi-valor" style="color:#34d399;">${v}</div><div class="aw-kpi-label">No prazo</div></div>
         <div class="aw-kpi a"><div class="aw-kpi-valor" style="color:#fbbf24;">${a}</div><div class="aw-kpi-label">Atenção</div></div>
         <div class="aw-kpi r"><div class="aw-kpi-valor" style="color:#f87171;">${r}</div><div class="aw-kpi-label">Atrasado</div></div>
       `;
-        },
+    },
 
-        _renderEmb() {
-            const el = document.getElementById('aw-lista-emb');
-            const badge = document.getElementById('aw-total-emb');
-            if (!el) return;
-            const sm = window.AISManager.getStatusPorEmbarcacao();
-            const ok = this._mmsisFiltrados();
-            const list = [...sm.values()].filter(s => ok.has(s.mmsi)).sort((a, b) => b.atraso_h - a.atraso_h);
-            if (badge) badge.innerText = list.length;
-            if (!list.length) { el.className = 'aw-lista vazio'; el.innerHTML = 'Nenhuma embarcação'; return; }
-            el.className = 'aw-lista';
-            const L = { no_prazo: 'No prazo', atencao: 'Atenção', atrasado: 'Atrasado' };
-            el.innerHTML = list.map(s => {
-                const at = s.atraso_h > 0
-                    ? `<span style="color:${s.atraso_h > 2 ? '#f87171' : '#fbbf24'};">+${s.atraso_h.toFixed(1)}h</span>`
-                    : '<span style="color:#34d399;">0h</span>';
-                const sel = this._emb === s.mmsi ? 'sel' : '';
-                return `<div class="aw-emb ${sel}" onclick="ControleAIS.selecionar(${s.mmsi})">
-          <div class="aw-emb-nome"><span>${this._esc(s.nome)}</span><span class="aw-tag ${s.status}">${L[s.status]}</span></div>
-          <div class="aw-emb-info">
-            <span>Atraso: ${at}</span>
-            <span>Alertas: <b>${s.totalAlertas}</b></span>
-            <span>Pernas: <b>${s.totalViagens}</b></span>
-          </div></div>`;
-            }).join('');
-        },
+    _renderEmb() {
+      const el = document.getElementById('aw-lista-emb');
+      const badge = document.getElementById('aw-total-emb');
+      if (!el) return;
+      const sm = window.AISManager.getStatusPorEmbarcacao();
+      const ok = this._mmsisFiltrados();
+      const list = [...sm.values()].filter(s => ok.has(s.mmsi)).sort((a, b) => b.atraso_h - a.atraso_h);
+      if (badge) badge.innerText = list.length;
+      if (!list.length) { el.className = 'aw-lista vazio'; el.innerHTML = 'Nenhuma embarcação'; return; }
+      el.className = 'aw-lista';
+      const L = { no_prazo: 'No prazo', atencao: 'Atenção', atrasado: 'Atrasado' };
+      el.innerHTML = list.map(s => {
+        const at = s.atraso_h > 0
+          ? `<span style="color:${s.atraso_h > 2 ? '#f87171' : '#fbbf24'};">+${s.atraso_h.toFixed(1)}h</span>`
+          : '<span style="color:#34d399;">0h</span>';
+        const sel = this._emb === s.mmsi ? 'sel' : '';
+        const cls = s.corredor?.classificacao || 'dentro';
+        const clsIco = cls === 'dentro' ? '🟢' : cls === 'atencao' ? '🟡' : '🔴';
+        const clsLabel = cls === 'dentro' ? 'Em trecho VEN' : cls === 'atencao' ? 'Próximo' : 'Fora do VEN';
+        return `<div class="aw-emb ${sel}" onclick="ControleAIS.selecionar(${s.mmsi})">
+  <div class="aw-emb-nome">
+    <span>${this._esc(s.nome)}</span>
+    <span class="aw-tag ${s.status}">${L[s.status]}</span>
+  </div>
+  <div class="aw-emb-info">
+    <span>Atraso: ${at}</span>
+    <span>Alertas: <b>${s.totalAlertas}</b></span>
+    <span>Pernas: <b>${s.totalViagens}</b></span>
+  </div>
+  <div class="aw-emb-info" style="margin-top:3px;">
+    <span title="${clsLabel}">${clsIco} <b>${this._esc(s.corredor?.trecho_ven || '—')}</b></span>
+  </div>
+</div>`;
+      }).join('');
+    },
 
-        _renderAlertas() {
-            const el = document.getElementById('aw-lista-alt');
-            const badge = document.getElementById('aw-total-alt');
-            if (!el) return;
-            const ok = this._mmsisFiltrados();
-            const alt = window.AISManager.getTodosAlertas().filter(a => ok.has(a.mmsi));
-            if (badge) badge.innerText = alt.length;
-            if (!alt.length) { el.className = 'aw-lista vazio'; el.innerHTML = 'Nenhum alerta'; return; }
-            el.className = 'aw-lista';
-            const L = { atraso: 'Atraso', parada_nao_prevista: 'Parada', desempenho_baixo: 'Desempenho' };
-            el.innerHTML = alt.slice(0, 40).map(a => `
+    _renderAlertas() {
+      const el = document.getElementById('aw-lista-alt');
+      const badge = document.getElementById('aw-total-alt');
+      if (!el) return;
+      const ok = this._mmsisFiltrados();
+      const alt = window.AISManager.getTodosAlertas().filter(a => ok.has(a.mmsi));
+      if (badge) badge.innerText = alt.length;
+      if (!alt.length) { el.className = 'aw-lista vazio'; el.innerHTML = 'Nenhum alerta'; return; }
+      el.className = 'aw-lista';
+      const L = { atraso: 'Atraso', parada_nao_prevista: 'Parada', desempenho_baixo: 'Desempenho' };
+      el.innerHTML = alt.slice(0, 40).map(a => `
         <div class="aw-alerta ${a.severidade}" onclick="ControleAIS.selecionar(${a.mmsi})">
           <div class="aw-alerta-titulo"><span>${this._esc(a.nome)}</span><span class="aw-alerta-tag">${L[a.tipo] || a.tipo}</span></div>
           <div class="aw-alerta-desc">${this._esc(a.descricao)}</div>
           <div class="aw-alerta-data">🕒 ${this._fmt(a.timestamp)}</div>
         </div>`).join('');
-        },
+    },
 
-        selecionar(mmsi) {
-            if (this._emb === mmsi) {
-                this._emb = null;
-                this._mostrarPrincipal();
-                this.renderMonitor();
-                this._atualizarMapa();
-                this._contextoGlobal();
-                this._atualizarFrame();
-                if (window.AISLayer) window.AISLayer.limparTrilha();
-                return;
-            }
-            this._emb = mmsi;
-            this._mostrarDetalhe();
-            this._renderDetalhe(mmsi);
-            this._atualizarMapa();
-            this._rangeVessel(mmsi);
-            this._atualizarFrame();
-            if (window.AISLayer) window.AISLayer._destacarTrilha(mmsi);
-        },
+    selecionar(mmsi) {
+      if (this._emb === mmsi) {
+        this._emb = null;
+        this._mostrarPrincipal();
+        this.renderMonitor();
+        this._atualizarMapa();
+        this._contextoGlobal();
+        this._atualizarFrame();
+        if (window.AISLayer) window.AISLayer.limparTrilha();
+        return;
+      }
+      this._emb = mmsi;
+      this._mostrarDetalhe();
+      this._renderDetalhe(mmsi);
+      this._atualizarMapa();
+      this._rangeVessel(mmsi);
+      this._atualizarFrame();
+      if (window.AISLayer) window.AISLayer._destacarTrilha(mmsi);
+    },
 
-        _renderDetalhe(mmsi) {
-            const el = document.getElementById('aw-detalhe');
-            if (!el) return;
-            const cad = window.AISManager.getCadastro(mmsi) || {};
-            const s = window.AISManager.getStatusPorEmbarcacao().get(mmsi) || {};
-            const k = window.AISManager.getKpisPorEmbarcacao(mmsi);
-            const vg = window.AISManager.getViagensPorMmsi(mmsi);
-            const al = window.AISManager.getAlertasPorMmsi(mmsi);
-            const L = { no_prazo: 'No prazo', atencao: 'Atenção', atrasado: 'Atrasado' };
+    _renderDetalhe(mmsi) {
+      const el = document.getElementById('aw-detalhe');
+      if (!el) return;
+      const cad = window.AISManager.getCadastro(mmsi) || {};
+      const s = window.AISManager.getStatusPorEmbarcacao().get(mmsi) || {};
+      const k = window.AISManager.getKpisPorEmbarcacao(mmsi);
+      const vg = window.AISManager.getViagensPorMmsi(mmsi);
+      const al = window.AISManager.getAlertasPorMmsi(mmsi);
+      const L = { no_prazo: 'No prazo', atencao: 'Atenção', atrasado: 'Atrasado' };
 
-            const trechos = vg.slice(0, 40).map(v => `
+      const trechos = vg.slice(0, 40).map(v => `
         <div class="aw-trecho">
           <div class="aw-trecho-topo">
             <span class="aw-trecho-porto">${this._esc(v.porto)}</span>
@@ -741,15 +797,15 @@
           </div>
         </div>`).join('');
 
-            const alertasHTML = al.length
-                ? al.map(a => `<div class="aw-alerta ${a.severidade}" style="cursor:default;">
+      const alertasHTML = al.length
+        ? al.map(a => `<div class="aw-alerta ${a.severidade}" style="cursor:default;">
             <div class="aw-alerta-titulo"><span>${this._esc(a.tipo)}</span><span class="aw-alerta-tag">${a.severidade}</span></div>
             <div class="aw-alerta-desc">${this._esc(a.descricao)}</div>
             <div class="aw-alerta-data">🕒 ${this._fmt(a.timestamp)}</div>
           </div>`).join('')
-                : '<div style="color:#64748b;font-size:11px;padding:8px 0;">Nenhum alerta</div>';
+        : '<div style="color:#64748b;font-size:11px;padding:8px 0;">Nenhum alerta</div>';
 
-            el.innerHTML = `
+      el.innerHTML = `
         <div class="aw-det-header">
           <button class="aw-btn-voltar" onclick="ControleAIS.selecionar(${mmsi})">← Voltar</button>
           <div class="aw-det-nome">${this._esc(cad.nome || 'MMSI ' + mmsi)}</div>
@@ -778,22 +834,107 @@
             ${trechos || '<div style="color:#64748b;font-size:11px;">Sem pernas</div>'}
           </div>
           <div class="aw-bloco">
+          ${this._blocoCorredorHTML(mmsi)}
+          <div class="aw-bloco">
             <div class="aw-bloco-tit">Alertas (${al.length})</div>
             ${alertasHTML}
           </div>
         </div>`;
-        },
+    },
 
-        /* ============================================================
-           MODO SIMULADOR
-           ============================================================ */
-        _renderSimuladorForm() {
-            const body = document.getElementById('aw-sim-body');
-            if (!body) return;
-            const sm = window.AISManager.getStatusPorEmbarcacao();
-            const lista = [...sm.values()].sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+    _blocoCorredorHTML(mmsi) {
+      const stats = window.AISManager.getCorredorStats(mmsi);
+      const atual = window.AISManager.getCorredorAtual(mmsi);
+      const trechos = window.AISManager.getTrechosUsados(mmsi);
 
-            body.innerHTML = `
+      if (!atual) {
+        return `<div class="aw-bloco">
+      <div class="aw-bloco-tit">Vias Economicamente Navegadas (VEN)</div>
+      <div style="color:#64748b;font-size:11px;">Sem dados de VEN</div>
+    </div>`;
+      }
+
+      const cls = atual.classificacao;
+      const clsLabel = cls === 'dentro' ? 'EM TRECHO COM CARGA REGISTRADA'
+        : cls === 'atencao' ? 'PRÓXIMO À MARGEM DO TRECHO'
+          : 'FORA DOS TRECHOS VEN';
+      const clsCor = cls === 'dentro' ? '#34d399'
+        : cls === 'atencao' ? '#fbbf24' : '#f87171';
+
+      const trechosHTML = trechos.length
+        ? trechos.map(t => `
+        <div class="aw-linha">
+          <span class="aw-linha-l">${this._esc(t.trecho)}</span>
+          <span class="aw-linha-v">${t.pontos} pts</span>
+        </div>`).join('')
+        : '<div style="color:#64748b;font-size:11px;">Sem trechos identificados</div>';
+
+      return `
+    <div class="aw-bloco">
+      <div class="aw-bloco-tit">📍 Onde esta embarcação está navegando?</div>
+
+      <div style="background:rgba(30,73,118,0.4); border-left:3px solid #38bdf8;
+                  padding:10px 12px; border-radius:6px; margin-bottom:12px;
+                  font-size:11px; color:#cbd5e1; line-height:1.6;">
+        <b style="color:#38bdf8;">O que é VEN?</b><br>
+        Vias Economicamente Navegadas são os <b>trechos de rio por onde
+        efetivamente circularam cargas</b> nas safras oficiais da ANTAQ
+        (nesta base: <b>2022 e 2024</b>). Não é uma classificação oficial
+        de hidrovia — é o <b>registro histórico de onde houve movimentação
+        comercial</b>.
+      </div>
+
+      <div style="font-size:10.5px; color:#94a3b8; margin-bottom:8px;
+                  text-transform:uppercase; letter-spacing:0.4px; font-weight:700;">
+        Situação atual
+      </div>
+      <div style="background:${clsCor}; color:#0f172a; font-size:10.5px;
+                  font-weight:800; letter-spacing:0.4px;
+                  padding:7px 10px; border-radius:6px;
+                  margin-bottom:12px; text-align:center;">
+        ${clsLabel}
+      </div>
+
+      <div class="aw-linha">
+        <span class="aw-linha-l">Trecho com carga mais próximo</span>
+        <span class="aw-linha-v">${this._esc(atual.trecho_ven || '—')}</span>
+      </div>
+      <div class="aw-linha">
+        <span class="aw-linha-l">Distância até esse trecho</span>
+        <span class="aw-linha-v">${(atual.dist_ven_km || 0).toFixed(2)} km</span>
+      </div>
+
+      <div style="background:#0b192c; border:1px solid #1e293b;
+                  border-radius:6px; padding:8px 10px; margin-top:10px;
+                  font-size:10px; color:#94a3b8; line-height:1.5;">
+        <b style="color:#cbd5e1;">Como ler a distância:</b><br>
+        <span style="color:#34d399;">●</span> Até 2 km &nbsp;→&nbsp; <b style="color:#cbd5e1;">Em trecho VEN</b> (navegando onde há carga registrada)<br>
+        <span style="color:#fbbf24;">●</span> 2 a 5 km &nbsp;→&nbsp; <b style="color:#cbd5e1;">Próximo</b> (na margem do trecho VEN)<br>
+        <span style="color:#f87171;">●</span> Acima de 5 km &nbsp;→&nbsp; <b style="color:#cbd5e1;">Fora do VEN</b> (sem registro de carga no local)
+      </div>
+
+      <div class="aw-bloco-tit" style="margin-top:14px;">Histórico de uso das vias</div>
+      <div class="aw-grid3">
+        <div class="aw-mini"><div class="aw-mini-v" style="color:#34d399;">${stats.pct_dentro}%</div><div class="aw-mini-l">Em trecho</div></div>
+        <div class="aw-mini"><div class="aw-mini-v" style="color:#fbbf24;">${stats.pct_atencao}%</div><div class="aw-mini-l">Próx. margem</div></div>
+        <div class="aw-mini"><div class="aw-mini-v" style="color:#f87171;">${stats.pct_fora}%</div><div class="aw-mini-l">Fora</div></div>
+      </div>
+
+      <div class="aw-bloco-tit" style="margin-top:14px;">Trechos navegados</div>
+      ${trechosHTML}
+    </div>`;
+    },
+
+    /* ============================================================
+       MODO SIMULADOR
+       ============================================================ */
+    _renderSimuladorForm() {
+      const body = document.getElementById('aw-sim-body');
+      if (!body) return;
+      const sm = window.AISManager.getStatusPorEmbarcacao();
+      const lista = [...sm.values()].sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+
+      body.innerHTML = `
     <div class="aw-bloco">
       <div class="aw-bloco-tit">Configurar viagem</div>
       <div class="aw-sim-form">
@@ -823,129 +964,129 @@
     </div>
     <div id="aw-sim-resultado"></div>
   `;
-        },
+    },
 
-        _simMudarEmb() {
-            const sel = document.getElementById('aw-sim-emb');
-            const selO = document.getElementById('aw-sim-origem');
-            const selD = document.getElementById('aw-sim-destino');
-            const r = document.getElementById('aw-sim-resultado');
-            if (r) r.innerHTML = '';
-            if (!sel || !selO || !selD) return;
+    _simMudarEmb() {
+      const sel = document.getElementById('aw-sim-emb');
+      const selO = document.getElementById('aw-sim-origem');
+      const selD = document.getElementById('aw-sim-destino');
+      const r = document.getElementById('aw-sim-resultado');
+      if (r) r.innerHTML = '';
+      if (!sel || !selO || !selD) return;
 
-            const mmsi = parseInt(sel.value, 10);
-            selO.innerHTML = '<option value="">— Selecione —</option>';
-            selD.innerHTML = '<option value="">— Selecione a origem primeiro —</option>';
-            if (!mmsi) {
-                selO.innerHTML = '<option value="">— Selecione a embarcação primeiro —</option>';
-                return;
-            }
+      const mmsi = parseInt(sel.value, 10);
+      selO.innerHTML = '<option value="">— Selecione —</option>';
+      selD.innerHTML = '<option value="">— Selecione a origem primeiro —</option>';
+      if (!mmsi) {
+        selO.innerHTML = '<option value="">— Selecione a embarcação primeiro —</option>';
+        return;
+      }
 
-            const viagens = window.AISManager.getViagensPorMmsi(mmsi);
-            const portos = [];
-            const vistos = new Set();
-            viagens.forEach(v => {
-                if (v.porto && !vistos.has(v.porto)) {
-                    vistos.add(v.porto);
-                    portos.push(v.porto);
-                }
-            });
+      const viagens = window.AISManager.getViagensPorMmsi(mmsi);
+      const portos = [];
+      const vistos = new Set();
+      viagens.forEach(v => {
+        if (v.porto && !vistos.has(v.porto)) {
+          vistos.add(v.porto);
+          portos.push(v.porto);
+        }
+      });
 
-            selO.innerHTML = '<option value="">— Selecione —</option>' +
-                portos.map(p => `<option value="${this._esc(p)}">${this._esc(p)}</option>`).join('');
-        },
-        _simAtualizarDestinos() {
-            const selO = document.getElementById('aw-sim-origem');
-            const selD = document.getElementById('aw-sim-destino');
-            if (!selO || !selD) return;
-            const origem = selO.value;
-            const mmsi = parseInt(document.getElementById('aw-sim-emb').value, 10);
-            if (!origem || !mmsi) {
-                selD.innerHTML = '<option value="">— Selecione a origem primeiro —</option>';
-                return;
-            }
+      selO.innerHTML = '<option value="">— Selecione —</option>' +
+        portos.map(p => `<option value="${this._esc(p)}">${this._esc(p)}</option>`).join('');
+    },
+    _simAtualizarDestinos() {
+      const selO = document.getElementById('aw-sim-origem');
+      const selD = document.getElementById('aw-sim-destino');
+      if (!selO || !selD) return;
+      const origem = selO.value;
+      const mmsi = parseInt(document.getElementById('aw-sim-emb').value, 10);
+      if (!origem || !mmsi) {
+        selD.innerHTML = '<option value="">— Selecione a origem primeiro —</option>';
+        return;
+      }
 
-            const viagens = window.AISManager.getViagensPorMmsi(mmsi);
-            const portos = [];
-            const vistos = new Set();
-            viagens.forEach(v => {
-                if (v.porto && v.porto !== origem && !vistos.has(v.porto)) {
-                    vistos.add(v.porto);
-                    portos.push(v.porto);
-                }
-            });
+      const viagens = window.AISManager.getViagensPorMmsi(mmsi);
+      const portos = [];
+      const vistos = new Set();
+      viagens.forEach(v => {
+        if (v.porto && v.porto !== origem && !vistos.has(v.porto)) {
+          vistos.add(v.porto);
+          portos.push(v.porto);
+        }
+      });
 
-            selD.innerHTML = '<option value="">— Selecione —</option>' +
-                portos.map(p => `<option value="${this._esc(p)}">${this._esc(p)}</option>`).join('');
-        },
+      selD.innerHTML = '<option value="">— Selecione —</option>' +
+        portos.map(p => `<option value="${this._esc(p)}">${this._esc(p)}</option>`).join('');
+    },
 
-        _rangeVesselTrecho(mmsi, legs) {
-            if (!legs || !legs.length) return;
-            const tIni = new Date(legs[0].eta_real || legs[0].eta_programada).getTime();
-            const tFim = new Date(legs[legs.length - 1].eta_real || legs[legs.length - 1].eta_programada).getTime();
-            if (!tIni || !tFim) return;
-            this._tl.tInicio = Math.min(tIni, tFim);
-            this._tl.tFim = Math.max(tIni, tFim);
-            this._tl.tAtual = this._tl.tInicio;
-            this._tl._contexto = 'vessel';
-        },
-        rodarSimulacao() {
-            const embSel = document.getElementById('aw-sim-emb');
-            const origSel = document.getElementById('aw-sim-origem');
-            const destSel = document.getElementById('aw-sim-destino');
-            if (!embSel || !origSel || !destSel) return;
+    _rangeVesselTrecho(mmsi, legs) {
+      if (!legs || !legs.length) return;
+      const tIni = new Date(legs[0].eta_real || legs[0].eta_programada).getTime();
+      const tFim = new Date(legs[legs.length - 1].eta_real || legs[legs.length - 1].eta_programada).getTime();
+      if (!tIni || !tFim) return;
+      this._tl.tInicio = Math.min(tIni, tFim);
+      this._tl.tFim = Math.max(tIni, tFim);
+      this._tl.tAtual = this._tl.tInicio;
+      this._tl._contexto = 'vessel';
+    },
+    rodarSimulacao() {
+      const embSel = document.getElementById('aw-sim-emb');
+      const origSel = document.getElementById('aw-sim-origem');
+      const destSel = document.getElementById('aw-sim-destino');
+      if (!embSel || !origSel || !destSel) return;
 
-            const mmsi = parseInt(embSel.value, 10);
-            const origem = origSel.value;
-            const destino = destSel.value;
+      const mmsi = parseInt(embSel.value, 10);
+      const origem = origSel.value;
+      const destino = destSel.value;
 
-            if (!mmsi) { if (window.UI) window.UI.toast('⚠️ Escolha a embarcação'); return; }
-            if (!origem) { if (window.UI) window.UI.toast('⚠️ Escolha a origem'); return; }
-            if (!destino) { if (window.UI) window.UI.toast('⚠️ Escolha o destino'); return; }
-            if (origem === destino) { if (window.UI) window.UI.toast('⚠️ Origem e destino iguais'); return; }
+      if (!mmsi) { if (window.UI) window.UI.toast('⚠️ Escolha a embarcação'); return; }
+      if (!origem) { if (window.UI) window.UI.toast('⚠️ Escolha a origem'); return; }
+      if (!destino) { if (window.UI) window.UI.toast('⚠️ Escolha o destino'); return; }
+      if (origem === destino) { if (window.UI) window.UI.toast('⚠️ Origem e destino iguais'); return; }
 
-            const todasViagens = window.AISManager.getViagensPorMmsi(mmsi);
-            const idxOrig = todasViagens.findIndex(v => v.porto === origem);
-            const idxDest = todasViagens.findIndex(v => v.porto === destino);
-            if (idxOrig < 0 || idxDest < 0) {
-                if (window.UI) window.UI.toast('❌ Rota não encontrada'); return;
-            }
+      const todasViagens = window.AISManager.getViagensPorMmsi(mmsi);
+      const idxOrig = todasViagens.findIndex(v => v.porto === origem);
+      const idxDest = todasViagens.findIndex(v => v.porto === destino);
+      if (idxOrig < 0 || idxDest < 0) {
+        if (window.UI) window.UI.toast('❌ Rota não encontrada'); return;
+      }
 
-            // Pega o trecho origem → destino (com reverso se necessário)
-            let legs;
-            if (idxOrig <= idxDest) {
-                legs = todasViagens.slice(idxOrig, idxDest + 1);
-            } else {
-                legs = todasViagens.slice(idxDest, idxOrig + 1).reverse();
-            }
+      // Pega o trecho origem → destino (com reverso se necessário)
+      let legs;
+      if (idxOrig <= idxDest) {
+        legs = todasViagens.slice(idxOrig, idxDest + 1);
+      } else {
+        legs = todasViagens.slice(idxDest, idxOrig + 1).reverse();
+      }
 
-            this._sim.mmsi = mmsi;
-            this._sim.rodando = true;
-            this._sim.legs = legs;
+      this._sim.mmsi = mmsi;
+      this._sim.rodando = true;
+      this._sim.legs = legs;
 
-            const totalKm = legs.reduce((s, v) => s + (v.km || 0), 0);
-            const somaAtraso = legs.reduce((s, v) => s + (v.atraso_h || 0), 0);
-            const atrasoMedio = legs.length ? somaAtraso / legs.length : 0;
-            const atrasoMax = Math.max(...legs.map(v => v.atraso_h || 0));
+      const totalKm = legs.reduce((s, v) => s + (v.km || 0), 0);
+      const somaAtraso = legs.reduce((s, v) => s + (v.atraso_h || 0), 0);
+      const atrasoMedio = legs.length ? somaAtraso / legs.length : 0;
+      const atrasoMax = Math.max(...legs.map(v => v.atraso_h || 0));
 
-            const nPrazo = legs.filter(v => v.status === 'no_prazo').length;
-            const nAtencao = legs.filter(v => v.status === 'atencao').length;
-            const nAtrasado = legs.filter(v => v.status === 'atrasado').length;
-            const pctPrazo = Math.round((nPrazo / legs.length) * 100);
+      const nPrazo = legs.filter(v => v.status === 'no_prazo').length;
+      const nAtencao = legs.filter(v => v.status === 'atencao').length;
+      const nAtrasado = legs.filter(v => v.status === 'atrasado').length;
+      const pctPrazo = Math.round((nPrazo / legs.length) * 100);
 
-            let statusClass = 'ok', statusMsg = 'Viagem dentro do planejado';
-            if (nAtrasado / legs.length > 0.5) {
-                statusClass = 'err';
-                statusMsg = `${nAtrasado} de ${legs.length} pernas em atraso`;
-            } else if (nAtrasado + nAtencao > legs.length * 0.3) {
-                statusClass = 'warn';
-                statusMsg = `${nAtrasado + nAtencao} de ${legs.length} pernas com desvio`;
-            }
+      let statusClass = 'ok', statusMsg = 'Viagem dentro do planejado';
+      if (nAtrasado / legs.length > 0.5) {
+        statusClass = 'err';
+        statusMsg = `${nAtrasado} de ${legs.length} pernas em atraso`;
+      } else if (nAtrasado + nAtencao > legs.length * 0.3) {
+        statusClass = 'warn';
+        statusMsg = `${nAtrasado + nAtencao} de ${legs.length} pernas com desvio`;
+      }
 
-            const paradasHTML = legs.map((v, i) => {
-                const tag = v.status === 'no_prazo' ? 'ok' : v.status === 'atencao' ? 'warn' : 'err';
-                const ico = { no_prazo: '✓', atencao: '⚠️', atrasado: '✕' }[v.status];
-                return `
+      const paradasHTML = legs.map((v, i) => {
+        const tag = v.status === 'no_prazo' ? 'ok' : v.status === 'atencao' ? 'warn' : 'err';
+        const ico = { no_prazo: '✓', atencao: '⚠️', atrasado: '✕' }[v.status];
+        return `
       <div class="aw-sim-parada ${tag}">
         <div class="aw-sim-idx">${i + 1}</div>
         <div class="aw-sim-parada-info">
@@ -956,12 +1097,12 @@
         </div>
         <span class="aw-sim-parada-tag ${tag}">${ico} +${(v.atraso_h || 0).toFixed(1)}h</span>
       </div>`;
-            }).join('');
+      }).join('');
 
-            const body = document.getElementById('aw-sim-resultado');
-            if (!body) return;
+      const body = document.getElementById('aw-sim-resultado');
+      if (!body) return;
 
-            body.innerHTML = `
+      body.innerHTML = `
     <div class="aw-bloco">
       <div class="aw-bloco-tit">Resumo da viagem</div>
       <div class="aw-sim-status ${statusClass}">
@@ -993,30 +1134,30 @@
     </div>
   `;
 
-            // Foca no mapa e ajusta a animação pra esse trecho
-            this._emb = mmsi;
-            this._atualizarMapa();
-            this._rangeVesselTrecho(mmsi, legs);
-            this._atualizarFrame();
-            if (window.AISLayer) window.AISLayer._destacarTrilha(mmsi);
-            if (window.UI) window.UI.toast('✅ Viagem simulada — use o Play');
-        },
+      // Foca no mapa e ajusta a animação pra esse trecho
+      this._emb = mmsi;
+      this._atualizarMapa();
+      this._rangeVesselTrecho(mmsi, legs);
+      this._atualizarFrame();
+      if (window.AISLayer) window.AISLayer._destacarTrilha(mmsi);
+      if (window.UI) window.UI.toast('✅ Viagem simulada — use o Play');
+    },
 
-        /* ============================================================
-           MODO DASHBOARD (executivo)
-           ============================================================ */
-        _renderDashboard() {
-            const el = document.getElementById('aw-dash-body');
-            if (!el) return;
-            const r = window.AISManager.getResumo();
-            const alertas = window.AISManager.getTodosAlertas();
-            const statusMap = window.AISManager.getStatusPorEmbarcacao();
-            const lista = [...statusMap.values()].sort((a, b) => b.atraso_h - a.atraso_h);
+    /* ============================================================
+       MODO DASHBOARD (executivo)
+       ============================================================ */
+    _renderDashboard() {
+      const el = document.getElementById('aw-dash-body');
+      if (!el) return;
+      const r = window.AISManager.getResumo();
+      const alertas = window.AISManager.getTodosAlertas();
+      const statusMap = window.AISManager.getStatusPorEmbarcacao();
+      const lista = [...statusMap.values()].sort((a, b) => b.atraso_h - a.atraso_h);
 
-            const pctPrazo = r.total ? Math.round((r.no_prazo / r.total) * 100) : 0;
-            const atrasoMedio = (r.atraso_medio_h || 0).toFixed(1);
+      const pctPrazo = r.total ? Math.round((r.no_prazo / r.total) * 100) : 0;
+      const atrasoMedio = (r.atraso_medio_h || 0).toFixed(1);
 
-            const alertasTop = alertas.slice(0, 6).map(a => `
+      const alertasTop = alertas.slice(0, 6).map(a => `
         <div class="aw-dash-alerta ${a.severidade}">
           <div class="aw-dash-alerta-tit">
             <span>${this._esc(a.nome)}</span>
@@ -1028,7 +1169,7 @@
         </div>
       `).join('');
 
-            const cardsEmb = lista.map(s => `
+      const cardsEmb = lista.map(s => `
         <div class="aw-dash-card" onclick="ControleAIS._irParaMonitor(${s.mmsi})">
           <div class="aw-dash-card-nome" title="${this._esc(s.nome)}">${this._esc(s.nome)}</div>
           <span class="aw-tag ${s.status}">${s.status === 'no_prazo' ? 'No prazo' : s.status === 'atencao' ? 'Atenção' : 'Atrasado'}</span>
@@ -1039,7 +1180,7 @@
         </div>
       `).join('');
 
-            el.innerHTML = `
+      el.innerHTML = `
         <div class="aw-dash-titulo">📊 Sala de Situação · AIS</div>
         <div class="aw-dash-sub">Monitoramento de embarcações na Amazônia Legal · Gerência de Estudos e Projetos Hidroviários</div>
 
@@ -1100,186 +1241,197 @@
           </div>
         </div>
       `;
-        },
+    },
 
-        _irParaMonitor(mmsi) {
-            this.trocarModo('monitor');
-            setTimeout(() => this.selecionar(mmsi), 100);
-        },
+    _irParaMonitor(mmsi) {
+      this.trocarModo('monitor');
+      setTimeout(() => this.selecionar(mmsi), 100);
+    },
 
-        /* ============================================================
-           FILTROS
-           ============================================================ */
-        aplicarFiltros() {
-            this._filtros.status = document.getElementById('aw-filtro-status')?.value || '';
-            this._filtros.tipo = document.getElementById('aw-filtro-tipo')?.value || '';
-            this._filtros.perfil = document.getElementById('aw-filtro-perfil')?.value || '';
-            this.renderMonitor();
-            this._atualizarMapa();
-        },
+    /* ============================================================
+       FILTROS
+       ============================================================ */
+    aplicarFiltros() {
+      this._filtros.status = document.getElementById('aw-filtro-status')?.value || '';
+      this._filtros.tipo = document.getElementById('aw-filtro-tipo')?.value || '';
+      this._filtros.perfil = document.getElementById('aw-filtro-perfil')?.value || '';
+      this._filtros.corredor = document.getElementById('aw-filtro-corredor')?.value || '';
+      this.renderMonitor();
+      this._atualizarMapa();
+    },
 
-        limparFiltros() {
-            ['aw-filtro-status', 'aw-filtro-tipo', 'aw-filtro-perfil'].forEach(id => {
-                const el = document.getElementById(id); if (el) el.value = '';
-            });
-            this._filtros = { status: '', tipo: '', perfil: '' };
-            this.aplicarFiltros();
-        },
+    limparFiltros() {
+      ['aw-filtro-status', 'aw-filtro-tipo', 'aw-filtro-perfil', 'aw-filtro-corredor'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+      });
+      this._filtros = { status: '', tipo: '', perfil: '', corredor: '' };
+      this.aplicarFiltros();
+    },
 
-        _mmsisFiltrados() {
-            const sm = window.AISManager.getStatusPorEmbarcacao();
-            const set = new Set();
-            sm.forEach((s, mmsi) => {
-                if (this._filtros.status && s.status !== this._filtros.status) return;
-                if (this._filtros.tipo && s.tipo !== this._filtros.tipo) return;
-                if (this._filtros.perfil && s.perfil !== this._filtros.perfil) return;
-                set.add(mmsi);
-            });
-            return set;
-        },
-
-        _atualizarMapa() {
-            if (!window.AISLayer) return;
-            if (this._emb) {
-                const so = window.AISManager.getTodasPosicoes().filter(p => p.mmsi === this._emb);
-                window.AISLayer.renderizarTrilhas(so);
-                return;
-            }
-            const mmsis = this._mmsisFiltrados();
-            const todas = window.AISManager.getTodasPosicoes().filter(p => mmsis.has(p.mmsi));
-            window.AISLayer.renderizarTrilhas(todas);
-        },
-
-        /* ============================================================
-           TIMELINE
-           ============================================================ */
-        _garantirRangeGlobal() {
-            const pos = window.AISManager.getTodasPosicoes();
-            if (!pos.length) return;
-            let tMin = Infinity, tMax = -Infinity;
-            pos.forEach(p => {
-                const t = new Date(p.timestamp).getTime();
-                if (t < tMin) tMin = t;
-                if (t > tMax) tMax = t;
-            });
-            this._tl.tInicio = tMin;
-            this._tl.tFim = tMax;
-            this._tl.tAtual = tMin;
-            this._tl._contexto = 'global';
-        },
-
-        _rangeVessel(mmsi) {
-            const pos = window.AISManager.getTodasPosicoes().filter(p => p.mmsi === mmsi);
-            if (!pos.length) return;
-            let tMin = Infinity, tMax = -Infinity;
-            pos.forEach(p => {
-                const t = new Date(p.timestamp).getTime();
-                if (t < tMin) tMin = t;
-                if (t > tMax) tMax = t;
-            });
-            this._tl.tInicio = tMin;
-            this._tl.tFim = tMax;
-            this._tl.tAtual = tMin;
-            this._tl._contexto = 'vessel';
-        },
-
-        togglePlay() { this._tl.playing ? this._pausar() : this._play(); },
-
-        _play() {
-            const tl = this._tl;
-            if (tl.tAtual >= tl.tFim) tl.tAtual = tl.tInicio;
-            tl.playing = true;
-            const b = document.getElementById('aw-btn-play');
-            if (b) { b.innerText = '⏸ Pausar'; b.classList.add('pausado'); }
-            tl._timer = setInterval(() => {
-                tl.tAtual += tl.vel * 3600 * 1000 * (tl._passo / 1000);
-                if (tl.tAtual >= tl.tFim) { tl.tAtual = tl.tFim; this._pausar(); }
-                this._atualizarFrame();
-            }, tl._passo);
-        },
-
-        _pausar() {
-            const tl = this._tl;
-            tl.playing = false;
-            if (tl._timer) clearInterval(tl._timer);
-            tl._timer = null;
-            const b = document.getElementById('aw-btn-play');
-            if (b) { b.innerText = '▶ Play'; b.classList.remove('pausado'); }
-        },
-
-        setVel(v) { this._tl.vel = Number(v) || 6; },
-
-        seek(val) {
-            const tl = this._tl;
-            tl.tAtual = tl.tInicio + (tl.tFim - tl.tInicio) * (Number(val) / 1000);
-            this._atualizarFrame();
-        },
-
-        _atualizarFrame() {
-            const tl = this._tl;
-            let pos = window.AISManager.getTodasPosicoes();
-            if (!pos.length) return;
-            if (this._emb) pos = pos.filter(p => p.mmsi === this._emb);
-            if (window.AISLayer) window.AISLayer.renderizarProgressivo(pos, tl.tAtual, tl._janela);
-
-            const label = document.getElementById('aw-tempo');
-            if (label) {
-                label.innerText = new Date(tl.tAtual).toLocaleString('pt-BR', {
-                    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-                });
-            }
-            const s = document.getElementById('aw-slider');
-            if (s && tl.tFim > tl.tInicio) {
-                s.value = Math.round(((tl.tAtual - tl.tInicio) / (tl.tFim - tl.tInicio)) * 1000);
-            }
-        },
-
-        /* ============================================================
-           EXPORT
-           ============================================================ */
-        exportarCSV() {
-            try {
-                const sm = window.AISManager.getStatusPorEmbarcacao();
-                const mmsis = this._mmsisFiltrados();
-                const linhas = [['mmsi', 'nome', 'tipo', 'perfil', 'status', 'atraso_h', 'total_viagens', 'total_alertas']];
-                sm.forEach((s, mmsi) => {
-                    if (!mmsis.has(mmsi)) return;
-                    linhas.push([mmsi, '"' + (s.nome || '').replace(/"/g, '""') + '"',
-                        s.tipo || '', s.perfil || '', s.status || '',
-                        (s.atraso_h || 0).toFixed(2), s.totalViagens || 0, s.totalAlertas || 0]);
-                });
-                const csv = linhas.map(l => l.join(',')).join('\n');
-                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url; a.download = `embarcacoes-ais-${new Date().toISOString().slice(0, 10)}.csv`;
-                document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                if (window.UI) window.UI.toast('✅ CSV exportado');
-            } catch (e) {
-                console.error('[AIS] export:', e);
-                if (window.UI) window.UI.toast('❌ Falha ao exportar');
-            }
-        },
-
-        /* ============================================================
-           HELPERS
-           ============================================================ */
-        _esc(s) {
-            if (window.Security && window.Security.escapeHTML) return window.Security.escapeHTML(s || '');
-            return String(s || '').replace(/[&<>"']/g, c => ({
-                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-            }[c]));
-        },
-        _fmt(iso) {
-            if (!iso) return '—';
-            try {
-                const d = new Date(iso);
-                if (isNaN(d.getTime())) return iso;
-                return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-            } catch (e) { return iso; }
+    _mmsisFiltrados() {
+      const sm = window.AISManager.getStatusPorEmbarcacao();
+      const set = new Set();
+      sm.forEach((s, mmsi) => {
+        if (this._filtros.status && s.status !== this._filtros.status) return;
+        if (this._filtros.tipo && s.tipo !== this._filtros.tipo) return;
+        if (this._filtros.perfil && s.perfil !== this._filtros.perfil) return;
+        if (this._filtros.corredor) {
+          const cls = s.corredor?.classificacao || 'dentro';
+          if (cls !== this._filtros.corredor) return;
         }
-    };
+        set.add(mmsi);
+      });
+      return set;
+    },
 
-    window.ControleAIS = ControleAIS;
+    _atualizarMapa() {
+      if (!window.AISLayer) return;
+      if (this._emb) {
+        const so = window.AISManager.getTodasPosicoes().filter(p => p.mmsi === this._emb);
+        window.AISLayer.renderizarTrilhas(so);
+        return;
+      }
+      const mmsis = this._mmsisFiltrados();
+      const todas = window.AISManager.getTodasPosicoes().filter(p => mmsis.has(p.mmsi));
+      window.AISLayer.renderizarTrilhas(todas);
+    },
+
+    /* ============================================================
+       TIMELINE
+       ============================================================ */
+    _garantirRangeGlobal() {
+      const pos = window.AISManager.getTodasPosicoes();
+      if (!pos.length) return;
+      let tMin = Infinity, tMax = -Infinity;
+      pos.forEach(p => {
+        const t = new Date(p.timestamp).getTime();
+        if (t < tMin) tMin = t;
+        if (t > tMax) tMax = t;
+      });
+      this._tl.tInicio = tMin;
+      this._tl.tFim = tMax;
+      this._tl.tAtual = tMin;
+      this._tl._contexto = 'global';
+    },
+
+    _rangeVessel(mmsi) {
+      const pos = window.AISManager.getTodasPosicoes().filter(p => p.mmsi === mmsi);
+      if (!pos.length) return;
+      let tMin = Infinity, tMax = -Infinity;
+      pos.forEach(p => {
+        const t = new Date(p.timestamp).getTime();
+        if (t < tMin) tMin = t;
+        if (t > tMax) tMax = t;
+      });
+      this._tl.tInicio = tMin;
+      this._tl.tFim = tMax;
+      this._tl.tAtual = tMin;
+      this._tl._contexto = 'vessel';
+    },
+
+    togglePlay() { this._tl.playing ? this._pausar() : this._play(); },
+
+    _play() {
+      const tl = this._tl;
+      if (tl.tAtual >= tl.tFim) tl.tAtual = tl.tInicio;
+      tl.playing = true;
+      const b = document.getElementById('aw-btn-play');
+      if (b) { b.innerText = '⏸ Pausar'; b.classList.add('pausado'); }
+      tl._timer = setInterval(() => {
+        tl.tAtual += tl.vel * 3600 * 1000 * (tl._passo / 1000);
+        if (tl.tAtual >= tl.tFim) { tl.tAtual = tl.tFim; this._pausar(); }
+        this._atualizarFrame();
+      }, tl._passo);
+    },
+
+    _pausar() {
+      const tl = this._tl;
+      tl.playing = false;
+      if (tl._timer) clearInterval(tl._timer);
+      tl._timer = null;
+      const b = document.getElementById('aw-btn-play');
+      if (b) { b.innerText = '▶ Play'; b.classList.remove('pausado'); }
+    },
+
+    setVel(v) { this._tl.vel = Number(v) || 6; },
+
+    seek(val) {
+      const tl = this._tl;
+      tl.tAtual = tl.tInicio + (tl.tFim - tl.tInicio) * (Number(val) / 1000);
+      this._atualizarFrame();
+    },
+
+    _atualizarFrame() {
+      const tl = this._tl;
+      let pos = window.AISManager.getTodasPosicoes();
+      if (!pos.length) return;
+      if (this._emb) pos = pos.filter(p => p.mmsi === this._emb);
+      if (window.AISLayer) window.AISLayer.renderizarProgressivo(pos, tl.tAtual, tl._janela);
+
+      const label = document.getElementById('aw-tempo');
+      if (label) {
+        label.innerText = new Date(tl.tAtual).toLocaleString('pt-BR', {
+          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+        });
+      }
+      const s = document.getElementById('aw-slider');
+      if (s && tl.tFim > tl.tInicio) {
+        s.value = Math.round(((tl.tAtual - tl.tInicio) / (tl.tFim - tl.tInicio)) * 1000);
+      }
+    },
+
+    /* ============================================================
+       EXPORT
+       ============================================================ */
+    exportarCSV() {
+      try {
+        const sm = window.AISManager.getStatusPorEmbarcacao();
+        const mmsis = this._mmsisFiltrados();
+        const linhas = [['mmsi', 'nome', 'tipo', 'perfil', 'status', 'atraso_h', 'total_viagens', 'total_alertas']];
+        sm.forEach((s, mmsi) => {
+          if (!mmsis.has(mmsi)) return;
+          linhas.push([mmsi, '"' + (s.nome || '').replace(/"/g, '""') + '"',
+            s.tipo || '', s.perfil || '', s.status || '',
+            (s.atraso_h || 0).toFixed(2), s.totalViagens || 0, s.totalAlertas || 0]);
+        });
+        const csv = linhas.map(l => l.join(',')).join('\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `embarcacoes-ais-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        if (window.UI) window.UI.toast('✅ CSV exportado');
+      } catch (e) {
+        console.error('[AIS] export:', e);
+        if (window.UI) window.UI.toast('❌ Falha ao exportar');
+      }
+    },
+
+    /* ============================================================
+       HELPERS
+       ============================================================ */
+    _esc(s) {
+      if (window.Security && window.Security.escapeHTML) return window.Security.escapeHTML(s || '');
+      return String(s || '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    },
+    _fmt(iso) {
+      if (!iso) return '—';
+      try {
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return iso;
+        return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      } catch (e) { return iso; }
+    }
+  };
+  // ✅ Fecha o painel AIS automaticamente quando o usuário troca para outra aba
+  window.addEventListener('tabmudou', function (e) {
+    if (e.detail.aba !== 'ais' && ControleAIS._aberto) {
+      ControleAIS.fechar();
+    }
+  });
+
+  window.ControleAIS = ControleAIS;
 })();
