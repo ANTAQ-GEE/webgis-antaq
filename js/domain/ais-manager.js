@@ -26,6 +26,17 @@
     _visivel: false,
     _modoTrilha: false,
 
+    /* -------------------- Abertura de Aba -------------------- */
+    clicarAba() {
+      if (window.TabManager && typeof window.TabManager.trocar === 'function') {
+        window.TabManager.trocar('ais');
+      } else if (window.ControleAIS && typeof window.ControleAIS.abrir === 'function') {
+        window.ControleAIS.abrir();
+      } else {
+        this.toggle();
+      }
+    },
+
     /* -------------------- Carregamento -------------------- */
     async carregar() {
       if (this._pronto || this._carregando) return;

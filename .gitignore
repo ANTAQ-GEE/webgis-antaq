@@ -43,3 +43,11 @@ tests/**/*-expected.png
 *.gslides
 backup_antigos/
 
+
+
+# Google Drive stubs e backups locais
+*.gdoc
+*.gsheet
+*.gslides
+backup_antigos/
+

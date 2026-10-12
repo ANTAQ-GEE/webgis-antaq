@@ -1,6 +1,6 @@
 /* ============================================================
    WebGIS ANTAQ — Módulo: GeoTools (M10)
-   Escopo: geoprocessamento (intersecção, diferença, união)
+   Escopo: geoprocessamento (intersecção, diferença, união, pontos em polígono)
    Dependências: window.DADOS_GEOJSON_BRUTOS, window.CONFIG_CAMADAS,
                  window.CAMADAS_MAPA, window.LayerRegistry, window.UI,
                  window.Security, window.Styler, window.FilterManager,
@@ -53,28 +53,52 @@
         selOp._geoListeners = true;
       }
 
-      // ✅ Radios visuais controlam o select oculto E forçam refresh do preview
+      // Radios visuais controlam o select oculto E forçam refresh do preview
       document.querySelectorAll('input[name="geo-op"]').forEach(radio => {
         if (radio._geoListeners) return;
         radio.addEventListener('change', (e) => {
           if (selOp) selOp.value = e.target.value;
-          // Força reprocessamento mesmo se o value não mudou (edge case)
           setTimeout(() => this._atualizarPreview(), 10);
         });
         radio._geoListeners = true;
       });
-      // ✅ Click nos labels dos radios também dispara preview
+
+      // Click nos labels dos radios também garante seleção e dispara preview
       document.querySelectorAll('.geo-op-opcao').forEach(label => {
         if (label._geoLabelListeners) return;
         label.addEventListener('click', () => {
-          setTimeout(() => this._atualizarPreview(), 20);
+          const radio = label.querySelector('input[name="geo-op"]');
+          if (radio) {
+            radio.checked = true;
+            if (selOp) selOp.value = radio.value;
+          }
+          setTimeout(() => this._atualizarPreview(), 10);
         });
         label._geoLabelListeners = true;
       });
+
       const chkDis = document.getElementById('geo-dissolve');
       if (chkDis && !chkDis._geoListeners) {
         chkDis.addEventListener('change', () => this._atualizarPreview());
         chkDis._geoListeners = true;
+      }
+
+      // Fechamento amigável pelo backdrop e tecla ESC
+      const modal = document.getElementById('modal-geo');
+      if (modal && !modal._backdropListener) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) this.fecharModal();
+        });
+        modal._backdropListener = true;
+      }
+      if (!this._escListener) {
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            const m = document.getElementById('modal-geo');
+            if (m && m.classList.contains('aberto')) this.fecharModal();
+          }
+        });
+        this._escListener = true;
       }
     },
 
@@ -83,13 +107,14 @@
       const selB = document.getElementById('geo-camada-b');
       if (!selA || !selB) return;
 
-      // Lista TODAS as camadas do CONFIG (mesmo não carregadas)
       const candidatas = [];
-      for (const [id, cfg] of Object.entries(CONFIG_CAMADAS)) {
-        // Ignora buffers/geos/importadas (evita selects poluídos)
+      const config = window.CONFIG_CAMADAS || {};
+      const brutos = window.DADOS_GEOJSON_BRUTOS || {};
+
+      for (const [id, cfg] of Object.entries(config)) {
         if (id.startsWith('buffer_') || id.startsWith('geo_') || id.startsWith('imp_')) continue;
 
-        const carregada = DADOS_GEOJSON_BRUTOS[id]?.features?.length || 0;
+        const carregada = brutos[id]?.features?.length || 0;
         const nome = cfg.nome || id;
         const marca = carregada > 0 ? `(${carregada.toLocaleString('pt-BR')})` : '(carregar)';
         candidatas.push({ id, nome, n: carregada, label: `${nome} ${marca}` });
@@ -143,7 +168,21 @@
 
       const idA = selA ? selA.value : '';
       const idB = selB ? selB.value : '';
-      const op = (selOp && selOp.value) ? selOp.value : 'intersecao';
+      const checkedRadio = document.querySelector('input[name="geo-op"]:checked');
+      const op = checkedRadio?.value || selOp?.value || 'intersecao';
+      if (selOp && selOp.value !== op) selOp.value = op;
+
+      const chkDis = document.getElementById('geo-dissolve');
+      if (chkDis) {
+        if (op === 'pontos_em') {
+          chkDis.disabled = true;
+          chkDis.checked = false;
+          if (chkDis.parentElement) chkDis.parentElement.style.opacity = '0.5';
+        } else {
+          chkDis.disabled = false;
+          if (chkDis.parentElement) chkDis.parentElement.style.opacity = '1';
+        }
+      }
 
       if (!idA || !idB) {
         preview.innerHTML = '<em style="color:#64748b;">Selecione duas camadas.</em>';
@@ -154,10 +193,12 @@
         return;
       }
 
-      const nA = DADOS_GEOJSON_BRUTOS[idA]?.features?.length || 0;
-      const nB = DADOS_GEOJSON_BRUTOS[idB]?.features?.length || 0;
-      const nomeA = window.CONFIG_CAMADAS[idA]?.nome || idA;
-      const nomeB = window.CONFIG_CAMADAS[idB]?.nome || idB;
+      const brutos = window.DADOS_GEOJSON_BRUTOS || {};
+      const config = window.CONFIG_CAMADAS || {};
+      const nA = brutos[idA]?.features?.length || 0;
+      const nB = brutos[idB]?.features?.length || 0;
+      const nomeA = config[idA]?.nome || idA;
+      const nomeB = config[idB]?.nome || idB;
 
       const operacoes = {
         'intersecao': '🔷 Intersecção',
@@ -172,45 +213,51 @@
       const carregadaA = nA > 0;
       const carregadaB = nB > 0;
 
-      // ✅ Detecta tipos geométricos pra avisar incompatibilidades
+      const inferirTipo = (id) => {
+        if (brutos[id]?.features?.length && this._detectarTipoGeom) {
+          const t = this._detectarTipoGeom(brutos[id].features);
+          if (t && t !== 'desconhecido') return t;
+        }
+        const cfg = config[id];
+        if (cfg?.tipoGeo) {
+          const tg = String(cfg.tipoGeo).toLowerCase();
+          if (tg.includes('ponto')) return 'ponto';
+          if (tg.includes('linha')) return 'linha';
+          if (tg.includes('poli')) return 'poligono';
+        }
+        return 'desconhecido';
+      };
+
+      const tipoA = inferirTipo(idA);
+      const tipoB = inferirTipo(idB);
+      const tipoLabel = { ponto: 'pontos', linha: 'linhas', poligono: 'polígonos', desconhecido: '?' };
+
       let avisoTipo = '';
-      let tipoA = '?';
-      let tipoB = '?';
-      if (carregadaA && carregadaB && this._detectarTipoGeom) {
-        tipoA = this._detectarTipoGeom(DADOS_GEOJSON_BRUTOS[idA].features);
-        tipoB = this._detectarTipoGeom(DADOS_GEOJSON_BRUTOS[idB].features);
-
-        const tipoLabel = { ponto: 'pontos', linha: 'linhas', poligono: 'polígonos', desconhecido: '?' };
-
-        // Avisos específicos por operação
-        if (op === 'pontos_em') {
-          const valido = (tipoA === 'ponto' && tipoB === 'poligono') || (tipoA === 'poligono' && tipoB === 'ponto');
-          if (!valido) {
-            avisoTipo = `<div style="margin-top:8px;padding:6px 10px;background:rgba(239,68,68,0.15);border-left:3px solid #ef4444;border-radius:4px;font-size:10.5px;color:#fca5a5;">
-              ⚠️ <strong>Combinação inválida.</strong> Esta operação precisa de <strong>pontos × polígonos</strong>.
-              Você tem ${tipoLabel[tipoA] || '?'} × ${tipoLabel[tipoB] || '?'}.
-            </div>`;
-          } else {
-            avisoTipo = `<div style="margin-top:8px;padding:6px 10px;background:rgba(16,185,129,0.15);border-left:3px solid #10b981;border-radius:4px;font-size:10.5px;color:#a7f3d0;">
-              ✅ <strong>Compatível.</strong> ${tipoLabel[tipoA]} em ${tipoLabel[tipoB]}.
-            </div>`;
-          }
-        } else if (op === 'intersecao') {
-          if ((tipoA === 'ponto') !== (tipoB === 'ponto')) {
-            avisoTipo = `<div style="margin-top:8px;padding:6px 10px;background:rgba(245,158,11,0.15);border-left:3px solid #f59e0b;border-radius:4px;font-size:10.5px;color:#fde68a;">
-              ℹ️ Ponto × não-ponto <strong>não funciona com <code>turf.intersect</code></strong>.
-              Use <strong>🎯 Pontos em</strong> se quiser filtrar pontos dentro de polígonos.
-            </div>`;
-          }
+      if (op === 'pontos_em') {
+        const valido = (tipoA === 'ponto' && tipoB === 'poligono') || (tipoA === 'poligono' && tipoB === 'ponto');
+        if (!valido && tipoA !== 'desconhecido' && tipoB !== 'desconhecido') {
+          avisoTipo = `<div style="margin-top:8px;padding:6px 10px;background:rgba(239,68,68,0.15);border-left:3px solid #ef4444;border-radius:4px;font-size:10.5px;color:#fca5a5;">
+            ⚠️ <strong>Combinação inválida.</strong> Esta operação precisa de <strong>pontos × polígonos</strong>.
+            Você tem ${tipoLabel[tipoA] || '?'} × ${tipoLabel[tipoB] || '?'}.
+          </div>`;
+        } else {
+          avisoTipo = `<div style="margin-top:8px;padding:6px 10px;background:rgba(16,185,129,0.15);border-left:3px solid #10b981;border-radius:4px;font-size:10.5px;color:#a7f3d0;">
+            ✅ <strong>Compatível.</strong> ${tipoLabel[tipoA] || '?'} em ${tipoLabel[tipoB] || '?'}.
+          </div>`;
+        }
+      } else if (op === 'intersecao') {
+        if ((tipoA === 'ponto') !== (tipoB === 'ponto') && tipoA !== 'desconhecido' && tipoB !== 'desconhecido') {
+          avisoTipo = `<div style="margin-top:8px;padding:6px 10px;background:rgba(245,158,11,0.15);border-left:3px solid #f59e0b;border-radius:4px;font-size:10.5px;color:#fde68a;">
+            ℹ️ Ponto × não-ponto: utilize <strong>🎯 Pontos em</strong> se desejar filtrar pontos contidos em polígonos.
+          </div>`;
         }
       }
 
-      const tipoLabel = { ponto: 'pontos', linha: 'linhas', poligono: 'polígonos', desconhecido: '?' };
-      const tiposTexto = (carregadaA && carregadaB)
-        ? `<div style="font-size:10px;color:#64748b;margin-bottom:6px;">
-             A: <strong>${tipoLabel[tipoA] || '?'}</strong> · B: <strong>${tipoLabel[tipoB] || '?'}</strong>
-           </div>`
-        : '';
+      const tiposTexto = `<div style="font-size:10px;color:#64748b;margin-bottom:6px;">
+        A: <strong>${tipoLabel[tipoA] || '?'}</strong> · B: <strong>${tipoLabel[tipoB] || '?'}</strong>
+      </div>`;
+
+      const escape = (val) => (window.Security && window.Security.escapeHTML) ? window.Security.escapeHTML(val) : String(val ?? '');
 
       preview.innerHTML = `
         <div style="font-size:11.5px;color:#cbd5e1;line-height:1.5;">
@@ -218,18 +265,18 @@
           ${tiposTexto}
           <div>
             <strong style="color:#38bdf8;">${carregadaA ? nA.toLocaleString('pt-BR') : '?'}</strong>
-            feições de <span style="color:#e2e8f0;">${window.Security.escapeHTML(nomeA)}</span>
+            feições de <span style="color:#e2e8f0;">${escape(nomeA)}</span>
             ${!carregadaA ? '<span style="color:#f59e0b;"> (será carregada)</span>' : ''}
           </div>
           <div>
             <strong style="color:#38bdf8;">${carregadaB ? nB.toLocaleString('pt-BR') : '?'}</strong>
-            feições de <span style="color:#e2e8f0;">${window.Security.escapeHTML(nomeB)}</span>
+            feições de <span style="color:#e2e8f0;">${escape(nomeB)}</span>
             ${!carregadaB ? '<span style="color:#f59e0b;"> (será carregada)</span>' : ''}
           </div>
-          ${carregadaA && carregadaB ? `
+          ${(carregadaA && carregadaB) ? `
             <div style="margin-top:8px;font-size:10.5px;color:#64748b;">
               Pares a testar: <strong>${pares.toLocaleString('pt-BR')}</strong>
-              ${pesado ? '<span style="color:#f59e0b;"> — pode demorar</span>' : ''}
+              ${pesado ? '<span style="color:#f59e0b;"> — otimizado com bounding box</span>' : ''}
             </div>
           ` : ''}
           ${avisoTipo}
@@ -249,7 +296,8 @@
 
       const idA = selA?.value;
       const idB = selB?.value;
-      const op = (selOp && selOp.value) ? selOp.value : 'intersecao';
+      const checkedRadio = document.querySelector('input[name="geo-op"]:checked');
+      const op = checkedRadio?.value || selOp?.value || 'intersecao';
       const dissolve = chkDissolve ? chkDissolve.checked : false;
 
       if (!idA || !idB) {
@@ -271,22 +319,29 @@
         btn.innerHTML = '⏳ Calculando...';
       }
 
+      const brutos = window.DADOS_GEOJSON_BRUTOS || {};
+      const config = window.CONFIG_CAMADAS || {};
+
       // Carrega camadas sob demanda
       try {
-        if (!DADOS_GEOJSON_BRUTOS[idA]?.features?.length) {
-          if (window.UI) window.UI.toast(`⏳ Carregando ${CONFIG_CAMADAS[idA]?.nome || idA}...`);
-          await window.DataManager.carregarCamada(idA);
+        if (!brutos[idA]?.features?.length) {
+          if (window.UI) window.UI.toast(`⏳ Carregando ${config[idA]?.nome || idA}...`);
+          if (window.DataManager && window.DataManager.carregarCamada) {
+            await window.DataManager.carregarCamada(idA);
+          }
         }
-        if (!DADOS_GEOJSON_BRUTOS[idB]?.features?.length) {
-          if (window.UI) window.UI.toast(`⏳ Carregando ${CONFIG_CAMADAS[idB]?.nome || idB}...`);
-          await window.DataManager.carregarCamada(idB);
+        if (!brutos[idB]?.features?.length) {
+          if (window.UI) window.UI.toast(`⏳ Carregando ${config[idB]?.nome || idB}...`);
+          if (window.DataManager && window.DataManager.carregarCamada) {
+            await window.DataManager.carregarCamada(idB);
+          }
         }
       } catch (e) {
         console.error('[M10] Falha ao carregar camadas:', e);
       }
 
-      const dadosA = DADOS_GEOJSON_BRUTOS[idA];
-      const dadosB = DADOS_GEOJSON_BRUTOS[idB];
+      const dadosA = brutos[idA];
+      const dadosB = brutos[idB];
       if (!dadosA?.features?.length || !dadosB?.features?.length) {
         if (window.UI) window.UI.toast('⚠️ Uma das camadas não pôde ser carregada.');
         if (btn) {
@@ -316,7 +371,8 @@
           return;
         }
 
-        if (dissolve && resultadoFeatures.length > 1 && op !== 'uniao') {
+        // Dissolve só é aplicável para polígonos resultantes de interseção/diferença
+        if (dissolve && resultadoFeatures.length > 1 && op !== 'uniao' && op !== 'pontos_em') {
           resultadoFeatures = await this._dissolver(resultadoFeatures);
         }
 
@@ -344,21 +400,42 @@
     /* ---------- Intersecção ---------- */
     _processarIntersecao: async function (dadosA, dadosB) {
       const resultado = [];
-      const featsA = dadosA.features.filter(f => f && f.geometry);
-      const featsB = dadosB.features.filter(f => f && f.geometry);
+      const featsA = (dadosA.features || []).filter(f => f && f.geometry);
+      const featsB = (dadosB.features || []).filter(f => f && f.geometry);
       let processados = 0;
 
+      // Pré-calcula Bounding Box de B
+      const bComBbox = [];
+      for (const fB of featsB) {
+        let bbox = null;
+        if (typeof turf !== 'undefined' && turf.bbox) {
+          try { bbox = turf.bbox(fB); } catch (e) {}
+        }
+        let bounds = null;
+        if (typeof L !== 'undefined' && L.geoJSON) {
+          try { bounds = L.geoJSON(fB).getBounds(); } catch (e) {}
+        }
+        bComBbox.push({ feature: fB, bbox, bounds: (bounds && bounds.isValid()) ? bounds : null });
+      }
+
       for (const fA of featsA) {
-        let boundsA;
-        try { boundsA = L.geoJSON(fA).getBounds(); } catch (e) { continue; }
+        let bboxA = null;
+        if (typeof turf !== 'undefined' && turf.bbox) {
+          try { bboxA = turf.bbox(fA); } catch (e) {}
+        }
+        let boundsA = null;
+        if (typeof L !== 'undefined' && L.geoJSON) {
+          try { boundsA = L.geoJSON(fA).getBounds(); } catch (e) {}
+        }
         if (!boundsA || !boundsA.isValid()) continue;
 
-        for (const fB of featsB) {
-          let boundsB;
-          try { boundsB = L.geoJSON(fB).getBounds(); } catch (e) { continue; }
-          if (!boundsB || !boundsB.isValid()) continue;
-
-          if (!boundsA.intersects(boundsB)) continue;
+        for (const itemB of bComBbox) {
+          const { feature: fB, bbox: bboxB, bounds: boundsB } = itemB;
+          if (bboxA && bboxB) {
+            if (bboxA[2] < bboxB[0] || bboxA[0] > bboxB[2] || bboxA[3] < bboxB[1] || bboxA[1] > bboxB[3]) continue;
+          } else if (boundsB) {
+            if (!boundsA.intersects(boundsB)) continue;
+          }
 
           try {
             const tipoA = fA.geometry.type;
@@ -371,13 +448,15 @@
             }
             // Caso 2: Ponto × Polígono
             else if (tipoA.includes('Point') && tipoB.includes('Polygon')) {
-              if (turf.booleanPointInPolygon(fA, fB)) {
+              const coordA = fA.geometry.coordinates;
+              if (turf.booleanPointInPolygon(coordA, fB) || turf.booleanPointInPolygon(fA, fB)) {
                 intersec = JSON.parse(JSON.stringify(fA));
               }
             }
             // Caso 3: Polígono × Ponto
             else if (tipoA.includes('Polygon') && tipoB.includes('Point')) {
-              if (turf.booleanPointInPolygon(fB, fA)) {
+              const coordB = fB.geometry.coordinates;
+              if (turf.booleanPointInPolygon(coordB, fA) || turf.booleanPointInPolygon(fB, fA)) {
                 intersec = JSON.parse(JSON.stringify(fB));
               }
             }
@@ -423,10 +502,10 @@
               resultado.push(intersec);
             }
           } catch (e) { /* ignora */ }
-
-          processados++;
-          if (processados % 200 === 0) await new Promise(r => setTimeout(r, 0));
         }
+
+        processados++;
+        if (processados % 100 === 0) await new Promise(r => setTimeout(r, 0));
       }
 
       return resultado;
@@ -435,23 +514,44 @@
     /* ---------- Diferença (A - B) ---------- */
     _processarDiferenca: async function (dadosA, dadosB) {
       const resultado = [];
-      const featsA = dadosA.features.filter(f => f.geometry);
-      const featsB = dadosB.features.filter(f => f.geometry);
+      const featsA = (dadosA.features || []).filter(f => f && f.geometry);
+      const featsB = (dadosB.features || []).filter(f => f && f.geometry);
       let processados = 0;
+
+      const bComBbox = [];
+      for (const fB of featsB) {
+        let bbox = null;
+        if (typeof turf !== 'undefined' && turf.bbox) {
+          try { bbox = turf.bbox(fB); } catch (e) {}
+        }
+        let bounds = null;
+        if (typeof L !== 'undefined' && L.geoJSON) {
+          try { bounds = L.geoJSON(fB).getBounds(); } catch (e) {}
+        }
+        bComBbox.push({ feature: fB, bbox, bounds: (bounds && bounds.isValid()) ? bounds : null });
+      }
 
       for (const fA of featsA) {
         let atual = fA;
-        let boundsA;
-        try { boundsA = L.geoJSON(fA).getBounds(); } catch (e) { continue; }
-        if (!boundsA.isValid()) continue;
+        let bboxA = null;
+        if (typeof turf !== 'undefined' && turf.bbox) {
+          try { bboxA = turf.bbox(fA); } catch (e) {}
+        }
+        let boundsA = null;
+        if (typeof L !== 'undefined' && L.geoJSON) {
+          try { boundsA = L.geoJSON(fA).getBounds(); } catch (e) {}
+        }
+        if (!boundsA || !boundsA.isValid()) continue;
 
         let sofreuRecorte = false;
 
-        for (const fB of featsB) {
-          let boundsB;
-          try { boundsB = L.geoJSON(fB).getBounds(); } catch (e) { continue; }
-          if (!boundsB.isValid()) continue;
-          if (!boundsA.intersects(boundsB)) continue;
+        for (const itemB of bComBbox) {
+          const { feature: fB, bbox: bboxB, bounds: boundsB } = itemB;
+          if (bboxA && bboxB) {
+            if (bboxA[2] < bboxB[0] || bboxA[0] > bboxB[2] || bboxA[3] < bboxB[1] || bboxA[1] > bboxB[3]) continue;
+          } else if (boundsB) {
+            if (!boundsA.intersects(boundsB)) continue;
+          }
 
           try {
             const diff = turf.difference(atual, fB);
@@ -463,9 +563,6 @@
               break;
             }
           } catch (e) { /* ignora */ }
-
-          processados++;
-          if (processados % 200 === 0) await new Promise(r => setTimeout(r, 0));
         }
 
         if (atual) {
@@ -486,25 +583,32 @@
           atual.properties = propsLimpas;
           resultado.push(atual);
         }
+
+        processados++;
+        if (processados % 100 === 0) await new Promise(r => setTimeout(r, 0));
       }
 
       return resultado;
     },
-    /* ---------- Pontos em Polígono (spatial join) ---------- */
+
+    /* ---------- Detecção de tipo geométrico ---------- */
     _detectarTipoGeom: function (features) {
-      if (!features?.length) return 'desconhecido';
+      if (!Array.isArray(features) || !features.length) return 'desconhecido';
       const counts = { ponto: 0, linha: 0, poligono: 0 };
-      for (let i = 0; i < Math.min(50, features.length); i++) {
-        const t = features[i].geometry?.type || '';
+      const lim = Math.min(50, features.length);
+      for (let i = 0; i < lim; i++) {
+        const t = features[i]?.geometry?.type || '';
         if (t.includes('Point')) counts.ponto++;
         else if (t.includes('LineString')) counts.linha++;
         else if (t.includes('Polygon')) counts.poligono++;
       }
-      if (counts.ponto >= counts.linha && counts.ponto >= counts.poligono) return 'ponto';
-      if (counts.linha >= counts.poligono) return 'linha';
-      return 'poligono';
+      if (counts.ponto > 0 && counts.ponto >= counts.linha && counts.ponto >= counts.poligono) return 'ponto';
+      if (counts.linha > 0 && counts.linha >= counts.poligono) return 'linha';
+      if (counts.poligono > 0) return 'poligono';
+      return 'desconhecido';
     },
 
+    /* ---------- Pontos em Polígono (spatial join) ---------- */
     _processarPontosEm: async function (dadosA, dadosB) {
       const tipoA = this._detectarTipoGeom(dadosA.features);
       const tipoB = this._detectarTipoGeom(dadosB.features);
@@ -513,62 +617,82 @@
 
       let pontos, poligonos, invertido = false;
 
-      if (tipoA === 'ponto' && tipoB === 'poligono') {
-        pontos = dadosA.features;
-        poligonos = dadosB.features;
-      } else if (tipoB === 'ponto' && tipoA === 'poligono') {
-        pontos = dadosB.features;
-        poligonos = dadosA.features;
+      if (tipoA === 'ponto' && (tipoB === 'poligono' || tipoB === 'desconhecido')) {
+        pontos = (dadosA.features || []).filter(f => f && f.geometry);
+        poligonos = (dadosB.features || []).filter(f => f && f.geometry);
+      } else if (tipoB === 'ponto' && (tipoA === 'poligono' || tipoA === 'desconhecido')) {
+        pontos = (dadosB.features || []).filter(f => f && f.geometry);
+        poligonos = (dadosA.features || []).filter(f => f && f.geometry);
         invertido = true;
       } else {
         throw new Error(`Combinação incompatível (A=${tipoA} × B=${tipoB}). Preciso de ponto × polígono.`);
       }
 
-      // Pré-calcula bounding boxes dos polígonos (otimização)
+      // Pré-calcula bounding boxes dos polígonos
       const polysComBbox = [];
       for (const poly of poligonos) {
-        if (!poly.geometry) continue;
+        if (!poly || !poly.geometry) continue;
         try {
-          const bounds = L.geoJSON(poly).getBounds();
-          if (bounds.isValid()) polysComBbox.push({ feature: poly, bounds: bounds });
+          let bbox = null;
+          if (typeof turf !== 'undefined' && turf.bbox) {
+            try { bbox = turf.bbox(poly); } catch (e) {}
+          }
+          let bounds = null;
+          if (typeof L !== 'undefined' && L.geoJSON) {
+            try { bounds = L.geoJSON(poly).getBounds(); } catch (e) {}
+          }
+          polysComBbox.push({
+            feature: poly,
+            bbox: bbox,
+            bounds: (bounds && bounds.isValid()) ? bounds : null
+          });
         } catch (e) { /* ignora */ }
       }
 
-      console.info(`[M10] ${pontos.length} pontos × ${polysComBbox.length} polígonos com bbox`);
+      console.info(`[M10] ${pontos.length} pontos × ${polysComBbox.length} polígonos preparados com bbox`);
 
       const resultado = [];
       let processados = 0;
 
       for (const p of pontos) {
+        processados++;
+        if (processados % 100 === 0) await new Promise(r => setTimeout(r, 0));
+
         let pontoGeo;
         try {
           if (p.geometry?.type === 'Point') {
             pontoGeo = p.geometry;
-          } else if (p.geometry?.type === 'MultiPoint' && p.geometry.coordinates.length > 0) {
+          } else if (p.geometry?.type === 'MultiPoint' && p.geometry.coordinates?.length > 0) {
             pontoGeo = { type: 'Point', coordinates: p.geometry.coordinates[0] };
           } else {
             continue;
           }
         } catch (e) { continue; }
 
-        const lat = pontoGeo.coordinates[1];
+        if (!pontoGeo || !Array.isArray(pontoGeo.coordinates) || pontoGeo.coordinates.length < 2) continue;
+
         const lng = pontoGeo.coordinates[0];
-        const ptLatLng = L.latLng(lat, lng);
+        const lat = pontoGeo.coordinates[1];
+        if (isNaN(lat) || isNaN(lng)) continue;
+        const ptLatLng = (typeof L !== 'undefined') ? L.latLng(lat, lng) : null;
 
         let contenedor = null;
 
-        for (const { feature, bounds } of polysComBbox) {
-          if (!bounds.contains(ptLatLng)) continue;
+        for (const item of polysComBbox) {
+          const { feature, bbox, bounds } = item;
+          // BBox numérico rápido: [minLng, minLat, maxLng, maxLat]
+          if (bbox) {
+            if (lng < bbox[0] || lat < bbox[1] || lng > bbox[2] || lat > bbox[3]) continue;
+          } else if (bounds && ptLatLng) {
+            if (!bounds.contains(ptLatLng)) continue;
+          }
 
           try {
-            if (turf.booleanPointInPolygon(pontoGeo, feature)) {
+            if (turf.booleanPointInPolygon([lng, lat], feature) || turf.booleanPointInPolygon(pontoGeo, feature)) {
               contenedor = feature;
               break;
             }
           } catch (e) { /* ignora */ }
-
-          processados++;
-          if (processados % 500 === 0) await new Promise(r => setTimeout(r, 0));
         }
 
         if (contenedor) {
@@ -600,25 +724,21 @@
 
       return resultado;
     },
+
     /* ---------- União ---------- */
     _processarUniao: async function (dadosA, dadosB) {
-      const todas = [...dadosA.features, ...dadosB.features];
-      let acumulado = null;
+      const todas = [...(dadosA.features || []), ...(dadosB.features || [])].filter(f => f && f.geometry);
+      if (!todas.length) return [];
+      let acumulado = todas[0];
 
-      for (let i = 0; i < todas.length; i++) {
+      for (let i = 1; i < todas.length; i++) {
         const f = todas[i];
-        if (!f.geometry) continue;
-
         try {
-          if (!acumulado) {
-            acumulado = f;
-          } else {
-            const u = turf.union(acumulado, f);
-            if (u) acumulado = u;
-          }
+          const u = turf.union(acumulado, f);
+          if (u) acumulado = u;
         } catch (e) { /* ignora */ }
 
-        if (i > 0 && i % 20 === 0) await new Promise(r => setTimeout(r, 0));
+        if (i % 20 === 0) await new Promise(r => setTimeout(r, 0));
       }
 
       if (!acumulado) return [];
@@ -637,10 +757,13 @@
 
     /* ---------- Dissolve ---------- */
     _dissolver: async function (features) {
-      let acumulado = features[0];
-      for (let i = 1; i < features.length; i++) {
+      const validas = (features || []).filter(f => f && f.geometry);
+      if (!validas.length) return features;
+      let acumulado = validas[0];
+
+      for (let i = 1; i < validas.length; i++) {
         try {
-          const u = turf.union(acumulado, features[i]);
+          const u = turf.union(acumulado, validas[i]);
           if (u) acumulado = u;
         } catch (e) { /* ignora */ }
         if (i % 20 === 0) await new Promise(r => setTimeout(r, 0));
@@ -661,41 +784,69 @@
     /* ---------- Cria camada resultado ---------- */
     _criarCamadaResultado: function (idA, idB, op, features, dissolve) {
       this._contador++;
-      const nomeA = window.CONFIG_CAMADAS[idA]?.nome || idA;
-      const nomeB = window.CONFIG_CAMADAS[idB]?.nome || idB;
+      const config = window.CONFIG_CAMADAS || {};
+      const brutos = window.DADOS_GEOJSON_BRUTOS || {};
+      const camadasMapa = window.CAMADAS_MAPA || {};
+
+      const nomeA = config[idA]?.nome || idA;
+      const nomeB = config[idB]?.nome || idB;
       const opsNomes = { intersecao: '∩', diferenca: '−', uniao: '∪', pontos_em: '🎯' };
       const opSimbolo = opsNomes[op] || op;
       const nome = `Geo ${opSimbolo} · ${nomeA.split(' ')[0]} × ${nomeB.split(' ')[0]}${dissolve ? ' (unificado)' : ''}`;
       const id = `geo_${Date.now()}_${op}_${idA}_${idB}`;
 
-      const cor = window.LayerRegistry.corAleatoria();
+      const cor = (window.LayerRegistry && typeof window.LayerRegistry.corAleatoria === 'function')
+        ? window.LayerRegistry.corAleatoria()
+        : '#a855f7';
 
-      CONFIG_CAMADAS[id] = {
+      // Salva dados GeoJSON
+      const geojson = { type: 'FeatureCollection', features };
+      brutos[id] = geojson;
+
+      let tipoGeo = (op === 'pontos_em') ? 'ponto' : 'poligono';
+      if (window.GeomTypeDetector && typeof window.GeomTypeDetector.detectar === 'function') {
+        try {
+          tipoGeo = window.GeomTypeDetector.detectar(geojson) || tipoGeo;
+        } catch (e) { /* fallback */ }
+      }
+
+      config[id] = {
         nome: nome,
         grupo: 'importadas',
         arquivos: [],
         cor: cor,
         opacidade: 0.4,
         peso: 2,
-        tipoGeo: window.GeomTypeDetector ? window.GeomTypeDetector.detectar(geojson) : 'poligono',
+        tipoGeo: tipoGeo,
         ativa: true,
         camposVisiveis: [],
         _isGeo: true,
         _operacao: op
       };
 
-      const geojson = { type: 'FeatureCollection', features };
-      DADOS_GEOJSON_BRUTOS[id] = geojson;
+      // Garante panes dedicadas no Leaflet de forma segura
+      if (window.mapa && typeof window.mapa.createPane === 'function') {
+        let pBuf = window.mapa.getPane && window.mapa.getPane('paneBuffer');
+        if (!pBuf) {
+          pBuf = window.mapa.createPane('paneBuffer');
+        }
+        if (pBuf && pBuf.style) {
+          pBuf.style.zIndex = 650;
+          pBuf.style.pointerEvents = 'auto';
+        }
 
-      // Garante pane dedicada
-      if (!window.mapa.getPane('paneBuffer')) {
-        window.mapa.createPane('paneBuffer');
-        window.mapa.getPane('paneBuffer').style.zIndex = 650;
-        window.mapa.getPane('paneBuffer').style.pointerEvents = 'auto';
+        let pPts = window.mapa.getPane && window.mapa.getPane('panePontos');
+        if (!pPts) {
+          pPts = window.mapa.createPane('panePontos');
+        }
+        if (pPts && pPts.style) {
+          pPts.style.zIndex = 600;
+          pPts.style.pointerEvents = 'auto';
+        }
       }
 
-      CAMADAS_MAPA[id] = L.geoJSON(geojson, {
-        pane: 'paneBuffer',
+      camadasMapa[id] = L.geoJSON(geojson, {
+        pane: (tipoGeo === 'ponto') ? 'panePontos' : 'paneBuffer',
         interactive: true,
         bubblingMouseEvents: false,
         style: {
@@ -706,29 +857,30 @@
           fillOpacity: 0.35,
           dashArray: op === 'diferenca' ? '8, 6' : null
         },
-        // ✅ Pontos viram círculos destacados (não markers padrão)
+        // Pontos viram círculos destacados
         pointToLayer: (f, latlng) => L.circleMarker(latlng, {
-          pane: 'panePontos',       // z-index 600 — acima dos outros layers
-          radius: 8,
+          pane: 'panePontos',
+          radius: 7,
           color: '#ffffff',
           weight: 2,
           fillColor: cor,
-          fillOpacity: 1
+          fillOpacity: 0.95
         }),
         onEachFeature: (f, layer) => {
           const p = f.properties || {};
+          const escape = (val) => (window.Security && window.Security.escapeHTML) ? window.Security.escapeHTML(val) : String(val ?? '');
           const linhas = Object.entries(p)
             .filter(([k]) => !['geom','geometry'].includes(k.toLowerCase()))
             .slice(0, 15)
             .map(([k, v]) =>
-              `<div class="pop-linha"><span class="pop-lbl">${window.Security.escapeHTML(k)}:</span><span class="pop-val">${window.Security.escapeHTML(v)}</span></div>`
+              `<div class="pop-linha"><span class="pop-lbl">${escape(k)}:</span><span class="pop-val">${escape(v)}</span></div>`
             ).join('');
 
           const html = `
             <div class="pop-topo">⚙️ Resultado Geoprocessamento</div>
             <div class="pop-corpo">${linhas || '<p style="color:#64748b;">Sem atributos.</p>'}</div>
             <div class="pop-rodape-auditoria">
-              <span>${opSimbolo} ${nomeA.slice(0, 20)} × ${nomeB.slice(0, 20)}</span>
+              <span>${opSimbolo} ${escape(nomeA.slice(0, 20))} × ${escape(nomeB.slice(0, 20))}</span>
               <span>Turf.js</span>
             </div>
           `;
@@ -736,7 +888,9 @@
         }
       });
 
-      CAMADAS_MAPA[id].addTo(window.mapa);
+      if (window.mapa) {
+        camadasMapa[id].addTo(window.mapa);
+      }
 
       const grupoEl = document.getElementById('grupo-importadas');
       const msgVazio = document.getElementById('msg-sem-importadas');
@@ -745,7 +899,7 @@
       if (grupoEl) {
         grupoEl.classList.remove('fechado');
         if (typeof window.construirItemCamada === 'function') {
-          window.construirItemCamada(id, CONFIG_CAMADAS[id], grupoEl);
+          window.construirItemCamada(id, config[id], grupoEl);
         }
         const cntBadge = document.getElementById(`cnt-${id}`);
         if (cntBadge) cntBadge.innerText = `(${features.length})`;
@@ -754,19 +908,24 @@
           const item = document.getElementById(`item-camada-${id}`);
           if (item) {
             item.style.display = 'flex';
-            window.scrollTo(0, 0);
+            const painelCorpo = document.querySelector('#painel-camadas-lateral .painel-corpo') || grupoEl;
+            if (painelCorpo && item.offsetTop) painelCorpo.scrollTop = item.offsetTop;
           }
         }, 50);
       }
 
       try {
-        const bounds = CAMADAS_MAPA[id].getBounds();
-        if (bounds.isValid()) window.mapa.fitBounds(bounds, { padding: [40, 40] });
+        if (camadasMapa[id] && window.mapa) {
+          const bounds = camadasMapa[id].getBounds();
+          if (bounds && bounds.isValid()) {
+            window.mapa.fitBounds(bounds, { padding: [40, 40] });
+          }
+        }
       } catch (e) { /* ignora */ }
 
-      if (window.Styler) window.Styler.atualizarStyle?.();
-      if (window.Styler) window.Styler.atualizarLegenda();
-      if (window.FilterManager) window.FilterManager.atualizarSeletorCamadas();
+      if (window.Styler && typeof window.Styler.atualizarStyle === 'function') window.Styler.atualizarStyle();
+      if (window.Styler && typeof window.Styler.atualizarLegenda === 'function') window.Styler.atualizarLegenda();
+      if (window.FilterManager && typeof window.FilterManager.atualizarSeletorCamadas === 'function') window.FilterManager.atualizarSeletorCamadas();
     }
   };
 

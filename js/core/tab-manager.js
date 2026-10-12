@@ -23,7 +23,16 @@
         return;
       }
 
-      if (aba === this.abaAtiva) return;
+      if (aba === this.abaAtiva) {
+        if (aba === 'geo' && window.GeoTools && typeof window.GeoTools.abrirModal === 'function') {
+          window.GeoTools.abrirModal();
+        } else if (aba === 'analise' && window.UI && typeof window.UI.toggleGraficos === 'function') {
+          window.UI.toggleGraficos();
+        } else if (aba === 'ais' && window.ControleAIS && typeof window.ControleAIS.toggle === 'function') {
+          window.ControleAIS.toggle();
+        }
+        return;
+      }
 
       console.info(`[TabManager] ${this.abaAtiva} → ${aba}`);
 
@@ -59,13 +68,28 @@
         });
       }
 
-      // M14 — Liga/desliga a camada AIS de verdade
+      // M10/M11 — Aba Geo abre o modal de geoprocessamento automaticamente
+      if (aba === 'geo') {
+        if (window.GeoTools && typeof window.GeoTools.abrirModal === 'function') {
+          setTimeout(() => window.GeoTools.abrirModal(), 60);
+        }
+      } else if (this.abaAtiva === 'geo') {
+        if (window.GeoTools && typeof window.GeoTools.fecharModal === 'function') {
+          window.GeoTools.fecharModal();
+        }
+      }
+
+      // M14/M15 — Alterna modo AIS e abre o painel ControleAIS
       if (aba === 'ais') {
-        const chkAis = document.getElementById('chk-ais');
-        const deveLigar = window.AISManager && !window.AISManager._visivel;
-        if (chkAis) chkAis.checked = deveLigar;
-        if (window.AISManager && typeof window.AISManager.toggle === 'function') {
+        if (window.ControleAIS && typeof window.ControleAIS.abrir === 'function') {
+          window.ControleAIS.abrir();
+        } else if (window.AISManager && typeof window.AISManager.toggle === 'function') {
           window.AISManager.toggle();
+        }
+      } else if (this.abaAtiva === 'ais') {
+        // Ao sair da aba AIS, fecha o painel ControleAIS
+        if (window.ControleAIS && typeof window.ControleAIS.fechar === 'function') {
+          window.ControleAIS.fechar();
         }
       }
     },

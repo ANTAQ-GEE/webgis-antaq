@@ -37,6 +37,20 @@
     }
 
     /* M14 — AIS ativo */
+    /* M10/M11 — Estilo temático roxo institucional da aba Geo */
+    .aba-btn[data-aba="geo"] .aba-emoji {
+      filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.6));
+    }
+    .aba-btn[data-aba="geo"]:hover {
+      background: rgba(124, 58, 237, 0.18) !important;
+      color: #ddd6fe !important;
+    }
+    .aba-btn[data-aba="geo"].ativo {
+      color: #c4b5fd !important;
+      border-bottom-color: #a78bfa !important;
+      background: rgba(124, 58, 237, 0.22) !important;
+    }
+
     .aba-btn[data-aba="ais"] {
       opacity: 1;
     }
@@ -6312,10 +6326,7 @@
         style="background:#0284c7; border:1px solid #38bdf8;" title="Sincronizar e recarregar dados do servidor">
         <span id="ico-sync">🔄</span> Atualizar
       </button>
-      <button class="btn-geo" onclick="TabManager.trocar('geo'); setTimeout(() => GeoTools.abrirModal(), 100);"
-        title="Abrir ferramentas de geoprocessamento (troca pra aba Geo)">
-        ⚙️ Geo
-      </button>
+
     </div>
   </header>
   <!-- ============================================================
@@ -6337,7 +6348,7 @@
       <span class="aba-emoji">⚙️</span>
       <span class="aba-nome">Geo</span>
     </button>
-    <button class="aba-btn" data-aba="ais" onclick="AISManager.clicarAba()"
+    <button class="aba-btn" data-aba="ais" onclick="TabManager.trocar('ais')"
       title="Tráfego de embarcações — AIS (dados sintéticos)">
       <span class="aba-emoji">🚢</span>
       <span class="aba-nome">AIS</span>

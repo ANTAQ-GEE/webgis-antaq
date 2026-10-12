@@ -311,8 +311,78 @@
     formatarKm: function (v, decimais = 1) {
       const n = Number(v);
       if (!Number.isFinite(n)) return '—';
-      return ;
+      return n.toLocaleString('pt-BR', {
+        minimumFractionDigits: decimais,
+        maximumFractionDigits: decimais
+      }) + ' km';
     },
+
+    /**
+     * Base de coordenadas geográficas de referência dos portos e municípios hidroviários.
+     */
+    PORTOS_CONHECIDOS: {
+      'MANAUS': [-3.1375, -60.0261],
+      'ITACOATIARA': [-3.1376, -58.4415],
+      'URUCARA': [-2.5361, -57.7597],
+      'URUCARÁ': [-2.5361, -57.7597],
+      'PARINTINS': [-2.6241, -56.7341],
+      'JURUTI': [-2.1522, -56.0964],
+      'OBIDOS': [-1.9027, -55.5312],
+      'ÓBIDOS': [-1.9027, -55.5312],
+      'ORIXIMINA': [-1.7656, -55.8661],
+      'ORIXIMINÁ': [-1.7656, -55.8661],
+      'SANTAREM': [-2.4150, -54.7375],
+      'SANTARÉM': [-2.4150, -54.7375],
+      'MONTE ALEGRE': [-2.0095, -54.0703],
+      'PRAINHA': [-1.8000, -53.4800],
+      'ALMEIRIM': [-1.5233, -52.5817],
+      'GURUPA': [-1.4056, -51.6406],
+      'GURUPÁ': [-1.4056, -51.6406],
+      'BREVES': [-1.6817, -50.4800],
+      'BELEM': [-1.4558, -48.4902],
+      'BELÉM': [-1.4558, -48.4902],
+      'PORTO VELHO': [-8.7619, -63.9039],
+      'HUMAITA': [-7.5061, -63.0208],
+      'HUMAITÁ': [-7.5061, -63.0208],
+      'TABATINGA': [-4.2547, -69.9386],
+      'BENJAMIN CONSTANT': [-4.3828, -70.0311],
+      'SAO PAULO DE OLIVENCA': [-3.4619, -68.9606],
+      'SÃO PAULO DE OLIVENÇA': [-3.4619, -68.9606],
+      'AMATURA': [-3.3644, -68.2008],
+      'AMATURÁ': [-3.3644, -68.2008],
+      'SANTO ANTONIO DO ICA': [-3.1028, -67.9406],
+      'SANTO ANTÔNIO DO IÇÁ': [-3.1028, -67.9406],
+      'TONANTINS': [-2.8731, -67.8025],
+      'FONTE BOA': [-2.5147, -66.0919],
+      'JUTAI': [-2.7483, -66.7797],
+      'JUTAÍ': [-2.7483, -66.7797],
+      'SANTOS': [-23.9619, -46.3042],
+      'PARANAGUA': [-25.5028, -48.5147],
+      'PARANAGUÁ': [-25.5028, -48.5147],
+      'RIO GRANDE': [-32.0350, -52.0986],
+      'ITAQUI': [-2.5750, -44.3667],
+      'SUAPE': [-8.3967, -34.9608]
+    },
+
+    /**
+     * Retorna [lat, lon] de um porto/município com busca tolerante a acentos e sufixos /UF.
+     */
+    obterCoordPorto: function (nome) {
+      if (!nome) return null;
+      let limpo = String(nome).split('/')[0].split('-')[0].trim().toUpperCase();
+      if (this.PORTOS_CONHECIDOS[limpo]) return this.PORTOS_CONHECIDOS[limpo];
+
+      try {
+        const norm = limpo.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        for (const [k, v] of Object.entries(this.PORTOS_CONHECIDOS)) {
+          const kNorm = k.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (kNorm === norm || norm.includes(kNorm) || kNorm.includes(norm)) {
+            return v;
+          }
+        }
+      } catch (e) {}
+      return null;
+    }
 };
 
   window.Security = Security;

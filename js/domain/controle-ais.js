@@ -500,6 +500,10 @@
         this._atualizarFrame();
       } else if (modo === 'simulador') {
         this._renderSimuladorForm();
+        const selEmb = document.getElementById('aw-sim-emb');
+        if (selEmb && selEmb.value) {
+          this._simMudarEmb();
+        }
       } else if (modo === 'dashboard') {
         this._renderDashboard();
       }
@@ -517,6 +521,8 @@
     _contextoGlobal() {
       this._tl._contexto = 'global';
       this._emb = null;
+      this._sim.rodando = false;
+      this._tl._passo = 200;
       this._garantirRangeGlobal();
     },
 
@@ -979,8 +985,17 @@
       selD.innerHTML = '<option value="">— Selecione a origem primeiro —</option>';
       if (!mmsi) {
         selO.innerHTML = '<option value="">— Selecione a embarcação primeiro —</option>';
+        this._emb = null;
+        this._sim.mmsi = null;
+        this._sim.rodando = false;
+        if (window.AISLayer) window.AISLayer.limparTrilha();
+        this._atualizarFrame();
         return;
       }
+
+      this._emb = mmsi;
+      this._sim.mmsi = mmsi;
+      this._sim.rodando = false;
 
       const viagens = window.AISManager.getViagensPorMmsi(mmsi);
       const portos = [];
@@ -994,6 +1009,17 @@
 
       selO.innerHTML = '<option value="">— Selecione —</option>' +
         portos.map(p => `<option value="${this._esc(p)}">${this._esc(p)}</option>`).join('');
+
+      // ✅ Isola a embarcação no mapa imediatamente ao selecionar no dropdown
+      if (window.AISLayer) {
+        window.AISLayer.destacar(mmsi);
+        window.AISLayer._destacarTrilha(mmsi);
+        const m = window.AISLayer._markers.get(mmsi);
+        if (m && window.mapa) {
+          window.mapa.setView(m.getLatLng(), 8);
+        }
+      }
+      this._atualizarFrame();
     },
     _simAtualizarDestinos() {
       const selO = document.getElementById('aw-sim-origem');
@@ -1030,6 +1056,224 @@
       this._tl.tAtual = this._tl.tInicio;
       this._tl._contexto = 'vessel';
     },
+        _obterCoordPorto(nome) {
+      if (!nome) return null;
+      const PORTOS_COORD = {
+        'JURUTI': [-2.1523, -56.0951],
+        'ÓBIDOS': [-1.9027, -55.5312],
+        'OBIDOS': [-1.9027, -55.5312],
+        'SANTARÉM': [-2.4150, -54.7375],
+        'SANTAREM': [-2.4150, -54.7375],
+        'PARINTINS': [-2.6241, -56.7341],
+        'ITACOATIARA': [-3.1518, -58.4404],
+        'MANAUS': [-3.1375, -60.0261],
+        'MONTE ALEGRE': [-2.0095, -54.0703],
+        'PRAINHA': [-1.8080, -53.4785],
+        'ALMEIRIM': [-1.5325, -52.5769],
+        'GURUPÁ': [-1.4050, -51.6400],
+        'GURUPA': [-1.4050, -51.6400],
+        'BREVES': [-1.6733, -50.4989],
+        'BELÉM': [-1.4453, -48.4978],
+        'BELEM': [-1.4453, -48.4978],
+        'PORTO VELHO': [-8.7489, -63.9153],
+        'HUMAITÁ': [-7.5043, -63.0198],
+        'HUMAITA': [-7.5043, -63.0198],
+        'TABATINGA': [-4.2314, -69.9439],
+        'BENJAMIN CONSTANT': [-4.3732, -70.0284],
+        'SÃO PAULO DE OLIVENÇA': [-3.4643, -68.9511],
+        'SAO PAULO DE OLIVENCA': [-3.4643, -68.9511],
+        'AMATURÁ': [-3.3596, -68.1957],
+        'AMATURA': [-3.3596, -68.1957],
+        'SANTO ANTÔNIO DO IÇÁ': [-3.1076, -67.9461],
+        'SANTO ANTONIO DO ICA': [-3.1076, -67.9461],
+        'TONANTINS': [-2.8737, -67.8000],
+        'FONTE BOA': [-2.5114, -66.0921],
+        'JUTAÍ': [-2.7400, -66.7600],
+        'JUTAI': [-2.7400, -66.7600]
+      };
+
+      const chave = nome.split('/')[0].split('-')[0].trim().toUpperCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+      for (const [k, v] of Object.entries(PORTOS_COORD)) {
+        const kNorm = k.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (chave === kNorm || chave.includes(kNorm) || kNorm.includes(chave)) {
+          return v;
+        }
+      }
+
+      if (window.DADOS_GEOJSON_BRUTOS && window.DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']) {
+        const feats = window.DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'].features || [];
+        for (const f of feats) {
+          const p = f.properties || {};
+          const c = String(p.cidade || p.municipio || p.nome || '').toUpperCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (c.includes(chave) && f.geometry && f.geometry.coordinates) {
+            return [f.geometry.coordinates[1], f.geometry.coordinates[0]];
+          }
+        }
+      }
+      return null;
+    },
+
+    _obterRotaPeloVEN(origem, destino) {
+      const safraAtiva = (window.VENUnifiedManager && window.VENUnifiedManager.anoAtivo) || 'ven_2024';
+      const dadosVEN = (window.DADOS_GEOJSON_BRUTOS && (window.DADOS_GEOJSON_BRUTOS[safraAtiva] || window.DADOS_GEOJSON_BRUTOS['ven_2024'] || window.DADOS_GEOJSON_BRUTOS['ven_2022']));
+      if (!dadosVEN || !dadosVEN.features || !dadosVEN.features.length) return null;
+
+      const pOrig = this._obterCoordPorto(origem);
+      const pDest = this._obterCoordPorto(destino);
+      if (!pOrig || !pDest) return null;
+
+      const lines = [];
+      dadosVEN.features.forEach(f => {
+        if (!f.geometry || !f.geometry.coordinates) return;
+        const g = f.geometry;
+        if (g.type === 'MultiLineString') {
+          g.coordinates.forEach(c => { if (c && c.length >= 2) lines.push(c); });
+        } else if (g.type === 'LineString') {
+          if (g.coordinates && g.coordinates.length >= 2) lines.push(g.coordinates);
+        }
+      });
+      if (!lines.length) return null;
+
+      // Grade com arredondamento a ~1.1km para garantir conectividade entre trechos
+      const ptKey = (p) => (Math.round(p[0] * 100) / 100) + ',' + (Math.round(p[1] * 100) / 100);
+
+      const adj = new Map();
+      lines.forEach((l, idx) => {
+        const k0 = ptKey(l[0]);
+        const k1 = ptKey(l[l.length - 1]);
+        if (!adj.has(k0)) adj.set(k0, []);
+        if (!adj.has(k1)) adj.set(k1, []);
+        adj.get(k0).push({ viz: k1, idx, rev: false });
+        adj.get(k1).push({ viz: k0, idx, rev: true });
+      });
+
+      const acharNoMaisProximo = (lat, lon) => {
+        let melhorK = null, menorDist = Infinity;
+        for (const k of adj.keys()) {
+          const parts = k.split(',').map(Number);
+          const nLon = parts[0], nLat = parts[1];
+          const d = Math.hypot(nLat - lat, nLon - lon);
+          if (d < menorDist) {
+            menorDist = d;
+            melhorK = k;
+          }
+        }
+        return melhorK;
+      };
+
+      const kOrig = acharNoMaisProximo(pOrig[0], pOrig[1]);
+      const kDest = acharNoMaisProximo(pDest[0], pDest[1]);
+      if (!kOrig || !kDest || kOrig === kDest) return null;
+
+      const queue = [[kOrig, []]];
+      const visited = new Set([kOrig]);
+      let edgesCaminho = null;
+
+      while (queue.length > 0) {
+        const [curr, path] = queue.shift();
+        if (curr === kDest) {
+          edgesCaminho = path;
+          break;
+        }
+        const vizinhos = adj.get(curr) || [];
+        for (const e of vizinhos) {
+          if (!visited.has(e.viz)) {
+            visited.add(e.viz);
+            queue.push([e.viz, [...path, e]]);
+          }
+        }
+      }
+
+      if (!edgesCaminho || !edgesCaminho.length) return null;
+
+      const coordsFinais = [[pOrig[0], pOrig[1]]];
+      edgesCaminho.forEach(e => {
+        const l = lines[e.idx];
+        const pts = e.rev ? l.slice().reverse() : l;
+        pts.forEach(p => {
+          coordsFinais.push([p[1], p[0]]);
+        });
+      });
+      coordsFinais.push([pDest[0], pDest[1]]);
+
+      const rotaLimpa = [];
+      coordsFinais.forEach((pt, i) => {
+        if (i === 0) { rotaLimpa.push(pt); return; }
+        const ult = rotaLimpa[rotaLimpa.length - 1];
+        if (Math.hypot(pt[0] - ult[0], pt[1] - ult[1]) > 0.0001) {
+          rotaLimpa.push(pt);
+        }
+      });
+
+      return rotaLimpa.map(pt => ({ lat: pt[0], lon: pt[1] }));
+    },
+_extrairPontosRota(mmsi, orig, dest) {
+      if (!window.AISManager) return null;
+      const todas = window.AISManager.getTodasPosicoes().filter(p => p.mmsi === mmsi);
+      if (!todas.length) return null;
+
+      const edges = new Map();
+      const adjacency = new Map();
+
+      todas.forEach(p => {
+        const o = p.porto_origem;
+        const d = p.porto_destino;
+        if (o && d) {
+          const k = o + '|' + d;
+          if (!edges.has(k)) edges.set(k, []);
+          edges.get(k).push(p);
+
+          if (!adjacency.has(o)) adjacency.set(o, new Set());
+          if (!adjacency.has(d)) adjacency.set(d, new Set());
+          adjacency.get(o).add(d);
+          adjacency.get(d).add(o);
+        }
+      });
+
+      const queue = [[orig]];
+      const visited = new Set([orig]);
+      let path = null;
+
+      while (queue.length > 0) {
+        const curPath = queue.shift();
+        const node = curPath[curPath.length - 1];
+        if (node === dest) {
+          path = curPath;
+          break;
+        }
+        const vizinhos = adjacency.get(node) || [];
+        for (const nbr of vizinhos) {
+          if (!visited.has(nbr)) {
+            visited.add(nbr);
+            queue.push([...curPath, nbr]);
+          }
+        }
+      }
+
+      if (!path || path.length < 2) return null;
+
+      const finalPts = [];
+      for (let i = 0; i < path.length - 1; i++) {
+        const pA = path[i];
+        const pB = path[i + 1];
+        const kDirect = pA + '|' + pB;
+        const kRev = pB + '|' + pA;
+
+        if (edges.has(kDirect)) {
+          const pts = edges.get(kDirect).slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+          finalPts.push(...pts);
+        } else if (edges.has(kRev)) {
+          const pts = edges.get(kRev).slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+          finalPts.push(...pts.reverse());
+        }
+      }
+
+      return finalPts.length ? finalPts : null;
+    },
+
     rodarSimulacao() {
       const embSel = document.getElementById('aw-sim-emb');
       const origSel = document.getElementById('aw-sim-origem');
@@ -1059,10 +1303,6 @@
       } else {
         legs = todasViagens.slice(idxDest, idxOrig + 1).reverse();
       }
-
-      this._sim.mmsi = mmsi;
-      this._sim.rodando = true;
-      this._sim.legs = legs;
 
       const totalKm = legs.reduce((s, v) => s + (v.km || 0), 0);
       const somaAtraso = legs.reduce((s, v) => s + (v.atraso_h || 0), 0);
@@ -1099,6 +1339,56 @@
       </div>`;
       }).join('');
 
+      // 1. Tenta extrair a rota oficial diretamente sobre o eixo geométrico contínuo do VEN (ANTAQ)
+      let posTrecho = this._obterRotaPeloVEN(origem, destino);
+
+      // 2. Se não encontrar pelo VEN, usa fallback pelo grafo do AIS
+      if (!posTrecho || posTrecho.length < 2) {
+        posTrecho = this._extrairPontosRota(mmsi, origem, destino);
+      }
+
+      // 2. Se não encontrar pelo grafo direto, usa filtragem por nomes de portos ou trilha
+      if (!posTrecho || posTrecho.length < 2) {
+        const nomesPortos = new Set(legs.map(l => (l.porto || '').toLowerCase()));
+        posTrecho = window.AISManager.getTodasPosicoes().filter(p => {
+          if (p.mmsi !== mmsi) return false;
+          return nomesPortos.has((p.porto_origem || '').toLowerCase()) ||
+                 nomesPortos.has((p.porto_destino || '').toLowerCase());
+        });
+      }
+      if (!posTrecho || posTrecho.length < 2) {
+        posTrecho = window.AISManager.getTrilha(mmsi);
+      }
+
+      // 3. Garante orientação geográfica dos pontos (do porto de origem para o destino)
+      const refOrig = (window.Security && typeof window.Security.obterCoordPorto === 'function')
+        ? window.Security.obterCoordPorto(origem) : null;
+      if (refOrig && posTrecho.length >= 2) {
+        const dInicio = Math.hypot(posTrecho[0].lat - refOrig[0], posTrecho[0].lon - refOrig[1]);
+        const dFim = Math.hypot(posTrecho[posTrecho.length - 1].lat - refOrig[0], posTrecho[posTrecho.length - 1].lon - refOrig[1]);
+        if (dFim < dInicio) {
+          posTrecho.reverse();
+        }
+      }
+
+      // 4. Constrói pontos com linha do tempo proporcional à distância percorrida
+      const distancias = [0];
+      let distAcumulada = 0;
+      for (let i = 1; i < posTrecho.length; i++) {
+        const d = Math.hypot(posTrecho[i].lat - posTrecho[i - 1].lat, posTrecho[i].lon - posTrecho[i - 1].lon) * 111.32;
+        distAcumulada += d;
+        distancias.push(distAcumulada);
+      }
+      const distTotalTrecho = distAcumulada > 0 ? distAcumulada : (totalKm || 50);
+
+      const baseTempo = new Date('2026-09-28T08:00:00Z').getTime();
+      const duracaoTotalHoras = Math.max(2, (totalKm || 50) / 22); // velocidade comercial de ~22 km/h
+      const duracaoTotalMs = duracaoTotalHoras * 3600 * 1000;
+
+      // Calibragem precisa do tempo real da simulação (solicitada pelo usuário):
+      // ~5s para trechos curtos/médios até 10-12s para viagens longas/distantes
+      const tempoAnimacaoSegundos = Math.max(5.0, Math.min(12.0, 5.0 + (distTotalTrecho / 120.0)));
+
       const body = document.getElementById('aw-sim-resultado');
       if (!body) return;
 
@@ -1126,60 +1416,86 @@
     </div>
 
     <div class="aw-bloco">
-      <div class="aw-bloco-tit">Próximo passo</div>
+      <div class="aw-bloco-tit">Animação cadenciada</div>
       <div style="font-size:11px;color:#94a3b8;line-height:1.5;">
-        Use os controles <b style="color:#cbd5e1;">▶ Play</b> abaixo do painel para animar a viagem no mapa.
-        Ajuste a velocidade em <b style="color:#cbd5e1;">6h/s · 1 dia/s · 3,5 dias/s</b>.
+        Duração calibrada: <b style="color:#38bdf8;">5s a 12s</b> (~${tempoAnimacaoSegundos.toFixed(0)}s para este trecho de ${totalKm.toFixed(0)} km).<br>
+        Controle o barco com <b style="color:#cbd5e1;">⏸ Pausar</b> / <b style="color:#cbd5e1;">▶ Play</b> ou mova o controle deslizante.
       </div>
     </div>
   `;
 
-      // Foca no mapa e ajusta a animação estritamente pra esse trecho
-      const tIni = new Date(legs[0].eta_real || legs[0].eta_programada).getTime();
-      const tFim = new Date(legs[legs.length - 1].eta_real || legs[legs.length - 1].eta_programada).getTime();
-      const tMin = Math.min(tIni, tFim);
-      const tMax = Math.max(tIni, tFim);
+      const pontosAnimados = posTrecho.map((p, i) => {
+        const progressoDist = distancias[i] / (distAcumulada || 1);
+        const tPonto = baseTempo + progressoDist * duracaoTotalMs;
+        let cog = p.cog || 0;
+        if (i < posTrecho.length - 1) {
+          const prox = posTrecho[i + 1];
+          const rad = Math.PI / 180;
+          const dLon = (prox.lon - p.lon) * rad;
+          const y = Math.sin(dLon) * Math.cos(prox.lat * rad);
+          const x = Math.cos(p.lat * rad) * Math.sin(prox.lat * rad) -
+                    Math.sin(p.lat * rad) * Math.cos(prox.lat * rad) * Math.cos(dLon);
+          cog = Math.round((Math.atan2(y, x) * 180 / Math.PI + 360) % 360);
+        } else if (i > 0) {
+          cog = posTrecho[i - 1].cog || 0;
+        }
 
-      // Filtra posições da embarcação estritamente dentro da janela da rota
-      let posTrecho = window.AISManager.getTodasPosicoes().filter(p => {
-        if (p.mmsi !== mmsi) return false;
-        const t = new Date(p.timestamp).getTime();
-        return t >= tMin && t <= tMax;
+        return {
+          mmsi: mmsi,
+          lat: Number(p.lat),
+          lon: Number(p.lon),
+          timestamp: new Date(tPonto).toISOString(),
+          sog: 12.0,
+          cog: cog,
+          heading: cog,
+          status: 'no_prazo',
+          porto_origem: origem,
+          porto_destino: destino
+        };
       });
 
-      if (posTrecho.length < 2) {
-        const nomesPortos = new Set(legs.map(l => (l.porto || '').toLowerCase()));
-        posTrecho = window.AISManager.getTodasPosicoes().filter(p => {
-          if (p.mmsi !== mmsi) return false;
-          return nomesPortos.has((p.porto_origem || '').toLowerCase()) ||
-                 nomesPortos.has((p.porto_destino || '').toLowerCase());
-        });
-      }
-      if (posTrecho.length < 2) {
-        posTrecho = window.AISManager.getTrilha(mmsi);
-      }
-
-      posTrecho.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
+      this._pausar();
       this._emb = mmsi;
       this._sim.mmsi = mmsi;
       this._sim.rodando = true;
       this._sim.legs = legs;
-      this._sim.posicoes = posTrecho;
+      this._sim.posicoes = pontosAnimados;
+      this._sim.duracaoTotalHoras = duracaoTotalHoras;
+      this._sim.tempoAnimacaoSegundos = tempoAnimacaoSegundos;
 
-      this._tl.tInicio = tMin;
-      this._tl.tFim = tMax;
-      this._tl.tAtual = tMin;
+      // Configura a timeline para durar exatamente tempoAnimacaoSegundos segundos reais
+      this._tl.tInicio = baseTempo;
+      this._tl.tFim = baseTempo + duracaoTotalMs;
+      this._tl.tAtual = baseTempo;
+      this._tl.vel = duracaoTotalHoras / tempoAnimacaoSegundos; // horas simuladas por segundo real
+      this._tl._passo = 50; // 50ms por quadro = 20 fps fluido e contínuo
       this._tl._contexto = 'vessel';
 
+      const selVel = document.getElementById('aw-vel');
+      if (selVel) {
+        let optSim = selVel.querySelector('option[value="sim_calibrada"]');
+        if (!optSim) {
+          optSim = document.createElement('option');
+          optSim.value = 'sim_calibrada';
+          selVel.prepend(optSim);
+        }
+        optSim.innerText = 'Cadenciado (~' + Math.round(tempoAnimacaoSegundos) + 's)';
+        optSim.selected = true;
+      }
+
       if (window.AISLayer && typeof window.AISLayer.destacarRotaSimulada === 'function') {
-        window.AISLayer.destacarRotaSimulada(mmsi, posTrecho, origem, destino);
+        window.AISLayer.destacarRotaSimulada(mmsi, pontosAnimados, origem, destino);
       } else if (window.AISLayer) {
         window.AISLayer._destacarTrilha(mmsi);
       }
 
+      // Renderiza primeiro frame com o barco exatamente no porto de origem
       this._atualizarFrame();
-      if (window.UI) window.UI.toast(`✅ Viagem simulada: ${origem} ➔ ${destino}`);
+
+      // Inicia imediatamente a animação de deslocamento do navio no mapa
+      this._play();
+
+      if (window.UI) window.UI.toast(`▶ Simulando viagem: ${origem} ➔ ${destino}`);
     },
 
     /* ============================================================
@@ -1372,13 +1688,29 @@
 
     _play() {
       const tl = this._tl;
-      if (tl.tAtual >= tl.tFim) tl.tAtual = tl.tInicio;
+      if (tl.tAtual >= tl.tFim) {
+        tl.tAtual = tl.tInicio;
+        this._atualizarFrame();
+      }
       tl.playing = true;
       const b = document.getElementById('aw-btn-play');
       if (b) { b.innerText = '⏸ Pausar'; b.classList.add('pausado'); }
+
+      // Limpa qualquer timer anterior para evitar múltiplos loops concorrentes (causa dos milissegundos)
+      if (tl._timer) clearInterval(tl._timer);
+
       tl._timer = setInterval(() => {
         tl.tAtual += tl.vel * 3600 * 1000 * (tl._passo / 1000);
-        if (tl.tAtual >= tl.tFim) { tl.tAtual = tl.tFim; this._pausar(); }
+        if (tl.tAtual >= tl.tFim) {
+          tl.tAtual = tl.tFim;
+          this._pausar();
+          this._atualizarFrame();
+          if (this._sim.rodando && window.UI && this._sim.legs && this._sim.legs.length) {
+            const dest = this._sim.legs[this._sim.legs.length - 1].porto;
+            window.UI.toast(`🏁 Chegada em ${dest}! Simulação concluída.`);
+          }
+          return;
+        }
         this._atualizarFrame();
       }, tl._passo);
     },
@@ -1386,13 +1718,27 @@
     _pausar() {
       const tl = this._tl;
       tl.playing = false;
-      if (tl._timer) clearInterval(tl._timer);
-      tl._timer = null;
+      if (tl._timer) {
+        clearInterval(tl._timer);
+        tl._timer = null;
+      }
       const b = document.getElementById('aw-btn-play');
       if (b) { b.innerText = '▶ Play'; b.classList.remove('pausado'); }
     },
 
-    setVel(v) { this._tl.vel = Number(v) || 6; },
+    setVel(v) {
+      if (this._sim.rodando && this._sim.duracaoTotalHoras && this._sim.tempoAnimacaoSegundos) {
+        const baseVel = this._sim.duracaoTotalHoras / this._sim.tempoAnimacaoSegundos;
+        if (v === 'sim_calibrada') {
+          this._tl.vel = baseVel;
+        } else {
+          const num = Number(v) || 6;
+          this._tl.vel = baseVel * (num / 6.0);
+        }
+      } else {
+        this._tl.vel = Number(v) || 6;
+      }
+    },
 
     seek(val) {
       const tl = this._tl;

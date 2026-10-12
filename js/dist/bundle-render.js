@@ -26,18 +26,30 @@
   const PopupRenderer = {
     gerar: function (id, properties) {
       const p = properties || {};
-      const cfg = CONFIG_CAMADAS[id] || {};
+      const cfg = (window.CONFIG_CAMADAS && window.CONFIG_CAMADAS[id]) || {};
+
       const titulo = Security.escapeHTML(
-        p.nome || p.NOME_INSTALACAO || p.NOME_RIO || p.nome_rio || p.SIGLA_UF || 'Ativo Aquaviário'
+        Security.getProp(p, 'nome', 'NOME', 'nome_instalacao', 'NOME_INSTALACAO', 'nome_rio', 'NOME_RIO', 'sigla_uf', 'SIGLA_UF', 'ds_nome') || 'Ativo Aquaviário'
       );
 
       let cardTempo = '';
-      if (p.tempo || p.vel_cional || p.extensao || p.mun_origem || p.mun_estino) {
-        const tempoFormatado = Security.escapeHTML(p.tempo || 'Não informado');
-        const extNum = p.extensao ? Number(p.extensao).toFixed(1) + ' km' : '-';
-        const velNum = p.vel_cional ? p.vel_cional + ' km/h' : '-';
-        const orig = (p.mun_origem || '-') + (p.est_origem ? `/${p.est_origem}` : '');
-        const dest = (p.mun_estino || '-') + (p.est_estino ? `/${p.est_estino}` : '');
+      const tempo = Security.getProp(p, 'tempo', 'TEMPO', 'tempo_viagem');
+      const vel = Security.getProp(p, 'vel_cional', 'VEL_CIONAL', 'velocidade', 'VELOCIDADE');
+      const ext = Security.getProp(p, 'extensao', 'EXTENSAO', 'extensao_km');
+      const origMun = Security.getProp(p, 'mun_origem', 'MUN_ORIGEM', 'municipio_origem');
+      const origUf = Security.getProp(p, 'est_origem', 'EST_ORIGEM', 'uf_origem');
+      const destMun = Security.getProp(p, 'mun_estino', 'mun_destino', 'MUN_DESTINO', 'municipio_destino');
+      const destUf = Security.getProp(p, 'est_estino', 'est_destino', 'EST_DESTINO', 'uf_destino');
+      const eclusa = Security.getProp(p, 'nom_eclusa', 'NOM_ECLUSA', 'eclusa');
+      const profMin = Security.getProp(p, 'pro_de_min', 'PRO_DE_MIN');
+      const profMax = Security.getProp(p, 'pro_de_max', 'PRO_DE_MAX');
+
+      if (tempo || vel || ext || origMun || destMun) {
+        const tempoFormatado = Security.escapeHTML(tempo || 'Não informado');
+        const extNum = ext ? Security.formatarKm(ext, 1) : '-';
+        const velNum = vel ? Security.formatarNumero(vel, 1) + ' km/h' : '-';
+        const orig = (origMun || '-') + (origUf ? `/${origUf}` : '');
+        const dest = (destMun || '-') + (destUf ? `/${destUf}` : '');
 
         cardTempo = `
           <div style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.25) 0%, rgba(11, 25, 44, 0.8) 100%); border: 1px solid #38bdf8; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px;">
@@ -49,8 +61,8 @@
               <div>📏 <strong>Extensão:</strong> ${extNum}</div>
               <div>⚡ <strong>Velocidade:</strong> ${velNum}</div>
               <div style="grid-column: span 2;">📍 <strong>Trecho OD:</strong> ${Security.escapeHTML(orig)} ➔ ${Security.escapeHTML(dest)}</div>
-              ${p.nom_eclusa ? `<div style="grid-column: span 2; color:#a7f3d0;">🚪 <strong>Eclusa:</strong> ${Security.escapeHTML(p.nom_eclusa)}</div>` : ''}
-              ${(p.pro_de_min || p.pro_de_max) ? `<div style="grid-column: span 2; font-size:10px; color:#94a3b8;">🌊 <strong>Profundidade / Calado:</strong> ${p.pro_de_min || '-'}m a ${p.pro_de_max || '-'}m</div>` : ''}
+              ${eclusa ? `<div style="grid-column: span 2; color:#a7f3d0;">🚪 <strong>Eclusa:</strong> ${Security.escapeHTML(eclusa)}</div>` : ''}
+              ${(profMin || profMax) ? `<div style="grid-column: span 2; font-size:10px; color:#94a3b8;">🌊 <strong>Profundidade / Calado:</strong> ${profMin || '-'}m a ${profMax || '-'}m</div>` : ''}
             </div>
           </div>
         `;
@@ -1494,14 +1506,13 @@
        Mostra posição interpolada entre as duas últimas até tAtualMs
        ------------------------------------------------------------ */
     renderizarProgressivo(todasPosicoes, tAtualMs, janelaH) {
-      const janelaMs = (janelaH || 24) * 3600 * 1000;
-      const tMin = tAtualMs - janelaMs;
+      if (!todasPosicoes || !todasPosicoes.length) return;
 
-      // Agrupa por MMSI filtrando até tAtual
+      const janelaMs = (janelaH || 24) * 3600 * 1000;
+
+      // Agrupa por MMSI
       const porMmsi = new Map();
       todasPosicoes.forEach(p => {
-        const t = new Date(p.timestamp).getTime();
-        if (t > tAtualMs) return;
         if (!porMmsi.has(p.mmsi)) porMmsi.set(p.mmsi, []);
         porMmsi.get(p.mmsi).push(p);
       });
@@ -1512,19 +1523,83 @@
         arr.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
         if (!arr.length) return;
 
-        const ult = arr[arr.length - 1];
-        const tUlt = new Date(ult.timestamp).getTime();
+        // Se houver mais de 1 ponto e for um único MMSI (ou simulação ativa), faz interpolação linear suave
+        const ehSimulacaoOuUnico = (porMmsi.size === 1 && arr.length >= 2);
 
-        // Interpolação: se há próximo ponto, calcula posição suave
-        let lat = ult.lat, lon = ult.lon, cog = ult.cog;
-        // Não interpola com ponto futuro (arr só tem passado)
-        // A suavidade vem do requestAnimationFrame + passo pequeno
+        if (ehSimulacaoOuUnico) {
+          const t0 = new Date(arr[0].timestamp).getTime();
+          const tFim = new Date(arr[arr.length - 1].timestamp).getTime();
 
-        atuais.push({
-          ...ult,
-          lat, lon, cog,
-          cadastro: window.AISManager.getCadastro(mmsi) || {}
-        });
+          if (tAtualMs <= t0) {
+            const p0 = arr[0];
+            atuais.push({
+              ...p0,
+              cadastro: window.AISManager ? window.AISManager.getCadastro(mmsi) || {} : {}
+            });
+            return;
+          }
+
+          if (tAtualMs >= tFim) {
+            const pFim = arr[arr.length - 1];
+            atuais.push({
+              ...pFim,
+              cadastro: window.AISManager ? window.AISManager.getCadastro(mmsi) || {} : {}
+            });
+            return;
+          }
+
+          // Encontra o segmento [pA, pB] tal que tA <= tAtualMs <= tB
+          let idxA = 0;
+          for (let i = 0; i < arr.length - 1; i++) {
+            const tA = new Date(arr[i].timestamp).getTime();
+            const tB = new Date(arr[i + 1].timestamp).getTime();
+            if (tAtualMs >= tA && tAtualMs <= tB) {
+              idxA = i;
+              break;
+            }
+          }
+
+          const pA = arr[idxA];
+          const pB = arr[idxA + 1];
+          const tA = new Date(pA.timestamp).getTime();
+          const tB = new Date(pB.timestamp).getTime();
+          const frac = (tB > tA) ? Math.max(0, Math.min(1, (tAtualMs - tA) / (tB - tA))) : 0;
+
+          const latInterp = pA.lat + frac * (pB.lat - pA.lat);
+          const lonInterp = pA.lon + frac * (pB.lon - pA.lon);
+
+          // Interpolação angular contínua de COG (-180 a +180)
+          let cogA = Number(pA.cog) || 0;
+          let cogB = Number(pB.cog) || cogA;
+          let diffCog = ((cogB - cogA + 540) % 360) - 180;
+          let cogInterp = Math.round((cogA + frac * diffCog + 360) % 360);
+
+          atuais.push({
+            ...pA,
+            lat: latInterp,
+            lon: lonInterp,
+            cog: cogInterp,
+            heading: cogInterp,
+            timestamp: new Date(tAtualMs).toISOString(),
+            cadastro: window.AISManager ? window.AISManager.getCadastro(mmsi) || {} : {}
+          });
+        } else {
+          // Modo frota geral: pega última posição até tAtualMs
+          const passados = arr.filter(p => new Date(p.timestamp).getTime() <= tAtualMs);
+          if (passados.length > 0) {
+            const ult = passados[passados.length - 1];
+            atuais.push({
+              ...ult,
+              cadastro: window.AISManager ? window.AISManager.getCadastro(mmsi) || {} : {}
+            });
+          } else if (arr.length > 0) {
+            const p0 = arr[0];
+            atuais.push({
+              ...p0,
+              cadastro: window.AISManager ? window.AISManager.getCadastro(mmsi) || {} : {}
+            });
+          }
+        }
       });
 
       this._sincronizarMarkers(atuais);
@@ -1533,7 +1608,87 @@
     /* ------------------------------------------------------------
        DESTAQUE DE TRILHA
        ------------------------------------------------------------ */
-    _destacarTrilha(mmsi) {
+    destacarRotaSimulada(mmsi, pontos, origem, destino) {
+      this.limparTrilha();
+      if (!pontos || pontos.length < 2) return;
+
+      // Obtém coordenadas oficiais de referência de porto
+      const refOrig = (window.Security && typeof window.Security.obterCoordPorto === 'function')
+        ? window.Security.obterCoordPorto(origem) : null;
+      const refDest = (window.Security && typeof window.Security.obterCoordPorto === 'function')
+        ? window.Security.obterCoordPorto(destino) : null;
+
+      // Se pontos estiverem orientados no sentido contrário ao da viagem, inverte a ordem
+      let ptsCorrigidos = pontos.slice();
+      if (refOrig && ptsCorrigidos.length >= 2) {
+        const dInicio = Math.hypot(ptsCorrigidos[0].lat - refOrig[0], ptsCorrigidos[0].lon - refOrig[1]);
+        const dFim = Math.hypot(ptsCorrigidos[ptsCorrigidos.length - 1].lat - refOrig[0], ptsCorrigidos[ptsCorrigidos.length - 1].lon - refOrig[1]);
+        if (dFim < dInicio) {
+          ptsCorrigidos.reverse();
+        }
+      }
+
+      this._destacado = mmsi;
+      const grupo = L.layerGroup();
+
+      // Renderiza polilinha contínua ao longo da rota
+      splitPontos(ptsCorrigidos).forEach(seg => {
+        if (seg.length < 2) return;
+        const coords = seg.map(p => [p.lat, p.lon]);
+        L.polyline(coords, { color: '#0284c7', weight: 8, opacity: 0.3, lineCap: 'round' }).addTo(grupo);
+        L.polyline(coords, {
+          color: '#00e5ff', weight: 3.5, opacity: 0.95,
+          dashArray: '8 5', lineCap: 'round'
+        }).addTo(grupo);
+      });
+
+      // Posição de origem ancorada geograficamente no porto correto
+      const p0 = ptsCorrigidos[0];
+      const posOrig = refOrig ? [refOrig[0], refOrig[1]] : [p0.lat, p0.lon];
+      const iconeOrig = L.divIcon({
+        className: 'sim-marker-origem',
+        html: `<div style="background:#10b981; color:#fff; border:2px solid #fff; border-radius:12px; padding:3px 8px; font-size:10px; font-weight:800; box-shadow:0 3px 8px rgba(0,0,0,0.5); white-space:nowrap; display:flex; align-items:center; gap:4px;">
+          <span>🟢 DE:</span> <span>${window.Security ? window.Security.escapeHTML(origem) : origem}</span>
+        </div>`,
+        iconSize: [130, 24],
+        iconAnchor: [12, 12]
+      });
+      L.marker(posOrig, { icon: iconeOrig, zIndexOffset: 1200 })
+        .bindPopup(`<strong>🟢 Porto de Partida (Origem):</strong><br>${origem}`)
+        .addTo(grupo);
+
+      // Posição de destino ancorada geograficamente no porto correto
+      const pFim = ptsCorrigidos[ptsCorrigidos.length - 1];
+      const posDest = refDest ? [refDest[0], refDest[1]] : [pFim.lat, pFim.lon];
+      const iconeDest = L.divIcon({
+        className: 'sim-marker-destino',
+        html: `<div style="background:#ef4444; color:#fff; border:2px solid #fff; border-radius:12px; padding:3px 8px; font-size:10px; font-weight:800; box-shadow:0 3px 8px rgba(0,0,0,0.5); white-space:nowrap; display:flex; align-items:center; gap:4px;">
+          <span>🏁 PARA:</span> <span>${window.Security ? window.Security.escapeHTML(destino) : destino}</span>
+        </div>`,
+        iconSize: [130, 24],
+        iconAnchor: [12, 12]
+      });
+      L.marker(posDest, { icon: iconeDest, zIndexOffset: 1200 })
+        .bindPopup(`<strong>🏁 Porto de Destino (Chegada):</strong><br>${destino}`)
+        .addTo(grupo);
+
+      grupo.addTo(this._mapa);
+      this._trilhaDestaque = grupo;
+
+      try {
+        const boundsPts = [posOrig, posDest, ...ptsCorrigidos.map(p => [p.lat, p.lon])];
+        const b = L.latLngBounds(boundsPts);
+        if (b.isValid()) this._mapa.fitBounds(b, { padding: [80, 80], maxZoom: 12 });
+      } catch (e) {}
+
+      const m = this._markers.get(mmsi);
+      if (m) {
+        const cad = window.AISManager.getCadastro(mmsi) || {};
+        m.setIcon(criarIcone(cad.tipo, m._popupData?.status, m._popupData?.cog, true));
+      }
+    },
+
+_destacarTrilha(mmsi) {
       this._destacado = mmsi;
       const pontos = window.AISManager.getTrilha(mmsi);
       if (pontos.length < 2) return;

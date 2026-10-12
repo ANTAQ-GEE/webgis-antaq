@@ -63,21 +63,24 @@
         return;
       }
 
-      this.dadosCompletos = dadosGeo.features.map((f, idx) => ({
-        index: idx, feature: f,
-        idhidrovia: f.properties.idhidrovia || idx,
-        nome: f.properties.nome || f.properties.NOME || 'Hidrovia Sem Denominação',
-        rio: f.properties.nome_rio || f.properties.NOME_RIO || f.properties.rio || '-',
-        mun_orig: f.properties.mun_origem || f.properties.MUN_ORIGEM || '-',
-        est_orig: f.properties.est_origem || f.properties.EST_ORIGEM || '',
-        mun_dest: f.properties.mun_estino || f.properties.MUN_DESTINO || '-',
-        est_dest: f.properties.est_estino || f.properties.EST_DESTINO || '',
-        extensao: Number(f.properties.extensao || f.properties.EXTENSAO || 0),
-        velocidade: Number(f.properties.vel_cional || f.properties.VELOCIDADE || 0),
-        tempo: f.properties.tempo || f.properties.TEMPO || '-',
-        tipo: f.properties.tipo || f.properties.TIPO || 'Trecho',
-        eclusa: f.properties.nom_eclusa || f.properties.NOM_ECLUSA || ''
-      }));
+      this.dadosCompletos = dadosGeo.features.map((f, idx) => {
+        const p = f.properties || {};
+        return {
+          index: idx, feature: f,
+          idhidrovia: Security.getProp(p, 'idhidrovia', 'gid', 'id') || idx,
+          nome: Security.getProp(p, 'nome', 'NOME') || 'Hidrovia Sem Denominação',
+          rio: Security.getProp(p, 'nome_rio', 'NOME_RIO', 'rio') || '-',
+          mun_orig: Security.getProp(p, 'mun_origem', 'MUN_ORIGEM', 'municipio_origem') || '-',
+          est_orig: Security.getProp(p, 'est_origem', 'EST_ORIGEM', 'uf_origem') || '',
+          mun_dest: Security.getProp(p, 'mun_estino', 'mun_destino', 'MUN_DESTINO', 'municipio_destino') || '-',
+          est_dest: Security.getProp(p, 'est_estino', 'est_destino', 'EST_DESTINO', 'uf_destino') || '',
+          extensao: Number(Security.getProp(p, 'extensao', 'EXTENSAO') || 0),
+          velocidade: Number(Security.getProp(p, 'vel_cional', 'VELOCIDADE') || 0),
+          tempo: Security.getProp(p, 'tempo', 'TEMPO') || '-',
+          tipo: Security.getProp(p, 'tipo', 'TIPO') || 'Trecho',
+          eclusa: Security.getProp(p, 'nom_eclusa', 'NOM_ECLUSA', 'eclusa') || ''
+        };
+      });
 
       this.popularDropdownsFiltro();
       this.aplicarFiltros();
@@ -209,8 +212,22 @@
           endPt = coords;
         }
 
-        const latlngOrig = [startPt[1], startPt[0]];
-        const latlngDest = [endPt[1], endPt[0]];
+        let latlngOrig = [startPt[1], startPt[0]];
+        let latlngDest = [endPt[1], endPt[0]];
+
+        // Validação e correção geográfica das pontas O/D para evitar inversões
+        if (window.Security && typeof window.Security.obterCoordPorto === 'function') {
+          const cOrig = window.Security.obterCoordPorto(item.mun_orig);
+          if (cOrig) {
+            const dStart = Math.hypot(latlngOrig[0] - cOrig[0], latlngOrig[1] - cOrig[1]);
+            const dEnd = Math.hypot(latlngDest[0] - cOrig[0], latlngDest[1] - cOrig[1]);
+            if (dEnd < dStart) {
+              const tmp = latlngOrig;
+              latlngOrig = latlngDest;
+              latlngDest = tmp;
+            }
+          }
+        }
 
         // 2. Traçado com destaque em ciano de alto contraste
         const linhaDestaque = L.geoJSON(item.feature, {

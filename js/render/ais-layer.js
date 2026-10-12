@@ -327,14 +327,13 @@
        Mostra posição interpolada entre as duas últimas até tAtualMs
        ------------------------------------------------------------ */
     renderizarProgressivo(todasPosicoes, tAtualMs, janelaH) {
-      const janelaMs = (janelaH || 24) * 3600 * 1000;
-      const tMin = tAtualMs - janelaMs;
+      if (!todasPosicoes || !todasPosicoes.length) return;
 
-      // Agrupa por MMSI filtrando até tAtual
+      const janelaMs = (janelaH || 24) * 3600 * 1000;
+
+      // Agrupa por MMSI
       const porMmsi = new Map();
       todasPosicoes.forEach(p => {
-        const t = new Date(p.timestamp).getTime();
-        if (t > tAtualMs) return;
         if (!porMmsi.has(p.mmsi)) porMmsi.set(p.mmsi, []);
         porMmsi.get(p.mmsi).push(p);
       });
@@ -345,19 +344,83 @@
         arr.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
         if (!arr.length) return;
 
-        const ult = arr[arr.length - 1];
-        const tUlt = new Date(ult.timestamp).getTime();
+        // Se houver mais de 1 ponto e for um único MMSI (ou simulação ativa), faz interpolação linear suave
+        const ehSimulacaoOuUnico = (porMmsi.size === 1 && arr.length >= 2);
 
-        // Interpolação: se há próximo ponto, calcula posição suave
-        let lat = ult.lat, lon = ult.lon, cog = ult.cog;
-        // Não interpola com ponto futuro (arr só tem passado)
-        // A suavidade vem do requestAnimationFrame + passo pequeno
+        if (ehSimulacaoOuUnico) {
+          const t0 = new Date(arr[0].timestamp).getTime();
+          const tFim = new Date(arr[arr.length - 1].timestamp).getTime();
 
-        atuais.push({
-          ...ult,
-          lat, lon, cog,
-          cadastro: window.AISManager.getCadastro(mmsi) || {}
-        });
+          if (tAtualMs <= t0) {
+            const p0 = arr[0];
+            atuais.push({
+              ...p0,
+              cadastro: window.AISManager ? window.AISManager.getCadastro(mmsi) || {} : {}
+            });
+            return;
+          }
+
+          if (tAtualMs >= tFim) {
+            const pFim = arr[arr.length - 1];
+            atuais.push({
+              ...pFim,
+              cadastro: window.AISManager ? window.AISManager.getCadastro(mmsi) || {} : {}
+            });
+            return;
+          }
+
+          // Encontra o segmento [pA, pB] tal que tA <= tAtualMs <= tB
+          let idxA = 0;
+          for (let i = 0; i < arr.length - 1; i++) {
+            const tA = new Date(arr[i].timestamp).getTime();
+            const tB = new Date(arr[i + 1].timestamp).getTime();
+            if (tAtualMs >= tA && tAtualMs <= tB) {
+              idxA = i;
+              break;
+            }
+          }
+
+          const pA = arr[idxA];
+          const pB = arr[idxA + 1];
+          const tA = new Date(pA.timestamp).getTime();
+          const tB = new Date(pB.timestamp).getTime();
+          const frac = (tB > tA) ? Math.max(0, Math.min(1, (tAtualMs - tA) / (tB - tA))) : 0;
+
+          const latInterp = pA.lat + frac * (pB.lat - pA.lat);
+          const lonInterp = pA.lon + frac * (pB.lon - pA.lon);
+
+          // Interpolação angular contínua de COG (-180 a +180)
+          let cogA = Number(pA.cog) || 0;
+          let cogB = Number(pB.cog) || cogA;
+          let diffCog = ((cogB - cogA + 540) % 360) - 180;
+          let cogInterp = Math.round((cogA + frac * diffCog + 360) % 360);
+
+          atuais.push({
+            ...pA,
+            lat: latInterp,
+            lon: lonInterp,
+            cog: cogInterp,
+            heading: cogInterp,
+            timestamp: new Date(tAtualMs).toISOString(),
+            cadastro: window.AISManager ? window.AISManager.getCadastro(mmsi) || {} : {}
+          });
+        } else {
+          // Modo frota geral: pega última posição até tAtualMs
+          const passados = arr.filter(p => new Date(p.timestamp).getTime() <= tAtualMs);
+          if (passados.length > 0) {
+            const ult = passados[passados.length - 1];
+            atuais.push({
+              ...ult,
+              cadastro: window.AISManager ? window.AISManager.getCadastro(mmsi) || {} : {}
+            });
+          } else if (arr.length > 0) {
+            const p0 = arr[0];
+            atuais.push({
+              ...p0,
+              cadastro: window.AISManager ? window.AISManager.getCadastro(mmsi) || {} : {}
+            });
+          }
+        }
       });
 
       this._sincronizarMarkers(atuais);
@@ -366,13 +429,31 @@
     /* ------------------------------------------------------------
        DESTAQUE DE TRILHA
        ------------------------------------------------------------ */
-        destacarRotaSimulada(mmsi, pontos, origem, destino) {
+    destacarRotaSimulada(mmsi, pontos, origem, destino) {
       this.limparTrilha();
       if (!pontos || pontos.length < 2) return;
 
+      // Obtém coordenadas oficiais de referência de porto
+      const refOrig = (window.Security && typeof window.Security.obterCoordPorto === 'function')
+        ? window.Security.obterCoordPorto(origem) : null;
+      const refDest = (window.Security && typeof window.Security.obterCoordPorto === 'function')
+        ? window.Security.obterCoordPorto(destino) : null;
+
+      // Se pontos estiverem orientados no sentido contrário ao da viagem, inverte a ordem
+      let ptsCorrigidos = pontos.slice();
+      if (refOrig && ptsCorrigidos.length >= 2) {
+        const dInicio = Math.hypot(ptsCorrigidos[0].lat - refOrig[0], ptsCorrigidos[0].lon - refOrig[1]);
+        const dFim = Math.hypot(ptsCorrigidos[ptsCorrigidos.length - 1].lat - refOrig[0], ptsCorrigidos[ptsCorrigidos.length - 1].lon - refOrig[1]);
+        if (dFim < dInicio) {
+          ptsCorrigidos.reverse();
+        }
+      }
+
       this._destacado = mmsi;
       const grupo = L.layerGroup();
-      splitPontos(pontos).forEach(seg => {
+
+      // Renderiza polilinha contínua ao longo da rota
+      splitPontos(ptsCorrigidos).forEach(seg => {
         if (seg.length < 2) return;
         const coords = seg.map(p => [p.lat, p.lon]);
         L.polyline(coords, { color: '#0284c7', weight: 8, opacity: 0.3, lineCap: 'round' }).addTo(grupo);
@@ -382,29 +463,33 @@
         }).addTo(grupo);
       });
 
-      const p0 = pontos[0];
+      // Posição de origem ancorada geograficamente no porto correto
+      const p0 = ptsCorrigidos[0];
+      const posOrig = refOrig ? [refOrig[0], refOrig[1]] : [p0.lat, p0.lon];
       const iconeOrig = L.divIcon({
         className: 'sim-marker-origem',
         html: `<div style="background:#10b981; color:#fff; border:2px solid #fff; border-radius:12px; padding:3px 8px; font-size:10px; font-weight:800; box-shadow:0 3px 8px rgba(0,0,0,0.5); white-space:nowrap; display:flex; align-items:center; gap:4px;">
-          <span>🟢 DE:</span> <span>${origem}</span>
+          <span>🟢 DE:</span> <span>${window.Security ? window.Security.escapeHTML(origem) : origem}</span>
         </div>`,
         iconSize: [130, 24],
         iconAnchor: [12, 12]
       });
-      L.marker([p0.lat, p0.lon], { icon: iconeOrig, zIndexOffset: 1200 })
+      L.marker(posOrig, { icon: iconeOrig, zIndexOffset: 1200 })
         .bindPopup(`<strong>🟢 Porto de Partida (Origem):</strong><br>${origem}`)
         .addTo(grupo);
 
-      const pFim = pontos[pontos.length - 1];
+      // Posição de destino ancorada geograficamente no porto correto
+      const pFim = ptsCorrigidos[ptsCorrigidos.length - 1];
+      const posDest = refDest ? [refDest[0], refDest[1]] : [pFim.lat, pFim.lon];
       const iconeDest = L.divIcon({
         className: 'sim-marker-destino',
         html: `<div style="background:#ef4444; color:#fff; border:2px solid #fff; border-radius:12px; padding:3px 8px; font-size:10px; font-weight:800; box-shadow:0 3px 8px rgba(0,0,0,0.5); white-space:nowrap; display:flex; align-items:center; gap:4px;">
-          <span>🏁 PARA:</span> <span>${destino}</span>
+          <span>🏁 PARA:</span> <span>${window.Security ? window.Security.escapeHTML(destino) : destino}</span>
         </div>`,
         iconSize: [130, 24],
         iconAnchor: [12, 12]
       });
-      L.marker([pFim.lat, pFim.lon], { icon: iconeDest, zIndexOffset: 1200 })
+      L.marker(posDest, { icon: iconeDest, zIndexOffset: 1200 })
         .bindPopup(`<strong>🏁 Porto de Destino (Chegada):</strong><br>${destino}`)
         .addTo(grupo);
 
@@ -412,7 +497,8 @@
       this._trilhaDestaque = grupo;
 
       try {
-        const b = L.latLngBounds(pontos.map(p => [p.lat, p.lon]));
+        const boundsPts = [posOrig, posDest, ...ptsCorrigidos.map(p => [p.lat, p.lon])];
+        const b = L.latLngBounds(boundsPts);
         if (b.isValid()) this._mapa.fitBounds(b, { padding: [80, 80], maxZoom: 12 });
       } catch (e) {}
 
