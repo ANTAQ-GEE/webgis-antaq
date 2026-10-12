@@ -231,6 +231,8 @@
             if (window.SearchEngine) window.SearchEngine.executar();
             return `🔍 Buscando: <em>"${window.Security.escapeHTML(intencao.termo)}"</em>.`;
 
+                    case 'regulatorio':
+            return this._responderRegulatorio(intencao);
           case 'nota_tecnica': {
             const ativo = this.ultimoAtivoInspecionado ||
               (DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.[0]);
@@ -264,6 +266,39 @@
        HANDLERS ESPECIAIS (perguntas pré-definidas)
        ============================================================ */
 
+    _responderRegulatorio: function (intencao) {
+      return `
+        <div style="font-family:'Segoe UI',sans-serif;line-height:1.5;color:#f1f5f9;">
+          <div style="font-weight:700;color:#38bdf8;font-size:13px;margin-bottom:8px;border-bottom:1px solid #1e4976;padding-bottom:4px;">
+            📜 Marco Regulatório Portuário — Lei nº 12.815/2013 (ANTAQ)
+          </div>
+          <p style="font-size:11px;color:#cbd5e1;margin-bottom:10px;">
+            A exploração de instalações portuárias no Brasil rege-se pela <strong>Lei nº 12.815/2013</strong> e pelas resoluções normativas da ANTAQ, estruturando-se em quatro regimes principais de outorga:
+          </p>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:11px;">
+            <div style="background:rgba(2,132,199,0.15);border-left:3px solid #0284c7;padding:6px 10px;border-radius:4px;">
+              <strong style="color:#38bdf8;">1. Porto Organizado (Arrendamento / Concessão)</strong><br>
+              <span style="color:#94a3b8;">Art. 2º, I:</span> Bem público construído e aparelhado para atender navegação e movimentação de cargas/passageiros sob jurisdição da Autoridade Portuária.
+            </div>
+            <div style="background:rgba(16,185,129,0.15);border-left:3px solid #10b981;padding:6px 10px;border-radius:4px;">
+              <strong style="color:#34d399;">2. Terminal de Uso Privado — TUP (Autorização)</strong><br>
+              <span style="color:#94a3b8;">Art. 2º, IV:</span> Instalação portuária explorada mediante autorização, localizada <em>fora da área do porto organizado</em>, permitindo movimentação de carga própria e de terceiros.
+            </div>
+            <div style="background:rgba(245,158,11,0.15);border-left:3px solid #f59e0b;padding:6px 10px;border-radius:4px;">
+              <strong style="color:#fbbf24;">3. Instalação Portuária Pública de Pequeno Porte — IP4 (Autorização/Convênio)</strong><br>
+              <span style="color:#94a3b8;">Art. 2º, VI:</span> Destinada à movimentação de passageiros ou mercadorias no transporte fluvial/lacustre na Região Amazônica e hidrovias interiores.
+            </div>
+            <div style="background:rgba(139,92,246,0.15);border-left:3px solid #8b5cf6;padding:6px 10px;border-radius:4px;">
+              <strong style="color:#c084fc;">4. Estação de Transbordo de Carga — ETC (Autorização)</strong><br>
+              <span style="color:#94a3b8;">Art. 2º, V:</span> Instalação fora do porto organizado utilizada <em>exclusivamente</em> para transbordo entre modais aquaviários e terrestres.
+            </div>
+          </div>
+          <div style="margin-top:10px;padding:6px 8px;background:#061426;border-radius:4px;font-size:10px;color:#94a3b8;">
+            💡 <em>Dica: Selecione qualquer porto no mapa para verificar seus dados completos e gerar uma minuta de Nota Técnica.</em>
+          </div>
+        </div>
+      `;
+    },
     _responderAgrupamento: async function (intencao) {
       const dados = await this._obterDados(intencao.camada);
       if (!dados?.features?.length) return 'Sem dados carregados.';

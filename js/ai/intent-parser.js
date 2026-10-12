@@ -185,24 +185,11 @@
         };
       }
 
-            // ---------- 3.9. Contenção Territorial Espacial ("em terras indígenas", "em UCs", etc.) ----------
-      const alvoPoligono = this._acharCamadaPoligonal(texto);
-      if (alvoPoligono && (/(?:\bem\b|\bnas?\b|\bnos?\b|\bdentro\b|\bcontid|\binserid|\bintercept|\bsobrepost)/i).test(texto)) {
-        const camadaFonte = acharCamada(texto) || 'instalacoes_portuarias';
-        const nomesBonitos = {
-          'tis_poligonais': 'Terras Indígenas (FUNAI)',
-          'ucs_federais': 'Unidades de Conservação Federais (ICMBio)',
-          'estados_amazonia_legal': 'Amazônia Legal'
-        };
-        return {
-          tipo: 'contido',
-          camada: camadaFonte,
-          alvo: alvoPoligono,
-          alvoNome: nomesBonitos[alvoPoligono] || alvoPoligono
-        };
+      // ---------- 3.5. Marco Regulatório / Lei 12.815 ----------
+      if (/\b(lei\s*12\.?815|marco\s*regulat[oó]rio|outorga|regimes?\s*portu[aá]rios?|diferen[çc]a\s*entre\s*(?:tup|porto|ip4|etc)|o\s*que\s*[eé]\s*(?:tup|ip4|etc|porto\s*organizado)|qual\s*a\s*diferen[çc]a)\b/.test(texto)) {
+        return { tipo: 'regulatorio', comando: texto };
       }
-
-// ---------- 4. Contagem ----------
+      // ---------- 4. Contagem ----------
       const matchDentro = texto.match(/\b(dentro d[ao]|dentro de|contid[oa]s? (?:em|na|no)|inserid[oa]s? (?:em|na|no))\s+(.+?)(?:\?|$)/);
       if (matchDentro) {
         const alvoNome = matchDentro[2].trim();
@@ -217,6 +204,10 @@
           };
         }
       }      
+      // ---------- 3.5. Marco Regulatório / Lei 12.815 ----------
+      if (/\b(lei\s*12\.?815|marco\s*regulat[oó]rio|outorga|regimes?\s*portu[aá]rios?|diferen[çc]a\s*entre\s*(?:tup|porto|ip4|etc)|o\s*que\s*[eé]\s*(?:tup|ip4|etc|porto\s*organizado)|qual\s*a\s*diferen[çc]a)\b/.test(texto)) {
+        return { tipo: 'regulatorio', comando: texto };
+      }
       // ---------- 4. Contagem ----------
       // ✅ Não casa se a pergunta tiver padrão de contenção ("dentro de", "na região", etc.)
       //    Nesses casos, o bloco "contido" (7.6) trata com lookup geográfico
@@ -382,8 +373,8 @@
     _acharCamadaPoligonal: function (textoNorm) {
       const n = normalizar(textoNorm);
       if (n.includes('amazonia legal') || (n.includes('amazoni') && n.includes('legal'))) return 'estados_amazonia_legal';
-      if (n.includes('indigen') || /\b(ti|tis)\b/i.test(n)) return 'tis_poligonais';
-      if (n.includes('conserva') || n.includes('icmbio') || /\b(uc|ucs)\b/i.test(n)) return 'ucs_federais';
+      if (n.includes('indigen') || /(ti|tis)/i.test(n)) return 'tis_poligonais';
+      if (n.includes('conserva') || n.includes('icmbio') || /(uc|ucs)/i.test(n)) return 'ucs_federais';
       return null;
     },
     /* ---------- Debug ---------- */

@@ -130,7 +130,18 @@
 
       const inicio = performance.now();
 
-      // ✅ Só indexa o que está visível no viewport atual (evita indexar 7673 rodovias fora da tela)
+      // Prioridade 1: Indexa feições selecionadas em SelectionManager
+      if (window.SelectionManager && Array.isArray(window.SelectionManager._selecionadas) && window.SelectionManager._selecionadas.length > 0) {
+        for (const item of window.SelectionManager._selecionadas) {
+          const f = item.feature;
+          const id = item.camadaId || 'selecao';
+          if (f && f.geometry) {
+            this._extrairVerticesDeFeature(f, id);
+          }
+        }
+      }
+
+      // Prioridade 2: Indexa camadas visíveis no viewport atual
       const bounds = window.mapa.getBounds();
       let limitados = 0;
 
@@ -155,6 +166,40 @@
       const duracao = (performance.now() - inicio).toFixed(0);
       const celulas = Object.keys(this._snapGrid).length;
       console.info(`[M1] Snap: ${this._snapTotal} vértices em ${celulas} células (${duracao}ms)`);
+    },
+
+    _extrairVerticesDeFeature: function (f, camadaId) {
+      if (!f || !f.geometry || !f.geometry.coordinates) return;
+      const type = f.geometry.type;
+      const coords = f.geometry.coordinates;
+
+      if (type === 'Point') {
+        if (coords.length >= 2) this._adicionarVertice({ lat: coords[1], lng: coords[0] }, camadaId);
+      } else if (type === 'MultiPoint' || type === 'LineString') {
+        for (const pt of coords) {
+          if (pt && pt.length >= 2) this._adicionarVertice({ lat: pt[1], lng: pt[0] }, camadaId);
+        }
+      } else if (type === 'MultiLineString' || type === 'Polygon') {
+        for (const ring of coords) {
+          if (Array.isArray(ring)) {
+            for (const pt of ring) {
+              if (pt && pt.length >= 2) this._adicionarVertice({ lat: pt[1], lng: pt[0] }, camadaId);
+            }
+          }
+        }
+      } else if (type === 'MultiPolygon') {
+        for (const poly of coords) {
+          if (Array.isArray(poly)) {
+            for (const ring of poly) {
+              if (Array.isArray(ring)) {
+                for (const pt of ring) {
+                  if (pt && pt.length >= 2) this._adicionarVertice({ lat: pt[1], lng: pt[0] }, camadaId);
+                }
+              }
+            }
+          }
+        }
+      }
     },
 
     _extrairVerticesDe: function (sub, camadaId, profundidade) {
@@ -440,6 +485,16 @@
       window.mapa.on('mousemove', this._handlers.mousemove);
       window.mapa.on('mouseout', this._handlers.mouseout);
 
+      if (!this._moveendListener && window.mapa) {
+        this._moveendListener = () => {
+          if (this._snapAtivo && this.modo) {
+            clearTimeout(this._snapRebuildTimer);
+            this._snapRebuildTimer = setTimeout(() => this._construirGridSnap(), 250);
+          }
+        };
+        window.mapa.on('moveend zoomend', this._moveendListener);
+      }
+
       document.addEventListener('keydown', this._handlers.keydown);
       document.addEventListener('keyup', this._handlers.keyup);
 
@@ -454,6 +509,11 @@
 
       window.mapa.off('mousemove', this._handlers.mousemove);
       window.mapa.off('mouseout', this._handlers.mouseout);
+
+      if (this._moveendListener && window.mapa) {
+        window.mapa.off('moveend zoomend', this._moveendListener);
+        this._moveendListener = null;
+      }
 
       document.removeEventListener('keydown', this._handlers.keydown);
       document.removeEventListener('keyup', this._handlers.keyup);
@@ -524,7 +584,7 @@
       let pontoEfetivo = e.latlng;
 
       if (snapAtivoAgora && this._snapTotal > 0) {
-        const snap = this._encontrarSnap(e.latlng, screenPoint, 12);
+        const snap = this._encontrarSnap(e.latlng, screenPoint, 18);
         if (snap) {
           this._snapPoint = snap;
           pontoEfetivo = L.latLng(snap.lat, snap.lng);

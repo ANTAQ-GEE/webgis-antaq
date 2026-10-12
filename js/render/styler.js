@@ -344,20 +344,18 @@
                 click: e => {
                   if (window.MeasurementTool && window.MeasurementTool.modo) return;
                   if (window.CopilotoIA) window.CopilotoIA.ultimoAtivoInspecionado = f;
-                  if (window.CopilotoIA) window.CopilotoIA.ultimoAtivoInspecionado = f;
 
                   if (e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey)) {
+                    L.DomEvent.stopPropagation(e);
+                    if (e.target && e.target.closePopup) e.target.closePopup();
                     if (window.SelectionManager) window.SelectionManager.toggle(f, id);
                     return;
                   }
                   if (window.SelectionManager && window.SelectionManager.temSelecao()) {
                     window.SelectionManager.limpar(true);
                   }
-                  if (window.CAMADA_DESTAQUE) mapa.removeLayer(window.CAMADA_DESTAQUE);
-                  if (e.target.getBounds) {
-                    window.CAMADA_DESTAQUE = L.polyline(e.target.getLatLngs ? e.target.getLatLngs() : [], {
-                      color: '#f59e0b', weight: 4, opacity: 0.9, dashArray: '4, 4'
-                    }).addTo(mapa);
+                  if (window.CAMADA_DESTAQUE && window.mapa) {
+                    try { window.mapa.removeLayer(window.CAMADA_DESTAQUE); } catch (err) {}
                   }
                 }
               });

@@ -37,20 +37,6 @@
     }
 
     /* M14 — AIS ativo */
-    /* M10/M11 — Estilo temático roxo institucional da aba Geo */
-    .aba-btn[data-aba="geo"] .aba-emoji {
-      filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.6));
-    }
-    .aba-btn[data-aba="geo"]:hover {
-      background: rgba(124, 58, 237, 0.18) !important;
-      color: #ddd6fe !important;
-    }
-    .aba-btn[data-aba="geo"].ativo {
-      color: #c4b5fd !important;
-      border-bottom-color: #a78bfa !important;
-      background: rgba(124, 58, 237, 0.22) !important;
-    }
-
     .aba-btn[data-aba="ais"] {
       opacity: 1;
     }
@@ -6106,10 +6092,9 @@
       background: rgba(2, 132, 199, 0.25);
       border-left: 3px solid #38bdf8;
     }
-
+  
     /* --- BLINDAGEM DE LAYOUT: ZERO DESLOCAMENTO HORIZONTAL --- */
-    html,
-    body {
+    html, body {
       width: 100% !important;
       height: 100% !important;
       max-width: 100vw !important;
@@ -6118,138 +6103,26 @@
       margin: 0 !important;
       padding: 0 !important;
     }
-
     .painel-lateral {
       max-width: 380px !important;
       overflow-x: hidden !important;
     }
-
     .camada-acoes-barra {
       flex-wrap: wrap !important;
       gap: 3px !important;
     }
-
     .camada-titulo-txt {
       max-width: 200px !important;
       word-break: break-word !important;
       overflow-wrap: break-word !important;
     }
-
     .item-camada {
       max-width: 100% !important;
       overflow-x: hidden !important;
     }
-  
-    /* ============================================================
-       MELHORIAS EXECUTIVAS — NAVEGAÇÃO ESTRATÉGICA & APRESENTAÇÃO
-       ============================================================ */
-    .menu-corredores-container {
-      position: relative;
-      display: inline-block;
-    }
-    .btn-corredores {
-      background: #0c2d48;
-      border: 1px solid #0284c7;
-      color: #38bdf8;
-      padding: 5px 11px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      transition: all 0.2s ease;
-    }
-    .btn-corredores:hover {
-      background: #0369a1;
-      color: #fff;
-      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
-    }
-    .dropdown-corredores-menu {
-      display: none;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      margin-top: 5px;
-      background: #071a2e;
-      border: 1px solid #0284c7;
-      border-radius: 6px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.7);
-      min-width: 270px;
-      z-index: 9999;
-      padding: 6px 0;
-    }
-    .item-corredor {
-      padding: 8px 14px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      transition: background 0.15s ease;
-    }
-    .item-corredor:last-child {
-      border-bottom: none;
-    }
-    .item-corredor:hover {
-      background: rgba(2, 132, 199, 0.25);
-    }
-    .item-corredor-titulo {
-      font-size: 11.5px;
-      font-weight: 700;
-      color: #38bdf8;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .item-corredor-sub {
-      font-size: 9.5px;
-      color: #94a3b8;
-    }
-    .btn-modo-apresentacao {
-      background: #1e293b;
-      border: 1px solid #475569;
-      color: #f1f5f9;
-      padding: 5px 9px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      transition: all 0.2s ease;
-    }
-    .btn-modo-apresentacao:hover {
-      background: #334155;
-      color: #38bdf8;
-    }
-    body.modo-apresentacao .barra-busca-atributos {
-      opacity: 0.6;
-      transition: opacity 0.2s ease;
-    }
-    body.modo-apresentacao .barra-busca-atributos:hover {
-      opacity: 1;
-    }
-
-    /* ============================================================
-       BOTÕES CONTEXTUAIS DA ABA ANÁLISE (Matriz VEN, Safra, Painel)
-       Garante que apareçam ESTRITAMENTE na aba Análise
-       ============================================================ */
-    #btn-header-matriz-ven,
-    #btn-header-comparar-safras,
-    #btn-header-painel-analitico {
-      display: none !important;
-    }
-
-    body[data-aba-ativa="analise"] #btn-header-matriz-ven,
-    body[data-aba-ativa="analise"] #btn-header-comparar-safras,
-    body[data-aba-ativa="analise"] #btn-header-painel-analitico {
-      display: inline-flex !important;
-    }
-
 </style>
+</head>
+<body>
   <!-- CABEÇALHO -->
   <header class="top-header">
     <div class="brand-area">
@@ -6257,48 +6130,20 @@
       <div class="brand-sub">SUPERINTENDÊNCIA DE ESTUDOS E PROJETOS HIDROVIÁRIOS &mdash; GEE</div>
     </div>
     <div class="actions-area">
-      <div class="menu-corredores-container" title="Navegação Rápida para Corredores Estratégicos do Brasil">
-        <button type="button" class="btn-corredores" id="btn-corredores-estrategicos" onclick="window.NavegacaoEstrategica.toggleMenu(event)">
-          <span>🧭 Corredores</span> &#9662;
-        </button>
-        <div id="dropdown-corredores" class="dropdown-corredores-menu">
-          <div class="item-corredor" onclick="window.NavegacaoEstrategica.voarPara('arco-norte')">
-            <div class="item-corredor-titulo"><span>🚢</span> Arco Norte</div>
-            <div class="item-corredor-sub">Barcarena, Santarém, Rio Madeira e Manaus</div>
-          </div>
-          <div class="item-corredor" onclick="window.NavegacaoEstrategica.voarPara('tiete-parana')">
-            <div class="item-corredor-titulo"><span>🌾</span> Hidrovia Tietê-Paraná</div>
-            <div class="item-corredor-sub">Eixo multimodal SP / MS / PR / GO</div>
-          </div>
-          <div class="item-corredor" onclick="window.NavegacaoEstrategica.voarPara('rio-paraguai')">
-            <div class="item-corredor-titulo"><span>⛰️</span> Corredor do Rio Paraguai</div>
-            <div class="item-corredor-sub">Corumbá, Ladário e Porto Murtinho (Minério/Grãos)</div>
-          </div>
-          <div class="item-corredor" onclick="window.NavegacaoEstrategica.voarPara('santos')">
-            <div class="item-corredor-titulo"><span>⚓</span> Complexo Portuário de Santos</div>
-            <div class="item-corredor-sub">Maior complexo portuário da América Latina</div>
-          </div>
-          <div class="item-corredor" onclick="window.NavegacaoEstrategica.voarPara('brasil')">
-            <div class="item-corredor-titulo"><span>🇧🇷</span> Visão Nacional Completa</div>
-            <div class="item-corredor-sub">Panorama geral de todas as hidrovias e portos</div>
-          </div>
-        </div>
-      </div>
-      <button type="button" class="btn-modo-apresentacao" id="btn-modo-apresentacao" onclick="window.NavegacaoEstrategica.toggleModoApresentacao()" title="Modo Apresentação / Foco na Tela (F10)">
-        <span id="ico-apresentacao">🖥️</span> Apresentação
-      </button>
-      <button class="btn-matriz-ven" id="btn-header-matriz-ven" onclick="MatrizVENManager.abrirModal();"
+      <button class="btn-matriz-ven" id="btn-header-matriz-ven"
+        onclick="MatrizVENManager.abrirModal();"
         title="Visualizar Matriz Operacional do VEN com Tempos de Viagem e Extensões"
-        style="display:none; background:#0284c7; border:1px solid #38bdf8;">
+        style="background:#0284c7; border:1px solid #38bdf8;">
         ⏱️ Matriz VEN
       </button>
       <button class="btn-matriz-ven" id="btn-header-comparar-safras"
         onclick="if (typeof SafraDiffManager !== 'undefined') SafraDiffManager.abrir(); else UI.toast('⚠️ Módulo ainda carregando.');"
-        title="Comparar safras do VEN — atalho: Ctrl+Shift+D" style="display:none; background:#0369a1; border:1px solid #0ea5e9;">
+        title="Comparar safras do VEN — atalho: Ctrl+Shift+D" style="background:#0369a1; border:1px solid #0ea5e9;">
         🔀 Comparar Safras
       </button>
-      <button class="btn-graficos" id="btn-header-painel-analitico" onclick="UI.toggleGraficos();"
-        style="display:none; background:#0369a1; border:1px solid #0284c7;" title="Abrir Estúdio Analítico Institucional da ANTAQ">
+      <button class="btn-graficos" id="btn-header-painel-analitico"
+        onclick="UI.toggleGraficos();"
+        style="background:#0369a1; border:1px solid #0284c7;" title="Abrir Estúdio Analítico Institucional da ANTAQ">
         📊 Painel Analítico
       </button>
       <button class="btn-copiloto-ia" onclick="CopilotoIA.toggle()" title="Abrir Assistente Regulatório e Territorial"
@@ -6348,7 +6193,7 @@
       <span class="aba-emoji">⚙️</span>
       <span class="aba-nome">Geo</span>
     </button>
-    <button class="aba-btn" data-aba="ais" onclick="TabManager.trocar('ais')"
+    <button class="aba-btn" data-aba="ais" onclick="AISManager.clicarAba()"
       title="Tráfego de embarcações — AIS (dados sintéticos)">
       <span class="aba-emoji">🚢</span>
       <span class="aba-nome">AIS</span>
@@ -6926,7 +6771,8 @@
             <div class="kpi-label">Safra Ativa na Matriz</div>
             <div class="kpi-valor" id="kpi-safra-ativa-valor" style="color:#38bdf8;">2024</div>
             <div class="kpi-sub">Malha com tempos e velocidades</div>
-          </div></div>
+          </div>
+        </div>
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:14px;">
           <div class="grafico-canvas-box"
@@ -6988,30 +6834,29 @@
               style="font-size:9px; color:#64748b; margin-top:8px; border-top:1px solid rgba(255,255,255,0.08); padding-top:6px;">
               Superintendência de Estudos e Projetos Hidroviários &bull; SEPH/ANTAQ
             </div>
-          </div>
-        </div>
-
-        <!-- 📖 CARD EXPLICATIVO CONTEXTUAL: VEN -->
-        <div style="background:rgba(2,132,199,0.08); border-left:3px solid #0284c7; border-radius:6px; padding:12px 14px; font-size:10.5px; color:#cbd5e1; line-height:1.5; margin-top:12px;">
-          <div style="font-weight:700; color:#38bdf8; margin-bottom:6px; display:flex; align-items:center; gap:6px; font-size:11px;">
-            <span>📖</span> Como Interpretar os Dados de Vias Navegadas (VEN)
-          </div>
-          <p style="margin:0 0 6px 0;">
-            <strong>Série Histórica (2013–2024):</strong> Mapeia trechos hidroviários com transporte comercial consolidado de cargas e passageiros. A evolução temporal reflete a expansão das safras do agronegócio e a dinâmica das autorizações regulatórias da ANTAQ.
-          </p>
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06); font-size:10px; color:#94a3b8;">
-            <div>
-              <strong style="color:#e2e8f0;">Modelagem Espacial:</strong><br>
-              &bull; Algoritmo de caminhos mínimos Origem-Destino via SIGTAQ.<br>
-              &bull; Eliminação de trechos sobrepostos e consolidação de nós hidroviários.<br>
-              &bull; Datum Geodésico SIRGAS 2000 (IBGE / CONCAR).
-            </div>
-            <div>
-              <strong style="color:#e2e8f0;">Fontes & Referências:</strong><br>
-              &bull; Relatórios Oficiais de Desempenho Hidroviário (SEPH/GEE).<br>
-              &bull; Plano Nacional de Viação (PNV &mdash; Portaria Minfra 1.429).<br>
-              &bull; Cartas Náuticas CHM e batimetrias da Marinha do Brasil e DNIT.
-            </div>
+<!-- 📖 CARD EXPLICATIVO CONTEXTUAL: VEN -->
+<div style="background:rgba(2,132,199,0.08); border-left:3px solid #0284c7; border-radius:6px; padding:12px 14px; font-size:10.5px; color:#cbd5e1; line-height:1.5; margin-top:12px;">
+  <div style="font-weight:700; color:#38bdf8; margin-bottom:6px; display:flex; align-items:center; gap:6px; font-size:11px;">
+    <span>📖</span> Como Interpretar os Dados de Vias Navegadas (VEN)
+  </div>
+  <p style="margin:0 0 6px 0;">
+    <strong>Série Histórica (2013–2024):</strong> Mapeia trechos hidroviários com transporte comercial consolidado de cargas e passageiros. A evolução temporal reflete a expansão das safras do agronegócio e a dinâmica das autorizações regulatórias da ANTAQ.
+  </p>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06); font-size:10px; color:#94a3b8;">
+    <div>
+      <strong style="color:#e2e8f0;">Modelagem Espacial:</strong><br>
+      • Algoritmo de caminhos mínimos Origem-Destino via SIGTAQ.<br>
+      • Eliminação de trechos sobrepostos e consolidação de nós hidroviários.<br>
+      • Datum Geodésico SIRGAS 2000 (IBGE / CONCAR).
+    </div>
+    <div>
+      <strong style="color:#e2e8f0;">Fontes & Referências:</strong><br>
+      • Relatórios Oficiais de Desempenho Hidroviário (SEPH/GEE).<br>
+      • Plano Nacional de Viação (PNV — Portaria Minfra nº 1.429).<br>
+      • Cartas Náuticas CHM e batimetrias da Marinha do Brasil e DNIT.
+    </div>
+  </div>
+</div>            
           </div>
         </div>
       </div>
@@ -7037,7 +6882,8 @@
             <div class="kpi-label">Estações Transbordo (ETC)</div>
             <div class="kpi-valor" style="color:#8b5cf6;">45</div>
             <div class="kpi-sub">Intermodais de carga</div>
-          </div></div>
+          </div>
+        </div>
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:14px;">
           <div class="grafico-canvas-box"
@@ -7054,31 +6900,6 @@
               🏢 Distribuição de Terminais por Estado (Top UFs)
             </div>
             <canvas id="canvas-portos-ufs"></canvas>
-          </div>
-        </div>
-
-        <!-- 📖 CARD EXPLICATIVO CONTEXTUAL: PORTOS -->
-        <div style="background:rgba(16,185,129,0.08); border-left:3px solid #10b981; border-radius:6px; padding:12px 14px; font-size:10.5px; color:#cbd5e1; line-height:1.5; margin-top:12px;">
-          <div style="font-weight:700; color:#34d399; margin-bottom:6px; display:flex; align-items:center; gap:6px; font-size:11px;">
-            <span>📖</span> Como Interpretar a Infraestrutura Portuária & Regimes Regulatórios
-          </div>
-          <p style="margin:0 0 6px 0;">
-            <strong>Universo Regulatório (1.179 instalações):</strong> Contempla o cadastro integral de instalações portuárias brasileiras reguladas ou registradas pela ANTAQ, classificadas conforme os regimes jurídicos da Lei Federal nº 12.815/2013.
-          </p>
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06); font-size:10px; color:#94a3b8;">
-            <div>
-              <strong style="color:#e2e8f0;">Tipologia de Outorga:</strong><br>
-              &bull; <strong>TUP:</strong> Terminais de Uso Privado autorizados fora da área do porto organizado.<br>
-              &bull; <strong>IP4:</strong> Instalações Portuárias Públicas de Pequeno Porte para integração ribeirinha.<br>
-              &bull; <strong>ETC:</strong> Estações de Transbordo de Cargas intermodais.<br>
-              &bull; <strong>Porto Público / Arrendamentos:</strong> Áreas sob concessão nos portos organizados.
-            </div>
-            <div>
-              <strong style="color:#e2e8f0;">Fontes & Governança:</strong><br>
-              &bull; Sistema de Desempenho Portuário (SDP/ANTAQ).<br>
-              &bull; Contratos de Adesão e Resoluções de Outorga (SOG/ANTAQ).<br>
-              &bull; Acompanhamento contínuo de fiscalização portuária (SFC/ANTAQ).
-            </div>
           </div>
         </div>
       </div>
@@ -7099,7 +6920,8 @@
             <div class="kpi-label">Regulação</div>
             <div class="kpi-valor" style="color:#10b981;">Federal ANTAQ</div>
             <div class="kpi-sub">Resolução Normativa ANTAQ</div>
-          </div></div>
+          </div>
+        </div>
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:14px;">
           <div class="grafico-canvas-box"
@@ -7116,30 +6938,6 @@
               🛣️ Conectividade Interestadual
             </div>
             <canvas id="canvas-travessias-estados"></canvas>
-          </div>
-        </div>
-
-        <!-- 📖 CARD EXPLICATIVO CONTEXTUAL: TRAVESSIAS -->
-        <div style="background:rgba(245,158,11,0.08); border-left:3px solid #f59e0b; border-radius:6px; padding:12px 14px; font-size:10.5px; color:#cbd5e1; line-height:1.5; margin-top:12px;">
-          <div style="font-weight:700; color:#fbbf24; margin-bottom:6px; display:flex; align-items:center; gap:6px; font-size:11px;">
-            <span>📖</span> Como Interpretar as Linhas de Travessia Interestaduais e Internacionais
-          </div>
-          <p style="margin:0 0 6px 0;">
-            <strong>Continuidade Viária & Integração Regional:</strong> As 93 linhas outorgadas realizam a transposição hidroviária de corpos d'água onde não há pontes rodoviárias, viabilizando o transporte regular de passageiros, veículos e cargas.
-          </p>
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06); font-size:10px; color:#94a3b8;">
-            <div>
-              <strong style="color:#e2e8f0;">Competência & Regulação:</strong><br>
-              &bull; Regulação privativa da ANTAQ nas travessias interestaduais e internacionais.<br>
-              &bull; Regime de autorização focado em segurança, regularidade e modicidade tarifária.<br>
-              &bull; Fiscalização de embarcações, pontões e terminais de atracação.
-            </div>
-            <div>
-              <strong style="color:#e2e8f0;">Fontes & Cooperação:</strong><br>
-              &bull; Cadastro Oficial de Outorgas de Linhas de Travessia (ANTAQ).<br>
-              &bull; Acordos de cooperação técnica com órgãos estaduais (ex: ARCON-PA).<br>
-              &bull; Articulação com a malha rodoviária federal (DNIT).
-            </div>
           </div>
         </div>
       </div>
@@ -7169,7 +6967,8 @@
             <div class="kpi-label" style="font-size:9px; color:#166534;">Δ 21→25</div>
             <div class="kpi-valor" style="color:#10b981; font-size:14px; margin-top:1px;" id="tku-kpi-cresc">—</div>
             <div class="kpi-sub" style="font-size:8.5px; color:#166534;" id="tku-kpi-cresc-sub">—</div>
-          </div></div>
+          </div>
+        </div>
 
         <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:10px; margin-bottom:10px;">
           <div class="grafico-canvas-box"
@@ -7210,28 +7009,11 @@
           </div>
         </div>
 
-
-        <!-- 📖 CARD EXPLICATIVO CONTEXTUAL: TKU -->
-        <div style="background:rgba(251,191,36,0.08); border-left:3px solid #fbbf24; border-radius:6px; padding:12px 14px; font-size:10.5px; color:#cbd5e1; line-height:1.5; margin-top:10px;">
-          <div style="font-weight:700; color:#fbbf24; margin-bottom:6px; display:flex; align-items:center; gap:6px; font-size:11px;">
-            <span>📖</span> Como Interpretar o Modelo de Tonelada-Quilômetro Útil (TKU)
-          </div>
-          <p style="margin:0 0 6px 0;">
-            <strong>Métrica de Esforço de Transporte:</strong> O <code>TKU = Volume (t) &times; Extensão Navegada (km)</code> calcula a intensidade do trabalho logístico nas hidrovias. Trechos com fluxo muito alto indicam os corredores estruturantes da logística nacional (ex: grãos no Arco Norte, minério no Rio Paraguai).
-          </p>
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06); font-size:10px; color:#94a3b8;">
-            <div>
-              <strong style="color:#e2e8f0;">Série Histórica & Abrangência:</strong><br>
-              &bull; Séries consolidadas de 2021, 2023 e 2025 para navegação interior e cabotagem.<br>
-              &bull; <em>Nota técnica:</em> A ausência de dados de Longo Curso em 2023 reflete a delimitação da série oficial disponível.
-            </div>
-            <div>
-              <strong style="color:#e2e8f0;">Bases Integradas:</strong><br>
-              &bull; Sistema Mercante (Secretaria da Receita Federal / Ministério dos Transportes).<br>
-              &bull; Sistema de Desempenho Portuário (SDP/ANTAQ).<br>
-              &bull; Matriz de caminhos mínimos calculada pelo SIGTAQ.
-            </div>
-          </div>
+        <div
+          style="background:rgba(245,158,11,0.08); border-left:3px solid #f59e0b; border-radius:6px; padding:10px 14px; font-size:10.5px; color:#fde68a; line-height:1.5;">
+          <strong>📖 Como ler:</strong> cada barra representa <strong>toneladas × km navegados</strong> em todos os
+          trechos da safra. Trechos com <strong>fluxo muito alto</strong> indicam corredores logísticos de grande
+          volume. A ausência de <strong>Longo Curso 2023</strong> reflete a série oficial.
         </div>
       </div>
       <!-- ✅ #aba-tku FECHADA CORRETAMENTE -->
@@ -7259,7 +7041,8 @@
             <button type="button" onclick="EstudosManager.abrirModalAdicionar()"
               style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; border:none; padding:7px 14px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:5px;">
               ➕ Adicionar Estudo
-            </button></div>
+            </button>
+          </div>
 
           <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; align-items:center;">
             <button type="button" data-estudo-cat="TODOS" class="ativo"
@@ -7331,32 +7114,60 @@
               Estudos SEPH/GEE</a>
           </div>
         </div>
+      </div>
+      <!-- ✅ #aba-relatorios FECHADA CORRETAMENTE -->
+      <!-- Top 10 — mais compacto -->
+      <div
+        style="background:#0f172a; border:1px solid #1e293b; border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+        <div
+          style="font-size:10.5px; font-weight:700; color:#fbbf24; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+          <span>🏆 Top 10 Trechos por Fluxo</span>
+          <select id="tku-top-ano" onchange="AnalyticsTKU.renderizarTop()"
+            style="background:#0c213b; border:1px solid #1e4976; color:#f1f5f9; padding:3px 7px; border-radius:4px; font-size:10px;">
+            <option value="2025">2025</option>
+            <option value="2023">2023</option>
+            <option value="2021">2021</option>
+          </select>
+        </div>
+        <div id="tku-top-lista" style="font-size:11px; color:#cbd5e1; max-height:320px; overflow-y:auto;">
+          <em style="color:#64748b;">Carregando...</em>
+        </div>
+      </div>
 
-        <!-- 📖 CARD EXPLICATIVO CONTEXTUAL: ESTUDOS -->
-        <div style="background:rgba(56,189,248,0.08); border-left:3px solid #38bdf8; border-radius:6px; padding:12px 14px; font-size:10.5px; color:#cbd5e1; line-height:1.5; margin-top:12px;">
-          <div style="font-weight:700; color:#38bdf8; margin-bottom:6px; display:flex; align-items:center; gap:6px; font-size:11px;">
-            <span>📖</span> Governança Técnica & Documentação Metodológica da ANTAQ
-          </div>
-          <p style="margin:0 0 6px 0;">
-            <strong>Acervo Digital & Repositório SEPH/GEE:</strong> Centraliza relatórios oficiais de safras hidroviárias, notas técnicas do modelo TKU e publicações setoriais para consulta em PDF ou download, assegurando rastreabilidade às decisões regulatórias.
-          </p>
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06); font-size:10px; color:#94a3b8;">
-            <div>
-              <strong style="color:#e2e8f0;">Uso do Acervo:</strong><br>
-              &bull; Filtros rápidos por tema (TKU, VEN, Geral) e busca textual instantânea.<br>
-              &bull; Visualização integrada de PDFs e download de arquivos.<br>
-              &bull; Gestão de novos estudos técnicos pela equipe técnica da ANTAQ.
-            </div>
-            <div>
-              <strong style="color:#e2e8f0;">Portais & Sistemas Conectados:</strong><br>
-              &bull; Central de Publicações e Pesquisas no Portal Gov.br.<br>
-              &bull; Plataforma Aquarela (Business Intelligence da ANTAQ).<br>
-              &bull; Processos regulatórios no SEI/ANTAQ.
-            </div>
-          </div>
+      <!-- Nota metodológica -->
+      <div
+        style="background:rgba(245,158,11,0.08); border-left:3px solid #f59e0b; border-radius:6px; padding:10px 14px; font-size:10.5px; color:#fde68a; line-height:1.5;">
+        <strong>📖 Como ler:</strong> cada barra representa a soma de <strong>toneladas × km navegados</strong> em todos
+        os trechos da safra.
+        Trechos com <strong>fluxo muito alto</strong> indicam corredores logísticos de grande volume (ex: soja, minério,
+        combustível).
+        A ausência de <strong>Longo Curso 2023</strong> reflete a série oficial disponível.
+      </div>
+    </div>
+
+
+    <div style="background:#061426; border:1px solid #1e3a5f; border-radius:8px; padding:12px 16px;">
+      <strong style="font-size:12px; color:#38bdf8; display:block; margin-bottom:6px;">🔬 Metodologia de Cálculo e
+        Fontes de Dados</strong>
+      <div
+        style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; font-size:10.5px; color:#94a3b8; line-height:1.4;">
+        <div>
+          <strong style="color:#e2e8f0;">Bases de Dados Federais:</strong><br>
+          &bull; <strong>SDP (ANTAQ):</strong> Atracações e movimentações portuárias.<br>
+          &bull; <strong>Sistema Mercante:</strong> Manifestos de transporte.<br>
+          &bull; <strong>ARCON-PA:</strong> Linhas outorgadas de passageiros.<br>
+          &bull; <strong>DNIT:</strong> Informações de calados e dragagens.
+        </div>
+        <div>
+          <strong style="color:#e2e8f0;">Modelagem Espacial:</strong><br>
+          &bull; <strong>SIGTAQ:</strong> Caminhos mínimos O/D com eliminação de sobreposições.<br>
+          &bull; <strong>Datum:</strong> SIRGAS 2000 (CONCAR).<br>
+          &bull; <strong>Escalas:</strong> 1:1.000.000 e 1:250.000.
         </div>
       </div>
     </div>
+  </div>
+  </div>
   </div>
 
   <!-- LEGENDA DINÂMICA -->
@@ -7975,7 +7786,290 @@
   <script defer src="js/domain/search-engine.js"></script>
   <!-- Stage 5a: análise -->
   <!-- Stage 5a: Analytics embutido para blindagem contra 404 local -->
-  
+  <script>
+/* ============================================================
+   WebGIS ANTAQ — Módulo: Analytics (Estúdio Analítico)
+   Escopo: gráficos de VEN, portos, travessias
+   Dependências: window.DADOS_GEOJSON_BRUTOS, window.CONFIG_CAMADAS,
+                 window.Security, window.PortClassification
+   Referências "lazy": window.classificarEsfera
+   Expõe: window.Analytics
+   ============================================================ */
+(function () {
+  'use strict';
+
+  const Analytics = {
+    abaAtiva: 'ven',
+    chartVenHist: null, chartVenBacias: null, chartVenTempos: null,
+    chartPortosRegimes: null, chartPortosUfs: null,
+    chartTravessiasRegioes: null, chartTravessiasEstados: null,
+    _cacheValido: { ven: false, portos: false, travessias: false },
+
+    trocarAba: function (aba) {
+      this.abaAtiva = aba;
+      ['ven', 'portos', 'travessias', 'relatorios'].forEach(a => {
+        const elBtn = document.getElementById(`tab-btn-${a}`);
+        const elAba = document.getElementById(`aba-${a}`);
+        if (elBtn) elBtn.classList.toggle('ativo', a === aba);
+        if (elAba) elAba.style.display = (a === aba) ? 'block' : 'none';
+      });
+
+      // ✅ Só regenera se o cache estiver inválido
+      if (aba === 'ven' && !this._cacheValido.ven) this.gerarGraficosVEN();
+      else if (aba === 'portos' && !this._cacheValido.portos) this.gerarGraficosPortos();
+      else if (aba === 'travessias' && !this._cacheValido.travessias) this.gerarGraficosTravessias();
+      else {
+        // Cache válido → só redimensiona (instantâneo)
+        requestAnimationFrame(() => {
+          [this.chartVenHist, this.chartVenBacias, this.chartVenTempos,
+           this.chartPortosRegimes, this.chartPortosUfs,
+           this.chartTravessiasRegioes, this.chartTravessiasEstados].forEach(c => {
+            if (c && c.resize) { try { c.resize(); } catch (e) {} }
+          });
+        });
+      }
+    },
+
+    atualizarSeletores: function () { this.trocarAba(this.abaAtiva); },
+
+    extrairUF: function (props, feature) {
+      if (window.Security && window.Security.extrairUF) {
+        return window.Security.extrairUF(props);
+      }
+      if (!props) return '';
+      const v = props.SIGLA_UF || props.sigla_uf || props.uf || props.UF || props.estado;
+      return v && String(v).trim().length === 2 ? String(v).trim().toUpperCase() : '';
+    },
+
+    gerarGraficosVEN: function () {
+      const ctxHist = document.getElementById('canvas-ven-historico');
+      if (ctxHist) {
+        if (this.chartVenHist) this.chartVenHist.destroy();
+        this.chartVenHist = new Chart(ctxHist, {
+          type: 'line',
+          data: {
+            labels: ['VEN 2013', 'VEN 2018', 'VEN 2020', 'VEN 2022', 'VEN 2024'],
+            datasets: [{
+              label: 'Extensão Total Navegada (km)',
+              data: (() => {
+              // Calcula soma alinhada à Matriz VEN ou usa fallback oficial
+              const calcExt = (id, fallback) => {
+                const g = window.DADOS_GEOJSON_BRUTOS && window.DADOS_GEOJSON_BRUTOS[id];
+                if (g && g.features && g.features.length) {
+                  return Math.round(g.features.reduce((s, f) => s + Number(f.properties?.extensao || f.properties?.EXTENSAO || 0), 0));
+                }
+                return fallback;
+              };
+              return [
+                calcExt('ven_2013', 22036),
+                calcExt('ven_2018', 18612),
+                calcExt('ven_2020', 20196),
+                calcExt('ven_2022', 20125),
+                calcExt('ven_2024', 20404)
+              ];
+            })(),
+              borderColor: '#00e5ff',
+              backgroundColor: 'rgba(0, 229, 255, 0.15)',
+              borderWidth: 3, fill: true, tension: 0.3,
+              pointBackgroundColor: '#fff', pointBorderColor: '#00e5ff',
+              pointRadius: 6, pointHoverRadius: 8
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: '#e2e8f0', font: { size: 10 } } },
+              tooltip: { callbacks: { label: function (ctx) { return ` Extensão: ${ctx.parsed.y.toLocaleString('pt-BR')} km`; } } }
+            },
+            scales: {
+              y: { min: 17000, max: 23500, ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.06)' } },
+              x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } }
+            }
+          }
+        });
+      }
+
+      const ctxBacias = document.getElementById('canvas-ven-bacias');
+      if (ctxBacias) {
+        if (this.chartVenBacias) this.chartVenBacias.destroy();
+        this.chartVenBacias = new Chart(ctxBacias, {
+          type: 'bar',
+          data: {
+            labels: ['Amazônica', 'Tocantins-Araguaia', 'Paraná', 'Paraguai', 'Atlântico Sul'],
+            datasets: [{
+              label: 'Extensão 2024 (km)',
+              data: [16836.8, 1423.2, 1160.0, 588.0, 396.4],
+              backgroundColor: ['#10b981', '#f59e0b', '#0284c7', '#8b5cf6', '#06b6d4'],
+              borderRadius: 4
+            }]
+          },
+          options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { label: function (ctx) { return ` ${ctx.parsed.x.toLocaleString('pt-BR')} km`; } } }
+            },
+            scales: {
+              x: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.06)' } },
+              y: { ticks: { color: '#e2e8f0', font: { size: 9.5 } }, grid: { display: false } }
+            }
+          }
+        });
+      }
+
+      const ctxTempos = document.getElementById('canvas-ven-tempos');
+      if (ctxTempos) {
+        if (this.chartVenTempos) this.chartVenTempos.destroy();
+        const features = DADOS_GEOJSON_BRUTOS['ven_2022']?.features || DADOS_GEOJSON_BRUTOS['ven_2024']?.features || [];
+        let curtos = 0, medios = 0, longos = 0, muitoLongos = 0;
+        features.forEach(f => {
+          const t = String(f.properties?.tempo || '');
+          if (t.includes('0d 0h') || t.includes('0d 1h') || t.includes('0d 2h') || t.includes('0d 3h') || t.includes('0d 4h') || t.includes('0d 5h')) curtos++;
+          else if (t.includes('0d')) medios++;
+          else if (t.includes('1d')) longos++;
+          else if (t.includes('2d') || t.includes('3d') || t.includes('4d') || t.includes('5d')) muitoLongos++;
+          else medios++;
+        });
+        if (!features.length) { curtos = 45; medios = 82; longos = 34; muitoLongos = 18; }
+        this.chartVenTempos = new Chart(ctxTempos, {
+          type: 'doughnut',
+          data: {
+            labels: ['Curto (< 6 horas)', 'Médio (6h a 24 horas)', 'Longo (1 a 2 dias)', 'Inter-regional (> 2 dias)'],
+            datasets: [{
+              data: [curtos, medios, longos, muitoLongos],
+              backgroundColor: ['#10b981', '#38bdf8', '#f59e0b', '#ec4899'],
+              borderWidth: 1, borderColor: '#0f172a'
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'right', labels: { color: '#cbd5e1', font: { size: 9.5 } } } }
+          }
+        });
+      }
+      this._cacheValido.ven = true;      
+    },
+
+    gerarGraficosPortos: function () {
+      const ctxRegimes = document.getElementById('canvas-portos-regimes');
+      if (ctxRegimes) {
+        if (this.chartPortosRegimes) this.chartPortosRegimes.destroy();
+        this.chartPortosRegimes = new Chart(ctxRegimes, {
+          type: 'doughnut',
+          data: {
+            labels: ['Portos Organizados (37)','Terminais de Uso Privado - TUP (260)','Pequeno Porte - IP4 (122)','Estações de Transbordo - ETC (45)','Portos Públicos e Apoio (715)'],
+            datasets: [{
+              data: [37, 260, 122, 45, 715],
+              backgroundColor: ['#0284c7', '#10b981', '#f59e0b', '#8b5cf6', '#64748b'],
+              borderWidth: 1, borderColor: '#0f172a'
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'right', labels: { color: '#cbd5e1', font: { size: 9.5 } } },
+              tooltip: { callbacks: { label: function (ctx) { return ` ${ctx.label}: ${ctx.parsed} ativos`; } } }
+            }
+          }
+        });
+      }
+      const ctxUfs = document.getElementById('canvas-portos-ufs');
+      if (ctxUfs) {
+        if (this.chartPortosUfs) this.chartPortosUfs.destroy();
+        this.chartPortosUfs = new Chart(ctxUfs, {
+          type: 'bar',
+          data: {
+            labels: ['PA', 'AM', 'SP', 'RJ', 'SC', 'PR', 'MA', 'RS', 'BA', 'ES'],
+            datasets: [{ label: 'Instalações Portuárias', data: [284, 192, 114, 98, 76, 68, 62, 59, 54, 45], backgroundColor: '#0284c7', borderRadius: 4 }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.06)' } },
+              x: { ticks: { color: '#e2e8f0', font: { size: 9.5 } }, grid: { display: false } }
+            }
+          }
+        });
+      }
+      this._cacheValido.portos = true;      
+    },
+
+    gerarGraficosTravessias: function () {
+      const ctxReg = document.getElementById('canvas-travessias-regioes');
+      if (ctxReg) {
+        if (this.chartTravessiasRegioes) this.chartTravessiasRegioes.destroy();
+        this.chartTravessiasRegioes = new Chart(ctxReg, {
+          type: 'pie',
+          data: {
+            labels: ['Norte / Amazônia', 'Nordeste (São Francisco)', 'Centro-Oeste / Pantanal', 'Sul / Sudeste (Paraná)'],
+            datasets: [{ data: [42, 24, 15, 12], backgroundColor: ['#10b981', '#f59e0b', '#8b5cf6', '#0284c7'], borderColor: '#0f172a', borderWidth: 1 }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'right', labels: { color: '#cbd5e1', font: { size: 9.5 } } } }
+          }
+        });
+      }
+      const ctxEst = document.getElementById('canvas-travessias-estados');
+      if (ctxEst) {
+        if (this.chartTravessiasEstados) this.chartTravessiasEstados.destroy();
+        this.chartTravessiasEstados = new Chart(ctxEst, {
+          type: 'bar',
+          data: {
+            labels: ['PA-AP', 'BA-PE', 'MA-TO', 'RO-AM', 'MS-Bolívia/PY', 'SP-PR', 'Outros'],
+            datasets: [{ label: 'Travessias Regulares Outorgadas', data: [26, 18, 14, 12, 9, 8, 6], backgroundColor: '#f59e0b', borderRadius: 4 }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.06)' } },
+              x: { ticks: { color: '#e2e8f0', font: { size: 9.5 } }, grid: { display: false } }
+            }
+          }
+        });
+      }
+       this._cacheValido.travessias = true;     
+    },
+    // ✅ Pré-renderiza os gráficos escondidos no boot (primeira abertura fica instantânea)
+    preRenderizar: function () {
+      const painel = document.getElementById('painel-graficos');
+      if (!painel) return;
+
+      const estavaAberto = painel.classList.contains('aberto');
+      const visOriginal = painel.style.visibility;
+
+      // Abre escondido — Chart.js precisa medir o canvas
+      painel.style.visibility = 'hidden';
+      painel.classList.add('aberto');
+
+      try {
+        this.gerarGraficosVEN();
+        this.gerarGraficosPortos();
+        this.gerarGraficosTravessias();
+      } catch (e) {
+        console.warn('[Analytics] Erro na pré-renderização:', e);
+      }
+
+      // Restaura estado original
+      painel.style.visibility = visOriginal || '';
+      if (!estavaAberto) painel.classList.remove('aberto');
+    },    
+  };
+
+  window.Analytics = Analytics;
+  console.info('[js] Analytics carregado');
+  // Pré-renderiza depois da página carregar
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      try { Analytics.preRenderizar(); }
+      catch (e) { console.warn('[Analytics] preRenderizar falhou:', e); }
+    }, 300);
+  });  
+})();
+  </script>
+  <!-- Fallback opcional caso o arquivo exista no disco -->
   <script defer src="js/analytics/analytics.js"></script>
   <script defer src="js/analytics/matriz-ven-manager.js"></script>
   <script defer src="js/analytics/analytics-tku.js"></script>
@@ -8012,7 +8106,6 @@
   <script defer src="js/core/webgis-about.js"></script>
   <script defer src="js/domain/buffer-tool.js"></script>
   <script defer src="js/domain/geo-tools.js"></script>
-  <script defer src="js/domain/navegacao-estrategica.js"></script>
   <script defer src="js/app.js"></script>
 
   </body>

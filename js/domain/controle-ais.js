@@ -1413,6 +1413,9 @@ _extrairPontosRota(mmsi, orig, dest) {
     <div class="aw-bloco">
       <div class="aw-bloco-tit">Rota · ${legs.length} paradas</div>
       ${paradasHTML}
+      <button class="aw-btn-h" style="width:100%;margin-top:10px;justify-content:center;background:rgba(2,132,199,0.2);border-color:#0284c7;color:#38bdf8;" onclick="ControleAIS.exportarRelatorioSimulacao()" title="Exportar Relatório de Viagem CSV">
+        📄 Exportar Relatório da Viagem (CSV)
+      </button>
     </div>
 
     <div class="aw-bloco">
@@ -1772,6 +1775,57 @@ _extrairPontosRota(mmsi, orig, dest) {
     /* ============================================================
        EXPORT
        ============================================================ */
+    exportarRelatorioSimulacao() {
+      try {
+        if (!this._sim || !this._sim.legs || !this._sim.legs.length) {
+          if (window.UI) window.UI.toast('⚠️ Nenhuma simulação ativa para exportar.');
+          return;
+        }
+        const mmsi = this._sim.mmsi;
+        const emb = window.AISManager.getEmbarcacao(mmsi);
+        const nomeEmb = emb ? (emb.nome || emb.NOME || `MMSI ${mmsi}`) : `MMSI ${mmsi}`;
+        const legs = this._sim.legs;
+
+        const linhas = [
+          ['# Relatório de Simulação de Viagem AIS — ANTAQ / GEE'],
+          [`# Embarcação: ${nomeEmb} (MMSI ${mmsi})`],
+          [`# Data da Simulação: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`],
+          [`# Total de Paradas: ${legs.length}`],
+          [`# Duração Estimada: ${(this._sim.duracaoTotalHoras || 0).toFixed(1)} horas`],
+          [],
+          ['ordem', 'porto_escala', 'eta_previsto', 'eta_real', 'atraso_horas', 'status', 'distancia_km']
+        ];
+
+        legs.forEach((v, idx) => {
+          linhas.push([
+            idx + 1,
+            v.porto || '',
+            v.eta_programada || '',
+            v.eta_real || '',
+            (v.atraso_h || 0).toFixed(2),
+            v.status || '',
+            (v.km || 0).toFixed(1)
+          ]);
+        });
+
+        const csvContent = '\uFEFF' + linhas.map(l => l.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `simulacao_viagem_${mmsi}_${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        if (window.UI) window.UI.toast(`✓ Relatório de simulação exportado (${legs.length} paradas).`);
+      } catch (err) {
+        console.error('[ControleAIS] Erro ao exportar simulação:', err);
+        if (window.UI) window.UI.toast('❌ Falha ao exportar relatório');
+      }
+    },
+
     exportarCSV() {
       try {
         const sm = window.AISManager.getStatusPorEmbarcacao();
