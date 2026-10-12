@@ -344,24 +344,56 @@
     /* ---------- Intersecção ---------- */
     _processarIntersecao: async function (dadosA, dadosB) {
       const resultado = [];
-      const featsA = dadosA.features.filter(f => f.geometry);
-      const featsB = dadosB.features.filter(f => f.geometry);
+      const featsA = dadosA.features.filter(f => f && f.geometry);
+      const featsB = dadosB.features.filter(f => f && f.geometry);
       let processados = 0;
 
       for (const fA of featsA) {
         let boundsA;
         try { boundsA = L.geoJSON(fA).getBounds(); } catch (e) { continue; }
-        if (!boundsA.isValid()) continue;
+        if (!boundsA || !boundsA.isValid()) continue;
 
         for (const fB of featsB) {
           let boundsB;
           try { boundsB = L.geoJSON(fB).getBounds(); } catch (e) { continue; }
-          if (!boundsB.isValid()) continue;
+          if (!boundsB || !boundsB.isValid()) continue;
 
           if (!boundsA.intersects(boundsB)) continue;
 
           try {
-            const intersec = turf.intersect(fA, fB);
+            const tipoA = fA.geometry.type;
+            const tipoB = fB.geometry.type;
+            let intersec = null;
+
+            // Caso 1: Polígono × Polígono
+            if (tipoA.includes('Polygon') && tipoB.includes('Polygon')) {
+              intersec = turf.intersect(fA, fB);
+            }
+            // Caso 2: Ponto × Polígono
+            else if (tipoA.includes('Point') && tipoB.includes('Polygon')) {
+              if (turf.booleanPointInPolygon(fA, fB)) {
+                intersec = JSON.parse(JSON.stringify(fA));
+              }
+            }
+            // Caso 3: Polígono × Ponto
+            else if (tipoA.includes('Polygon') && tipoB.includes('Point')) {
+              if (turf.booleanPointInPolygon(fB, fA)) {
+                intersec = JSON.parse(JSON.stringify(fB));
+              }
+            }
+            // Caso 4: Linha × Polígono
+            else if (tipoA.includes('LineString') && tipoB.includes('Polygon')) {
+              if (turf.booleanIntersects(fA, fB)) {
+                intersec = JSON.parse(JSON.stringify(fA));
+              }
+            }
+            // Caso 5: Polígono × Linha
+            else if (tipoA.includes('Polygon') && tipoB.includes('LineString')) {
+              if (turf.booleanIntersects(fB, fA)) {
+                intersec = JSON.parse(JSON.stringify(fB));
+              }
+            }
+
             if (intersec) {
               const propsA = fA.properties || {};
               const propsB = fB.properties || {};
@@ -377,9 +409,14 @@
               }
 
               try {
-                const areaM2 = turf.area(intersec);
-                propsFinal._area_m2 = Math.round(areaM2);
-                propsFinal._area_km2 = +(areaM2 / 1_000_000).toFixed(3);
+                if (intersec.geometry.type.includes('Polygon')) {
+                  const areaM2 = turf.area(intersec);
+                  propsFinal._area_m2 = Math.round(areaM2);
+                  propsFinal._area_km2 = +(areaM2 / 1_000_000).toFixed(3);
+                } else if (intersec.geometry.type.includes('LineString')) {
+                  const compKm = turf.length(intersec, { units: 'kilometers' });
+                  propsFinal._extensao_km = +compKm.toFixed(3);
+                }
               } catch (e) { /* ignora */ }
 
               intersec.properties = propsFinal;
@@ -640,7 +677,7 @@
         cor: cor,
         opacidade: 0.4,
         peso: 2,
-        tipoGeo: 'poligono',
+        tipoGeo: window.GeomTypeDetector ? window.GeomTypeDetector.detectar(geojson) : 'poligono',
         ativa: true,
         camposVisiveis: [],
         _isGeo: true,
@@ -717,7 +754,7 @@
           const item = document.getElementById(`item-camada-${id}`);
           if (item) {
             item.style.display = 'flex';
-            item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            window.scrollTo(0, 0);
           }
         }, 50);
       }

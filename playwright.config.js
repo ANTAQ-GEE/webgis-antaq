@@ -1,5 +1,7 @@
 // @ts-check
 const { defineConfig, devices } = require('@playwright/test');
+const os = require('os');
+const path = require('path');
 
 // Porta própria para os testes — não conflita com o servidor de dev do usuário (8000)
 const PORTA = 8090;
@@ -7,6 +9,8 @@ const BASE_URL = `http://127.0.0.1:${PORTA}`;
 
 module.exports = defineConfig({
   testDir: './tests',
+  // Salva artefatos pesados (vídeos/traces) no disco local C: (fora da sincronização do Drive)
+  outputDir: path.join(os.tmpdir(), 'playwright-antaq-results'),
   timeout: 30_000,
   expect: {
     timeout: 10_000,

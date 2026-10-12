@@ -1134,13 +1134,52 @@
     </div>
   `;
 
-      // Foca no mapa e ajusta a animação pra esse trecho
+      // Foca no mapa e ajusta a animação estritamente pra esse trecho
+      const tIni = new Date(legs[0].eta_real || legs[0].eta_programada).getTime();
+      const tFim = new Date(legs[legs.length - 1].eta_real || legs[legs.length - 1].eta_programada).getTime();
+      const tMin = Math.min(tIni, tFim);
+      const tMax = Math.max(tIni, tFim);
+
+      // Filtra posições da embarcação estritamente dentro da janela da rota
+      let posTrecho = window.AISManager.getTodasPosicoes().filter(p => {
+        if (p.mmsi !== mmsi) return false;
+        const t = new Date(p.timestamp).getTime();
+        return t >= tMin && t <= tMax;
+      });
+
+      if (posTrecho.length < 2) {
+        const nomesPortos = new Set(legs.map(l => (l.porto || '').toLowerCase()));
+        posTrecho = window.AISManager.getTodasPosicoes().filter(p => {
+          if (p.mmsi !== mmsi) return false;
+          return nomesPortos.has((p.porto_origem || '').toLowerCase()) ||
+                 nomesPortos.has((p.porto_destino || '').toLowerCase());
+        });
+      }
+      if (posTrecho.length < 2) {
+        posTrecho = window.AISManager.getTrilha(mmsi);
+      }
+
+      posTrecho.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
       this._emb = mmsi;
-      this._atualizarMapa();
-      this._rangeVesselTrecho(mmsi, legs);
+      this._sim.mmsi = mmsi;
+      this._sim.rodando = true;
+      this._sim.legs = legs;
+      this._sim.posicoes = posTrecho;
+
+      this._tl.tInicio = tMin;
+      this._tl.tFim = tMax;
+      this._tl.tAtual = tMin;
+      this._tl._contexto = 'vessel';
+
+      if (window.AISLayer && typeof window.AISLayer.destacarRotaSimulada === 'function') {
+        window.AISLayer.destacarRotaSimulada(mmsi, posTrecho, origem, destino);
+      } else if (window.AISLayer) {
+        window.AISLayer._destacarTrilha(mmsi);
+      }
+
       this._atualizarFrame();
-      if (window.AISLayer) window.AISLayer._destacarTrilha(mmsi);
-      if (window.UI) window.UI.toast('✅ Viagem simulada — use o Play');
+      if (window.UI) window.UI.toast(`✅ Viagem simulada: ${origem} ➔ ${destino}`);
     },
 
     /* ============================================================
@@ -1365,7 +1404,11 @@
       const tl = this._tl;
       let pos = window.AISManager.getTodasPosicoes();
       if (!pos.length) return;
-      if (this._emb) pos = pos.filter(p => p.mmsi === this._emb);
+      if (this._sim.rodando && this._sim.posicoes && this._sim.posicoes.length) {
+        pos = this._sim.posicoes;
+      } else if (this._emb) {
+        pos = pos.filter(p => p.mmsi === this._emb);
+      }
       if (window.AISLayer) window.AISLayer.renderizarProgressivo(pos, tl.tAtual, tl._janela);
 
       const label = document.getElementById('aw-tempo');

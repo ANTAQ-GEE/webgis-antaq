@@ -1285,7 +1285,7 @@
           const item = document.getElementById(`item-camada-${id}`);
           if (item) {
             item.style.display = 'flex';   // ✅ Força visível mesmo se estava "oculta"
-            item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            const painelCorpo = document.querySelector('#painel-camadas-lateral .painel-corpo') || grupoEl; if (painelCorpo) painelCorpo.scrollTop = item.offsetTop; window.scrollTo(0, 0);
           }
           // ✅ Confirma que o item foi criado
           console.log('[Buffer] Item criado:', !!item, '| ID:', id);

@@ -366,7 +366,64 @@
     /* ------------------------------------------------------------
        DESTAQUE DE TRILHA
        ------------------------------------------------------------ */
-    _destacarTrilha(mmsi) {
+        destacarRotaSimulada(mmsi, pontos, origem, destino) {
+      this.limparTrilha();
+      if (!pontos || pontos.length < 2) return;
+
+      this._destacado = mmsi;
+      const grupo = L.layerGroup();
+      splitPontos(pontos).forEach(seg => {
+        if (seg.length < 2) return;
+        const coords = seg.map(p => [p.lat, p.lon]);
+        L.polyline(coords, { color: '#0284c7', weight: 8, opacity: 0.3, lineCap: 'round' }).addTo(grupo);
+        L.polyline(coords, {
+          color: '#00e5ff', weight: 3.5, opacity: 0.95,
+          dashArray: '8 5', lineCap: 'round'
+        }).addTo(grupo);
+      });
+
+      const p0 = pontos[0];
+      const iconeOrig = L.divIcon({
+        className: 'sim-marker-origem',
+        html: `<div style="background:#10b981; color:#fff; border:2px solid #fff; border-radius:12px; padding:3px 8px; font-size:10px; font-weight:800; box-shadow:0 3px 8px rgba(0,0,0,0.5); white-space:nowrap; display:flex; align-items:center; gap:4px;">
+          <span>🟢 DE:</span> <span>${origem}</span>
+        </div>`,
+        iconSize: [130, 24],
+        iconAnchor: [12, 12]
+      });
+      L.marker([p0.lat, p0.lon], { icon: iconeOrig, zIndexOffset: 1200 })
+        .bindPopup(`<strong>🟢 Porto de Partida (Origem):</strong><br>${origem}`)
+        .addTo(grupo);
+
+      const pFim = pontos[pontos.length - 1];
+      const iconeDest = L.divIcon({
+        className: 'sim-marker-destino',
+        html: `<div style="background:#ef4444; color:#fff; border:2px solid #fff; border-radius:12px; padding:3px 8px; font-size:10px; font-weight:800; box-shadow:0 3px 8px rgba(0,0,0,0.5); white-space:nowrap; display:flex; align-items:center; gap:4px;">
+          <span>🏁 PARA:</span> <span>${destino}</span>
+        </div>`,
+        iconSize: [130, 24],
+        iconAnchor: [12, 12]
+      });
+      L.marker([pFim.lat, pFim.lon], { icon: iconeDest, zIndexOffset: 1200 })
+        .bindPopup(`<strong>🏁 Porto de Destino (Chegada):</strong><br>${destino}`)
+        .addTo(grupo);
+
+      grupo.addTo(this._mapa);
+      this._trilhaDestaque = grupo;
+
+      try {
+        const b = L.latLngBounds(pontos.map(p => [p.lat, p.lon]));
+        if (b.isValid()) this._mapa.fitBounds(b, { padding: [80, 80], maxZoom: 12 });
+      } catch (e) {}
+
+      const m = this._markers.get(mmsi);
+      if (m) {
+        const cad = window.AISManager.getCadastro(mmsi) || {};
+        m.setIcon(criarIcone(cad.tipo, m._popupData?.status, m._popupData?.cog, true));
+      }
+    },
+
+_destacarTrilha(mmsi) {
       this._destacado = mmsi;
       const pontos = window.AISManager.getTrilha(mmsi);
       if (pontos.length < 2) return;

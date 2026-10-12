@@ -8,6 +8,9 @@ test.describe('GD3 · Comparador de Safras VEN', () => {
   test.beforeEach(async ({ page }) => {
     await abrirWebGIS(page);
     await page.waitForFunction(() => !!window.SafraDiffManager, { timeout: 15000 });
+    // Botões migraram para a aba Análise conforme padrão da UI
+    await page.locator('.aba-btn[data-aba="analise"]').click();
+    await page.waitForTimeout(200);
   });
 
   test('botão "Comparar Safras" abre o modal', async ({ page }) => {

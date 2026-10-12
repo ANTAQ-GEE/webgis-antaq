@@ -575,16 +575,16 @@ window.toggleModoInterativo = function () {
       }
     }, 2200);
     // ✅ Boot leve: carrega SÓ as camadas essenciais
-    const essenciais = ['instalacoes_portuarias', 'uf', 'ven_2022'];
+    const essenciais = ['instalacoes_portuarias', 'uf', 'ven_2024'];
     Promise.allSettled(essenciais.map(id =>
       window.DataManager.carregarCamada(id).catch(() => {})
     )).then(() => {
-      if (window.CAMADAS_MAPA['ven_2022']) {
-        window.CAMADAS_MAPA['ven_2022'].addTo(window.mapa);
-        const qtd = window.DADOS_GEOJSON_BRUTOS['ven_2022']?.features?.length || 0;
+      if (window.CAMADAS_MAPA['ven_2024']) {
+        window.CAMADAS_MAPA['ven_2024'].addTo(window.mapa);
+        const qtd = window.DADOS_GEOJSON_BRUTOS['ven_2024']?.features?.length || 0;
         const cnt = document.getElementById('cnt-ven-unificado');
         if (cnt) cnt.innerText = qtd > 0 ? `(${qtd})` : '';
-        window.VENUnifiedManager.anoAtivo = 'ven_2022';
+        window.VENUnifiedManager.anoAtivo = 'ven_2024';
       }
       console.info('[boot] Camadas essenciais carregadas.');
     });

@@ -11,7 +11,7 @@
   'use strict';
 
   const VENUnifiedManager = {
-    anoAtivo: 'ven_2022',
+    anoAtivo: 'ven_2024',
     ligado: true,
 
     construirCard: function (container) {
@@ -39,8 +39,8 @@
         <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px; background:#e0f2fe; padding:4px 8px; border-radius:5px; font-size:10.5px;">
           <span style="font-weight:700; color:#0369a1;">📁 Safra Selecionada:</span>
           <select id="sel-safra-ven-painel" onchange="VENUnifiedManager.mudarSafra(this.value)" style="padding:2px 6px; font-size:11px; border:1px solid #0284c7; border-radius:4px; background:#fff; font-weight:700; color:#0284c7; cursor:pointer;">
-            <option value="ven_2024">2024 (Oficial V4)</option>
-            <option value="ven_2022" selected>2022 (Série Histórica)</option>
+            <option value="ven_2024" selected>2024 (Oficial V4)</option>
+            <option value="ven_2022">2022 (Série Histórica)</option>
             <option value="ven_2020">2020</option>
             <option value="ven_2018">2018</option>
             <option value="ven_2013">2013</option>

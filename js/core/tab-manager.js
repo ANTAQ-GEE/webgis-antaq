@@ -11,6 +11,7 @@
   const TabManager = {
     abaAtiva: 'mapa',
     _listeners: {},
+    _inicializado: false,
 
     /**
      * Troca pra uma aba específica.
@@ -42,6 +43,7 @@
       window.dispatchEvent(new CustomEvent('tabmudou', { detail: { aba } }));
       // ✅ Salva preferência do usuário
       try { localStorage.setItem('antaq_aba_ativa', aba); } catch (e) {}
+
       // 5. Auto-abre painéis específicos
       if (aba === 'analise') {
         const painel = document.getElementById('painel-graficos');
@@ -60,12 +62,14 @@
       // M14 — Liga/desliga a camada AIS de verdade
       if (aba === 'ais') {
         const chkAis = document.getElementById('chk-ais');
-        const deveLigar = !window.AISManager._visivel;
+        const deveLigar = window.AISManager && !window.AISManager._visivel;
         if (chkAis) chkAis.checked = deveLigar;
-        window.AISManager.toggle();
+        if (window.AISManager && typeof window.AISManager.toggle === 'function') {
+          window.AISManager.toggle();
+        }
       }
-      
     },
+
     _configurarAtalhos: function () {
       document.addEventListener('keydown', (ev) => {
         const alvo = ev.target;
@@ -92,7 +96,7 @@
           this.trocar('ais');
         }
       });
-    },    
+    },
 
     /**
      * Aplica a visibilidade dos painéis conforme a aba.
@@ -103,77 +107,77 @@
 
       // Elementos específicos por aba
       // ✅ O copiloto NUNCA é escondido por aba (é global)
-const regras = {
-  mapa: {
-    mostrar: [
-      'painel-camadas-lateral',
-      'btn-flutuante-abrir-painel',
-      'barra-busca-atributos',
-      'toolbar-medicao',
-      'caixa-legenda',
-      'painel-tabela'
-    ],
-    esconder: [
-      'painel-graficos',
-      'btn-header-matriz-ven',
-      'btn-header-comparar-safras',
-      'btn-header-painel-analitico'
-    ]
-  },
-  analise: {
-    mostrar: [
-      'painel-graficos',
-      'painel-camadas-lateral',
-      'btn-flutuante-abrir-painel',
-      'btn-header-matriz-ven',
-      'btn-header-comparar-safras',
-      'btn-header-painel-analitico'
-    ],
-    esconder: [
-      'barra-busca-atributos',
-      'toolbar-medicao',
-      'caixa-legenda',
-      'painel-tabela'
-    ]
-  },
-  geo: {
-    mostrar: [
-      'painel-camadas-lateral',
-      'btn-flutuante-abrir-painel',
-      'toolbar-medicao',
-      'caixa-legenda'
-    ],
-    esconder: [
-      'barra-busca-atributos',
-      'painel-graficos',
-      'painel-tabela',
-      'btn-header-matriz-ven',
-      'btn-header-comparar-safras',
-      'btn-header-painel-analitico'
-    ]
-  },
-  controle: {
-    mostrar: [
-      'painel-camadas-lateral'
-    ]
-  },
-  ais: {
-    mostrar: [
-      'painel-camadas-lateral',
-      'btn-flutuante-abrir-painel'
-    ],
-    esconder: [
-      'barra-busca-atributos',
-      'toolbar-medicao',
-      'caixa-legenda',
-      'painel-graficos',
-      'painel-tabela',
-      'btn-header-matriz-ven',
-      'btn-header-comparar-safras',
-      'btn-header-painel-analitico'
-    ]
-  }
-};
+      const regras = {
+        mapa: {
+          mostrar: [
+            'painel-camadas-lateral',
+            'btn-flutuante-abrir-painel',
+            'barra-busca-atributos',
+            'toolbar-medicao',
+            'caixa-legenda',
+            'painel-tabela'
+          ],
+          esconder: [
+            'painel-graficos',
+            'btn-header-matriz-ven',
+            'btn-header-comparar-safras',
+            'btn-header-painel-analitico'
+          ]
+        },
+        analise: {
+          mostrar: [
+            'painel-graficos',
+            'painel-camadas-lateral',
+            'btn-flutuante-abrir-painel',
+            'btn-header-matriz-ven',
+            'btn-header-comparar-safras',
+            'btn-header-painel-analitico'
+          ],
+          esconder: [
+            'barra-busca-atributos',
+            'toolbar-medicao',
+            'caixa-legenda',
+            'painel-tabela'
+          ]
+        },
+        geo: {
+          mostrar: [
+            'painel-camadas-lateral',
+            'btn-flutuante-abrir-painel',
+            'toolbar-medicao',
+            'caixa-legenda'
+          ],
+          esconder: [
+            'barra-busca-atributos',
+            'painel-graficos',
+            'painel-tabela',
+            'btn-header-matriz-ven',
+            'btn-header-comparar-safras',
+            'btn-header-painel-analitico'
+          ]
+        },
+        controle: {
+          mostrar: [
+            'painel-camadas-lateral'
+          ]
+        },
+        ais: {
+          mostrar: [
+            'painel-camadas-lateral',
+            'btn-flutuante-abrir-painel'
+          ],
+          esconder: [
+            'barra-busca-atributos',
+            'toolbar-medicao',
+            'caixa-legenda',
+            'painel-graficos',
+            'painel-tabela',
+            'btn-header-matriz-ven',
+            'btn-header-comparar-safras',
+            'btn-header-painel-analitico'
+          ]
+        }
+      };
 
       const regra = regras[aba] || regras.mapa;
 
@@ -228,15 +232,22 @@ const regras = {
     },
 
     /**
-     * Inicialização: seta a aba inicial como 'mapa'.
+     * Inicialização: seta a aba inicial com suporte a query params.
      */
     init: function () {
-      // ✅ Restaura última aba usada (ou 'mapa')
+      this._inicializado = true;
+      // ✅ Restaura última aba usada (URL tem precedência absoluta, depois localStorage, default 'mapa')
       let abaInicial = 'mapa';
       try {
-        const salva = localStorage.getItem('antaq_aba_ativa');
-        if (salva && ['mapa', 'analise', 'geo', 'ais'].includes(salva)) {
-          abaInicial = salva;
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlAba = urlParams.get('aba');
+        if (urlAba && ['mapa', 'analise', 'geo', 'ais'].includes(urlAba)) {
+          abaInicial = urlAba;
+        } else {
+          const salva = localStorage.getItem('antaq_aba_ativa');
+          if (salva && ['mapa', 'analise', 'geo', 'ais'].includes(salva)) {
+            abaInicial = salva;
+          }
         }
       } catch (e) {}
 
@@ -251,11 +262,36 @@ const regras = {
       this._aplicarVisibilidade(abaInicial);
       this._configurarAtalhos();
 
+      if (abaInicial === 'analise') {
+        const painel = document.getElementById('painel-graficos');
+        if (painel && !painel.classList.contains('aberto')) {
+          painel.classList.add('aberto');
+        }
+        requestAnimationFrame(() => {
+          if (window.Analytics) {
+            window.Analytics.atualizarSeletores();
+            window.Analytics.trocarAba(window.Analytics.abaAtiva);
+          }
+        });
+      }
+
       console.info(`[M11] TabManager pronto. Aba inicial: ${abaInicial}`);
       console.info('[M11] Atalhos: Ctrl+1 (Mapa), Ctrl+2 (Análise), Ctrl+3 (Geo), Ctrl+4 (AIS)');
     }
   };
 
   window.TabManager = TabManager;
+
+  // Auto-inicialização imediata / no DOMContentLoaded
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        if (!TabManager._inicializado) TabManager.init();
+      });
+    } else {
+      TabManager.init();
+    }
+  }
+
   console.info('[js] TabManager carregado (M11)');
 })();

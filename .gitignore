@@ -10,13 +10,36 @@ playwright-report/
 # Sistema operacional
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Backups locais
+# Google Drive stubs / atalhos virtuais (não são arquivos reais do repositório)
+*.gdoc
+*.gsheet
+*.gslides
+*.gdraw
+*.gtable
+*.gform
+
+# Pastas de backup internas
+backup_antigos/
+backup*/
+*_backup/
+*.bak
+*.tmp
+
+# Backups locais de estágio
 *_STAGE*.html
 *_BROKEN.html
-*.bak
 
 # Diferenças visuais geradas pelo Playwright
 tests/**/*-diff.png
 tests/**/*-actual.png
 tests/**/*-expected.png
+
+
+# Google Drive stubs e backups locais
+*.gdoc
+*.gsheet
+*.gslides
+backup_antigos/
+

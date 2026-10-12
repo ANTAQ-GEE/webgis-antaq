@@ -243,7 +243,77 @@
 
       return s.trim();
     },
-  };
+  
+    /* ============================================================
+       EXTRAÇÃO CENTRALIZADA DE UF (Consolidada para todo o WebGIS)
+       ============================================================ */
+    extrairUF: function (props) {
+      if (!props) return '';
+      // 1. Campos diretos de sigla da UF
+      for (const k of ['SIGLA_UF', 'sigla_uf', 'uf', 'UF', 'estado', 'ESTADO', 'est_uf', 'sg_uf', 'EST_ORIGEM', 'est_origem', 'EST_DESTINO', 'est_destino']) {
+        const v = props[k];
+        if (v && String(v).trim().length === 2) return String(v).trim().toUpperCase();
+      }
+      // 2. Extração de padrões "Município/UF"
+      for (const k of ['municipio', 'MUNICIPIO', 'nome_municipio', 'NM_MUN', 'mun_origem', 'mun_destino']) {
+        const v = props[k];
+        if (v && String(v).includes('/')) {
+          const partes = String(v).split('/');
+          if (partes.length > 1) {
+            const sigla = partes[1].trim().toUpperCase();
+            if (sigla.length === 2) return sigla;
+          }
+        }
+      }
+      return '';
+    },
+
+    /**
+     * Busca tolerante a maiúsculas/minúsculas de propriedades GeoJSON.
+     * @param {Object} props - Objeto feature.properties
+     * @param {...string} chaves - Lista de nomes possíveis (ex: 'nome', 'NOME', 'nome_rio')
+     * @returns {any} Primeiro valor não vazio encontrado ou string vazia
+     */
+    getProp: function (props, ...chaves) {
+      if (!props) return '';
+      for (const c of chaves) {
+        if (props[c] !== undefined && props[c] !== null && String(props[c]).trim() !== '') {
+          return props[c];
+        }
+      }
+      const chavesMin = chaves.map(c => String(c).toLowerCase());
+      for (const [k, v] of Object.entries(props)) {
+        if (chavesMin.includes(k.toLowerCase()) && v !== undefined && v !== null && String(v).trim() !== '') {
+          return v;
+        }
+      }
+      return '';
+    },
+
+    /**
+     * Formatação numérica segura no padrão ABNT / pt-BR.
+     * @param {number|string} v - Valor numérico
+     * @param {number} [decimais=0] - Casas decimais
+     * @returns {string} Valor formatado (ex: '20.404' ou '16.836,8')
+     */
+    formatarNumero: function (v, decimais = 0) {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return '—';
+      return n.toLocaleString('pt-BR', {
+        minimumFractionDigits: decimais,
+        maximumFractionDigits: decimais
+      });
+    },
+
+    /**
+     * Formatação de extensões em quilômetros.
+     */
+    formatarKm: function (v, decimais = 1) {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return '—';
+      return ;
+    },
+};
 
   window.Security = Security;
   console.info('[js] Security carregado');

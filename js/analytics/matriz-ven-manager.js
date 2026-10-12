@@ -10,7 +10,7 @@
   'use strict';
 
   const MatrizVENManager = {
-    anoAtual: 'ven_2022',
+    anoAtual: 'ven_2024',
     dadosCompletos: [],
     dadosFiltrados: [],
 
@@ -22,7 +22,7 @@
       if (!DADOS_GEOJSON_BRUTOS[this.anoAtual]) {
         try { await window.DataManager.carregarCamada(this.anoAtual); }
         catch (e) {
-          this.anoAtual = 'ven_2022';
+          this.anoAtual = 'ven_2024';
           if (!DADOS_GEOJSON_BRUTOS[this.anoAtual]) {
             try { await window.DataManager.carregarCamada(this.anoAtual); } catch (err) {}
           }
@@ -188,14 +188,77 @@
       }
 
       try {
-        const tempLayer = L.geoJSON(item.feature);
-        const bounds = tempLayer.getBounds();
+        // 1. Limpa destaque anterior de trecho O/D
+        if (window._matrizODLayer && window.mapa.hasLayer(window._matrizODLayer)) {
+          window.mapa.removeLayer(window._matrizODLayer);
+        }
+        window._matrizODLayer = L.layerGroup().addTo(mapa);
+
+        const geom = item.feature.geometry;
+        const coords = geom.coordinates;
+        let startPt, endPt;
+
+        if (geom.type === 'MultiLineString') {
+          startPt = coords[0][0];
+          endPt = coords[coords.length - 1][coords[coords.length - 1].length - 1];
+        } else if (geom.type === 'LineString') {
+          startPt = coords[0];
+          endPt = coords[coords.length - 1];
+        } else {
+          startPt = coords;
+          endPt = coords;
+        }
+
+        const latlngOrig = [startPt[1], startPt[0]];
+        const latlngDest = [endPt[1], endPt[0]];
+
+        // 2. Traçado com destaque em ciano de alto contraste
+        const linhaDestaque = L.geoJSON(item.feature, {
+          style: {
+            color: '#00e5ff',
+            weight: 6,
+            opacity: 0.95
+          }
+        }).addTo(window._matrizODLayer);
+
+        // 3. Marcador de Origem (DE) - Verde
+        const nomeOrig = (item.mun_orig || 'Origem') + (item.est_orig ? `/${item.est_orig}` : '');
+        const iconeOrig = L.divIcon({
+          className: 'od-marker-origem',
+          html: `<div style="background:#10b981; color:#fff; border:2px solid #fff; border-radius:12px; padding:3px 8px; font-size:10px; font-weight:800; box-shadow:0 3px 8px rgba(0,0,0,0.5); white-space:nowrap; display:flex; align-items:center; gap:4px;">
+            <span>🟢 DE:</span> <span>${window.Security ? window.Security.escapeHTML(nomeOrig) : nomeOrig}</span>
+          </div>`,
+          iconSize: [130, 24],
+          iconAnchor: [12, 12]
+        });
+        L.marker(latlngOrig, { icon: iconeOrig, zIndexOffset: 1200 })
+          .bindPopup(`<strong>🟢 Ponto de Origem (Partida):</strong><br>${nomeOrig}`)
+          .addTo(window._matrizODLayer);
+
+        // 4. Marcador de Destino (PARA) - Vermelho
+        const nomeDest = (item.mun_dest || 'Destino') + (item.est_dest ? `/${item.est_dest}` : '');
+        const iconeDest = L.divIcon({
+          className: 'od-marker-destino',
+          html: `<div style="background:#ef4444; color:#fff; border:2px solid #fff; border-radius:12px; padding:3px 8px; font-size:10px; font-weight:800; box-shadow:0 3px 8px rgba(0,0,0,0.5); white-space:nowrap; display:flex; align-items:center; gap:4px;">
+            <span>🏁 PARA:</span> <span>${window.Security ? window.Security.escapeHTML(nomeDest) : nomeDest}</span>
+          </div>`,
+          iconSize: [130, 24],
+          iconAnchor: [12, 12]
+        });
+        L.marker(latlngDest, { icon: iconeDest, zIndexOffset: 1200 })
+          .bindPopup(`<strong>🏁 Ponto de Destino (Chegada):</strong><br>${nomeDest}`)
+          .addTo(window._matrizODLayer);
+
+        // 5. Ajusta enquadramento do mapa
+        const bounds = linhaDestaque.getBounds();
         if (bounds && bounds.isValid()) {
-          mapa.fitBounds(bounds, { padding: [60, 60], maxZoom: 12 });
+          mapa.fitBounds(bounds, { padding: [80, 80], maxZoom: 13 });
           setTimeout(() => {
             const popupContent = window.PopupRenderer.gerar(idCamada, item.feature.properties);
             L.popup().setLatLng(bounds.getCenter()).setContent(popupContent).openOn(mapa);
-            if (window.UI) window.UI.toast(`📍 Trecho: ${item.nome} (${item.tempo})`);
+            if (window.UI) {
+              window.UI.toast(`📍 Trecho: ${nomeOrig} ➔ ${nomeDest} (${item.extensao ? item.extensao.toFixed(1) + ' km' : ''} · ${item.tempo})`);
+            }
           }, 350);
         }
       } catch (e) { console.error("Erro ao localizar:", e); }

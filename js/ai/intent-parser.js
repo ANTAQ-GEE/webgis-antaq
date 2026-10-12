@@ -185,7 +185,24 @@
         };
       }
 
-      // ---------- 4. Contagem ----------
+            // ---------- 3.9. Contenção Territorial Espacial ("em terras indígenas", "em UCs", etc.) ----------
+      const alvoPoligono = this._acharCamadaPoligonal(texto);
+      if (alvoPoligono && (/(?:\bem\b|\bnas?\b|\bnos?\b|\bdentro\b|\bcontid|\binserid|\bintercept|\bsobrepost)/i).test(texto)) {
+        const camadaFonte = acharCamada(texto) || 'instalacoes_portuarias';
+        const nomesBonitos = {
+          'tis_poligonais': 'Terras Indígenas (FUNAI)',
+          'ucs_federais': 'Unidades de Conservação Federais (ICMBio)',
+          'estados_amazonia_legal': 'Amazônia Legal'
+        };
+        return {
+          tipo: 'contido',
+          camada: camadaFonte,
+          alvo: alvoPoligono,
+          alvoNome: nomesBonitos[alvoPoligono] || alvoPoligono
+        };
+      }
+
+// ---------- 4. Contagem ----------
       const matchDentro = texto.match(/\b(dentro d[ao]|dentro de|contid[oa]s? (?:em|na|no)|inserid[oa]s? (?:em|na|no))\s+(.+?)(?:\?|$)/);
       if (matchDentro) {
         const alvoNome = matchDentro[2].trim();
@@ -362,12 +379,11 @@
       if (textoNorm.includes('municipio') || textoNorm.includes('município')) return 'br_municipios_2025';
       return null;
     },
-    _acharCamadaPoligonal: function (nome) {
-      const n = normalizar(nome);
-      if (n.includes('amazônia legal') || n.includes('amazonia legal') || n === 'amazonia') return 'estados_amazonia_legal';
-      if (n.includes('amaz') && !n.includes('legal')) return 'estados_amazonia_legal';
-      if (n === 'ti' || n === 'tis' || n.includes('terra ind')) return 'tis_poligonais';
-      if (n === 'uc' || n === 'ucs' || n.includes('conserva')) return 'ucs_federais';
+    _acharCamadaPoligonal: function (textoNorm) {
+      const n = normalizar(textoNorm);
+      if (n.includes('amazonia legal') || (n.includes('amazoni') && n.includes('legal'))) return 'estados_amazonia_legal';
+      if (n.includes('indigen') || /\b(ti|tis)\b/i.test(n)) return 'tis_poligonais';
+      if (n.includes('conserva') || n.includes('icmbio') || /\b(uc|ucs)\b/i.test(n)) return 'ucs_federais';
       return null;
     },
     /* ---------- Debug ---------- */

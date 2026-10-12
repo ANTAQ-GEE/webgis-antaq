@@ -44,32 +44,43 @@
     atualizarSeletores: function () { this.trocarAba(this.abaAtiva); },
 
     extrairUF: function (props, feature) {
+      if (window.Security && window.Security.extrairUF) {
+        return window.Security.extrairUF(props);
+      }
       if (!props) return '';
-      for (const k of ['SIGLA_UF','sigla_uf','uf','UF','estado','ESTADO','est_uf','sg_uf']) {
-        const v = props[k];
-        if (v && String(v).trim().length === 2) return String(v).trim().toUpperCase();
-      }
-      for (const k of ['municipio','MUNICIPIO','nome_municipio','NM_MUN']) {
-        const v = props[k];
-        if (v && String(v).includes('/')) {
-          const partes = String(v).split('/');
-          if (partes.length > 1) return partes[1].trim().toUpperCase();
-        }
-      }
-      return '';
+      const v = props.SIGLA_UF || props.sigla_uf || props.uf || props.UF || props.estado;
+      return v && String(v).trim().length === 2 ? String(v).trim().toUpperCase() : '';
     },
 
     gerarGraficosVEN: function () {
       const ctxHist = document.getElementById('canvas-ven-historico');
       if (ctxHist) {
-        if (this.chartVenHist) this.chartVenHist.destroy();
+        const cExistHist = typeof Chart !== "undefined" && Chart.getChart(ctxHist);
+        if (cExistHist) cExistHist.destroy();
+        if (this.chartVenHist) { try { this.chartVenHist.destroy(); } catch(e){} this.chartVenHist = null; }
         this.chartVenHist = new Chart(ctxHist, {
           type: 'line',
           data: {
-            labels: ['VEN 2018', 'VEN 2020', 'VEN 2022', 'VEN 2024'],
+            labels: ['VEN 2013', 'VEN 2018', 'VEN 2020', 'VEN 2022', 'VEN 2024'],
             datasets: [{
               label: 'Extensão Total Navegada (km)',
-              data: [18616, 19167, 20125, 20404],
+              data: (() => {
+              // Calcula soma alinhada à Matriz VEN ou usa fallback oficial
+              const calcExt = (id, fallback) => {
+                const g = window.DADOS_GEOJSON_BRUTOS && window.DADOS_GEOJSON_BRUTOS[id];
+                if (g && g.features && g.features.length) {
+                  return Math.round(g.features.reduce((s, f) => s + Number(f.properties?.extensao || f.properties?.EXTENSAO || 0), 0));
+                }
+                return fallback;
+              };
+              return [
+                calcExt('ven_2013', 22036),
+                calcExt('ven_2018', 18612),
+                calcExt('ven_2020', 20196),
+                calcExt('ven_2022', 20125),
+                calcExt('ven_2024', 20404)
+              ];
+            })(),
               borderColor: '#00e5ff',
               backgroundColor: 'rgba(0, 229, 255, 0.15)',
               borderWidth: 3, fill: true, tension: 0.3,
@@ -84,7 +95,7 @@
               tooltip: { callbacks: { label: function (ctx) { return ` Extensão: ${ctx.parsed.y.toLocaleString('pt-BR')} km`; } } }
             },
             scales: {
-              y: { min: 17000, max: 21500, ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.06)' } },
+              y: { min: 17000, max: 23500, ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.06)' } },
               x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } }
             }
           }
@@ -93,7 +104,9 @@
 
       const ctxBacias = document.getElementById('canvas-ven-bacias');
       if (ctxBacias) {
-        if (this.chartVenBacias) this.chartVenBacias.destroy();
+        const cExistBacias = typeof Chart !== "undefined" && Chart.getChart(ctxBacias);
+        if (cExistBacias) cExistBacias.destroy();
+        if (this.chartVenBacias) { try { this.chartVenBacias.destroy(); } catch(e){} this.chartVenBacias = null; }
         this.chartVenBacias = new Chart(ctxBacias, {
           type: 'bar',
           data: {
@@ -121,7 +134,9 @@
 
       const ctxTempos = document.getElementById('canvas-ven-tempos');
       if (ctxTempos) {
-        if (this.chartVenTempos) this.chartVenTempos.destroy();
+        const cExistTempos = typeof Chart !== "undefined" && Chart.getChart(ctxTempos);
+        if (cExistTempos) cExistTempos.destroy();
+        if (this.chartVenTempos) { try { this.chartVenTempos.destroy(); } catch(e){} this.chartVenTempos = null; }
         const features = DADOS_GEOJSON_BRUTOS['ven_2022']?.features || DADOS_GEOJSON_BRUTOS['ven_2024']?.features || [];
         let curtos = 0, medios = 0, longos = 0, muitoLongos = 0;
         features.forEach(f => {
@@ -155,7 +170,9 @@
     gerarGraficosPortos: function () {
       const ctxRegimes = document.getElementById('canvas-portos-regimes');
       if (ctxRegimes) {
-        if (this.chartPortosRegimes) this.chartPortosRegimes.destroy();
+        const cExistRegimes = typeof Chart !== "undefined" && Chart.getChart(ctxRegimes);
+        if (cExistRegimes) cExistRegimes.destroy();
+        if (this.chartPortosRegimes) { try { this.chartPortosRegimes.destroy(); } catch(e){} this.chartPortosRegimes = null; }
         this.chartPortosRegimes = new Chart(ctxRegimes, {
           type: 'doughnut',
           data: {
@@ -177,7 +194,9 @@
       }
       const ctxUfs = document.getElementById('canvas-portos-ufs');
       if (ctxUfs) {
-        if (this.chartPortosUfs) this.chartPortosUfs.destroy();
+        const cExistUfs = typeof Chart !== "undefined" && Chart.getChart(ctxUfs);
+        if (cExistUfs) cExistUfs.destroy();
+        if (this.chartPortosUfs) { try { this.chartPortosUfs.destroy(); } catch(e){} this.chartPortosUfs = null; }
         this.chartPortosUfs = new Chart(ctxUfs, {
           type: 'bar',
           data: {
@@ -200,7 +219,9 @@
     gerarGraficosTravessias: function () {
       const ctxReg = document.getElementById('canvas-travessias-regioes');
       if (ctxReg) {
-        if (this.chartTravessiasRegioes) this.chartTravessiasRegioes.destroy();
+        const cExistReg = typeof Chart !== "undefined" && Chart.getChart(ctxReg);
+        if (cExistReg) cExistReg.destroy();
+        if (this.chartTravessiasRegioes) { try { this.chartTravessiasRegioes.destroy(); } catch(e){} this.chartTravessiasRegioes = null; }
         this.chartTravessiasRegioes = new Chart(ctxReg, {
           type: 'pie',
           data: {
@@ -215,7 +236,9 @@
       }
       const ctxEst = document.getElementById('canvas-travessias-estados');
       if (ctxEst) {
-        if (this.chartTravessiasEstados) this.chartTravessiasEstados.destroy();
+        const cExistEst = typeof Chart !== "undefined" && Chart.getChart(ctxEst);
+        if (cExistEst) cExistEst.destroy();
+        if (this.chartTravessiasEstados) { try { this.chartTravessiasEstados.destroy(); } catch(e){} this.chartTravessiasEstados = null; }
         this.chartTravessiasEstados = new Chart(ctxEst, {
           type: 'bar',
           data: {

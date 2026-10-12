@@ -787,19 +787,33 @@
         return `A camada <strong>${intencao.alvoNome || intencao.alvo}</strong> não tem polígonos.`;
       }
 
-      // Testa ponto-em-polígono
+      // Testa ponto-em-polígono OU linha-intercepta-polígono
       const dentro = [];
       for (const f of dadosOrigem.features) {
-        const ponto = this._pontoDe(f);
-        if (!ponto) continue;
-        const ptGeoJSON = { type: 'Point', coordinates: [ponto[1], ponto[0]] };
-        for (const poly of poligonos) {
-          try {
-            if (turf.booleanPointInPolygon(ptGeoJSON, poly)) {
-              dentro.push(f);
-              break;
-            }
-          } catch (e) { /* ignora */ }
+        if (!f || !f.geometry) continue;
+        const tipoGeom = f.geometry.type;
+
+        if (tipoGeom === 'Point' || tipoGeom === 'MultiPoint') {
+          const ponto = this._pontoDe(f);
+          if (!ponto) continue;
+          const ptGeoJSON = { type: 'Point', coordinates: [ponto[1], ponto[0]] };
+          for (const poly of poligonos) {
+            try {
+              if (turf.booleanPointInPolygon(ptGeoJSON, poly)) {
+                dentro.push(f);
+                break;
+              }
+            } catch (e) { /* ignora */ }
+          }
+        } else if (tipoGeom.includes('LineString')) {
+          for (const poly of poligonos) {
+            try {
+              if (turf.booleanIntersects(f, poly)) {
+                dentro.push(f);
+                break;
+              }
+            } catch (e) { /* ignora */ }
+          }
         }
       }
 
