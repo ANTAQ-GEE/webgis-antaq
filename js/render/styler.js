@@ -345,14 +345,21 @@
                   if (window.MeasurementTool && window.MeasurementTool.modo) return;
                   if (window.CopilotoIA) window.CopilotoIA.ultimoAtivoInspecionado = f;
 
-                  if (e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey)) {
-                    L.DomEvent.stopPropagation(e);
-                    if (e.target && e.target.closePopup) e.target.closePopup();
-                    if (window.SelectionManager) window.SelectionManager.toggle(f, id);
-                    return;
-                  }
-                  if (window.SelectionManager && window.SelectionManager.temSelecao()) {
-                    window.SelectionManager.limpar(true);
+                  const isMulti = e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey);
+                  if (window.SelectionManager) {
+                    if (isMulti) {
+                      L.DomEvent.stopPropagation(e);
+                      if (e.target && e.target.closePopup) e.target.closePopup();
+                      window.SelectionManager.toggle(f, id, true);
+                      return;
+                    } else {
+                      if (typeof window.SelectionManager.selecionarUnica === 'function') {
+                        window.SelectionManager.selecionarUnica(f, id);
+                      } else {
+                        window.SelectionManager.limpar(true);
+                        window.SelectionManager.toggle(f, id, true);
+                      }
+                    }
                   }
                   if (window.CAMADA_DESTAQUE && window.mapa) {
                     try { window.mapa.removeLayer(window.CAMADA_DESTAQUE); } catch (err) {}

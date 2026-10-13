@@ -2482,9 +2482,16 @@
       console.info('[M2] Seleção múltipla pronta. Ctrl+Clique ou Shift+Arrastar.');
     },
 
-    toggle: function (feature, camadaId) {
-      // Fecha o popup do Leaflet (senão ele fica "grudado" na tela)
-      if (window.mapa && window.mapa.closePopup) window.mapa.closePopup();
+    selecionarUnica: function (feature, camadaId) {
+      const chave = this._chaveDe(feature, camadaId);
+      this._selecionadas = [{ feature, camadaId, chaveUnica: chave }];
+      this._atualizarUI();
+    },
+
+    toggle: function (feature, camadaId, manterPopup) {
+      if (!manterPopup && window.mapa && window.mapa.closePopup) {
+        window.mapa.closePopup();
+      }
 
       const chave = this._chaveDe(feature, camadaId);
       const idx = this._selecionadas.findIndex(s => s.chaveUnica === chave);

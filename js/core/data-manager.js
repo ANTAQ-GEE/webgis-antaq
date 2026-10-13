@@ -175,16 +175,24 @@
                   if (window.MeasurementTool && window.MeasurementTool.modo) return;
                   if (window.CopilotoIA) window.CopilotoIA.ultimoAtivoInspecionado = f;
 
-                  if (e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey)) {
-                    L.DomEvent.stopPropagation(e);
-                    if (e.target && e.target.closePopup) e.target.closePopup();
-                    if (window.SelectionManager) window.SelectionManager.toggle(f, 'instalacoes_portuarias');
-                    return;
+                  const isMulti = e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey);
+                  if (window.SelectionManager) {
+                    if (isMulti) {
+                      L.DomEvent.stopPropagation(e);
+                      window.SelectionManager.toggle(f, 'instalacoes_portuarias', true);
+                    } else {
+                      if (typeof window.SelectionManager.selecionarUnica === 'function') {
+                        window.SelectionManager.selecionarUnica(f, 'instalacoes_portuarias');
+                      } else {
+                        window.SelectionManager.limpar(true);
+                        window.SelectionManager.toggle(f, 'instalacoes_portuarias', true);
+                      }
+                    }
                   }
-                  if (window.SelectionManager && window.SelectionManager.temSelecao()) {
-                    window.SelectionManager.limpar(true);
-                  }
-                  if (m.openPopup) m.openPopup();
+
+                  requestAnimationFrame(() => {
+                    try { m.openPopup(); } catch (err) {}
+                  });
                 });
                 m.bindPopup(window.PopupRenderer.gerar('instalacoes_portuarias', f.properties));
 
@@ -341,16 +349,25 @@
         m.on('click', (e) => {
           if (window.MeasurementTool && window.MeasurementTool.modo) return;
           if (window.CopilotoIA) window.CopilotoIA.ultimoAtivoInspecionado = f;
-          if (e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey)) {
-            L.DomEvent.stopPropagation(e);
-            if (e.target && e.target.closePopup) e.target.closePopup();
-            if (window.SelectionManager) window.SelectionManager.toggle(f, 'instalacoes_portuarias');
-            return;
+
+          const isMulti = e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey);
+          if (window.SelectionManager) {
+            if (isMulti) {
+              L.DomEvent.stopPropagation(e);
+              window.SelectionManager.toggle(f, 'instalacoes_portuarias', true);
+            } else {
+              if (typeof window.SelectionManager.selecionarUnica === 'function') {
+                window.SelectionManager.selecionarUnica(f, 'instalacoes_portuarias');
+              } else {
+                window.SelectionManager.limpar(true);
+                window.SelectionManager.toggle(f, 'instalacoes_portuarias', true);
+              }
+            }
           }
-          if (window.SelectionManager && window.SelectionManager.temSelecao()) {
-            window.SelectionManager.limpar(true);
-          }
-          if (m.openPopup) m.openPopup();
+
+          requestAnimationFrame(() => {
+            try { m.openPopup(); } catch (err) {}
+          });
         });
 
         if (window.SUBGRUPOS_PORTOS[cat.id]) {
