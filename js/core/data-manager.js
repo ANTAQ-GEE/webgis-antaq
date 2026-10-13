@@ -136,6 +136,25 @@
               }
             }
 
+            // Gerador de ícone de âncora nítido com contraste para qualquer zoom
+            const criarIconePorto = (cat) => {
+              const sz = (cat.id === 'ORGANIZADO') ? 22 : 18;
+              const half = sz / 2;
+              return L.divIcon({
+                className: 'port-anchor-marker',
+                html: `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" xmlns="http://www.w3.org/2000/svg" style="display:block; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));">` +
+                      `<circle cx="12" cy="12" r="11" fill="#ffffff" stroke="${cat.cor}" stroke-width="2"/>` +
+                      `<circle cx="12" cy="4" r="2.2" fill="${cat.cor}"/>` +
+                      `<line x1="12" y1="6.2" x2="12" y2="19" stroke="${cat.cor}" stroke-width="2" stroke-linecap="round"/>` +
+                      `<line x1="7" y1="10" x2="17" y2="10" stroke="${cat.cor}" stroke-width="2" stroke-linecap="round"/>` +
+                      `<path d="M5 13 Q5 19 12 19 Q19 19 19 13" fill="none" stroke="${cat.cor}" stroke-width="2" stroke-linecap="round"/>` +
+                      `</svg>`,
+                iconSize: [sz, sz],
+                iconAnchor: [half, half],
+                popupAnchor: [0, -half]
+              });
+            };
+
             const markersParaAdicionar = [];
 
             dados.features.forEach(f => {
@@ -144,26 +163,11 @@
               const lat = f.geometry.coordinates[1];
               const lng = f.geometry.coordinates[0];
               if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-                const usarIcone = false;
-
-                let m;
-                if (usarIcone) {
-                  m = L.marker([lat, lng], {
-                    pane: 'panePontos',
-                    icon: window.MapSymbols.ancora(cat.cor, 26)
-                  });
-                  m._isIcone = true;
-                } else {
-                  m = L.circleMarker([lat, lng], {
-                    pane: 'panePontos',
-                    radius: cat.raio || 5,
-                    fillColor: cat.cor,
-                    color: '#ffffff',
-                    weight: 2,
-                    fillOpacity: 0.95
-                  });
-                  m._isIcone = false;
-                }
+                const m = L.marker([lat, lng], {
+                  pane: 'panePontos',
+                  icon: criarIconePorto(cat),
+                  interactive: true
+                });
                 m.feature = f;
                 m._portoCatId = cat.id;
                 m._portoProps = f.properties;
@@ -208,6 +212,7 @@
             }
             if (chkEl && chkEl.checked) CAMADAS_MAPA[id].addTo(mapa);
             if (cntEl) cntEl.innerText = `(${dados.features.length})`;
+
           } else {
             if (CAMADAS_MAPA[id]) {
               // ✅ Também remove do mapa antes de recriar (evita leak)
@@ -284,20 +289,14 @@
 
       return this.carregando[id];
     },
-    /**
-     * Redesenha os portos trocando entre circleMarker (canvas) e âncora SVG
-     * conforme o zoom atual. Chamado quando o zoom cruza o limiar 11.
-     */
+
     redesenharPortos: function () {
       const dados = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
       if (!dados?.features?.length) return;
 
-      const usarIcone = window.mapa.getZoom() >= 11;
       const masterCluster = window.CAMADAS_MAPA['instalacoes_portuarias'];
-
       if (!window.SUBGRUPOS_PORTOS) return;
 
-      // Limpa todos os subgrupos e o master cluster
       for (const tKey of Object.keys(window.SUBGRUPOS_PORTOS)) {
         window.SUBGRUPOS_PORTOS[tKey].clearLayers();
       }
@@ -311,23 +310,27 @@
         const [lng, lat] = f.geometry.coordinates;
         if (!lat || !lng || isNaN(lat) || isNaN(lng)) continue;
 
-        let m;
-        if (usarIcone) {
-          m = L.marker([lat, lng], {
-            pane: 'panePontos',
-            icon: window.MapSymbols.ancora(cat.cor, 26),
-            riseOnHover: true
-          });
-        } else {
-          m = L.circleMarker([lat, lng], {
-            pane: 'panePontos',
-            radius: cat.raio || 5,
-            fillColor: cat.cor,
-            color: '#ffffff',
-            weight: 2,
-            fillOpacity: 0.95
-          });
-        }
+        const sz = (cat.id === 'ORGANIZADO') ? 22 : 18;
+        const half = sz / 2;
+        const icone = L.divIcon({
+          className: 'port-anchor-marker',
+          html: `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" xmlns="http://www.w3.org/2000/svg" style="display:block; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));">` +
+                `<circle cx="12" cy="12" r="11" fill="#ffffff" stroke="${cat.cor}" stroke-width="2"/>` +
+                `<circle cx="12" cy="4" r="2.2" fill="${cat.cor}"/>` +
+                `<line x1="12" y1="6.2" x2="12" y2="19" stroke="${cat.cor}" stroke-width="2" stroke-linecap="round"/>` +
+                `<line x1="7" y1="10" x2="17" y2="10" stroke="${cat.cor}" stroke-width="2" stroke-linecap="round"/>` +
+                `<path d="M5 13 Q5 19 12 19 Q19 19 19 13" fill="none" stroke="${cat.cor}" stroke-width="2" stroke-linecap="round"/>` +
+                `</svg>`,
+          iconSize: [sz, sz],
+          iconAnchor: [half, half],
+          popupAnchor: [0, -half]
+        });
+
+        const m = L.marker([lat, lng], {
+          pane: 'panePontos',
+          icon: icone,
+          interactive: true
+        });
 
         m.feature = f;
         m._portoCatId = cat.id;
@@ -368,12 +371,11 @@
         }
       }
 
-      console.info(`[DataManager] Portos redesenhados no Cluster Master: ${usarIcone ? 'âncoras SVG' : 'circleMarker'}`);
+      console.info('[DataManager] Portos atualizados no Cluster Master com âncoras de alta visibilidade');
     },
+
     atualizarTodasCamadas: async function (apenasAtivas = true, opcoes) {
       opcoes = opcoes || {};
-      // ✅ Padrão é SILENCIOSO (evita toasts duplicados no boot)
-      //    Só mostra toast se `mostrarToasts: true` for passado
       const mostrarToasts = opcoes.mostrarToasts === true;
 
       const btn = document.getElementById('btn-sync');
