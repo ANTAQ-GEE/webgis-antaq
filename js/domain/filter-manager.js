@@ -197,24 +197,34 @@
         const total = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
         const latlngsVisiveis = [];
 
-        // ✅ Adiciona os clusters DENTRO do featureGroup, não direto no mapa
-        const featureGroup = CAMADAS_MAPA['instalacoes_portuarias'];
-        const featureGroupNoMapa = featureGroup && mapa.hasLayer(featureGroup);
+        const masterCluster = CAMADAS_MAPA['instalacoes_portuarias'];
 
-        for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
-          const fgPai = CAMADAS_MAPA['instalacoes_portuarias'];
-          for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
-            const chkSub = document.getElementById(`chk-sub-${tKey}`);
-            const deveLigar = (valor === 'TODOS' || tKey === valor);
-            if (chkSub) chkSub.checked = deveLigar;
+        for (const [tKey, sub] of Object.entries(window.SUBGRUPOS_PORTOS)) {
+          const chkSub = document.getElementById(`chk-sub-${tKey}`);
+          const deveLigar = (valor === 'TODOS' || tKey === valor);
+          if (chkSub) chkSub.checked = deveLigar;
 
-            // ✅ Manipula DENTRO do featureGroup pai
+          if (masterCluster) {
             if (deveLigar) {
-              if (fgPai && !fgPai.hasLayer(fg)) fgPai.addLayer(fg);
-              visiveis += fg.getLayers().length;
-              fg.eachLayer(m => { if (m.getLatLng) latlngsVisiveis.push(m.getLatLng()); });
+              const aAdicionar = [];
+              sub.eachLayer(m => {
+                if (!masterCluster.hasLayer(m)) aAdicionar.push(m);
+                if (m.getLatLng) latlngsVisiveis.push(m.getLatLng());
+              });
+              if (aAdicionar.length > 0) {
+                if (typeof masterCluster.addLayers === 'function') masterCluster.addLayers(aAdicionar);
+                else aAdicionar.forEach(m => masterCluster.addLayer(m));
+              }
+              visiveis += sub.getLayers().length;
             } else {
-              if (fgPai && fgPai.hasLayer(fg)) fgPai.removeLayer(fg);
+              const aRemover = [];
+              sub.eachLayer(m => {
+                if (masterCluster.hasLayer(m)) aRemover.push(m);
+              });
+              if (aRemover.length > 0) {
+                if (typeof masterCluster.removeLayers === 'function') masterCluster.removeLayers(aRemover);
+                else aRemover.forEach(m => masterCluster.removeLayer(m));
+              }
             }
           }
         }

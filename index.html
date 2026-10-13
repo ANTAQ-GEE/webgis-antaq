@@ -6093,6 +6093,89 @@
       border-left: 3px solid #38bdf8;
     }
   
+    /* ============================================================
+       RESPONSIVIDADE INTELIGENTE: LAPTOPS, NOTEBOOKS & ZOOM DE SISTEMA
+       Adapta automaticamente o painel de camadas, busca, medição e legenda
+       em telas de laptops (1366x768 / 1080p em 125% escala) sem perda de referência
+       ============================================================ */
+    @media screen and (max-height: 850px) {
+      .leaflet-control-minimap {
+        margin-top: 104px !important;
+        width: 120px !important;
+        height: 80px !important;
+      }
+      .toolbar-medicao {
+        bottom: 195px !important;
+        padding: 4px !important;
+      }
+      .toolbar-medicao-header {
+        padding: 3px 5px !important;
+        font-size: 10px !important;
+      }
+      .btn-medicao {
+        padding: 3px 5px !important;
+        font-size: 9.5px !important;
+      }
+      .caixa-legenda {
+        bottom: 26px !important;
+        max-height: 160px !important;
+        width: 210px !important;
+      }
+      body .painel-camadas-lateral,
+      body[data-aba-ativa] .painel-camadas-lateral,
+      #painel-camadas-lateral {
+        top: 104px !important;
+        max-height: calc(100vh - 104px - 36px) !important;
+      }
+      body .barra-busca-atributos,
+      body[data-aba-ativa] .barra-busca-atributos {
+        top: 104px !important;
+      }
+      body .notificacoes-container {
+        top: 110px !important;
+      }
+    }
+
+    @media screen and (max-width: 1440px) {
+      .painel-lateral {
+        max-width: 330px !important;
+      }
+      .barra-busca-atributos {
+        max-width: calc(100vw - 360px) !important;
+        gap: 4px !important;
+        padding: 4px 8px !important;
+      }
+      .barra-busca-atributos select {
+        max-width: 150px !important;
+        font-size: 11px !important;
+      }
+      .barra-busca-atributos input {
+        min-width: 110px !important;
+        max-width: 160px !important;
+        font-size: 11px !important;
+      }
+      .barra-busca-atributos button {
+        padding: 4px 8px !important;
+        font-size: 10.5px !important;
+      }
+    }
+
+    @media screen and (max-width: 1200px) {
+      .painel-lateral {
+        max-width: 290px !important;
+      }
+      .barra-busca-atributos {
+        max-width: calc(100vw - 315px) !important;
+      }
+      .barra-busca-atributos select {
+        max-width: 120px !important;
+      }
+      .barra-busca-atributos input {
+        min-width: 90px !important;
+        max-width: 130px !important;
+      }
+    }
+
     /* --- BLINDAGEM DE LAYOUT: ZERO DESLOCAMENTO HORIZONTAL --- */
     html, body {
       width: 100% !important;

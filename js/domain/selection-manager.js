@@ -357,6 +357,11 @@
       }
 
       this._atualizarHighlight();
+
+      // ✅ Mantém sincronizado com o snap da ferramenta de medição
+      if (window.MeasurementTool && window.MeasurementTool._snapAtivo && typeof window.MeasurementTool._construirGridSnap === 'function') {
+        window.MeasurementTool._construirGridSnap();
+      }
     },
 
     _atualizarHighlight: function () {

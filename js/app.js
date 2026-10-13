@@ -308,22 +308,37 @@ window.toggleModoInterativo = function () {
 
   function toggleSubcamadaPorto(subtipo, ligar) {
     if (!window.SUBGRUPOS_PORTOS || !window.SUBGRUPOS_PORTOS[subtipo]) return;
-    const fg = window.SUBGRUPOS_PORTOS[subtipo];
-    const fgPai = window.CAMADAS_MAPA['instalacoes_portuarias'];
+    const subFg = window.SUBGRUPOS_PORTOS[subtipo];
+    const masterCluster = window.CAMADAS_MAPA['instalacoes_portuarias'];
 
-    // ✅ Manipula DENTRO do featureGroup pai (evita duplicação)
-    if (ligar) {
-      if (fgPai && !fgPai.hasLayer(fg)) fgPai.addLayer(fg);
-    } else {
-      if (fgPai && fgPai.hasLayer(fg)) fgPai.removeLayer(fg);
+    if (masterCluster) {
+      if (ligar) {
+        const aAdicionar = [];
+        subFg.eachLayer(m => {
+          if (!masterCluster.hasLayer(m)) aAdicionar.push(m);
+        });
+        if (aAdicionar.length > 0) {
+          if (typeof masterCluster.addLayers === 'function') masterCluster.addLayers(aAdicionar);
+          else aAdicionar.forEach(m => masterCluster.addLayer(m));
+        }
+      } else {
+        const aRemover = [];
+        subFg.eachLayer(m => {
+          if (masterCluster.hasLayer(m)) aRemover.push(m);
+        });
+        if (aRemover.length > 0) {
+          if (typeof masterCluster.removeLayers === 'function') masterCluster.removeLayers(aRemover);
+          else aRemover.forEach(m => masterCluster.removeLayer(m));
+        }
+      }
     }
 
     let ativos = 0;
     const total = window.DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
     const ligadosChaves = [];
-    for (const [tKey, subFg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
+    for (const [tKey, sub] of Object.entries(window.SUBGRUPOS_PORTOS)) {
       const chk = document.getElementById(`chk-sub-${tKey}`);
-      if (chk && chk.checked) { ativos += subFg.getLayers().length; ligadosChaves.push(tKey); }
+      if (chk && chk.checked) { ativos += sub.getLayers().length; ligadosChaves.push(tKey); }
     }
     const cntEl = document.getElementById('cnt-instalacoes_portuarias');
     if (cntEl) cntEl.innerText = (ativos === total) ? `(${total})` : `(${ativos}/${total})`;
@@ -338,22 +353,30 @@ window.toggleModoInterativo = function () {
   }
 
   function toggleTodasSubcamadasPortos(ligar) {
-    const fgPai = window.CAMADAS_MAPA['instalacoes_portuarias'];
+    const masterCluster = window.CAMADAS_MAPA['instalacoes_portuarias'];
 
     for (const tKey of Object.keys(window.PortClassification.tipos)) {
       const chk = document.getElementById(`chk-sub-${tKey}`);
       if (chk) chk.checked = ligar;
-      if (window.SUBGRUPOS_PORTOS && window.SUBGRUPOS_PORTOS[tKey]) {
-        const fg = window.SUBGRUPOS_PORTOS[tKey];
-
-        // ✅ Manipula DENTRO do featureGroup pai
-        if (ligar) {
-          if (fgPai && !fgPai.hasLayer(fg)) fgPai.addLayer(fg);
-        } else {
-          if (fgPai && fgPai.hasLayer(fg)) fgPai.removeLayer(fg);
-        }
-      }
     }
+    if (!masterCluster || !window.SUBGRUPOS_PORTOS) return;
+
+    if (ligar) {
+      const todos = [];
+      for (const sub of Object.values(window.SUBGRUPOS_PORTOS)) {
+        sub.eachLayer(m => {
+          if (!masterCluster.hasLayer(m)) todos.push(m);
+        });
+      }
+      if (typeof masterCluster.addLayers === 'function') {
+        masterCluster.addLayers(todos);
+      } else {
+        todos.forEach(m => masterCluster.addLayer(m));
+      }
+    } else {
+      masterCluster.clearLayers();
+    }
+
     const total = window.DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
     const cntEl = document.getElementById('cnt-instalacoes_portuarias');
     if (cntEl) cntEl.innerText = ligar ? `(${total})` : `(0/${total})`;
@@ -575,16 +598,16 @@ window.toggleModoInterativo = function () {
       }
     }, 2200);
     // ✅ Boot leve: carrega SÓ as camadas essenciais
-    const essenciais = ['instalacoes_portuarias', 'uf', 'ven_2024'];
+    const essenciais = ['instalacoes_portuarias', 'uf', 'ven_2022'];
     Promise.allSettled(essenciais.map(id =>
       window.DataManager.carregarCamada(id).catch(() => {})
     )).then(() => {
-      if (window.CAMADAS_MAPA['ven_2024']) {
-        window.CAMADAS_MAPA['ven_2024'].addTo(window.mapa);
-        const qtd = window.DADOS_GEOJSON_BRUTOS['ven_2024']?.features?.length || 0;
+      if (window.CAMADAS_MAPA['ven_2022']) {
+        window.CAMADAS_MAPA['ven_2022'].addTo(window.mapa);
+        const qtd = window.DADOS_GEOJSON_BRUTOS['ven_2022']?.features?.length || 0;
         const cnt = document.getElementById('cnt-ven-unificado');
         if (cnt) cnt.innerText = qtd > 0 ? `(${qtd})` : '';
-        window.VENUnifiedManager.anoAtivo = 'ven_2024';
+        window.VENUnifiedManager.anoAtivo = 'ven_2022';
       }
       console.info('[boot] Camadas essenciais carregadas.');
     });
