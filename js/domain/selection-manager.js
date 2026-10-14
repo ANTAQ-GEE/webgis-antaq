@@ -53,7 +53,7 @@
     init: function () {
       if (!this._paneCriado) {
         mapa.createPane('paneSelecao');
-        mapa.getPane('paneSelecao').style.zIndex = 700;
+        mapa.getPane('paneSelecao').style.zIndex = 580;
         mapa.getPane('paneSelecao').style.pointerEvents = 'none';
         this._paneCriado = true;
       }
@@ -64,9 +64,16 @@
       console.info('[M2] Seleção múltipla pronta. Ctrl+Clique ou Shift+Arrastar.');
     },
 
-    toggle: function (feature, camadaId) {
-      // Fecha o popup do Leaflet (senão ele fica "grudado" na tela)
-      if (window.mapa && window.mapa.closePopup) window.mapa.closePopup();
+    selecionarUnica: function (feature, camadaId) {
+      const chave = this._chaveDe(feature, camadaId);
+      this._selecionadas = [{ feature, camadaId, chaveUnica: chave }];
+      this._atualizarUI();
+    },
+
+    toggle: function (feature, camadaId, manterPopup) {
+      if (!manterPopup && window.mapa && window.mapa.closePopup) {
+        window.mapa.closePopup();
+      }
 
       const chave = this._chaveDe(feature, camadaId);
       const idx = this._selecionadas.findIndex(s => s.chaveUnica === chave);
@@ -357,6 +364,11 @@
       }
 
       this._atualizarHighlight();
+
+      // ✅ Mantém sincronizado com o snap da ferramenta de medição
+      if (window.MeasurementTool && window.MeasurementTool._snapAtivo && typeof window.MeasurementTool._construirGridSnap === 'function') {
+        window.MeasurementTool._construirGridSnap();
+      }
     },
 
     _atualizarHighlight: function () {
@@ -369,21 +381,32 @@
 
       if (!this._selecionadas.length) return;
 
-      if (!mapa.getPane('paneSelecao')) {
-        mapa.createPane('paneSelecao');
-        mapa.getPane('paneSelecao').style.zIndex = 650;
-        mapa.getPane('paneSelecao').style.pointerEvents = 'none';
+      let pane = mapa.getPane('paneSelecao');
+      if (!pane) {
+        pane = mapa.createPane('paneSelecao');
+      }
+      if (pane) {
+        pane.style.zIndex = 580;
+        pane.style.pointerEvents = 'none';
       }
 
       try {
+        if (!this._svgRenderer) {
+          this._svgRenderer = L.svg({ pane: 'paneSelecao', padding: 0.5 });
+        }
         const fc = {
           type: 'FeatureCollection',
           features: this._selecionadas.map(s => s.feature)
         };
         this._highlightLayer = L.geoJSON(fc, {
           pane: 'paneSelecao',
+          renderer: this._svgRenderer,
           interactive: false,
+          bubblingMouseEvents: false,
           style: {
+            pane: 'paneSelecao',
+            renderer: this._svgRenderer,
+            interactive: false,
             color: '#f59e0b',
             weight: 3,
             opacity: 0.95,
@@ -393,25 +416,27 @@
           },
           pointToLayer: (f, latlng) => L.circleMarker(latlng, {
             pane: 'paneSelecao',
-            radius: 8,
+            renderer: this._svgRenderer,
+            interactive: false,
+            bubblingMouseEvents: false,
+            radius: 9,
             color: '#f59e0b',
             weight: 3,
             fillColor: '#fbbf24',
-            fillOpacity: 0.85
+            fillOpacity: 0.45
           })
         }).addTo(mapa);
 
-        const pane = mapa.getPane('paneSelecao');
         if (pane) {
-          pane.style.zIndex = 700;
+          pane.style.zIndex = 580;
           pane.style.pointerEvents = 'none';
+          pane.querySelectorAll('*').forEach(el => {
+            el.style.pointerEvents = 'none';
+            if (el.classList && el.classList.contains('leaflet-interactive')) {
+              el.classList.remove('leaflet-interactive');
+            }
+          });
         }
-
-        this._highlightLayer.eachLayer(sub => {
-          if (sub.bringToFront) sub.bringToFront();
-        });
-
-        console.log(`[M2] Highlight criado com ${this._highlightLayer.getLayers().length} features`);
       } catch (e) { console.warn('[M2] Erro ao criar highlight:', e); }
     },
 

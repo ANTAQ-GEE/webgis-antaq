@@ -1,8 +1,8 @@
-
 /* ============================================================
    WebGIS ANTAQ — Módulo: PortClassification
-   Escopo: classificação de regimes de outorga portuária + esfera de UCs
-   Dependências: Security
+   Escopo: classificação de instalações portuárias por esfera/regime
+           regulatório (Lei nº 12.815/2013) + separação de Portos
+           Internacionais (Longo Curso)
    Expõe: window.PortClassification, window.classificarEsfera
    ============================================================ */
 (function () {
@@ -10,64 +10,77 @@
 
   const PortClassification = {
     tipos: {
-      ORGANIZADO: { id: 'ORGANIZADO', nome: 'Porto Organizado (Lei 12.815)', cor: '#0284c7', raio: 7.5, peso: 2 },
-      PUBLICO:    { id: 'PUBLICO',    nome: 'Porto Público (Cadastro Legado)', cor: '#06b6d4', raio: 6.5, peso: 1.5 },
-      TUP:        { id: 'TUP',        nome: 'Terminal de Uso Privado (TUP)', cor: '#10b981', raio: 6,   peso: 1.5 },
-      IP4:        { id: 'IP4',        nome: 'Pequeno Porte (IP4)', cor: '#f59e0b', raio: 5.5, peso: 1.5 },
-      ETC:        { id: 'ETC',        nome: 'Estação de Transbordo (ETC)', cor: '#8b5cf6', raio: 5.5, peso: 1.5 },
-      OUTROS:     { id: 'OUTROS',     nome: 'Demais Registros e Apoio', cor: '#64748b', raio: 4.5, peso: 1 }
+      ORGANIZADO:    { id: 'ORGANIZADO',    nome: 'Porto Organizado',                     cor: '#dc2626', padraoAtivo: true  },
+      ARRENDAMENTO:  { id: 'ARRENDAMENTO',  nome: 'Terminal Arrendado',                   cor: '#ea580c', padraoAtivo: true  },
+      TUP:           { id: 'TUP',           nome: 'Terminal de Uso Privado (TUP)',        cor: '#9333ea', padraoAtivo: true  },
+      ETC:           { id: 'ETC',           nome: 'Estação de Transbordo (ETC)',          cor: '#ca8a04', padraoAtivo: true  },
+      IPT:           { id: 'IPT',           nome: 'Instalação de Turismo (IPT)',          cor: '#0284c7', padraoAtivo: true  },
+      IP4:           { id: 'IP4',           nome: 'Pequeno Porte (IP4)',                  cor: '#16a34a', padraoAtivo: true  },
+      REGISTRO:      { id: 'REGISTRO',      nome: 'Instalação Registrada / Estaleiro',    cor: '#0d9488', padraoAtivo: true  },
+      PUBLICO:       { id: 'PUBLICO',       nome: 'Porto Público / Hidroviário',          cor: '#2563eb', padraoAtivo: true  },
+      INTERNACIONAL: { id: 'INTERNACIONAL', nome: 'Porto Internacional (Longo Curso)',    cor: '#475569', padraoAtivo: false },
+      OUTROS:        { id: 'OUTROS',        nome: 'Outras Instalações / Apoio',           cor: '#64748b', padraoAtivo: true  }
     },
+
     classificar: function (props) {
       if (!props) return this.tipos.OUTROS;
-      const raw = String(
-        props.tipo || props.TIPO || props.TIPO_INSTALACAO || props.tipo_instalacao ||
-        props.ds_tipo || props.perfil || props.PERFIL || props.subtipo || props.SUBTIPO ||
-        props.descricao || props.DESCRICAO || ''
-      );
-      const limpo = Security.repararTexto(raw).toUpperCase();
-      if (limpo.includes('ORGANIZADO') || limpo.includes('AUTORIDADE PORTUÁRIA') ||
-          limpo.includes('AUTORIDADE PORTUARIA') || limpo.includes('DOCAS')) return this.tipos.ORGANIZADO;
-      if (limpo.includes('TERMINAL DE USO PRIVADO') || limpo.includes('TUP') ||
-          limpo.includes('USO PRIVADO')) return this.tipos.TUP;
-      if (limpo.includes('PÚBLICO') || limpo.includes('PUBLICO') ||
-          limpo.includes('PORTUÁRIA PÚBLICA') || limpo.includes('INTERNACIONAL')) return this.tipos.PUBLICO;
+      const texto = `${props.tipo || ''} ${props.subtipo || ''} ${props.modalidade || ''} ${props.nome || ''} ${props.instalacao || ''}`.toUpperCase();
+      const limpo = texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+      if (limpo.includes('INTERNACIONAL')) return this.tipos.INTERNACIONAL;
+      if (limpo.includes('ORGANIZADO') || limpo.includes('POLIGONAL')) return this.tipos.ORGANIZADO;
+      if (limpo.includes('ARRENDAMENTO') || limpo.includes('ARRENDADO')) return this.tipos.ARRENDAMENTO;
+      if (limpo.includes('TUP') || limpo.includes('USO PRIVADO') || limpo.includes('PRIVADO')) return this.tipos.TUP;
+      if (limpo.includes('ETC') || limpo.includes('TRANSBORDO')) return this.tipos.ETC;
+      if (limpo.includes('IPT') || limpo.includes('TURISMO') || limpo.includes('PASSAGEIRO')) return this.tipos.IPT;
       if (limpo.includes('IP4') || limpo.includes('PEQUENO PORTE')) return this.tipos.IP4;
-      if (limpo.includes('TRANSBORDO') || limpo.includes('ETC')) return this.tipos.ETC;
+      if (limpo.includes('REGISTRAD') || limpo.includes('ESTALEIRO') || limpo.includes('REGISTRO')) return this.tipos.REGISTRO;
+      if (limpo.includes('PUBLICO')) return this.tipos.PUBLICO;
+
       return this.tipos.OUTROS;
     }
   };
 
   function classificarEsfera(props) {
-    if (!props) return { id: 'Outros', nome: 'Outros / Geral', cor: '#047857' };
-    let val = '';
-    for (const [k, v] of Object.entries(props)) {
-      const kLow = k.toLowerCase().trim();
-      if (kLow === 'esfera' || kLow.includes('esfera') || kLow.includes('jurisd') ||
-          kLow.includes('gestao') || kLow === 'administracao' || kLow === 'tipo_adm') {
-        if (v && typeof v === 'string' && v.trim().length > 0) { val = v.trim(); break; }
-      }
+    if (!props) return 'Não Informada';
+    const texto = JSON.stringify(props).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    if (
+      texto.includes('PRIVAD') ||
+      texto.includes('TUP') ||
+      texto.includes('ARRENDAMENTO') ||
+      texto.includes('ESTALEIRO') ||
+      texto.includes('REGISTRAD') ||
+      texto.includes('ETC') ||
+      texto.includes('IPT') ||
+      texto.includes('TERMINAL DE USO PRIVADO') ||
+      texto.includes('AUTORIZACAO') ||
+      texto.includes('CONTRATO DE ADESAO')
+    ) {
+      return 'Privada';
     }
-    if (!val) {
-      for (const [k, v] of Object.entries(props)) {
-        const vStr = String(v || '').toLowerCase();
-        if (vStr.includes('icmbio') || vStr.includes('ibama') ||
-            vStr.includes('união') || vStr.includes('uniao')) {
-          return { id: 'Federal', nome: 'Federal (ICMBio/União)', cor: '#15803d' };
-        }
-      }
+
+    if (
+      texto.includes('PUBLIC') ||
+      texto.includes('ORGANIZADO') ||
+      texto.includes('IP4') ||
+      texto.includes('DNIT') ||
+      texto.includes('FEDERAL') ||
+      texto.includes('ESTADUAL') ||
+      texto.includes('MUNICIPAL') ||
+      texto.includes('COMPANHIA DOCAS') ||
+      texto.includes('PORTO PUBLICO') ||
+      texto.includes('DELEGADO') ||
+      texto.includes('UNIAO')
+    ) {
+      return 'Pública';
     }
-    const vLow = val.toLowerCase();
-    if (vLow.includes('fed') || vLow.includes('uni')) return { id: 'Federal',   nome: 'Federal (ICMBio/União)', cor: '#15803d' };
-    if (vLow.includes('est'))                        return { id: 'Estadual',  nome: 'Estadual (OEMA)',        cor: '#059669' };
-    if (vLow.includes('mun'))                        return { id: 'Municipal', nome: 'Municipal (Prefeituras)', cor: '#0d9488' };
-    if (vLow.includes('priv') || vLow.includes('rppn') || vLow.includes('partic'))
-                                                     return { id: 'Privada',   nome: 'RPPN / Privada',       cor: '#84cc16' };
-    return { id: 'Outros', nome: 'Outros', cor: '#047857' };
+
+    return 'Não Informada';
   }
 
   window.PortClassification = PortClassification;
   window.classificarEsfera = classificarEsfera;
-  window.SUBGRUPOS_UCS = window.SUBGRUPOS_UCS || {};
-  window.FILTRO_UC_ATUAL = window.FILTRO_UC_ATUAL || "TODOS";
-  console.info('[js] PortClassification carregado');
+
+  console.info('[js] PortClassification carregado (Portos Internacionais separados de Portos Nacionais)');
 })();

@@ -2,37 +2,13 @@
  * WebGIS Corporativo ANTAQ — Controle de Abas & Bootstrap
  * Arquivo: js/dist/bundle-app.js
  * Descrição: Gestão de navegação entre abas e inicialização do sistema
+ * Gerado em: 13/10/2026 10:52:38
  * Módulos inclusos:
- *   - js/core/tab-toggle.js (proxy compatibilidade)
- *   - js/core/tab-manager.js (gestor unificado)
+ *   - js/core/tab-toggle.js
+ *   - js/core/tab-manager.js
  *   - js/app.js
  * ============================================================ */
 
-/* --- INÍCIO: js/core/tab-toggle.js --- */
-/* ============================================================
-   WebGIS ANTAQ — Módulo: TabToggle (Legado / Compatibilidade)
-   A gestão de abas foi unificada no TabManager (js/core/tab-manager.js).
-   Este módulo garante retrocompatibilidade sem interceptação de eventos.
-   ============================================================ */
-(function () {
-  'use strict';
-
-  const TabToggle = {
-    clicar: function (aba) {
-      if (window.TabManager && typeof window.TabManager.trocar === 'function') {
-        window.TabManager.trocar(aba);
-      } else {
-        console.warn('[TabToggle] TabManager ainda não inicializado para aba:', aba);
-      }
-    },
-    init: function () {
-      console.info('[TabToggle] Modo de compatibilidade unificado ativo');
-    }
-  };
-
-  window.TabToggle = TabToggle;
-})();
-/* --- FIM: js/core/tab-toggle.js --- */
 
 /* --- INÍCIO: js/core/tab-manager.js --- */
 /* ============================================================
@@ -365,6 +341,18 @@
    Dependências: todos os módulos anteriores + DOM pronto
    Expõe: funções globais em window (para onclick do HTML)
    ============================================================ */
+/* ============================================================
+   WebGIS ANTAQ — Módulo: app.js
+   Escopo: funções auxiliares do painel + inicialização da aplicação
+   Dependências: todos os módulos anteriores + DOM pronto
+   Expõe: funções globais em window (para onclick do HTML)
+   ============================================================ */
+/* ============================================================
+   WebGIS ANTAQ — Módulo: app.js
+   Escopo: funções auxiliares do painel + inicialização da aplicação
+   Dependências: todos os módulos anteriores + DOM pronto
+   Expõe: funções globais em window (para onclick do HTML)
+   ============================================================ */
 (function () {
   'use strict';
 
@@ -395,7 +383,7 @@
               <span>${cat.nome}</span>
               <span class="badge-contador" id="subcnt-${tKey}"></span>
             </div>
-            <input type="checkbox" id="chk-sub-${tKey}" checked onchange="toggleSubcamadaPorto('${tKey}', this.checked)">
+            <input type="checkbox" id="chk-sub-${tKey}" ${cat.padraoAtivo !== false ? 'checked' : ''} onchange="toggleSubcamadaPorto('${tKey}', this.checked)">
           </div>`;
       }
       subpaletaHTML = `
@@ -669,22 +657,37 @@ window.toggleModoInterativo = function () {
 
   function toggleSubcamadaPorto(subtipo, ligar) {
     if (!window.SUBGRUPOS_PORTOS || !window.SUBGRUPOS_PORTOS[subtipo]) return;
-    const fg = window.SUBGRUPOS_PORTOS[subtipo];
-    const fgPai = window.CAMADAS_MAPA['instalacoes_portuarias'];
+    const subFg = window.SUBGRUPOS_PORTOS[subtipo];
+    const masterCluster = window.CAMADAS_MAPA['instalacoes_portuarias'];
 
-    // ✅ Manipula DENTRO do featureGroup pai (evita duplicação)
-    if (ligar) {
-      if (fgPai && !fgPai.hasLayer(fg)) fgPai.addLayer(fg);
-    } else {
-      if (fgPai && fgPai.hasLayer(fg)) fgPai.removeLayer(fg);
+    if (masterCluster) {
+      if (ligar) {
+        const aAdicionar = [];
+        subFg.eachLayer(m => {
+          if (!masterCluster.hasLayer(m)) aAdicionar.push(m);
+        });
+        if (aAdicionar.length > 0) {
+          if (typeof masterCluster.addLayers === 'function') masterCluster.addLayers(aAdicionar);
+          else aAdicionar.forEach(m => masterCluster.addLayer(m));
+        }
+      } else {
+        const aRemover = [];
+        subFg.eachLayer(m => {
+          if (masterCluster.hasLayer(m)) aRemover.push(m);
+        });
+        if (aRemover.length > 0) {
+          if (typeof masterCluster.removeLayers === 'function') masterCluster.removeLayers(aRemover);
+          else aRemover.forEach(m => masterCluster.removeLayer(m));
+        }
+      }
     }
 
     let ativos = 0;
     const total = window.DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
     const ligadosChaves = [];
-    for (const [tKey, subFg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
+    for (const [tKey, sub] of Object.entries(window.SUBGRUPOS_PORTOS)) {
       const chk = document.getElementById(`chk-sub-${tKey}`);
-      if (chk && chk.checked) { ativos += subFg.getLayers().length; ligadosChaves.push(tKey); }
+      if (chk && chk.checked) { ativos += sub.getLayers().length; ligadosChaves.push(tKey); }
     }
     const cntEl = document.getElementById('cnt-instalacoes_portuarias');
     if (cntEl) cntEl.innerText = (ativos === total) ? `(${total})` : `(${ativos}/${total})`;
@@ -699,22 +702,30 @@ window.toggleModoInterativo = function () {
   }
 
   function toggleTodasSubcamadasPortos(ligar) {
-    const fgPai = window.CAMADAS_MAPA['instalacoes_portuarias'];
+    const masterCluster = window.CAMADAS_MAPA['instalacoes_portuarias'];
 
     for (const tKey of Object.keys(window.PortClassification.tipos)) {
       const chk = document.getElementById(`chk-sub-${tKey}`);
       if (chk) chk.checked = ligar;
-      if (window.SUBGRUPOS_PORTOS && window.SUBGRUPOS_PORTOS[tKey]) {
-        const fg = window.SUBGRUPOS_PORTOS[tKey];
-
-        // ✅ Manipula DENTRO do featureGroup pai
-        if (ligar) {
-          if (fgPai && !fgPai.hasLayer(fg)) fgPai.addLayer(fg);
-        } else {
-          if (fgPai && fgPai.hasLayer(fg)) fgPai.removeLayer(fg);
-        }
-      }
     }
+    if (!masterCluster || !window.SUBGRUPOS_PORTOS) return;
+
+    if (ligar) {
+      const todos = [];
+      for (const sub of Object.values(window.SUBGRUPOS_PORTOS)) {
+        sub.eachLayer(m => {
+          if (!masterCluster.hasLayer(m)) todos.push(m);
+        });
+      }
+      if (typeof masterCluster.addLayers === 'function') {
+        masterCluster.addLayers(todos);
+      } else {
+        todos.forEach(m => masterCluster.addLayer(m));
+      }
+    } else {
+      masterCluster.clearLayers();
+    }
+
     const total = window.DADOS_GEOJSON_BRUTOS['instalacoes_portuarias']?.features?.length || 1179;
     const cntEl = document.getElementById('cnt-instalacoes_portuarias');
     if (cntEl) cntEl.innerText = ligar ? `(${total})` : `(0/${total})`;
@@ -905,6 +916,9 @@ window.toggleModoInterativo = function () {
 
     window.FilterManager.atualizarSeletorCamadas();
     construirPainelLateral();
+    if (window.innerWidth <= 768 && window.UI && typeof window.UI.recolherPainelLateral === 'function') {
+      try { window.UI.recolherPainelLateral(); } catch (_) {}
+    }
     window.FilterManager.aoMudarCamada("instalacoes_portuarias");
     window.Styler.atualizarLegenda();
 
@@ -1020,4 +1034,3 @@ window.toggleModoInterativo = function () {
   })();
 
 })();
-/* --- FIM: js/app.js --- */

@@ -249,22 +249,75 @@
        ============================================================ */
     extrairUF: function (props) {
       if (!props) return '';
-      // 1. Campos diretos de sigla da UF
-      for (const k of ['SIGLA_UF', 'sigla_uf', 'uf', 'UF', 'estado', 'ESTADO', 'est_uf', 'sg_uf', 'EST_ORIGEM', 'est_origem', 'EST_DESTINO', 'est_destino']) {
-        const v = props[k];
-        if (v && String(v).trim().length === 2) return String(v).trim().toUpperCase();
+      const IBGE_UF = {
+        '11':'RO','12':'AC','13':'AM','14':'RR','15':'PA','16':'AP','17':'TO',
+        '21':'MA','22':'PI','23':'CE','24':'RN','25':'PB','26':'PE','27':'AL','28':'SE','29':'BA',
+        '31':'MG','32':'ES','33':'RJ','35':'SP','41':'PR','42':'SC','43':'RS',
+        '50':'MS','51':'MT','52':'GO','53':'DF'
+      };
+      const UFS_VALIDAS = new Set(Object.values(IBGE_UF));
+      const NOMES_UF = {
+        'ACRE':'AC','ALAGOAS':'AL','AMAPA':'AP','AMAZONAS':'AM','BAHIA':'BA','CEARA':'CE',
+        'DISTRITO FEDERAL':'DF','ESPIRITO SANTO':'ES','GOIAS':'GO','MARANHAO':'MA',
+        'MATO GROSSO DO SUL':'MS','MATO GROSSO':'MT','MINAS GERAIS':'MG','PARA':'PA',
+        'PARAIBA':'PB','PARANA':'PR','PERNAMBUCO':'PE','PIAUI':'PI','RIO DE JANEIRO':'RJ',
+        'RIO GRANDE DO NORTE':'RN','RIO GRANDE DO SUL':'RS','RONDONIA':'RO','RORAIMA':'RR',
+        'SANTA CATARINA':'SC','SAO PAULO':'SP','SERGIPE':'SE','TOCANTINS':'TO'
+      };
+
+      // 1. Campos diretos de sigla da UF ou nome de Estado
+      for (const k of ['SIGLA_UF', 'sigla_uf', 'uf', 'UF', 'uf_sigla', 'estado', 'ESTADO', 'est_uf', 'sg_uf', 'EST_ORIGEM', 'est_origem', 'EST_DESTINO', 'est_destino']) {
+        const raw = props[k];
+        if (!raw) continue;
+        const v = String(raw).trim().toUpperCase();
+        if (v.length === 2 && UFS_VALIDAS.has(v)) return v;
+        const vNorm = v.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (NOMES_UF[vNorm]) return NOMES_UF[vNorm];
       }
-      // 2. Extração de padrões "Município/UF"
-      for (const k of ['municipio', 'MUNICIPIO', 'nome_municipio', 'NM_MUN', 'mun_origem', 'mun_destino']) {
-        const v = props[k];
-        if (v && String(v).includes('/')) {
-          const partes = String(v).split('/');
-          if (partes.length > 1) {
-            const sigla = partes[1].trim().toUpperCase();
-            if (sigla.length === 2) return sigla;
-          }
+
+      // 2. Códigos de terminal ANTAQ (ex: BRPA001 -> PA, BRES001 -> ES, BRRJ001 -> RJ)
+      for (const k of ['cdterminal', 'cdi_tuaria', 'cdc_troide', 'CDTERMINAL', 'CDI_TUARIA']) {
+        const v = String(props[k] || '').trim().toUpperCase();
+        if (v.length >= 5 && v.startsWith('BR')) {
+          const cand = v.slice(2, 4);
+          if (UFS_VALIDAS.has(cand) && /\d/.test(v[4])) return cand;
         }
       }
+
+      // 3. Códigos IBGE de Estado ou Município (idestado: "BR33" ou idcidade: "1505304" / "BR150140")
+      for (const k of ['idestado', 'idcidade', 'cd_mun', 'cod_ibge']) {
+        const v = String(props[k] || '').toUpperCase().replace(/^BR/, '').trim();
+        if (v.length >= 2 && IBGE_UF[v.slice(0, 2)]) {
+          return IBGE_UF[v.slice(0, 2)];
+        }
+      }
+
+      // 4. Extração de padrões "Município/UF" ou "Município - UF"
+      for (const k of ['municipio', 'MUNICIPIO', 'cidade', 'nome_municipio', 'NM_MUN', 'mun_origem', 'mun_destino']) {
+        const v = String(props[k] || '');
+        if (v.includes('/')) {
+          const sigla = v.split('/').pop().trim().toUpperCase();
+          if (sigla.length === 2 && UFS_VALIDAS.has(sigla)) return sigla;
+        }
+      }
+
+      // 5. Bacias Sedimentares / Plataformas Marítimas costeiras
+      const nome = String(props.nome || props.instalacao || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (nome.includes('BACIA')) {
+        if (nome.includes('CAMPOS')) return 'RJ';
+        if (nome.includes('SANTOS')) return 'SP';
+        if (nome.includes('ESPIRITO SANTO')) return 'ES';
+        if (nome.includes('RECONCAVO') || nome.includes('CAMAMU') || nome.includes('CUMURUXATIBA') || nome.includes('JACUIPE') || nome.includes('MUCURI')) return 'BA';
+        if (nome.includes('SEAL')) return 'SE';
+        if (nome.includes('PERNAMBUCO')) return 'PE';
+        if (nome.includes('BARREIRINHAS')) return 'MA';
+        if (nome.includes('PARA-MARANHAO')) return 'PA';
+        if (nome.includes('PELOTAS')) return 'RS';
+        if (nome.includes('CEARA')) return 'CE';
+        if (nome.includes('POTIGUAR')) return 'RN';
+        if (nome.includes('FOZ DO AMAZONAS')) return 'AP';
+      }
+
       return '';
     },
 

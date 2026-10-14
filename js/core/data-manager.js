@@ -29,6 +29,15 @@
       if (cntEl) cntEl.innerText = '(carregando...)';
 
       const carregarGeoJson = async () => {
+        if (window.DataAdapter && typeof window.DataAdapter.carregarCamada === 'function') {
+          return window.DataAdapter.carregarCamada(id, cfg.arquivos, {
+            onTentativa: (n, total) => {
+              if (n === 1) return;
+              if (cntEl) cntEl.innerText = `(retry ${n}/${total}…)`;
+            }
+          });
+        }
+
         const falhas = [];
 
         for (let i = 0; i < cfg.arquivos.length; i++) {
@@ -81,14 +90,19 @@
           if (id === 'instalacoes_portuarias') {
             if (!window.SUBGRUPOS_PORTOS) window.SUBGRUPOS_PORTOS = {};
 
-            const criarClusterDaCategoria = (tKey, cat) => {
+            // ✅ Cluster Master Unificado: elimina sobreposição e aplica raio dinâmico adaptativo
+            const criarClusterMasterPortos = () => {
               if (typeof L.markerClusterGroup !== 'function') {
                 console.warn('[Cluster] Biblioteca indisponível. Fallback para featureGroup.');
                 return L.featureGroup();
               }
               return L.markerClusterGroup({
-                maxClusterRadius: 55,
-                disableClusteringAtZoom: 12,
+                maxClusterRadius: (zoom) => {
+                  if (zoom <= 5) return 85;   // Zoom continental/nacional: consolida em polos regionais
+                  if (zoom <= 8) return 65;   // Zoom estadual/corredores logísticos
+                  return 45;                  // Aproximação portuária
+                },
+                disableClusteringAtZoom: 12,  // Terminais individuais no nível do porto (zoom >= 12)
                 spiderfyOnMaxZoom: true,
                 showCoverageOnHover: false,
                 zoomToBoundsOnClick: true,
@@ -97,13 +111,16 @@
                 chunkDelay: 50,
                 iconCreateFunction: (cluster) => {
                   const count = cluster.getChildCount();
-                  let dim = 40;
-                  if (count >= 100) dim = 56;
-                  else if (count >= 10) dim = 46;
-                  else dim = 36;
+                  let dim = 38;
+                  if (count >= 100) dim = 52;
+                  else if (count >= 20) dim = 44;
+                  else if (count >= 5) dim = 38;
 
                   return L.divIcon({
-                    html: window.MapSymbols.clusterHtml('ancora', cat.cor, count, dim),
+                    html: `<div style="width:${dim}px; height:${dim}px; background:radial-gradient(circle at 35% 35%, #0284c7 0%, #0a2540 100%); border:2.5px solid #38bdf8; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.4); display:flex; flex-direction:column; align-items:center; justify-content:center; color:#ffffff; font-family:'Segoe UI',system-ui,sans-serif; font-weight:700; font-size:${count >= 100 ? 12 : 11}px; cursor:pointer; text-shadow:0 1px 2px rgba(0,0,0,0.8);">` +
+                          `<span style="line-height:1;">${count}</span>` +
+                          `<span style="font-size:8px; opacity:0.85; line-height:1; margin-top:1px;">⚓</span>` +
+                          `</div>`,
                     className: 'marker-cluster-custom',
                     iconSize: L.point(dim, dim)
                   });
@@ -111,72 +128,121 @@
               });
             };
 
-            for (const tKey of Object.keys(window.PortClassification.tipos)) {
-              if (window.SUBGRUPOS_PORTOS[tKey]) mapa.removeLayer(window.SUBGRUPOS_PORTOS[tKey]);
-              window.SUBGRUPOS_PORTOS[tKey] = criarClusterDaCategoria(tKey, window.PortClassification.tipos[tKey]);
+            // Remove cluster antigo se existir
+            if (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) {
+              mapa.removeLayer(CAMADAS_MAPA[id]);
             }
+
+            const masterCluster = criarClusterMasterPortos();
+            CAMADAS_MAPA[id] = masterCluster;
+
+            // Cada subgrupo guarda seus marcadores em um FeatureGroup próprio
+            for (const tKey of Object.keys(window.PortClassification.tipos)) {
+              if (window.SUBGRUPOS_PORTOS[tKey]) {
+                window.SUBGRUPOS_PORTOS[tKey].clearLayers();
+              } else {
+                window.SUBGRUPOS_PORTOS[tKey] = L.featureGroup();
+              }
+            }
+
+            // Gerador de ícone de âncora nítido com contraste para qualquer zoom
+            const criarIconePorto = (cat) => {
+              const sz = (cat.id === 'ORGANIZADO') ? 22 : 18;
+              const half = sz / 2;
+              return L.divIcon({
+                className: 'port-anchor-marker',
+                html: `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" xmlns="http://www.w3.org/2000/svg" style="display:block; pointer-events:none; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));">` +
+                      `<circle cx="12" cy="12" r="11" fill="#ffffff" stroke="${cat.cor}" stroke-width="2"/>` +
+                      `<circle cx="12" cy="4" r="2.2" fill="${cat.cor}"/>` +
+                      `<line x1="12" y1="6.2" x2="12" y2="19" stroke="${cat.cor}" stroke-width="2" stroke-linecap="round"/>` +
+                      `<line x1="7" y1="10" x2="17" y2="10" stroke="${cat.cor}" stroke-width="2" stroke-linecap="round"/>` +
+                      `<path d="M5 13 Q5 19 12 19 Q19 19 19 13" fill="none" stroke="${cat.cor}" stroke-width="2" stroke-linecap="round"/>` +
+                      `</svg>`,
+                iconSize: [sz, sz],
+                iconAnchor: [half, half],
+                popupAnchor: [0, -half]
+              });
+            };
+
+            const markersParaAdicionar = [];
 
             dados.features.forEach(f => {
               if (!f.geometry || !f.geometry.coordinates) return;
+              if (f.properties && window.Security && typeof window.Security.extrairUF === 'function') {
+                const ufRes = window.Security.extrairUF(f.properties);
+                if (ufRes) {
+                  if (!f.properties.uf) f.properties.uf = ufRes;
+                  if (!f.properties.estado) f.properties.estado = ufRes;
+                }
+              }
               const cat = window.PortClassification.classificar(f.properties);
               const lat = f.geometry.coordinates[1];
               const lng = f.geometry.coordinates[0];
               if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-                // ✅ Híbrido: circleMarker (canvas) por padrão, âncora SVG só em zoom alto
-                const usarIcone = false;
-
-                let m;
-                if (usarIcone) {
-                  m = L.marker([lat, lng], {
-                    pane: 'panePontos',
-                    icon: window.MapSymbols.ancora(cat.cor, 26)
-                    // ✅ riseOnHover removido — causa recálculo de z-index em todo mousemove
-                  });
-                  m._isIcone = true;
-                } else {
-                  m = L.circleMarker([lat, lng], {
-                    pane: 'panePontos',
-                    radius: cat.raio || 5,
-                    fillColor: cat.cor,
-                    color: '#ffffff',
-                    weight: 2,
-                    fillOpacity: 0.95
-                  });
-                  m._isIcone = false;
-                }
+                const m = L.marker([lat, lng], {
+                  pane: 'panePontos',
+                  icon: criarIconePorto(cat),
+                  interactive: true
+                });
                 m.feature = f;
                 m._portoCatId = cat.id;
-                m._portoProps = f.properties;   // guarda props pra redesenhar
+                m._portoProps = f.properties;
+                m.bindPopup(window.PopupRenderer.gerar('instalacoes_portuarias', f.properties), {
+                  maxWidth: 360,
+                  autoPan: true,
+                  closeButton: true
+                });
                 m.on("click", (e) => {
+                  if (window.MeasurementTool && window.MeasurementTool.modo) return;
                   if (window.CopilotoIA) window.CopilotoIA.ultimoAtivoInspecionado = f;
 
-                  if (e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey)) {
-                    L.DomEvent.stopPropagation(e);
-                    if (window.SelectionManager) window.SelectionManager.toggle(f, 'instalacoes_portuarias');
+                  const isMulti = e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey);
+                  if (isMulti) {
+                    if (e.originalEvent) L.DomEvent.stopPropagation(e.originalEvent);
+                    try { m.closePopup(); } catch (_) {}
+                    if (window.SelectionManager) {
+                      window.SelectionManager.toggle(f, 'instalacoes_portuarias', false);
+                    }
                     return;
                   }
-                  if (window.SelectionManager && window.SelectionManager.temSelecao()) {
-                    window.SelectionManager.limpar(true);
+
+                  try {
+                    if (!m.isPopupOpen()) m.openPopup();
+                  } catch (_) {}
+
+                  if (window.SelectionManager && typeof window.SelectionManager.selecionarUnica === 'function') {
+                    window.SelectionManager.selecionarUnica(f, 'instalacoes_portuarias');
                   }
                 });
-                m.bindPopup(window.PopupRenderer.gerar('instalacoes_portuarias', f.properties));
-                if (window.SUBGRUPOS_PORTOS[cat.id]) window.SUBGRUPOS_PORTOS[cat.id].addLayer(m);
+
+                if (window.SUBGRUPOS_PORTOS[cat.id]) {
+                  window.SUBGRUPOS_PORTOS[cat.id].addLayer(m);
+                }
+
+                const chkSub = document.getElementById(`chk-sub-${cat.id}`);
+                const deveLigar = chkSub ? chkSub.checked : (cat.padraoAtivo !== false);
+                if (deveLigar) {
+                  markersParaAdicionar.push(m);
+                }
               }
             });
 
-              // ✅ Remove o FG antigo do mapa (evita leak em atualizações)
-              if (CAMADAS_MAPA[id] && mapa.hasLayer(CAMADAS_MAPA[id])) {
-                mapa.removeLayer(CAMADAS_MAPA[id]);
-              }
+            if (typeof masterCluster.addLayers === 'function') {
+              masterCluster.addLayers(markersParaAdicionar);
+            } else {
+              markersParaAdicionar.forEach(m => masterCluster.addLayer(m));
+            }
 
-              CAMADAS_MAPA[id] = L.featureGroup();
-              for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
-                CAMADAS_MAPA[id].addLayer(fg);
+            for (const [tKey, fg] of Object.entries(window.SUBGRUPOS_PORTOS)) {
               const cntBadge = document.getElementById(`subcnt-${tKey}`);
               if (cntBadge) cntBadge.innerText = `(${fg.getLayers().length})`;
             }
             if (chkEl && chkEl.checked) CAMADAS_MAPA[id].addTo(mapa);
-            if (cntEl) cntEl.innerText = `(${dados.features.length})`;
+            if (cntEl) {
+              const nAtivos = markersParaAdicionar.length;
+              const nTotal = dados.features.length;
+              cntEl.innerText = (nAtivos === nTotal) ? `(${nTotal})` : `(${nAtivos}/${nTotal})`;
+            }
 
           } else {
             if (CAMADAS_MAPA[id]) {
@@ -254,81 +320,106 @@
 
       return this.carregando[id];
     },
-    /**
-     * Redesenha os portos trocando entre circleMarker (canvas) e âncora SVG
-     * conforme o zoom atual. Chamado quando o zoom cruza o limiar 11.
-     */
+
     redesenharPortos: function () {
       const dados = DADOS_GEOJSON_BRUTOS['instalacoes_portuarias'];
       if (!dados?.features?.length) return;
 
-      const usarIcone = window.mapa.getZoom() >= 11;
-
-      // Reutiliza os clusters já existentes
+      const masterCluster = window.CAMADAS_MAPA['instalacoes_portuarias'];
       if (!window.SUBGRUPOS_PORTOS) return;
 
-      // Limpa todos os clusters
       for (const tKey of Object.keys(window.SUBGRUPOS_PORTOS)) {
         window.SUBGRUPOS_PORTOS[tKey].clearLayers();
       }
+      if (masterCluster) masterCluster.clearLayers();
 
-      // Re-adiciona com o tipo correto
+      const markersParaAdicionar = [];
+
       for (const f of dados.features) {
         if (!f.geometry?.coordinates) continue;
         const cat = window.PortClassification.classificar(f.properties);
         const [lng, lat] = f.geometry.coordinates;
         if (!lat || !lng || isNaN(lat) || isNaN(lng)) continue;
 
-        let m;
-        if (usarIcone) {
-          m = L.marker([lat, lng], {
-            pane: 'panePontos',
-            icon: window.MapSymbols.ancora(cat.cor, 26),
-            riseOnHover: true
-          });
-        } else {
-          m = L.circleMarker([lat, lng], {
-            pane: 'panePontos',
-            radius: cat.raio || 5,
-            fillColor: cat.cor,
-            color: '#ffffff',
-            weight: 2,
-            fillOpacity: 0.95
-          });
-        }
+        const sz = (cat.id === 'ORGANIZADO') ? 22 : 18;
+        const half = sz / 2;
+        const icone = L.divIcon({
+          className: 'port-anchor-marker',
+          html: `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" xmlns="http://www.w3.org/2000/svg" style="display:block; pointer-events:none; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));">` +
+                `<circle cx="12" cy="12" r="11" fill="#ffffff" stroke="${cat.cor}" stroke-width="2"/>` +
+                `<circle cx="12" cy="4" r="2.2" fill="${cat.cor}"/>` +
+                `<line x1="12" y1="6.2" x2="12" y2="19" stroke="${cat.cor}" stroke-width="2" stroke-linecap="round"/>` +
+                `<line x1="7" y1="10" x2="17" y2="10" stroke="${cat.cor}" stroke-width="2" stroke-linecap="round"/>` +
+                `<path d="M5 13 Q5 19 12 19 Q19 19 19 13" fill="none" stroke="${cat.cor}" stroke-width="2" stroke-linecap="round"/>` +
+                `</svg>`,
+          iconSize: [sz, sz],
+          iconAnchor: [half, half],
+          popupAnchor: [0, -half]
+        });
+
+        const m = L.marker([lat, lng], {
+          pane: 'panePontos',
+          icon: icone,
+          interactive: true
+        });
 
         m.feature = f;
         m._portoCatId = cat.id;
         m._portoProps = f.properties;
 
-        // Popup
-        m.bindPopup(window.PopupRenderer.gerar('instalacoes_portuarias', f.properties));
+        m.bindPopup(window.PopupRenderer.gerar('instalacoes_portuarias', f.properties), {
+          maxWidth: 360,
+          autoPan: true,
+          closeButton: true
+        });
 
-        // Click handlers
         m.on('click', (e) => {
           if (window.MeasurementTool && window.MeasurementTool.modo) return;
           if (window.CopilotoIA) window.CopilotoIA.ultimoAtivoInspecionado = f;
-          if (e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey)) {
-            L.DomEvent.stopPropagation(e);
-            if (window.SelectionManager) window.SelectionManager.toggle(f, 'instalacoes_portuarias');
+
+          const isMulti = e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey);
+          if (isMulti) {
+            if (e.originalEvent) L.DomEvent.stopPropagation(e.originalEvent);
+            try { m.closePopup(); } catch (_) {}
+            if (window.SelectionManager) {
+              window.SelectionManager.toggle(f, 'instalacoes_portuarias', false);
+            }
             return;
           }
-          if (window.SelectionManager && window.SelectionManager.temSelecao()) {
-            window.SelectionManager.limpar(true);
+
+          try {
+            if (!m.isPopupOpen()) m.openPopup();
+          } catch (_) {}
+
+          if (window.SelectionManager && typeof window.SelectionManager.selecionarUnica === 'function') {
+            window.SelectionManager.selecionarUnica(f, 'instalacoes_portuarias');
           }
         });
 
         if (window.SUBGRUPOS_PORTOS[cat.id]) {
           window.SUBGRUPOS_PORTOS[cat.id].addLayer(m);
         }
+
+        const chk = document.getElementById(`chk-sub-${cat.id}`);
+        const deveLigar = chk ? chk.checked : (cat.padraoAtivo !== false);
+        if (deveLigar) {
+          markersParaAdicionar.push(m);
+        }
       }
 
-      console.info(`[DataManager] Portos redesenhados: ${usarIcone ? 'âncoras SVG' : 'circleMarker'}`);
+      if (masterCluster && markersParaAdicionar.length > 0) {
+        if (typeof masterCluster.addLayers === 'function') {
+          masterCluster.addLayers(markersParaAdicionar);
+        } else {
+          markersParaAdicionar.forEach(m => masterCluster.addLayer(m));
+        }
+      }
+
+      console.info('[DataManager] Portos atualizados no Cluster Master com âncoras de alta visibilidade');
     },
+
     atualizarTodasCamadas: async function (apenasAtivas = true, opcoes) {
       opcoes = opcoes || {};
-      // ✅ Padrão é SILENCIOSO (evita toasts duplicados no boot)
-      //    Só mostra toast se `mostrarToasts: true` for passado
       const mostrarToasts = opcoes.mostrarToasts === true;
 
       const btn = document.getElementById('btn-sync');

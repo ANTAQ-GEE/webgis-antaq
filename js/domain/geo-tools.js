@@ -112,7 +112,7 @@
       const brutos = window.DADOS_GEOJSON_BRUTOS || {};
 
       for (const [id, cfg] of Object.entries(config)) {
-        if (id.startsWith('buffer_') || id.startsWith('geo_') || id.startsWith('imp_')) continue;
+        if (id.startsWith('geo_')) continue; // Permite usar camadas de Buffer e Importadas no Geoprocessamento!
 
         const carregada = brutos[id]?.features?.length || 0;
         const nome = cfg.nome || id;

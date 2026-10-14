@@ -460,12 +460,9 @@
       else if (cfg.grupo === 'limites') paneAlvo = 'paneLimites';
 
       // ✅ Limita interatividade pra features pesadas (melhora pan/mousemove)
-      const ehLimiteDeFundo = (id === 'pais' || id === 'regioes' || id === 'estados_amazonia_legal');
-      const ehPesadaLeve = (id === 'tis_poligonais' || id === 'ucs_federais');
-      const modoCompleto = window._modoInterativo === true;   // toggle global
-
-      // Só é interativa se NÃO for limite de fundo E (não for pesada OU modo completo ativo)
-      const ehInterativa = !ehLimiteDeFundo && (!ehPesadaLeve || modoCompleto);
+      const selCamadaAtual = document.getElementById('sel-camada-busca')?.value || '';
+      const ehLimiteDeFundo = (id === 'pais' || id === 'regioes' || id === 'estados_amazonia_legal' || (id === 'uf' && selCamadaAtual !== 'uf'));
+      const ehInterativa = !ehLimiteDeFundo;
 
       return {
         pane: paneAlvo,
@@ -529,14 +526,7 @@
         onEachFeature: (f, layer) => {
           if (f.properties) {
             // ✅ Camadas pesadas só ganham popup se modo interativo estiver ligado
-            const ehPesada = (id === 'tis_poligonais' || id === 'ucs_federais');
-            if (!ehPesada || window._modoInterativo === true) {
-              layer.bindPopup(window.PopupRenderer.gerar(id, f.properties));
-            } else {
-              // Popup leve: só nome + tipo (sem todos os atributos)
-              const nome = f.properties.nome || f.properties.terrai_nom || f.properties.NOME_UC || 'Feição';
-              layer.bindPopup(`<div class="pop-topo">${window.Security.escapeHTML(nome)}</div><div class="pop-corpo"><p style="color:#64748b;font-size:10.5px;">Ative o modo interativo para ver atributos completos.</p></div>`);
-            }
+            layer.bindPopup(window.PopupRenderer.gerar(id, f.properties), { maxWidth: 360, autoPan: true });
 
             // Travessias: marker de ponte anexado ao layer
             if (id === 'linhas_travessias' && f.geometry && f.geometry.type === 'LineString') {
@@ -585,14 +575,22 @@
                   if (window.MeasurementTool && window.MeasurementTool.modo) return;
                   if (window.CopilotoIA) window.CopilotoIA.ultimoAtivoInspecionado = f;
 
-                  if (e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey)) {
+                  const isMulti = e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey);
+                  if (isMulti) {
                     L.DomEvent.stopPropagation(e);
                     if (e.target && e.target.closePopup) e.target.closePopup();
-                    if (window.SelectionManager) window.SelectionManager.toggle(f, id);
+                    if (window.SelectionManager) window.SelectionManager.toggle(f, id, false);
                     return;
                   }
-                  if (window.SelectionManager && window.SelectionManager.temSelecao()) {
-                    window.SelectionManager.limpar(true);
+
+                  try {
+                    if (layer.getPopup && layer.getPopup() && !layer.isPopupOpen()) {
+                      layer.openPopup(e.latlng);
+                    }
+                  } catch (_) {}
+
+                  if (window.SelectionManager && typeof window.SelectionManager.selecionarUnica === 'function') {
+                    window.SelectionManager.selecionarUnica(f, id);
                   }
                   if (window.CAMADA_DESTAQUE && window.mapa) {
                     try { window.mapa.removeLayer(window.CAMADA_DESTAQUE); } catch (err) {}
@@ -803,68 +801,13 @@
        Aplica âncoras SOBRE os circleMarkers (que ficam invisíveis)
        ------------------------------------------------------------ */
     aplicar() {
-      const subgrupos = window.SUBGRUPOS_PORTOS;
-      if (!subgrupos) return;
-
-      let total = 0;
-      Object.keys(subgrupos).forEach(chave => {
-        const fg = subgrupos[chave];
-        if (!fg || !fg.getLayers) return;
-        const cfg = obterConfig(chave);
-
-        [...fg.getLayers()].forEach(m => {
-          if (m._portSymAplicado) return;
-          if (!(m instanceof L.CircleMarker)) return;
-
-            // Torna invisível E remove a interatividade do SVG original
-            try {
-                m.setStyle({ opacity: 0, fillOpacity: 0, weight: 0 });
-                // Aguarda o SVG ser renderizado e desativa pointer-events
-                setTimeout(() => {
-                    if (m._path) m._path.style.pointerEvents = 'none';
-                    if (m._container) m._container.style.pointerEvents = 'none';
-                }, 50);
-            } catch (e) { }
-
-          // 2. Âncora overlay não-interativa (cliques passam por baixo)
-          const anchor = L.marker(m.getLatLng(), {
-            icon: criarIcone(cfg),
-            zIndexOffset: 150,
-            interactive: true,
-            keyboard: false
-          });
-          anchor._portMinZoom = cfg.minZoom;
-          anchor._origem = m;
-            // Copia os handlers de click (menos o interno do popup)
-            if (m._events && m._events.click) {
-                m._events.click.forEach(handler => {
-                    const src = handler.fn.toString();
-                    if (src.includes('this._popup&&this._map') || src.includes('this._popup && this._map')) return;
-                    try { anchor.on('click', handler.fn, handler.ctx); } catch (e) { }
-                });
-            }
-
-            // Rebind do popup no anchor
-            if (m.getPopup && m.getPopup()) {
-                anchor.bindPopup(m.getPopup().getContent(), {
-                    maxWidth: m.getPopup().options?.maxWidth || 320,
-                    className: m.getPopup().options?.className || ''
-                });
-            }
-            if (m.getTooltip && m.getTooltip()) {
-                anchor.bindTooltip(m.getTooltip().getContent(), {
-                    direction: 'top', offset: [0, -12], className: 'port-anchor-tooltip'
-                });
-            }
-          fg.addLayer(anchor);
-
-          m._portSymAplicado = true;
-          m._portSymAnchor = anchor;
-          total++;
-        });
-      });
-
+      // ✅ Simbologia nativa com Master Cluster e popups preservados
       this._aplicado = true;
+      console.info('[PortSymbology] Simbologia nativa ativa no DataManager');
+      return;
+    },
+    _aplicarLegado() {
+    this._aplicado = true;
       this._aplicarVisibilidadePorZoom();
       console.log('[PortSymbology] ' + total + ' portos decorados');
     },
