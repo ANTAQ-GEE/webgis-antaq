@@ -41,7 +41,7 @@
         style="background:#0284c7; border:1px solid #38bdf8;">
         ⏱️ Matriz VEN
       </button>
-      <button class="btn-matriz-ven" id="btn-header-comparar-safras"
+      <button class="btn-matriz-ven restrito-gee" id="btn-header-comparar-safras"
         onclick="if (typeof SafraDiffManager !== 'undefined') SafraDiffManager.abrir(); else UI.toast('⚠️ Módulo ainda carregando.');"
         title="Comparar safras do VEN — atalho: Ctrl+Shift+D" style="background:#0369a1; border:1px solid #0ea5e9;">
         🔀 Comparar Safras
@@ -51,10 +51,10 @@
         style="background:#0369a1; border:1px solid #0284c7;" title="Abrir Estúdio Analítico Institucional da ANTAQ">
         📊 Painel Analítico
       </button>
-      <button class="btn-graficos" id="btn-header-nota-tecnica"
-        onclick="if(window.RelatorioExecutivoPDF) RelatorioExecutivoPDF.gerarNotaTecnica();"
-        style="background:#0f766e; border:1px solid #14b8a6;" title="Gerar Nota Técnica Executiva A4 (Padrão SEI/ANTAQ GEE/SEPH)">
-        📄 Nota Técnica PDF
+      <button class="btn-graficos restrito-gee" id="btn-header-nota-tecnica"
+        onclick="if(window.EstudioNotaTecnicaIA) EstudioNotaTecnicaIA.abrirModal(); else if(window.RelatorioExecutivoPDF) RelatorioExecutivoPDF.gerarNotaTecnica();"
+        style="background:#0f766e; border:1px solid #14b8a6;" title="Estúdio Interno de Inteligência Espacial & Nota Técnica Assistida por IA (Exclusivo GEE/SEPH)">
+        🧠 Nota Técnica &amp; IA
       </button>
       <button class="btn-copiloto-ia" onclick="CopilotoIA.toggle()" title="Abrir Assistente Regulatório e Territorial"
         style="background:#0f2744; border:1px solid #38bdf8;">
@@ -98,12 +98,12 @@
       <span class="aba-emoji">📊</span>
       <span class="aba-nome">Análise</span>
     </button>
-    <button class="aba-btn" data-aba="geo" onclick="TabManager.trocar('geo')"
+    <button class="aba-btn restrito-gee" data-aba="geo" onclick="TabManager.trocar('geo')"
       title="Buffer, geoprocessamento e diff de safras">
       <span class="aba-emoji">⚙️</span>
       <span class="aba-nome">Geo</span>
     </button>
-    <button class="aba-btn" data-aba="ais" onclick="AISManager.clicarAba()"
+    <button class="aba-btn restrito-gee" data-aba="ais" onclick="AISManager.clicarAba()"
       title="Tráfego de embarcações — AIS (dados sintéticos)">
       <span class="aba-emoji">🚢</span>
       <span class="aba-nome">AIS</span>
@@ -114,15 +114,19 @@
     accept=".geojson,.json,.zip,.kml,.kmz,.gpkg,.geopackage,.shp,.dbf,.shx,.prj" multiple
     onchange="ImportManager.processar(this.files)">
 
-  <!-- DROPDOWN DE AMBIENTE -->
+  <!-- DROPDOWN DE AMBIENTE (GERAL vs RESTRITO GEE/SEPH) -->
   <div class="dropdown-homologacao" id="drop-ambiente">
-    <div class="drop-item ativo" id="item-env-homolog" onclick="AmbienteManager.definir('homologacao')">
-      <strong>Ambiente de Homologação (Estudos GEE)</strong>
-      <small>Edição de estilos e filtros habilitados &bull; Pasta local <code>dados/</code>.</small>
+    <div class="drop-item" id="item-env-homolog" onclick="AmbienteManager.definir('homologacao')">
+      <strong>🔓 Ambiente Restrito — Homologação (Estudos GEE)</strong>
+      <small>Habilita <strong>🧠 Nota Técnica &amp; IA</strong>, <strong>⚙️ Geo</strong>, <strong>🚢 AIS</strong> e <strong>🌊 Batimetria TIN / Ábaco</strong> (Uso Interno GEE).</small>
     </div>
-    <div class="drop-item" id="item-env-prod" onclick="AmbienteManager.definir('producao')">
-      <strong>Ambiente de Produção (Oficial ANTAQ)</strong>
-      <small>🔒 Estilos e campos travados no padrão homologado &bull; Bases oficiais.</small>
+    <div class="drop-item ativo" id="item-env-prod" onclick="AmbienteManager.definir('producao')">
+      <strong>🌐 Ambiente Geral — Produção (Oficial ANTAQ)</strong>
+      <small>🔒 Acesso público/geral (Mapa, Painel Analítico, Matriz VEN e Consulta).</small>
+    </div>
+    <div class="drop-item" id="item-env-logout" style="display:none; border-top:1px solid #1e293b; background:rgba(127,29,29,0.2);" onclick="AmbienteManager.encerrarSessaoRestrita()">
+      <strong style="color:#fca5a5;">🔒 Encerrar Sessão Restrita (Logout GEE/SEPH)</strong>
+      <small>Remove o token criptográfico da sessão e bloqueia novamente os módulos internos.</small>
     </div>
   </div>
 
@@ -565,11 +569,11 @@
       <button class="btn-medicao limpar" onclick="MeasurementTool.limparTudo()" title="Limpar todas as medições">
         🧹 Limpar
       </button>
-      <button class="btn-medicao" onclick="BufferTool.abrirModal()"
+      <button class="btn-medicao restrito-gee" onclick="BufferTool.abrirModal()"
         title="Criar buffer geodésico em torno de uma camada">
         ⭕ Buffer
       </button>
-      <button class="btn-medicao" onclick="if(window.BatimetriaTINManager) BatimetriaTINManager.abrirModal()"
+      <button class="btn-medicao restrito-gee" id="btn-topo-batimetria-tin" onclick="if(window.BatimetriaTINManager) BatimetriaTINManager.abrirModal()"
         title="Upload de pontos batimétricos X Y Z (UTM 22S, etc.) e Interpolação TIN restrita">
         🌊 TIN (XYZ)
       </button>
@@ -1202,7 +1206,7 @@
         title="Importar arquivo Shapefile (ZIP), GeoJSON, KML ou GPKG">
         <span>📁 Importar Arquivo</span>
       </button>
-      <button class="btn-barra-acao" onclick="if(window.BatimetriaTINManager) BatimetriaTINManager.abrirModal()"
+      <button class="btn-barra-acao restrito-gee" id="btn-barra-batimetria-tin" onclick="if(window.BatimetriaTINManager) BatimetriaTINManager.abrirModal()"
         style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; border:1px solid #38bdf8;"
         title="Importar nuvem de pontos X Y Z (UTM / LatLon) e gerar Interpolação Batimétrica TIN">
         <span>🌊 Batimetria TIN (XYZ)</span>
@@ -1518,141 +1522,831 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       M17 — MODAL DE UPLOAD BATIMÉTRICO (X Y Z) E INTERPOLAÇÃO TIN
+      <!-- ============================================================
+       M17 — MODAL DE BATIMETRIA TIN (PADRÃO QGIS), CORREÇÃO PELO ÁBACO (MARINHA/ANA) E PERFIL DE CANAL
        ============================================================ -->
+  <style>
+    /* ==========================================================================
+       1. CONTROLE DE ACESSO POR AMBIENTE (GERAL vs RESTRITO GEE/SEPH)
+       No modo Geral (Produção — sem a classe .modo-homologacao no body),
+       esconde automaticamente Aba Geo, Aba AIS, Controle/Painel AIS e Batimetria TIN.
+       ========================================================================== */
+    body:not(.modo-homologacao) .restrito-gee,
+    body:not(.modo-homologacao) #btn-header-nota-tecnica,
+    body:not(.modo-homologacao) .aba-btn[data-aba="geo"],
+    body:not(.modo-homologacao) .aba-btn[data-aba="ais"],
+    body:not(.modo-homologacao) .aba-btn[data-aba="controle"],
+    body:not(.modo-homologacao) .aba-btn[data-aba="painel"],
+    body:not(.modo-homologacao) #btn-painel-ais {
+      display: none !important;
+    }
+
+    /* ==========================================================================
+       POSICIONAMENTO INTELIGENTE DOS POPUPS DE ATRIBUTOS (NUNCA ATRÁS DO FILTRO)
+       Garante que o popup tenha altura máxima confortável com rolagem interna e
+       fique acima de barras flutuantes caso o usuário arraste o mapa manualmente.
+       ========================================================================== */
+    .leaflet-popup-pane {
+      z-index: 1150 !important;
+    }
+    .leaflet-popup-content-wrapper {
+      border-radius: 10px !important;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55) !important;
+    }
+    .leaflet-popup-content .pop-corpo {
+      max-height: 255px !important;
+      overflow-y: auto !important;
+    }
+
+    /* ==========================================================================
+       2. CORREÇÃO DE BOTÕES CORTADOS NO CABEÇALHO E NO PAINEL DE CAMADAS
+       ========================================================================== */
+    .top-header {
+      height: auto !important;
+      min-height: 52px !important;
+      padding: 6px 14px !important;
+      flex-wrap: wrap !important;
+      gap: 8px !important;
+      overflow: visible !important;
+    }
+    .top-header .actions-area {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      align-items: center !important;
+      justify-content: flex-end !important;
+      gap: 6px !important;
+      overflow: visible !important;
+    }
+    .grupo-undo-redo {
+      overflow: visible !important;
+      padding-top: 2px !important;
+    }
+    .painel-barra-acoes {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      gap: 6px !important;
+      padding: 8px 10px !important;
+      height: auto !important;
+      overflow: visible !important;
+    }
+    .painel-barra-acoes .btn-barra-acao {
+      flex: 1 1 calc(50% - 6px) !important;
+      min-width: 120px !important;
+      justify-content: center !important;
+      white-space: nowrap !important;
+      font-size: 11px !important;
+      padding: 6px 8px !important;
+    }
+    .painel-barra-acoes #btn-barra-batimetria-tin {
+      flex: 1 1 100% !important;
+    }
+
+    /* ==========================================================================
+       3. BLINDAGEM TOTAL DO MODAL DE BATIMETRIA TIN (ZERO JANELAS COMIDAS/ESMAGADAS)
+       Substitui display:flex por display:block no .modal-buffer-body para que o
+       navegador NUNCA encolha (flex-shrink) a tabela de preview ou o Ábaco!
+       ========================================================================== */
+    #modal-batimetria-tin .modal-buffer-card {
+      max-width: 760px !important;
+      width: min(96vw, 760px) !important;
+      max-height: 92vh !important;
+      border: 1.5px solid #38bdf8 !important;
+      box-sizing: border-box !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+    }
+    #modal-batimetria-tin .modal-buffer-header,
+    #modal-batimetria-tin .modal-buffer-footer {
+      flex-shrink: 0 !important;
+    }
+    #modal-batimetria-tin .modal-buffer-body {
+      display: block !important;
+      padding: 12px 16px !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      max-height: calc(92vh - 118px) !important;
+      box-sizing: border-box !important;
+    }
+    #modal-batimetria-tin .bat-tabs-bar {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 6px !important;
+      margin-bottom: 12px !important;
+      background: #051120 !important;
+      padding: 5px !important;
+      border-radius: 8px !important;
+      border: 1px solid #1e3a5f !important;
+    }
+    #modal-batimetria-tin .bat-tab-btn {
+      background: transparent;
+      color: #94a3b8;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 7px 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: all 0.15s;
+    }
+    #modal-batimetria-tin .bat-tab-btn.ativo {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #38bdf8;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+    }
+    #modal-batimetria-tin #bat-tab-pane-tin,
+    #modal-batimetria-tin #bat-tab-pane-abaco,
+    #modal-batimetria-tin #bat-tab-pane-perfil {
+      width: 100% !important;
+      box-sizing: border-box !important;
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+      flex-shrink: 0 !important;
+    }
+    #modal-batimetria-tin .bat-card-secao {
+      background: rgba(6, 20, 38, 0.78);
+      border: 1px solid #1e4976;
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+      flex-shrink: 0 !important;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
+    #modal-batimetria-tin #bat-preview-corpo,
+    #modal-batimetria-tin #bat-relatorio-parametros {
+      display: block;
+      width: 100% !important;
+      height: auto !important;
+      max-height: none !important;
+      overflow-x: auto !important;
+      overflow-y: visible !important;
+      flex-shrink: 0 !important;
+      box-sizing: border-box !important;
+      margin-top: 10px !important;
+      position: relative !important;
+      clear: both !important;
+    }
+    #modal-batimetria-tin .bat-grid-2,
+    #modal-batimetria-tin .bat-grid-3 {
+      display: grid;
+      gap: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    #modal-batimetria-tin .bat-grid-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    #modal-batimetria-tin .bat-grid-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    @media (max-width: 640px) {
+      #modal-batimetria-tin .bat-grid-2,
+      #modal-batimetria-tin .bat-grid-3,
+      #modal-batimetria-tin .bat-tabs-bar {
+        grid-template-columns: 1fr !important;
+      }
+    }
+    #modal-batimetria-tin .buffer-linha {
+      min-width: 0 !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      margin: 0 !important;
+    }
+    #modal-batimetria-tin select,
+    #modal-batimetria-tin input[type="number"],
+    #modal-batimetria-tin input[type="text"],
+    #modal-batimetria-tin textarea {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+      font-size: 11.5px !important;
+      padding: 6px 8px !important;
+    }
+    /* Trava absoluta de altura do gráfico de perfil longitudinal */
+    #painel-perfil-batimetrico .perfil-canvas-box {
+      height: 200px !important;
+      min-height: 200px !important;
+      max-height: 200px !important;
+      width: 100% !important;
+      position: relative !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+    }
+    #canvas-perfil-batimetrico {
+      display: block !important;
+      width: 100% !important;
+      height: 200px !important;
+      max-height: 200px !important;
+    }
+  </style>
+
   <div class="modal-buffer" id="modal-batimetria-tin">
-    <div class="modal-buffer-card" style="max-width: 580px !important; border-color: #38bdf8;">
+    <div class="modal-buffer-card">
       <div class="modal-buffer-header" style="border-bottom-color: rgba(56, 189, 248, 0.35);">
         <h3 style="color: #38bdf8;">
           <span style="font-size:20px;">🌊</span>
-          <span>Interpolação Batimétrica TIN (Upload X Y Z)</span>
+          <span>Estúdio Batimétrico TIN (QGIS) · Ábaco Marinha/ANA &amp; Perfil de Canal</span>
         </h3>
         <button class="modal-matriz-fechar" onclick="BatimetriaTINManager.fecharModal()">&times;</button>
       </div>
 
       <div class="modal-buffer-body">
-        <!-- Upload de arquivo + Botão de Exemplo -->
-        <div class="buffer-linha">
-          <label>1. Fonte de Dados Batimétricos (Arquivo .XYZ, .TXT, .CSV ou Colagem Direta)</label>
-          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-            <input type="file" id="input-batimetria-xyz" style="display:none;" accept=".xyz,.txt,.csv,.dat,.pts"
-              onchange="BatimetriaTINManager.aoSelecionarArquivo(this.files)">
-            <button type="button" class="btn-barra-acao"
-              onclick="document.getElementById('input-batimetria-xyz').click()"
-              style="background:#0284c7; color:#fff; border:1px solid #38bdf8; padding:7px 12px; font-weight:700; cursor:pointer;">
-              📂 Selecionar Arquivo X Y Z
-            </button>
-            <button type="button" class="btn-barra-acao"
-              onclick="BatimetriaTINManager.carregarExemploUTM22S()"
-              style="background:#0f766e; color:#fff; border:1px solid #14b8a6; padding:7px 12px; font-weight:700; cursor:pointer;"
-              title="Carrega um levantamento ecobatimétrico de teste em UTM 22 Sul separado por espaço">
-              🧪 Carregar Exemplo (UTM 22S)
-            </button>
-            <span id="bat-nome-arquivo" style="font-size:11px; color:#bae6fd; font-weight:600;">Nenhum arquivo selecionado</span>
-          </div>
+        <!-- Barra Superior de Abas do Estúdio Batimétrico -->
+        <div class="bat-tabs-bar">
+          <button type="button" id="bat-tab-btn-tin" class="bat-tab-btn ativo" onclick="BatimetriaTINManager.trocarAbaModal('tin')">
+            📐 1. Dados XYZ &amp; Raster TIN (QGIS)
+          </button>
+          <button type="button" id="bat-tab-btn-abaco" class="bat-tab-btn" onclick="BatimetriaTINManager.trocarAbaModal('abaco')">
+            ⚓ 2. Correção Ábaco (Marinha / ANA)
+          </button>
+          <button type="button" id="bat-tab-btn-perfil" class="bat-tab-btn" onclick="BatimetriaTINManager.trocarAbaModal('perfil')">
+            🚢 3. Perfil do Canal &amp; Restrição
+          </button>
         </div>
 
-        <!-- Seleção de Projeção e Separador -->
-        <div style="display:grid; grid-template-columns: 1.35fr 1fr; gap:10px;">
+        <!-- =========================================================
+             ABA 1: DADOS XYZ & INTERPOLAÇÃO TIN (CLONE EXATO QGIS)
+             ========================================================= -->
+        <div id="bat-tab-pane-tin" style="display:flex; flex-direction:column; gap:10px; width:100%; box-sizing:border-box;">
+          <!-- Upload e Exemplo -->
+          <div class="bat-card-secao">
+            <div style="font-size:11px; font-weight:800; color:#38bdf8; text-transform:uppercase;">
+              📂 1. Camada / Arquivo de Entrada (.XYZ, .TXT, .CSV — Preserva a 1ª Linha)
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+              <input type="file" id="input-batimetria-xyz" style="display:none;" accept=".xyz,.txt,.csv,.dat,.pts"
+                onchange="BatimetriaTINManager.aoSelecionarArquivo(this.files)">
+              <button type="button" class="btn-barra-acao"
+                onclick="document.getElementById('input-batimetria-xyz').click()"
+                style="background:#0284c7; color:#fff; border:1px solid #38bdf8; padding:6px 12px; font-weight:700; cursor:pointer;">
+                📂 Selecionar Arquivo X Y Z
+              </button>
+              <button type="button" class="btn-barra-acao"
+                onclick="BatimetriaTINManager.carregarExemploUTM22S()"
+                style="background:#0f766e; color:#fff; border:1px solid #14b8a6; padding:6px 12px; font-weight:700; cursor:pointer;">
+                🧪 Carregar Exemplo (EPSG:31982)
+              </button>
+              <span id="bat-nome-arquivo" style="font-size:11px; color:#bae6fd; font-weight:600;">Nenhum arquivo selecionado</span>
+            </div>
+
+            <div class="bat-grid-2">
+              <div class="buffer-linha">
+                <label for="bat-projecao">Projeção de Entrada (CRS)</label>
+                <select id="bat-projecao" onchange="BatimetriaTINManager.atualizarPreview(true)">
+                  <option value="UTM_22S" selected>SIRGAS 2000 / UTM Zona 22S [EPSG:31982]</option>
+                  <option value="UTM_18S">SIRGAS 2000 / UTM Zona 18S [EPSG:31978]</option>
+                  <option value="UTM_19S">SIRGAS 2000 / UTM Zona 19S [EPSG:31979]</option>
+                  <option value="UTM_20S">SIRGAS 2000 / UTM Zona 20S [EPSG:31980]</option>
+                  <option value="UTM_21S">SIRGAS 2000 / UTM Zona 21S [EPSG:31981]</option>
+                  <option value="UTM_23S">SIRGAS 2000 / UTM Zona 23S [EPSG:31983]</option>
+                  <option value="UTM_24S">SIRGAS 2000 / UTM Zona 24S [EPSG:31984]</option>
+                  <option value="UTM_25S">SIRGAS 2000 / UTM Zona 25S [EPSG:31985]</option>
+                  <option value="UTM_22N">SIRGAS 2000 / UTM Zona 22N [EPSG:31976]</option>
+                  <option value="UTM_21N">SIRGAS 2000 / UTM Zona 21N [EPSG:31975]</option>
+                  <option value="UTM_20N">SIRGAS 2000 / UTM Zona 20N [EPSG:31974]</option>
+                  <option value="GEO_SIRGAS">Geográfico Lat/Lon [EPSG:4674]</option>
+                </select>
+              </div>
+
+              <div class="buffer-linha">
+                <label for="bat-separador">Separador de Colunas</label>
+                <select id="bat-separador" onchange="BatimetriaTINManager.atualizarPreview(true)">
+                  <option value="espaco" selected>Espaço / Múltiplos Espaços (' ')</option>
+                  <option value="virgula">Vírgula (',')</option>
+                  <option value="ponto_virgula">Ponto e Vírgula (';')</option>
+                  <option value="tab">Tabulação (Tab)</option>
+                  <option value="auto">Auto-detectar</option>
+                </select>
+              </div>
+
+              <div class="buffer-linha">
+                <label for="bat-ordem-colunas">Atributo / Ordem das Colunas</label>
+                <select id="bat-ordem-colunas" onchange="BatimetriaTINManager.atualizarPreview(true)">
+                  <option value="XYZ" selected>X Y Z (Coluna 3 = Cota Z)</option>
+                  <option value="YXZ">Y X Z (Norte, Leste, Cota Z)</option>
+                  <option value="ID_XYZ">ID X Y Z (Coluna 4 = Cota Z)</option>
+                </select>
+              </div>
+
+              <div class="buffer-linha">
+                <label for="bat-sinal-z">Sinal da Coordenada Z</label>
+                <select id="bat-sinal-z" onchange="BatimetriaTINManager.atualizarPreview(true)">
+                  <option value="abs" selected>Módulo Positivo (|Z| metros)</option>
+                  <option value="raw">Manter Sinal Original do Arquivo</option>
+                  <option value="inv">Inverter Sinal (-Z)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Parâmetros do Raster de Saída (Idêntico ao QGIS) -->
+          <div class="bat-card-secao">
+            <div style="font-size:11px; font-weight:800; color:#38bdf8; text-transform:uppercase;">
+              ⚙️ 2. Método, Extensão e Tamanho do Raster de Saída (Idêntico ao QGIS)
+            </div>
+
+            <div class="bat-grid-3">
+              <div class="buffer-linha">
+                <label for="bat-metodo-interp">Método de interpolação</label>
+                <select id="bat-metodo-interp">
+                  <option value="linear" selected>Linear</option>
+                  <option value="suavizado">Clough-Toucher (cúbica)</option>
+                </select>
+              </div>
+
+              <div class="buffer-linha">
+                <label for="bat-paleta">Renderização / Rampa</label>
+                <select id="bat-paleta">
+                  <option value="qgis_spectral" selected>🎨 Spectral Batimétrica</option>
+                  <option value="qgis_grayscale">⬛ Banda Simples Cinza (QGIS)</option>
+                  <option value="azuis_oceanicos">🌊 Azuis Hidroviários</option>
+                  <option value="viridis">👁️ Viridis</option>
+                  <option value="calado_fixo">⚓ Faixas Fixas de Calado</option>
+                </select>
+              </div>
+
+              <div class="buffer-linha">
+                <label for="bat-modo-saida">Camadas Geradas</label>
+                <select id="bat-modo-saida">
+                  <option value="raster_qgis" selected>🖼️ Interpolado (Raster QGIS)</option>
+                  <option value="hibrido">🌊 Raster + Triangulação</option>
+                  <option value="vetorial">📐 Apenas Triangulação</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="buffer-linha">
+              <label for="bat-extensao-qgis">Extensão (xmin, xmax, ymin, ymax)</label>
+              <div style="display:flex; gap:6px; align-items:center; width:100%;">
+                <input type="text" id="bat-extensao-qgis" readonly
+                  placeholder="767005.3000,794148.2900,9878178.6500,9902641.5300 [EPSG:31982]"
+                  style="flex:1; background:#0b192c; border:1px solid #1e4976; color:#bae6fd; padding:6px 10px; border-radius:6px; font-family:Consolas,monospace; font-size:11px;">
+                <button type="button" onclick="BatimetriaTINManager.definirExtensao('camada')"
+                  style="background:#1e293b; color:#e2e8f0; border:1px solid #38bdf8; padding:6px 10px; border-radius:6px; font-size:10.5px; font-weight:700; cursor:pointer; white-space:nowrap;">
+                  📐 Da Camada
+                </button>
+                <button type="button" onclick="BatimetriaTINManager.definirExtensao('tela_mapa')"
+                  style="background:#1e293b; color:#e2e8f0; border:1px solid #475569; padding:6px 10px; border-radius:6px; font-size:10.5px; cursor:pointer; white-space:nowrap;">
+                  🖥️ Da Tela
+                </button>
+              </div>
+            </div>
+
+            <div class="bat-grid-2">
+              <div class="buffer-linha">
+                <label for="bat-pixels-rows">Linhas (px)</label>
+                <input type="number" id="bat-pixels-rows" min="2" max="500000" step="1" value="1223"
+                  oninput="BatimetriaTINManager.aoMudarLinhasColunasQGIS('rows')">
+              </div>
+
+              <div class="buffer-linha">
+                <label for="bat-pixels-cols">Colunas (px)</label>
+                <input type="number" id="bat-pixels-cols" min="2" max="500000" step="1" value="1357"
+                  oninput="BatimetriaTINManager.aoMudarLinhasColunasQGIS('cols')">
+              </div>
+
+              <div class="buffer-linha">
+                <label for="bat-tam-pixel-x">Tamanho do pixel X (m)</label>
+                <input type="number" id="bat-tam-pixel-x" min="0.05" max="5000" step="1" value="20.000000"
+                  oninput="BatimetriaTINManager.aoMudarTamanhoPixelXY('x')">
+              </div>
+
+              <div class="buffer-linha">
+                <label for="bat-tam-pixel-y">Tamanho do pixel Y (m)</label>
+                <input type="number" id="bat-tam-pixel-y" min="0.05" max="5000" step="1" value="20.000000"
+                  oninput="BatimetriaTINManager.aoMudarTamanhoPixelXY('y')">
+              </div>
+            </div>
+
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:5px; font-size:10px;">
+              <span style="color:#94a3b8; font-weight:700;">Atalhos de Pixel:</span>
+              <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                <button type="button" onclick="BatimetriaTINManager.aplicarPresetPixels(50)" style="background:#1e293b; color:#cbd5e1; border:1px solid #334155; padding:3px 8px; border-radius:4px; font-size:10px; cursor:pointer;">50,0 m</button>
+                <button type="button" onclick="BatimetriaTINManager.aplicarPresetPixels(20)" style="background:#0369a1; color:#fff; border:1px solid #38bdf8; padding:3px 8px; border-radius:4px; font-size:10px; font-weight:700; cursor:pointer;">20,0 m (QGIS)</button>
+                <button type="button" onclick="BatimetriaTINManager.aplicarPresetPixels(10)" style="background:#0f766e; color:#fff; border:1px solid #14b8a6; padding:3px 8px; border-radius:4px; font-size:10px; font-weight:700; cursor:pointer;">10,0 m (HD)</button>
+                <button type="button" onclick="BatimetriaTINManager.aplicarPresetPixels(5)" style="background:#6d28d9; color:#fff; border:1px solid #a78bfa; padding:3px 8px; border-radius:4px; font-size:10px; font-weight:700; cursor:pointer;">5,0 m (Ultra-HD)</button>
+              </div>
+            </div>
+
+            <div id="bat-resumo-grade-qgis" style="font-size:10.5px; color:#bae6fd; background:rgba(2,132,199,0.12); padding:5px 8px; border-radius:4px;"></div>
+          </div>
+
+          <!-- Recorte de Borda -->
+          <div class="bat-card-secao">
+            <div style="font-size:11px; font-weight:800; color:#fbbf24; text-transform:uppercase;">
+              🛡️ 3. Fechamento da Borda do TIN (Sem Buracos no Meio)
+            </div>
+            <div class="bat-grid-2">
+              <div class="buffer-linha">
+                <label for="bat-modo-recorte">Critério de Contorno Externo</label>
+                <select id="bat-modo-recorte">
+                  <option value="borda_sem_buracos" selected>🛡️ Retração Só na Borda Externa (0 Buracos)</option>
+                  <option value="manual">✏️ Polígono Desenhado à Mão no Mapa</option>
+                  <option value="completo">📐 Envoltória Convexa Completa (Bruto QGIS)</option>
+                </select>
+              </div>
+              <div class="buffer-linha">
+                <label for="bat-max-aresta">Aresta Máxima na Borda Externa (m)</label>
+                <input type="number" id="bat-max-aresta" min="20" max="10000" step="20" value="600">
+              </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <button type="button" class="btn-barra-acao"
+                onclick="BatimetriaTINManager.iniciarDesenhoLimiteManual()"
+                style="background:#b45309; color:#fff; border:1px solid #f59e0b; padding:5px 11px; font-weight:700; cursor:pointer;">
+                ✏️ Desenhar Limite à Mão no Mapa
+              </button>
+              <div id="bat-status-limite-manual" style="font-size:10.5px; color:#94a3b8;">Nenhum polígono manual desenhado.</div>
+              <label style="display:flex; align-items:center; gap:5px; font-size:10.5px; color:#cbd5e1; cursor:pointer;">
+                <input type="checkbox" id="bat-mostrar-pontos">
+                <span>Exibir pontos medidos</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Dados Brutos XYZ -->
           <div class="buffer-linha">
-            <label for="bat-projecao">2. Projeção / Sistema de Coordenadas (CRS)</label>
-            <select id="bat-projecao" onchange="BatimetriaTINManager.atualizarPreview()">
-              <option value="UTM_22S" selected>SIRGAS 2000 / UTM Zona 22 Sul (EPSG:31982)</option>
-              <option value="UTM_18S">SIRGAS 2000 / UTM Zona 18 Sul (EPSG:31978)</option>
-              <option value="UTM_19S">SIRGAS 2000 / UTM Zona 19 Sul (EPSG:31979)</option>
-              <option value="UTM_20S">SIRGAS 2000 / UTM Zona 20 Sul (EPSG:31980)</option>
-              <option value="UTM_21S">SIRGAS 2000 / UTM Zona 21 Sul (EPSG:31981)</option>
-              <option value="UTM_23S">SIRGAS 2000 / UTM Zona 23 Sul (EPSG:31983)</option>
-              <option value="UTM_24S">SIRGAS 2000 / UTM Zona 24 Sul (EPSG:31984)</option>
-              <option value="UTM_25S">SIRGAS 2000 / UTM Zona 25 Sul (EPSG:31985)</option>
-              <option value="UTM_22N">SIRGAS 2000 / UTM Zona 22 Norte (EPSG:31976)</option>
-              <option value="UTM_21N">SIRGAS 2000 / UTM Zona 21 Norte (EPSG:31975)</option>
-              <option value="UTM_20N">SIRGAS 2000 / UTM Zona 20 Norte (EPSG:31974)</option>
-              <option value="GEO_SIRGAS">Geográfico Lat/Lon (SIRGAS 2000 / EPSG:4674)</option>
-            </select>
-          </div>
-
-          <div class="buffer-linha">
-            <label for="bat-separador">3. Separador de Colunas</label>
-            <select id="bat-separador" onchange="BatimetriaTINManager.atualizarPreview()">
-              <option value="espaco" selected>Espaço / Múltiplos Espaços (' ')</option>
-              <option value="virgula">Vírgula (',')</option>
-              <option value="ponto_virgula">Ponto e Vírgula (';')</option>
-              <option value="tab">Tabulação (Tab)</option>
-              <option value="auto">Auto-detectar</option>
-            </select>
+            <label for="bat-texto-xyz">Inspeção / Colagem Rápida de Coordenadas X Y Z</label>
+            <textarea id="bat-texto-xyz" rows="2"
+              placeholder="Exemplo (X Y Z separados por espaço em EPSG:31982):&#10;767078.03 9890120.40 8.20"
+              oninput="BatimetriaTINManager.aoDigitarTexto(this.value)"
+              style="background:#061426; border:1px solid #1e4976; color:#e2e8f0; border-radius:6px; padding:6px; font-family:Consolas,monospace; font-size:11px; resize:vertical;"></textarea>
           </div>
         </div>
 
-        <!-- Ordem das colunas, Sinal de Z e Aresta Máxima de Restrição -->
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
-          <div class="buffer-linha">
-            <label for="bat-ordem-colunas">Ordem das Colunas</label>
-            <select id="bat-ordem-colunas" onchange="BatimetriaTINManager.atualizarPreview()">
-              <option value="XYZ" selected>X Y Z (Leste, Norte, Prof.)</option>
-              <option value="YXZ">Y X Z (Norte, Leste, Prof.)</option>
-              <option value="ID_XYZ">ID X Y Z (4 Colunas)</option>
-            </select>
+        <!-- =========================================================
+             ABA 2: CORREÇÃO PELO ÁBACO DAS CARTAS NÁUTICAS (MARINHA + ANA)
+             ========================================================= -->
+        <div id="bat-tab-pane-abaco" style="display:none; flex-direction:column; gap:10px; width:100%; box-sizing:border-box;">
+          <div class="bat-card-secao" style="border-color:#f472b6;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+              <div style="font-size:11px; font-weight:800; color:#f472b6; text-transform:uppercase;">
+                ⚓ Correção Batimétrica pelo Ábaco da Marinha (CHM/DHN) &amp; Réguas ANA
+              </div>
+              <label style="display:flex; align-items:center; gap:6px; background:#831843; color:#fce7f3; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; border:1px solid #f472b6;">
+                <input type="checkbox" id="abaco-ativar-correcao" onchange="BatimetriaTINManager.atualizarCalculoAbaco()">
+                <span>Ativar Correção do Ábaco na Interpolação TIN</span>
+              </label>
+            </div>
+
+            <!-- Badge de Auto-Detecção Geográfica pela Área dos Pontos -->
+            <div id="abaco-badge-autodetect" style="display:none; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; background:rgba(30, 58, 138, 0.45); border:1px solid #38bdf8; border-radius:6px; padding:6px 10px; font-size:10.5px; color:#e0f2fe;"></div>
+
+            <div class="bat-grid-2">
+              <div class="buffer-linha">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                  <label for="abaco-preset-carta">Catálogo Completo de Cartas Náuticas (`Cartas_Nauticas` — CHM/DHN)</label>
+                  <button type="button" onclick="BatimetriaTINManager.autoDetectarAbacoPorCoordenadas(null, null, null, null, false)"
+                    title="Detecta automaticamente a Carta Náutica / Ábaco correspondente à área geográfica dos pontos carregados"
+                    style="background:#0f766e; color:#fff; border:1px solid #14b8a6; padding:2px 8px; border-radius:4px; font-size:9.5px; font-weight:700; cursor:pointer; white-space:nowrap;">
+                    🧭 Auto-Detectar pela Área
+                  </button>
+                </div>
+                <select id="abaco-preset-carta" onchange="BatimetriaTINManager.aoTrocarPresetAbaco(this.value)">
+                  <optgroup label="🌊 1. Rio Amazonas (Manaus ↔ Itacoatiara ↔ Parintins ↔ Santarém ↔ Foz/Macapá)">
+                    <option value="carta_4030_manaus_itacoatiara">Cartas 4030 a 4032A — Rio Amazonas Médio (Manaus ↔ Itacoatiara)</option>
+                    <option value="carta_4026_itacoatiara_parintins">Cartas 4025 a 4029A — Rio Amazonas Médio (Itacoatiara ↔ Parintins)</option>
+                    <option value="carta_4020a_amazonas" selected>Cartas 4020A a 4024 — Rio Amazonas Médio (Parintins ↔ Óbidos ↔ Santarém)</option>
+                    <option value="carta_4018_santarem_prainha">Cartas 4011 a 4019 — Rio Amazonas Baixo (Santarém ↔ Prainha / Monte Alegre)</option>
+                    <option value="carta_4101_foz_amazonas">Cartas 4101A/B, 4102A e 204–244 — Baixo Amazonas / Braço Sul (Almeirim ↔ Santana/Macapá)</option>
+                  </optgroup>
+                  <optgroup label="⚓ 2. Rio Pará e Estreitos de Marajó (Belém ↔ Vila do Conde ↔ Abaetetuba ↔ Breves)">
+                    <option value="carta_321_rio_para">Cartas 302, 303, 320 e 321 — Rio Pará Leste (Vila do Conde / Barcarena ↔ Belém / Mosqueiro)</option>
+                    <option value="carta_304_rio_para_oeste">Cartas 304, 305 e 306 — Rio Pará Oeste (Curralinho / Breves ↔ Abaetetuba / Vila do Conde)</option>
+                    <option value="carta_4353_estreitos_marajo">Cartas 4351, 4352 e 4353 — Estreitos de Marajó (Porto São José / Tajapuru ↔ Breves)</option>
+                  </optgroup>
+                  <optgroup label="🚢 3. Rio Solimões (Manaus ↔ Codajás ↔ Coari ↔ Tefé ↔ Tabatinga)">
+                    <option value="carta_4056_solimoes">Cartas 4051 a 4056 — Rio Solimões Leste (Missão I / Tefé ↔ Coari ↔ Codajás ↔ Manaus)</option>
+                    <option value="carta_hsd1_solimoes_oeste">Cartas HS-B/C/D — Rio Solimões Médio e Oeste (Tabatinga ↔ Sto. Antônio do Içá ↔ Tefé)</option>
+                  </optgroup>
+                  <optgroup label="🧭 4. Rio Madeira (Porto Velho ↔ Humaitá ↔ Manicoré ↔ Borba / Foz)">
+                    <option value="carta_4753_madeira_alto">Cartas 4740 a 4753 — Rio Madeira Alto (Porto Velho ↔ Humaitá)</option>
+                    <option value="carta_4734_madeira">Cartas 4725 a 4739 — Rio Madeira Médio (Humaitá I ↔ Manicoré I)</option>
+                    <option value="carta_4715_madeira_baixo">Cartas 4711 a 4724 — Rio Madeira Baixo (Manicoré I ↔ Novo Aripuanã ↔ Borba / Foz)</option>
+                  </optgroup>
+                  <optgroup label="📐 5. Rio Tapajós e Rio Tocantins (Itaituba ↔ Santarém | Nazaré dos Patos ↔ Tucuruí)">
+                    <option value="carta_4382_tapajos">Cartas 4381A/B, 4382A/B e 4383 — Rio Tapajós (Itaituba ↔ Fordlândia ↔ Santarém)</option>
+                    <option value="carta_4366_tocantins">Cartas 4361 a 4366 — Rio Tocantins (Nazaré dos Patos ↔ Tucuruí ↔ Cametá)</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <div class="buffer-linha">
+                <label for="abaco-modo-operacao">Sentido da Correção Hidrométrica</label>
+                <select id="abaco-modo-operacao" onchange="BatimetriaTINManager.atualizarCalculoAbaco()">
+                  <option value="reduzir_sondagem" selected>📉 Reduzir Sondagem ao Nível de Redução: Z_NR = Z - C(λ)</option>
+                  <option value="atualizar_carta">📈 Somar Nível do Rio à Carta Náutica: Z_Real = Z + C(λ)</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="abaco-nota-carta" style="font-size:10.5px; color:#fbcfe8; background:rgba(131,24,67,0.28); border-left:3px solid #f472b6; padding:6px 8px; border-radius:4px;">
+              🗺️ Exemplo Oficial da Carta 4020A: Estando o nível do rio em Santarém na cota de 8,0 m (C₂ = +6,9 m) e em Parintins na cota de 10,2 m (C₁ = +9,2 m), a correção nas proximidades da Ponta Maria José (Long. 54° 47'W) é de +7,0 m.
+            </div>
+
+            <!-- Estação 1 (Esquerda do Ábaco) vs Estação 2 (Direita do Ábaco) -->
+            <div class="bat-grid-2">
+              <!-- Estação 1 -->
+              <div style="background:#040d1a; border:1px solid #1e3a5f; border-radius:6px; padding:8px; display:flex; flex-direction:column; gap:6px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <strong style="color:#38bdf8; font-size:10.5px;">📍 ESTAÇÃO 1 (EIXO ESQUERDO DO ÁBACO)</strong>
+                  <span style="font-size:10px; color:#f472b6; font-weight:800;">C₁ = <span id="abaco-lbl-c1">+9.20 m</span></span>
+                </div>
+                <div class="bat-grid-2">
+                  <div class="buffer-linha">
+                    <label>Nome da Estação</label>
+                    <input type="text" id="abaco-est1-nome" value="Parintins (AM)" oninput="BatimetriaTINManager.atualizarCalculoAbaco()">
+                  </div>
+                  <div class="buffer-linha">
+                    <label>Código ANA</label>
+                    <input type="text" id="abaco-est1-cod" value="16350000" oninput="BatimetriaTINManager.atualizarCalculoAbaco()">
+                  </div>
+                  <div class="buffer-linha">
+                    <label>Coord. Eixo (°)</label>
+                    <input type="number" id="abaco-est1-coord" step="0.01" value="-56.7250" oninput="BatimetriaTINManager.atualizarCalculoAbaco()">
+                  </div>
+                  <div class="buffer-linha">
+                    <label title="Nível do rio na régua quando a Correção no Ábaco vale 0,0 m">Nível Redução NR₁ (m)</label>
+                    <input type="number" id="abaco-est1-nr" step="0.1" value="1.00" oninput="BatimetriaTINManager.atualizarCalculoAbaco()">
+                  </div>
+                </div>
+                <div class="buffer-linha">
+                  <label style="color:#fde047;">🌊 Nível / Cota Atual do Rio H₁ (m) — ANA</label>
+                  <input type="number" id="abaco-est1-h" step="0.1" value="10.20" oninput="BatimetriaTINManager.atualizarCalculoAbaco()">
+                </div>
+              </div>
+
+              <!-- Estação 2 -->
+              <div style="background:#040d1a; border:1px solid #1e3a5f; border-radius:6px; padding:8px; display:flex; flex-direction:column; gap:6px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <strong style="color:#38bdf8; font-size:10.5px;">📍 ESTAÇÃO 2 (EIXO DIREITO DO ÁBACO)</strong>
+                  <span style="font-size:10px; color:#f472b6; font-weight:800;">C₂ = <span id="abaco-lbl-c2">+6.90 m</span></span>
+                </div>
+                <div class="bat-grid-2">
+                  <div class="buffer-linha">
+                    <label>Nome da Estação</label>
+                    <input type="text" id="abaco-est2-nome" value="Santarém (PA)" oninput="BatimetriaTINManager.atualizarCalculoAbaco()">
+                  </div>
+                  <div class="buffer-linha">
+                    <label>Código ANA</label>
+                    <input type="text" id="abaco-est2-cod" value="17050001" oninput="BatimetriaTINManager.atualizarCalculoAbaco()">
+                  </div>
+                  <div class="buffer-linha">
+                    <label>Coord. Eixo (°)</label>
+                    <input type="number" id="abaco-est2-coord" step="0.01" value="-54.7167" oninput="BatimetriaTINManager.atualizarCalculoAbaco()">
+                  </div>
+                  <div class="buffer-linha">
+                    <label title="Nível do rio na régua quando a Correção no Ábaco vale 0,0 m">Nível Redução NR₂ (m)</label>
+                    <input type="number" id="abaco-est2-nr" step="0.1" value="1.10" oninput="BatimetriaTINManager.atualizarCalculoAbaco()">
+                  </div>
+                </div>
+                <div class="buffer-linha">
+                  <label style="color:#fde047;">🌊 Nível / Cota Atual do Rio H₂ (m) — ANA</label>
+                  <input type="number" id="abaco-est2-h" step="0.1" value="8.00" oninput="BatimetriaTINManager.atualizarCalculoAbaco()">
+                </div>
+              </div>
+            </div>
+
+            <div class="bat-grid-2" style="align-items:end;">
+              <div class="buffer-linha">
+                <label for="abaco-eixo">Eixo Geográfico do Ábaco na Carta</label>
+                <select id="abaco-eixo" onchange="BatimetriaTINManager.atualizarCalculoAbaco()">
+                  <option value="lon" selected>↔️ Interpolação por Longitude (Rios Leste-Oeste: Amazonas, Solimões)</option>
+                  <option value="lat">↕️ Interpolação por Latitude (Rios Norte-Sul: Madeira, Tocantins, Tapajós)</option>
+                </select>
+              </div>
+              <div class="buffer-linha">
+                <label for="abaco-coord-teste">Simular Coordenada no Ábaco (Graus Decimais)</label>
+                <div style="display:flex; gap:6px;">
+                  <input type="number" id="abaco-coord-teste" step="0.02" value="-54.7833" oninput="BatimetriaTINManager.atualizarCalculoAbaco()">
+                  <button type="button" onclick="BatimetriaTINManager.buscarCotasANA()"
+                    style="background:#0284c7; color:#fff; border:1px solid #38bdf8; padding:5px 10px; border-radius:6px; font-size:10.5px; font-weight:700; cursor:pointer; white-space:nowrap;">
+                    📡 Sincronizar ANA
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div id="abaco-status-ana" style="font-size:10px; color:#94a3b8;"></div>
+            <div id="abaco-resultado-ponto" style="background:#040d1a; border:1px solid #f472b6; border-radius:6px; padding:6px 10px; font-size:11px; color:#e2e8f0;"></div>
+            <div id="abaco-auditoria-matematica" style="background:rgba(6, 95, 70, 0.25); border:1px solid #10b981; border-radius:6px; padding:6px 10px; font-size:10.5px; color:#d1fae5;"></div>
+
+            <!-- Canvas Interativo reproduzindo o Ábaco da Marinha -->
+            <div style="height:180px; min-height:180px; max-height:180px; flex-shrink:0; width:100%; border:1px solid #1e3a5f; border-radius:6px; overflow:hidden; background:#071526;">
+              <canvas id="canvas-abaco-marinha" style="display:block; width:100%; height:180px;"></canvas>
+            </div>
           </div>
+        </div>
 
-          <div class="buffer-linha">
-            <label for="bat-sinal-z">Sinal da Cota Z</label>
-            <select id="bat-sinal-z" onchange="BatimetriaTINManager.atualizarPreview()">
-              <option value="abs" selected>Sempre Positivo (|Z| m)</option>
-              <option value="raw">Manter Sinal Original</option>
-              <option value="inv">Inverter Sinal (-Z)</option>
-            </select>
+        <!-- =========================================================
+             ABA 3: PERFIL DO CANAL / TALVEGUE & FILTRO DE RESTRIÇÃO DE CALADO
+             ========================================================= -->
+        <div id="bat-tab-pane-perfil" style="display:none; flex-direction:column; gap:10px; width:100%; box-sizing:border-box;">
+          <div class="bat-card-secao" style="border-color:#f87171;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+              <div style="font-size:11px; font-weight:800; color:#fca5a5; text-transform:uppercase;">
+                🚢 Perfil Longitudinal do Canal / Talvegue &amp; Gabarito de Restrição de Profundidade
+              </div>
+              <span style="font-size:10px; color:#fde047; font-weight:700;">Atualiza Mapa e Perfil em Tempo Real</span>
+            </div>
+
+            <!-- Grade 2x2 Limpa (Zero corte de texto nos selects!) -->
+            <div class="bat-grid-2">
+              <div class="buffer-linha">
+                <label for="bat-z-critico">Profundidade / Cota Crítica de Restrição (m)</label>
+                <input type="number" id="bat-z-critico" step="0.25" value="5.00"
+                  oninput="BatimetriaTINManager.sincronizarRestricaoEAtualizar('modal')">
+              </div>
+
+              <div class="buffer-linha">
+                <label for="bat-largura-canal">Largura da Faixa do Canal Varrido (m)</label>
+                <input type="number" id="bat-largura-canal" min="0" max="1000" step="10" value="60"
+                  onchange="const el=document.getElementById('perfil-largura-canal'); if(el) el.value=this.value;">
+              </div>
+
+              <div class="buffer-linha">
+                <label for="bat-condicao-restricao">Critério de Restrição à Navegação</label>
+                <select id="bat-condicao-restricao" onchange="BatimetriaTINManager.sincronizarRestricaoEAtualizar('modal')">
+                  <option value="menor_igual" selected>🚨 Restrição se Z ≤ Limite (Prof. Positiva)</option>
+                  <option value="maior_igual">🚨 Restrição se Z ≥ Limite (Cota Negativa)</option>
+                </select>
+              </div>
+
+              <div class="buffer-linha">
+                <label for="bat-modo-filtro-restricao">Filtro Visual no Raster do Mapa</label>
+                <select id="bat-modo-filtro-restricao" onchange="BatimetriaTINManager.sincronizarRestricaoEAtualizar('modal')">
+                  <option value="desativado" selected>🎨 Sem Filtro (Rampa Normal)</option>
+                  <option value="destacar_vermelho">🔴 Destacar Bancos Críticos em Vermelho</option>
+                  <option value="apenas_restricao">🎯 Isolar APENAS Manchas de Restrição</option>
+                  <option value="semaforo_calado">🚦 Semáforo (Verde / Amarelo / Vermelho)</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="bat-resumo-restricao-modal" style="display:none; font-size:10.5px; color:#fecaca; background:rgba(127,29,29,0.32); border:1px solid rgba(248,113,113,0.4); padding:6px 9px; border-radius:6px;"></div>
+
+            <div class="bat-grid-2" style="margin-top:4px;">
+              <button type="button" class="btn-barra-acao"
+                onclick="BatimetriaTINManager.iniciarTracadoRotaNoMapa()"
+                style="background:#0284c7; color:#fff; border:1px solid #38bdf8; padding:8px 12px; font-weight:700; cursor:pointer; justify-content:center;">
+                ✏️ Traçar Caminho / Canal no Mapa
+              </button>
+              <button type="button" class="btn-barra-acao"
+                onclick="BatimetriaTINManager.gerarTalvegueAutomatico()"
+                style="background:#0f766e; color:#fff; border:1px solid #14b8a6; padding:8px 12px; font-weight:700; cursor:pointer; justify-content:center;">
+                🧭 Auto-Detectar Talvegue e Abrir Perfil
+              </button>
+            </div>
           </div>
-
-          <div class="buffer-linha">
-            <label for="bat-max-aresta" title="Remove triângulos externos longos que cruzam sobre as margens secas">Restrição de Borda (m)</label>
-            <input type="number" id="bat-max-aresta" min="20" max="5000" step="10" value="350"
-              title="Comprimento máximo de aresta do triângulo (em metros) para restringir o TIN à área interna dos pontos">
-          </div>
         </div>
 
-        <!-- Caixa para colar ou inspecionar o texto X Y Z -->
-        <div class="buffer-linha">
-          <label for="bat-texto-xyz">Dados Brutos X Y Z (Você também pode colar ou editar diretamente aqui)</label>
-          <textarea id="bat-texto-xyz" rows="4"
-            placeholder="Exemplo (X Y Z separados por espaço em UTM 22S):&#10;668000.00 9715000.00 2.10&#10;668110.00 9715000.00 8.40&#10;668220.00 9715000.00 13.20"
-            oninput="BatimetriaTINManager.aoDigitarTexto(this.value)"
-            style="width:100%; background:#061426; border:1px solid #1e4976; color:#e2e8f0; border-radius:6px; padding:8px; font-family:Consolas,monospace; font-size:11px; resize:vertical;"></textarea>
+        <!-- Pré-visualização de Coordenadas e Relatório (Visível em todas as abas) -->
+        <div class="buffer-preview" id="bat-preview-corpo" style="min-height:48px; margin-top:8px;">
+          <div style="color:#94a3b8; font-style:italic;">Carregue um arquivo <strong>X Y Z</strong> ou clique em <strong>"🧪 Carregar Exemplo (EPSG:31982)"</strong>.</div>
         </div>
 
-        <!-- Checkbox de pontos de sondagem -->
-        <div class="buffer-linha buffer-checkbox">
-          <input type="checkbox" id="bat-mostrar-pontos" checked>
-          <label for="bat-mostrar-pontos">
-            Plotar pontos de sondagem originais sobre a malha TIN
-            <small>Ancora a triangulação das extremidades para dentro da geometria e exibe as cotas medidas</small>
-          </label>
-        </div>
-
-        <!-- Pré-visualização da conversão UTM -> Lat/Lon -->
-        <div class="buffer-preview" id="bat-preview-corpo" style="min-height:64px;">
-          <div style="color:#94a3b8; font-style:italic;">Carregue um arquivo <strong>X Y Z</strong> ou clique em <strong>"🧪 Carregar Exemplo (UTM 22S)"</strong>.</div>
-        </div>
-
-        <!-- Legenda rápida de cores batimétricas -->
-        <div style="display:flex; flex-wrap:wrap; gap:6px; font-size:10px; color:#cbd5e1; background:#061426; padding:7px 10px; border-radius:6px; border:1px solid #1e293b;">
-          <strong style="color:#38bdf8; width:100%; margin-bottom:2px;">🎨 Paleta Hipsométrica de Profundidade (TIN):</strong>
-          <span><b style="color:#dc2626;">■</b> &le; 2,5m (Crítico)</span>
-          <span><b style="color:#f97316;">■</b> 2,5–4,5m (Raso)</span>
-          <span><b style="color:#eab308;">■</b> 4,5–7,0m (Talude)</span>
-          <span><b style="color:#38bdf8;">■</b> 7,0–11m (Canal)</span>
-          <span><b style="color:#0284c7;">■</b> 11–16m (Profundo)</span>
-          <span><b style="color:#1e3a8a;">■</b> &gt; 16m (Talvegue)</span>
-        </div>
+        <div id="bat-relatorio-parametros" style="display:none; margin-top:8px; background:#0b1d33; border:1px solid #38bdf8; border-radius:8px; padding:10px 12px;"></div>
       </div>
 
       <div class="modal-buffer-footer">
-        <button class="btn-secundario" onclick="BatimetriaTINManager.fecharModal()">Cancelar</button>
+        <button class="btn-secundario" onclick="BatimetriaTINManager.fecharModal()">Fechar</button>
         <button class="btn-primario" onclick="BatimetriaTINManager.executarInterpolacaoTIN()"
           style="background:#0284c7; color:#fff; border:1px solid #38bdf8;">
-          🌊 Gerar Interpolação TIN
+          🌊 Executar Interpolação TIN
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       M18 — PAINEL INTERATIVO DE PERFIL LONGITUDINAL BATIMÉTRICO E RESTRIÇÃO DE CANAL
+       ============================================================ -->
+  <div id="painel-perfil-batimetrico"
+       style="display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%); width:min(96vw, 1100px); z-index:9990; background:rgba(6, 20, 38, 0.98); border:1.5px solid #38bdf8; border-radius:12px; box-shadow:0 16px 42px rgba(0,0,0,0.82); color:#e2e8f0; flex-direction:column; overflow:hidden; font-family:'Segoe UI', sans-serif; box-sizing:border-box;">
+    <!-- Cabeçalho do Painel de Perfil -->
+    <div style="background:linear-gradient(90deg, #0a2540 0%, #0f172a 100%); padding:7px 14px; border-bottom:1px solid #1e4976; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span style="font-size:16px;">🚢</span>
+        <strong style="color:#38bdf8; font-size:12px; letter-spacing:0.3px;">PERFIL LONGITUDINAL DE NAVEGAÇÃO (TALVEGUE / CANAL) &amp; VERIFICADOR DE RESTRIÇÃO</strong>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+        <button type="button" onclick="BatimetriaTINManager.iniciarTracadoRotaNoMapa()"
+          style="background:#0284c7; color:#fff; border:1px solid #38bdf8; padding:4px 9px; border-radius:5px; font-size:10.5px; font-weight:700; cursor:pointer;">
+          ✏️ Traçar Nova Rota
+        </button>
+        <button type="button" onclick="BatimetriaTINManager.gerarTalvegueAutomatico()"
+          style="background:#0f766e; color:#fff; border:1px solid #14b8a6; padding:4px 9px; border-radius:5px; font-size:10.5px; font-weight:700; cursor:pointer;">
+          🧭 Auto-Talvegue
+        </button>
+        <button type="button" onclick="BatimetriaTINManager.abrirModal('abaco')"
+          style="background:#831843; color:#fbcfe8; border:1px solid #f472b6; padding:4px 9px; border-radius:5px; font-size:10.5px; font-weight:700; cursor:pointer;">
+          ⚓ Ábaco ANA
+        </button>
+        <button type="button" onclick="BatimetriaTINManager.exportarPerfilCSV()"
+          style="background:#059669; color:#fff; border:none; padding:4px 8px; border-radius:5px; font-size:10.5px; font-weight:700; cursor:pointer;">
+          📥 CSV
+        </button>
+        <button type="button" onclick="BatimetriaTINManager.exportarRotaPerfilGeoJSON()"
+          style="background:#4f46e5; color:#fff; border:none; padding:4px 8px; border-radius:5px; font-size:10.5px; font-weight:700; cursor:pointer;">
+          💾 GeoJSON
+        </button>
+        <button type="button" onclick="BatimetriaTINManager.baixarGraficoPerfilPNG()"
+          style="background:#7c3aed; color:#fff; border:none; padding:4px 8px; border-radius:5px; font-size:10.5px; font-weight:700; cursor:pointer;">
+          🖼️ PNG
+        </button>
+        <button type="button" onclick="BatimetriaTINManager.alternarMinimizarPainelPerfil()"
+          style="background:#1e293b; color:#cbd5e1; border:1px solid #475569; padding:3px 8px; border-radius:5px; font-size:11px; cursor:pointer;">
+          _
+        </button>
+        <button type="button" onclick="BatimetriaTINManager.limparRotaPerfil()"
+          style="background:#7f1d1d; color:#fecaca; border:1px solid #ef4444; padding:3px 8px; border-radius:5px; font-size:11px; font-weight:700; cursor:pointer;">
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <!-- Barra de Filtragem de Profundidade Crítica -->
+    <div style="background:#081b33; padding:6px 14px; border-bottom:1px solid #1e3a5f; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; font-size:11px;">
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span style="color:#fca5a5; font-weight:700;">🚨 Profundidade Crítica (Restrição):</span>
+        <input type="number" id="perfil-z-critico" step="0.25" value="5.00"
+          oninput="BatimetriaTINManager.sincronizarRestricaoEAtualizar('painel')"
+          style="width:72px; background:#040d1a; border:1px solid #ef4444; color:#fef08a; font-weight:800; padding:3px 6px; border-radius:5px; font-size:11.5px;">
+        <span style="color:#94a3b8;">m</span>
+        <input type="range" id="perfil-z-slider" min="0" max="20" step="0.1" value="5.0"
+          oninput="BatimetriaTINManager.sincronizarRestricaoEAtualizar('slider')"
+          style="width:125px; accent-color:#ef4444; cursor:pointer;">
+        <select id="perfil-condicao-restricao" onchange="BatimetriaTINManager.sincronizarRestricaoEAtualizar('painel')"
+          style="background:#040d1a; border:1px solid #334155; color:#e2e8f0; padding:3px 6px; border-radius:5px; font-size:10.5px;">
+          <option value="menor_igual" selected>Raso: Z ≤ Limite</option>
+          <option value="maior_igual">Raso: Z ≥ Limite</option>
+        </select>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:4px;">
+          <span style="color:#94a3b8;">Filtro no Mapa:</span>
+          <select id="perfil-modo-filtro-mapa" onchange="BatimetriaTINManager.sincronizarRestricaoEAtualizar('painel')"
+            style="background:#040d1a; border:1px solid #38bdf8; color:#bae6fd; padding:3px 6px; border-radius:5px; font-size:10.5px; font-weight:600;">
+            <option value="desativado" selected>🎨 Rampa Normal</option>
+            <option value="destacar_vermelho">🔴 Destacar Restrição no Raster</option>
+            <option value="apenas_restricao">🎯 Isolar Só Bancos Críticos</option>
+            <option value="semaforo_calado">🚦 Semáforo (Verde/Amarelo/Vermelho)</option>
+          </select>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:4px;">
+          <span style="color:#94a3b8;">Faixa Canal:</span>
+          <input type="number" id="perfil-largura-canal" min="0" max="1000" step="10" value="60"
+            onchange="BatimetriaTINManager._processarRotaEAbrirPerfil(BatimetriaTINManager._verticesRota, BatimetriaTINManager._rotuloRotaAtual)"
+            style="width:54px; background:#040d1a; border:1px solid #334155; color:#fff; padding:3px 5px; border-radius:5px; font-size:10.5px;">
+          <span style="color:#94a3b8;">m</span>
+        </div>
+
+        <label style="display:flex; align-items:center; gap:4px; cursor:pointer; color:#cbd5e1; font-size:10.5px;">
+          <input type="checkbox" id="perfil-avaliar-faixa" checked onchange="BatimetriaTINManager.sincronizarRestricaoEAtualizar('painel')">
+          <span>Avaliar Faixa</span>
+        </label>
+
+        <label style="display:flex; align-items:center; gap:4px; cursor:pointer; color:#cbd5e1; font-size:10.5px;">
+          <input type="checkbox" id="perfil-inverter-y" checked onchange="BatimetriaTINManager._renderizarGraficoPerfil()">
+          <span>Fundo p/ Baixo</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Corpo Principal: Altura 100% travada em 230px para que o Canvas NUNCA cresça com o movimento do mouse! -->
+    <div id="perfil-batimetrico-corpo" style="display:grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap:10px; padding:10px 14px; height:232px; max-height:232px; box-sizing:border-box; align-items:stretch;">
+      <div style="display:flex; flex-direction:column; gap:4px; height:212px; max-height:212px; min-width:0;">
+        <div style="position:relative; height:190px; min-height:190px; max-height:190px; flex:none; border:1px solid #1e3a5f; border-radius:8px; overflow:hidden; background:#040d1a;">
+          <canvas id="canvas-perfil-batimetrico" style="display:block; width:100%; height:190px; cursor:crosshair;"></canvas>
+        </div>
+        <div id="perfil-resumo-mancha-global" style="font-size:10px; color:#94a3b8; padding:1px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          💡 Passe o mouse (ou arraste o dedo) sobre o gráfico para mover a embarcação 🚢 ao longo do canal no mapa.
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:5px; background:#040d1a; border:1px solid #1e3a5f; border-radius:8px; padding:8px 10px; height:212px; max-height:212px; box-sizing:border-box; min-width:0; overflow:hidden;">
+        <div id="perfil-kpis-resumo" style="border-bottom:1px solid #1e293b; padding-bottom:5px; font-size:11px; flex-shrink:0;"></div>
+        <div style="font-size:10px; font-weight:800; color:#fca5a5; text-transform:uppercase; flex-shrink:0;">
+          ⚠️ Trechos com Restrição no Canal (Clique p/ Zoom):
+        </div>
+        <div id="perfil-lista-trechos" style="overflow-y:auto; flex:1; padding-right:2px; min-height:0;"></div>
       </div>
     </div>
   </div>
@@ -2166,6 +2860,314 @@
   });  
 })();
   </script>
+
+  <!-- ============================================================
+       M19 — ESTÚDIO INTERNO DE INTELIGÊNCIA ESPACIAL & NOTA TÉCNICA ASSISTIDA POR IA (EXCLUSIVO GEE/SEPH)
+       ============================================================ -->
+  <div class="modal-buffer" id="modal-estudio-nota-tecnica">
+    <div class="modal-buffer-card" style="max-width:820px !important; width:min(96vw, 820px) !important; max-height:92vh !important; border:1.5px solid #14b8a6 !important; display:flex !important; flex-direction:column !important; overflow:hidden !important;">
+      <div class="modal-buffer-header" style="background:linear-gradient(135deg, #042f2e 0%, #0a2540 100%); border-bottom:1px solid rgba(20, 184, 166, 0.4); flex-shrink:0;">
+        <h3 style="color:#2dd4bf;">
+          <span style="font-size:20px;">🧠</span>
+          <span>Estúdio Interno de Inteligência Geoespacial &amp; Nota Técnica SEI Assistida por IA (GEE/SEPH)</span>
+        </h3>
+        <button class="modal-matriz-fechar" onclick="EstudioNotaTecnicaIA.fecharModal()">&times;</button>
+      </div>
+
+      <div class="modal-buffer-body" style="display:block !important; padding:14px 18px !important; overflow-y:auto !important; overflow-x:hidden !important; max-height:calc(92vh - 120px) !important; box-sizing:border-box !important;">
+        <!-- 1. Escolha da Relação / Cruzamento Espacial -->
+        <div style="background:rgba(6, 20, 38, 0.85); border:1px solid #0f766e; border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+            <span style="font-size:11px; font-weight:800; color:#2dd4bf; text-transform:uppercase;">
+              🔗 1. Relação / Cruzamento de Inteligência Espacial Selecionável
+            </span>
+            <span style="font-size:10px; background:#042f2e; color:#99f6e4; border:1px solid #14b8a6; padding:2px 8px; border-radius:4px; font-weight:700;">
+              🔒 Uso Interno Restrito — GEE / SEPH
+            </span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr; gap:8px; margin-bottom:8px;">
+            <div class="buffer-linha">
+              <label for="nt-ia-tipo-relacao">Eixo de Relacionamento e Inteligência Territorial</label>
+              <select id="nt-ia-tipo-relacao" onchange="EstudioNotaTecnicaIA.aoMudarTipoRelacao(this.value)" style="width:100%; box-sizing:border-box;">
+                <option value="portos_x_localizacao_ven" selected>⚓ 1. Instalações Portuárias × Localização Regional (UF / Município) &amp; Conexão com Hidrovia (VEN)</option>
+                <option value="portos_x_fluxo_tku">📦 2. Instalações Portuárias × Corredores de Carga Hidroviária (TKU — Interior, Cabotagem e Longo Curso)</option>
+                <option value="portos_x_restricoes_tis">🛡️ 3. Instalações Portuárias × Terras Indígenas (FUNAI) e Sensibilidade Socioambiental</option>
+                <option value="portos_x_batimetria_abaco">🌊 4. Instalações Portuárias × Condição Hidrográfica (Batimetria TIN, Ábaco Marinha/ANA e Calado Crítico)</option>
+                <option value="ais_x_portos_ven">🚢 5. Embarcações AIS (Reais CSV/API ou Monitoradas) × Portos &amp; Aderência à Hidrovia (VEN)</option>
+                <option value="cruzamento_livre">🔀 6. Relação Customizada Livre (Cruzar Qualquer Camada A × Qualquer Camada B por Raio Geodésico)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Seletores extras quando "Relação Customizada Livre" é escolhida -->
+          <div id="nt-ia-box-camadas-livres" style="display:none; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; margin-bottom:8px; padding:8px; background:#040d1a; border:1px dashed #0284c7; border-radius:6px;">
+            <div class="buffer-linha">
+              <label for="nt-ia-camada-a">Camada A (Ativos Principais)</label>
+              <select id="nt-ia-camada-a" onchange="EstudioNotaTecnicaIA.executarCruzamentoEAnalise()">
+                <option value="instalacoes_portuarias" selected>⚓ Instalações Portuárias (Públicos, TUP, IP4, ETC)</option>
+                <option value="portos_internacionais">🌐 Portos Internacionais</option>
+                <option value="ven_2022">🛣️ Vias Economicamente Navegáveis (VEN)</option>
+                <option value="tku">📦 Fluxo de Carga Hidroviária (TKU)</option>
+              </select>
+            </div>
+            <div class="buffer-linha">
+              <label for="nt-ia-camada-b">Camada B (Camada Relacionada / Cruzamento)</label>
+              <select id="nt-ia-camada-b" onchange="EstudioNotaTecnicaIA.executarCruzamentoEAnalise()">
+                <option value="ven_2022" selected>🛣️ Vias Economicamente Navegáveis (VEN)</option>
+                <option value="tis_poligonais">🛡️ Terras Indígenas (FUNAI)</option>
+                <option value="tku">📦 Corredores de Fluxo TKU</option>
+                <option value="uf">🗺️ Unidades da Federação (UF)</option>
+                <option value="instalacoes_portuarias">⚓ Instalações Portuárias Adjacentes (Cluster)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Filtros de Recorte (Escopo, UF, Regime Portuário, Raio km) -->
+          <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px;">
+            <div class="buffer-linha">
+              <label for="nt-ia-escopo">Escopo Espacial</label>
+              <select id="nt-ia-escopo" onchange="EstudioNotaTecnicaIA.executarCruzamentoEAnalise()">
+                <option value="auto" selected>🎯 Automático (Seleção / Filtro)</option>
+                <option value="tela">🖥️ Área Visível na Tela do Mapa</option>
+                <option value="todos">🇧🇷 Base Nacional Completa</option>
+              </select>
+            </div>
+
+            <div class="buffer-linha">
+              <label for="nt-ia-uf">Recorte por UF</label>
+              <select id="nt-ia-uf" onchange="EstudioNotaTecnicaIA.executarCruzamentoEAnalise()">
+                <option value="TODAS" selected>🇧🇷 Todas as UFs</option>
+                <option value="AM">AM — Amazonas</option>
+                <option value="PA">PA — Pará</option>
+                <option value="AP">AP — Amapá</option>
+                <option value="RO">RO — Rondônia</option>
+                <option value="AC">AC — Acre</option>
+                <option value="RR">RR — Roraima</option>
+                <option value="TO">TO — Tocantins</option>
+                <option value="MA">MA — Maranhão</option>
+                <option value="MT">MT — Mato Grosso</option>
+                <option value="MS">MS — Mato Grosso do Sul</option>
+                <option value="RS">RS — Rio Grande do Sul</option>
+                <option value="SC">SC — Santa Catarina</option>
+                <option value="PR">PR — Paraná</option>
+                <option value="SP">SP — São Paulo</option>
+                <option value="RJ">RJ — Rio de Janeiro</option>
+                <option value="ES">ES — Espírito Santo</option>
+                <option value="BA">BA — Bahia</option>
+                <option value="PE">PE — Pernambuco</option>
+                <option value="CE">CE — Ceará</option>
+                <option value="DF">DF — Distrito Federal</option>
+              </select>
+            </div>
+
+            <div class="buffer-linha">
+              <label for="nt-ia-regime">Regime Portuário</label>
+              <select id="nt-ia-regime" onchange="EstudioNotaTecnicaIA.executarCruzamentoEAnalise()">
+                <option value="TODOS" selected>⚓ Todos os Regimes</option>
+                <option value="PUBLICO">🏛️ Porto Organizado / Público</option>
+                <option value="TUP">🏗️ TUP (Uso Privado)</option>
+                <option value="IP4">🚤 IP4 (Pequeno Porte)</option>
+                <option value="ETC">🔄 ETC (Transbordo)</option>
+              </select>
+            </div>
+
+            <div class="buffer-linha">
+              <label for="nt-ia-raio-km">Raio de Relação (km)</label>
+              <input type="number" id="nt-ia-raio-km" min="1" max="500" step="5" value="25"
+                onchange="EstudioNotaTecnicaIA.executarCruzamentoEAnalise()">
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Direcionamento Analítico / Prompt Opcional para a IA -->
+        <div style="background:rgba(6, 20, 38, 0.85); border:1px solid #1e4976; border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px;">
+            <span style="font-size:11px; font-weight:800; color:#38bdf8; text-transform:uppercase;">
+              🤖 2. Foco Analítico / Pergunta de Inteligência para a Nota Técnica (Opcional)
+            </span>
+            <div style="display:flex; gap:5px; flex-wrap:wrap;">
+              <button type="button" onclick="EstudioNotaTecnicaIA.aplicarSugestaoFoco('Avaliar concentração logística de TUPs e IP4 e integração com a malha do VEN')"
+                style="background:#1e293b; color:#bae6fd; border:1px solid #0284c7; padding:2px 7px; border-radius:4px; font-size:9.5px; cursor:pointer;">
+                💡 Foco: Integração TUP/IP4 × VEN
+              </button>
+              <button type="button" onclick="EstudioNotaTecnicaIA.aplicarSugestaoFoco('Destacar gargalos de calado, redução pelo Ábaco da Marinha/ANA e necessidade de dragagem')"
+                style="background:#1e293b; color:#fbcfe8; border:1px solid #f472b6; padding:2px 7px; border-radius:4px; font-size:9.5px; cursor:pointer;">
+                💡 Foco: Calado Crítico &amp; Ábaco
+              </button>
+              <button type="button" onclick="EstudioNotaTecnicaIA.aplicarSugestaoFoco('Analisar cautelas socioambientais e proximidade com Terras Indígenas (FUNAI) no licenciamento')"
+                style="background:#1e293b; color:#fde047; border:1px solid #eab308; padding:2px 7px; border-radius:4px; font-size:9.5px; cursor:pointer;">
+                💡 Foco: Interface Socioambiental
+              </button>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="text" id="nt-ia-foco-custom"
+              placeholder="Ex.: Analisar a relação entre os TUPs do Pará/Amazonas, a distância à hidrovia VEN e restrições de calado..."
+              style="flex:1; background:#040d1a; border:1px solid #1e4976; color:#f1f5f9; padding:7px 10px; border-radius:6px; font-size:11.5px;">
+            <button type="button" onclick="EstudioNotaTecnicaIA.executarCruzamentoEAnalise()"
+              style="background:linear-gradient(135deg, #0d9488 0%, #0284c7 100%); color:#fff; border:1px solid #2dd4bf; padding:7px 14px; border-radius:6px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap;">
+              🧠 Cruzar Dados &amp; Redigir IA
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. KPIs e Tabela de Inteligência do Cruzamento Espacial -->
+        <div id="nt-ia-kpis-resumo" style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px; margin-bottom:10px;"></div>
+
+        <div style="background:#040d1a; border:1px solid #1e3a5f; border-radius:8px; padding:8px 10px; margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <strong id="nt-ia-titulo-tabela" style="font-size:11px; color:#38bdf8;">📊 MATRIZ DE RELACIONAMENTO ESPACIAL PROCESSADA</strong>
+            <span id="nt-ia-status-cruzamento" style="font-size:10px; color:#10b981; font-weight:700;"></span>
+          </div>
+          <div id="nt-ia-tabela-container" style="max-height:175px; overflow-y:auto; font-size:10.5px;"></div>
+        </div>
+
+        <!-- 4. Minuta Editável da Nota Técnica (Padrão SEI / ANTAQ GEE-SEPH) -->
+        <div style="background:rgba(6, 20, 38, 0.85); border:1px solid #14b8a6; border-radius:8px; padding:10px 12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px;">
+            <span style="font-size:11px; font-weight:800; color:#2dd4bf; text-transform:uppercase;">
+              📝 3. Minuta Analítica Gerada (Padrão SEI ANTAQ — Editável Antes de Emitir)
+            </span>
+            <div style="display:flex; gap:6px;">
+              <button type="button" onclick="EstudioNotaTecnicaIA.copiarTextoSEI()"
+                style="background:#1e293b; color:#e2e8f0; border:1px solid #38bdf8; padding:3px 9px; border-radius:4px; font-size:10px; font-weight:700; cursor:pointer;">
+                📋 Copiar Texto p/ SEI
+              </button>
+              <button type="button" onclick="EstudioNotaTecnicaIA.exportarCruzamentoCSV()"
+                style="background:#059669; color:#fff; border:none; padding:3px 9px; border-radius:4px; font-size:10px; font-weight:700; cursor:pointer;">
+                📥 Baixar Cruzamento (CSV)
+              </button>
+            </div>
+          </div>
+          <textarea id="nt-ia-texto-minuta" rows="7"
+            style="width:100%; box-sizing:border-box; background:#040d1a; border:1px solid #1e4976; color:#e2e8f0; border-radius:6px; padding:8px 10px; font-family:'Segoe UI', system-ui, sans-serif; font-size:11.5px; line-height:1.45; resize:vertical;"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-buffer-footer" style="flex-shrink:0; justify-content:space-between;">
+        <button class="btn-secundario" onclick="EstudioNotaTecnicaIA.fecharModal()">Fechar</button>
+        <div style="display:flex; gap:8px;">
+          <button type="button" onclick="EstudioNotaTecnicaIA.copiarTextoSEI()"
+            style="background:#0369a1; color:#fff; border:1px solid #38bdf8; padding:8px 14px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer;">
+            📋 Copiar p/ Colar no SEI
+          </button>
+          <button type="button" class="btn-primario" onclick="EstudioNotaTecnicaIA.emitirNotaTecnicaA4()"
+            style="background:#0f766e; color:#fff; border:1px solid #2dd4bf;">
+            🖨️ Gerar Nota Técnica A4 (PDF / SEI)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============================================================
+       M20 — CENTRAL DE INGESTÃO DE DADOS AIS REAIS (CSV BRUTO / GEOJSON / API REST & WEBSOCKET)
+       ============================================================ -->
+  <div class="modal-buffer" id="modal-ais-fonte-real">
+    <div class="modal-buffer-card" style="max-width:680px !important; width:min(96vw, 680px) !important; max-height:90vh !important; border:1.5px solid #38bdf8 !important; display:flex !important; flex-direction:column !important; overflow:hidden !important;">
+      <div class="modal-buffer-header" style="background:linear-gradient(135deg, #061426 0%, #0a2540 100%); border-bottom:1px solid rgba(56, 189, 248, 0.35); flex-shrink:0;">
+        <h3 style="color:#38bdf8;">
+          <span style="font-size:20px;">🚢</span>
+          <span>Fonte de Dados AIS Reais — Importar CSV Bruto ou Conectar API / SISTRAM</span>
+        </h3>
+        <button class="modal-matriz-fechar" onclick="AISRealIngestor.fecharModal()">&times;</button>
+      </div>
+
+      <div class="modal-buffer-body" style="display:block !important; padding:14px 18px !important; overflow-y:auto !important; max-height:calc(90vh - 120px) !important; box-sizing:border-box !important;">
+        <!-- Status atual da fonte AIS -->
+        <div id="ais-real-status-banner" style="background:#071526; border:1px solid #1e4976; border-left:4px solid #f59e0b; border-radius:6px; padding:8px 12px; margin-bottom:12px; font-size:11px; color:#e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span>📡 <strong>Fonte Ativa no Painel AIS:</strong> <strong id="ais-real-lbl-fonte" style="color:#fbbf24;">Base Simulada Padrão (Amazônia Legal)</strong></span>
+          <button type="button" onclick="AISRealIngestor.restaurarSimulacaoPadrao()"
+            style="background:#1e293b; color:#cbd5e1; border:1px solid #475569; padding:3px 9px; border-radius:4px; font-size:10px; font-weight:700; cursor:pointer;">
+            🔄 Restaurar Base Simulada
+          </button>
+        </div>
+
+        <!-- Opção 1: Upload de Arquivo Bruto CSV / JSON / GeoJSON -->
+        <div style="background:rgba(6, 20, 38, 0.85); border:1px solid #0284c7; border-radius:8px; padding:12px; margin-bottom:12px;">
+          <div style="font-size:11px; font-weight:800; color:#38bdf8; text-transform:uppercase; margin-bottom:6px;">
+            📂 Opção 1 — Carregar Planilha / Arquivo de Dados AIS Brutos (.CSV, .TXT, .JSON, .GeoJSON)
+          </div>
+          <div style="font-size:10.5px; color:#94a3b8; margin-bottom:8px; line-height:1.4;">
+            Reconhece automaticamente colunas de qualquer fornecedor (MarineTraffic, Spire, SISTRAM/Marinha, ANTAQ):
+            <code>mmsi</code>, <code>lat</code>/<code>latitude</code>, <code>lon</code>/<code>longitude</code>, <code>sog</code>/<code>velocidade</code>, <code>cog</code>/<code>rumo</code>, <code>timestamp</code>/<code>data_hora</code>, <code>nome</code>/<code>shipname</code>, <code>tipo</code>/<code>shiptype</code>, <code>calado_m</code>/<code>draught</code>, <code>porto_destino</code>.
+          </div>
+
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+            <input type="file" id="input-ais-csv-real" style="display:none;" accept=".csv,.txt,.json,.geojson"
+              onchange="AISRealIngestor.aoSelecionarArquivoReal(this.files)">
+            <button type="button" onclick="document.getElementById('input-ais-csv-real').click()"
+              style="background:#0284c7; color:#fff; border:1px solid #38bdf8; padding:7px 14px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;">
+              📂 Selecionar Arquivo AIS (.CSV / .JSON)
+            </button>
+            <button type="button" onclick="AISRealIngestor.baixarModeloCSV()"
+              style="background:#0f766e; color:#fff; border:1px solid #14b8a6; padding:7px 12px; border-radius:6px; font-size:10.5px; font-weight:700; cursor:pointer;">
+              📥 Baixar Modelo CSV de Exemplo
+            </button>
+
+            <select id="ais-real-modo-carga" style="background:#040d1a; border:1px solid #1e4976; color:#f1f5f9; padding:6px 10px; border-radius:6px; font-size:11px;">
+              <option value="substituir" selected>🔄 Substituir Simulação (Mostrar APENAS Dados Reais)</option>
+              <option value="mesclar">➕ Mesclar aos Dados Atuais no Painel</option>
+            </select>
+          </div>
+
+          <div id="ais-real-resumo-arquivo" style="font-size:10.5px; color:#a7f3d0;"></div>
+        </div>
+
+        <!-- Opção 2: Conexão a API REST ou WebSocket em Tempo Real -->
+        <div style="background:rgba(6, 20, 38, 0.85); border:1px solid #14b8a6; border-radius:8px; padding:12px;">
+          <div style="font-size:11px; font-weight:800; color:#2dd4bf; text-transform:uppercase; margin-bottom:8px;">
+            🛰️ Opção 2 — Conectar API AIS em Tempo Real (REST / SISTRAM / MarineTraffic / Spire / WebSocket)
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; margin-bottom:8px;">
+            <div class="buffer-linha">
+              <label for="ais-api-provedor">Provedor / Padrão da API</label>
+              <select id="ais-api-provedor">
+                <option value="ANTAQ_REST" selected>🏛️ ANTAQ REST / PostGIS JSON</option>
+                <option value="SISTRAM_MARINHA">⚓ Marinha do Brasil (SISTRAM)</option>
+                <option value="MARINETRAFFIC">🚢 MarineTraffic API (PS07 / Export)</option>
+                <option value="SPIRE_MARITIME">🛰️ Spire Maritime / VesselFinder</option>
+                <option value="WEBSOCKET_STREAM">⚡ WebSocket Stream (AISStream.io)</option>
+              </select>
+            </div>
+
+            <div class="buffer-linha">
+              <label for="ais-api-intervalo">Intervalo de Atualização (seg)</label>
+              <input type="number" id="ais-api-intervalo" min="10" max="3600" step="10" value="60">
+            </div>
+
+            <div class="buffer-linha" style="grid-column:span 2;">
+              <label for="ais-api-url">URL do Endpoint REST (JSON/GeoJSON) ou WebSocket (wss://)</label>
+              <input type="text" id="ais-api-url" placeholder="Ex.: https://api.antaq.gov.br/v1/ais/ultimas-posicoes ou wss://stream.aisstream.io/v0/stream">
+            </div>
+
+            <div class="buffer-linha">
+              <label for="ais-api-key">Token / Chave de API (Opcional se rede interna)</label>
+              <input type="text" id="ais-api-key" placeholder="Bearer SEU_TOKEN_AQUI">
+            </div>
+
+            <div class="buffer-linha" style="justify-content:flex-end;">
+              <label>&nbsp;</label>
+              <button type="button" onclick="AISRealIngestor.conectarAPITempoReal()"
+                style="background:#0d9488; color:#fff; border:1px solid #2dd4bf; padding:7px 14px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;">
+                📡 Salvar &amp; Sincronizar API Agora
+              </button>
+            </div>
+          </div>
+          <div id="ais-api-status-msg" style="font-size:10.5px; color:#94a3b8;"></div>
+        </div>
+      </div>
+
+      <div class="modal-buffer-footer" style="flex-shrink:0;">
+        <button class="btn-secundario" onclick="AISRealIngestor.fecharModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Fallback opcional caso o arquivo exista no disco -->
   <script defer src="js/analytics/analytics.js"></script>
   <script defer src="js/analytics/matriz-ven-manager.js"></script>

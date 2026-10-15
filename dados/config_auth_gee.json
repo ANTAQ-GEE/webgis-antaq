@@ -1,0 +1,28 @@
+{
+  "_comentario": "Configuracao Institucional de Autenticacao do Ambiente Restrito (GEE/SEPH - ANTAQ). Nenhuma senha em texto puro e armazenada.",
+  "versao": "2.1-STI",
+  "modoAutenticacao": "hibrido_api_ou_pbkdf2",
+  "endpointAuthSTI": "/api/v1/auth/homologacao",
+  "usarEndpointSTISeDisponivel": false,
+  "sessaoTTLMinutos": 240,
+  "maxTentativas": 5,
+  "bloqueioSegundos": 60,
+  "pbkdf2": {
+    "algoritmo": "PBKDF2-HMAC-SHA256",
+    "iteracoes": 100000,
+    "salt": "ANTAQ_GEE_SEPH_SALT_2026_V2",
+    "hashHex": "293a01b6ab04eaab20103833f02dff5dffd0c1c66b0644d3de519c569502087a",
+    "hashesAutorizadosHex": [
+      "293a01b6ab04eaab20103833f02dff5dffd0c1c66b0644d3de519c569502087a",
+      "45aad2995b3a2f1792d31a73f0c6af36c75982d774e7f03d27508b6a2cbb6b83",
+      "d120c2fadf85c183236963be1e2e33e0526af81d8dffb3b35093e6eee0f7b5f0",
+      "112a5832353228550787d37b9b8d449364a2d530e6ca6432a9c26fe9744e2596"
+    ],
+    "hashesSaltedFallbackHex": [
+      "e73372e0811e67b9ae88b75db25b27db1656b7f2b0b74e10e99e6d7e5f5b7004",
+      "256cb8865ff4f25c92527826bdca773f2146de869b84615a8cee9d3f063ffdb1",
+      "42aae90409e434ba902f403644fcfea071a76f63bdf416c512c88b3255844c52",
+      "f9e025300026f5d1870e5571464663af61d2a139ccdd4c8e96688715e86d7db9"
+    ]
+  }
+}

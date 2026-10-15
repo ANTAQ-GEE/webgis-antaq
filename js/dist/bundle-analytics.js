@@ -2491,12 +2491,16 @@
         display: flex; align-items: center; gap: 10px;
       }
       .aw-header-ico { font-size: 18px; }
-      .aw-header-txt { flex: 1; min-width: 0; }
+      .aw-header-txt { flex: 1; min-width: 120px; overflow: hidden; }
       .aw-header-txt strong {
         display: block; font-size: 12.5px; color: #38bdf8;
         font-weight: 800; letter-spacing: 0.3px; text-transform: uppercase;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
-      .aw-header-txt small { display: block; font-size: 10px; color: #94a3b8; margin-top: 1px; }
+      .aw-header-txt small {
+        display: block; font-size: 10px; color: #94a3b8; margin-top: 1px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
       .aw-btn-h {
         background: transparent; border: 1px solid #334155;
         color: #cbd5e1; border-radius: 5px;
@@ -3047,19 +3051,14 @@
   </select>
 </div>
   <button class="aw-btn-limpar" onclick="ControleAIS.limparFiltros()">Limpar</button>
-    <button class="aw-btn-limpar" onclick="ControleAIS.limparFiltros()">Limpar</button>
 </div>
-<div class="aw-legenda-corredor" style="display:flex;gap:14px;align-items:center;
+<div class="aw-legenda-corredor" style="display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;
      padding:6px 12px;background:#0a1424;border-bottom:1px solid #1e293b;
      font-size:9.5px;color:#94a3b8;flex-shrink:0;">
   <span style="color:#64748b;font-weight:700;letter-spacing:0.4px;">VIAS NAVEGADAS (VEN):</span>
   <span><span style="color:#10b981;">●</span> Em trecho &lt; 2 km</span>
   <span><span style="color:#f59e0b;">●</span> Próximo 2–5 km</span>
   <span><span style="color:#ef4444;">●</span> Fora &gt; 5 km</span>
-  <span style="margin-left:auto;font-style:italic;color:#64748b;">
-    Trechos com movimentação de carga registrada nas safras VEN (2022 · 2024)
-  </span>
-</div>
 </div>
               <div class="aw-scroll">
                 <div class="aw-secao emb">

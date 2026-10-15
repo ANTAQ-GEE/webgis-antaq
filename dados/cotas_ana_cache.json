@@ -1,0 +1,204 @@
+{
+  "atualizado_em": "14/10/2026 15:45:00",
+  "nota_arquitetura": "Cache JSON alimentado pelo script backend scripts/sincronizar_cotas_ana.py (contorna bloqueio CORS do navegador no domínio telemetriaws1.ana.gov.br).",
+  "estacoes": {
+    "14990000": {
+      "nome": "Manaus (Rio Negro/Amazonas - AM)",
+      "rio": "Rio Amazonas / Solimões",
+      "nr_m": 17.9,
+      "cota_m": 25.0,
+      "nivel_cm": 2500,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "16030000": {
+      "nome": "Itacoatiara (AM)",
+      "rio": "Rio Amazonas",
+      "nr_m": 2.5,
+      "cota_m": 11.0,
+      "nivel_cm": 1100,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "16350000": {
+      "nome": "Parintins (AM)",
+      "rio": "Rio Amazonas",
+      "nr_m": 1.0,
+      "cota_m": 10.2,
+      "nivel_cm": 1020,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "17050001": {
+      "nome": "Santarém (PA)",
+      "rio": "Rio Amazonas / Tapajós",
+      "nr_m": 1.1,
+      "cota_m": 8.0,
+      "nivel_cm": 800,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "18010000": {
+      "nome": "Prainha (PA)",
+      "rio": "Rio Amazonas Baixo",
+      "nr_m": 1.0,
+      "cota_m": 3.4,
+      "nivel_cm": 340,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "18460000": {
+      "nome": "Almeirim / Gurupá (PA)",
+      "rio": "Rio Amazonas Foz",
+      "nr_m": 0.8,
+      "cota_m": 3.2,
+      "nivel_cm": 320,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "19150000": {
+      "nome": "Santana / Macapá (AP)",
+      "rio": "Rio Amazonas Braço Norte/Sul",
+      "nr_m": 0.4,
+      "cota_m": 2.8,
+      "nivel_cm": 280,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "31900000": {
+      "nome": "Vila do Conde / Barcarena (PA)",
+      "rio": "Rio Pará",
+      "nr_m": 0.3,
+      "cota_m": 2.5,
+      "nivel_cm": 250,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Maregráfico/Fluviométrico CHM/ANA"
+    },
+    "40100": {
+      "nome": "Porto de Belém / Mosqueiro (BNDO/CHM - PA)",
+      "rio": "Rio Pará",
+      "nr_m": 0.2,
+      "cota_m": 2.7,
+      "nivel_cm": 270,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Tábua de Marés CHM/BNDO"
+    },
+    "18980000": {
+      "nome": "Curralinho / Ponta Goiabal (PA)",
+      "rio": "Rio Pará Oeste",
+      "nr_m": 0.25,
+      "cota_m": 2.15,
+      "nivel_cm": 215,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "18920000": {
+      "nome": "Porto São José / Furo do Tajapuru (PA)",
+      "rio": "Estreitos de Marajó",
+      "nr_m": 0.1,
+      "cota_m": 1.1,
+      "nivel_cm": 110,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Maregráfico CHM"
+    },
+    "18950000": {
+      "nome": "Breves — Estreitos de Marajó (PA)",
+      "rio": "Estreitos de Marajó",
+      "nr_m": 0.3,
+      "cota_m": 1.8,
+      "nivel_cm": 180,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "13150003": {
+      "nome": "Missão I / Tefé (AM)",
+      "rio": "Rio Solimões Leste",
+      "nr_m": 3.1,
+      "cota_m": 13.4,
+      "nivel_cm": 1340,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "10100000": {
+      "nome": "Tabatinga / Sto. Antônio do Içá (AM)",
+      "rio": "Rio Solimões Oeste",
+      "nr_m": 2.2,
+      "cota_m": 9.5,
+      "nivel_cm": 950,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "12900000": {
+      "nome": "Fonte Boa (AM)",
+      "rio": "Rio Solimões Médio",
+      "nr_m": 3.1,
+      "cota_m": 11.2,
+      "nivel_cm": 1120,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "15400000": {
+      "nome": "Porto Velho (RO)",
+      "rio": "Rio Madeira Alto",
+      "nr_m": 3.3,
+      "cota_m": 10.0,
+      "nivel_cm": 1000,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "15630000": {
+      "nome": "Humaitá I (AM)",
+      "rio": "Rio Madeira Médio",
+      "nr_m": 10.1,
+      "cota_m": 15.0,
+      "nivel_cm": 1500,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "15700000": {
+      "nome": "Manicoré I (AM)",
+      "rio": "Rio Madeira Médio/Baixo",
+      "nr_m": 12.1,
+      "cota_m": 21.0,
+      "nivel_cm": 2100,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "15850000": {
+      "nome": "Borba / Foz do Madeira (AM)",
+      "rio": "Rio Madeira Baixo",
+      "nr_m": 4.5,
+      "cota_m": 12.5,
+      "nivel_cm": 1250,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "17730000": {
+      "nome": "Itaituba (PA)",
+      "rio": "Rio Tapajós",
+      "nr_m": 2.0,
+      "cota_m": 9.6,
+      "nivel_cm": 960,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "29650000": {
+      "nome": "Nazaré dos Patos (PA)",
+      "rio": "Rio Tocantins",
+      "nr_m": 2.5,
+      "cota_m": 6.0,
+      "nivel_cm": 600,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    },
+    "29700000": {
+      "nome": "Tucuruí (PA)",
+      "rio": "Rio Tocantins",
+      "nr_m": 2.0,
+      "cota_m": 8.0,
+      "nivel_cm": 800,
+      "data_hora": "14/10/2026 15:00",
+      "fonte": "Cache Hidrométrico ANA/CHM"
+    }
+  }
+}
