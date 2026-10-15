@@ -569,6 +569,10 @@
         title="Criar buffer geodésico em torno de uma camada">
         ⭕ Buffer
       </button>
+      <button class="btn-medicao" onclick="if(window.BatimetriaTINManager) BatimetriaTINManager.abrirModal()"
+        title="Upload de pontos batimétricos X Y Z (UTM 22S, etc.) e Interpolação TIN restrita">
+        🌊 TIN (XYZ)
+      </button>
     </div>
   </div>
 
@@ -1198,6 +1202,11 @@
         title="Importar arquivo Shapefile (ZIP), GeoJSON, KML ou GPKG">
         <span>📁 Importar Arquivo</span>
       </button>
+      <button class="btn-barra-acao" onclick="if(window.BatimetriaTINManager) BatimetriaTINManager.abrirModal()"
+        style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; border:1px solid #38bdf8;"
+        title="Importar nuvem de pontos X Y Z (UTM / LatLon) e gerar Interpolação Batimétrica TIN">
+        <span>🌊 Batimetria TIN (XYZ)</span>
+      </button>
     </div>
 
     <div class="painel-corpo">
@@ -1508,6 +1517,146 @@
       </div>
     </div>
   </div>
+
+  <!-- ============================================================
+       M17 — MODAL DE UPLOAD BATIMÉTRICO (X Y Z) E INTERPOLAÇÃO TIN
+       ============================================================ -->
+  <div class="modal-buffer" id="modal-batimetria-tin">
+    <div class="modal-buffer-card" style="max-width: 580px !important; border-color: #38bdf8;">
+      <div class="modal-buffer-header" style="border-bottom-color: rgba(56, 189, 248, 0.35);">
+        <h3 style="color: #38bdf8;">
+          <span style="font-size:20px;">🌊</span>
+          <span>Interpolação Batimétrica TIN (Upload X Y Z)</span>
+        </h3>
+        <button class="modal-matriz-fechar" onclick="BatimetriaTINManager.fecharModal()">&times;</button>
+      </div>
+
+      <div class="modal-buffer-body">
+        <!-- Upload de arquivo + Botão de Exemplo -->
+        <div class="buffer-linha">
+          <label>1. Fonte de Dados Batimétricos (Arquivo .XYZ, .TXT, .CSV ou Colagem Direta)</label>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <input type="file" id="input-batimetria-xyz" style="display:none;" accept=".xyz,.txt,.csv,.dat,.pts"
+              onchange="BatimetriaTINManager.aoSelecionarArquivo(this.files)">
+            <button type="button" class="btn-barra-acao"
+              onclick="document.getElementById('input-batimetria-xyz').click()"
+              style="background:#0284c7; color:#fff; border:1px solid #38bdf8; padding:7px 12px; font-weight:700; cursor:pointer;">
+              📂 Selecionar Arquivo X Y Z
+            </button>
+            <button type="button" class="btn-barra-acao"
+              onclick="BatimetriaTINManager.carregarExemploUTM22S()"
+              style="background:#0f766e; color:#fff; border:1px solid #14b8a6; padding:7px 12px; font-weight:700; cursor:pointer;"
+              title="Carrega um levantamento ecobatimétrico de teste em UTM 22 Sul separado por espaço">
+              🧪 Carregar Exemplo (UTM 22S)
+            </button>
+            <span id="bat-nome-arquivo" style="font-size:11px; color:#bae6fd; font-weight:600;">Nenhum arquivo selecionado</span>
+          </div>
+        </div>
+
+        <!-- Seleção de Projeção e Separador -->
+        <div style="display:grid; grid-template-columns: 1.35fr 1fr; gap:10px;">
+          <div class="buffer-linha">
+            <label for="bat-projecao">2. Projeção / Sistema de Coordenadas (CRS)</label>
+            <select id="bat-projecao" onchange="BatimetriaTINManager.atualizarPreview()">
+              <option value="UTM_22S" selected>SIRGAS 2000 / UTM Zona 22 Sul (EPSG:31982)</option>
+              <option value="UTM_18S">SIRGAS 2000 / UTM Zona 18 Sul (EPSG:31978)</option>
+              <option value="UTM_19S">SIRGAS 2000 / UTM Zona 19 Sul (EPSG:31979)</option>
+              <option value="UTM_20S">SIRGAS 2000 / UTM Zona 20 Sul (EPSG:31980)</option>
+              <option value="UTM_21S">SIRGAS 2000 / UTM Zona 21 Sul (EPSG:31981)</option>
+              <option value="UTM_23S">SIRGAS 2000 / UTM Zona 23 Sul (EPSG:31983)</option>
+              <option value="UTM_24S">SIRGAS 2000 / UTM Zona 24 Sul (EPSG:31984)</option>
+              <option value="UTM_25S">SIRGAS 2000 / UTM Zona 25 Sul (EPSG:31985)</option>
+              <option value="UTM_22N">SIRGAS 2000 / UTM Zona 22 Norte (EPSG:31976)</option>
+              <option value="UTM_21N">SIRGAS 2000 / UTM Zona 21 Norte (EPSG:31975)</option>
+              <option value="UTM_20N">SIRGAS 2000 / UTM Zona 20 Norte (EPSG:31974)</option>
+              <option value="GEO_SIRGAS">Geográfico Lat/Lon (SIRGAS 2000 / EPSG:4674)</option>
+            </select>
+          </div>
+
+          <div class="buffer-linha">
+            <label for="bat-separador">3. Separador de Colunas</label>
+            <select id="bat-separador" onchange="BatimetriaTINManager.atualizarPreview()">
+              <option value="espaco" selected>Espaço / Múltiplos Espaços (' ')</option>
+              <option value="virgula">Vírgula (',')</option>
+              <option value="ponto_virgula">Ponto e Vírgula (';')</option>
+              <option value="tab">Tabulação (Tab)</option>
+              <option value="auto">Auto-detectar</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Ordem das colunas, Sinal de Z e Aresta Máxima de Restrição -->
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+          <div class="buffer-linha">
+            <label for="bat-ordem-colunas">Ordem das Colunas</label>
+            <select id="bat-ordem-colunas" onchange="BatimetriaTINManager.atualizarPreview()">
+              <option value="XYZ" selected>X Y Z (Leste, Norte, Prof.)</option>
+              <option value="YXZ">Y X Z (Norte, Leste, Prof.)</option>
+              <option value="ID_XYZ">ID X Y Z (4 Colunas)</option>
+            </select>
+          </div>
+
+          <div class="buffer-linha">
+            <label for="bat-sinal-z">Sinal da Cota Z</label>
+            <select id="bat-sinal-z" onchange="BatimetriaTINManager.atualizarPreview()">
+              <option value="abs" selected>Sempre Positivo (|Z| m)</option>
+              <option value="raw">Manter Sinal Original</option>
+              <option value="inv">Inverter Sinal (-Z)</option>
+            </select>
+          </div>
+
+          <div class="buffer-linha">
+            <label for="bat-max-aresta" title="Remove triângulos externos longos que cruzam sobre as margens secas">Restrição de Borda (m)</label>
+            <input type="number" id="bat-max-aresta" min="20" max="5000" step="10" value="350"
+              title="Comprimento máximo de aresta do triângulo (em metros) para restringir o TIN à área interna dos pontos">
+          </div>
+        </div>
+
+        <!-- Caixa para colar ou inspecionar o texto X Y Z -->
+        <div class="buffer-linha">
+          <label for="bat-texto-xyz">Dados Brutos X Y Z (Você também pode colar ou editar diretamente aqui)</label>
+          <textarea id="bat-texto-xyz" rows="4"
+            placeholder="Exemplo (X Y Z separados por espaço em UTM 22S):&#10;668000.00 9715000.00 2.10&#10;668110.00 9715000.00 8.40&#10;668220.00 9715000.00 13.20"
+            oninput="BatimetriaTINManager.aoDigitarTexto(this.value)"
+            style="width:100%; background:#061426; border:1px solid #1e4976; color:#e2e8f0; border-radius:6px; padding:8px; font-family:Consolas,monospace; font-size:11px; resize:vertical;"></textarea>
+        </div>
+
+        <!-- Checkbox de pontos de sondagem -->
+        <div class="buffer-linha buffer-checkbox">
+          <input type="checkbox" id="bat-mostrar-pontos" checked>
+          <label for="bat-mostrar-pontos">
+            Plotar pontos de sondagem originais sobre a malha TIN
+            <small>Ancora a triangulação das extremidades para dentro da geometria e exibe as cotas medidas</small>
+          </label>
+        </div>
+
+        <!-- Pré-visualização da conversão UTM -> Lat/Lon -->
+        <div class="buffer-preview" id="bat-preview-corpo" style="min-height:64px;">
+          <div style="color:#94a3b8; font-style:italic;">Carregue um arquivo <strong>X Y Z</strong> ou clique em <strong>"🧪 Carregar Exemplo (UTM 22S)"</strong>.</div>
+        </div>
+
+        <!-- Legenda rápida de cores batimétricas -->
+        <div style="display:flex; flex-wrap:wrap; gap:6px; font-size:10px; color:#cbd5e1; background:#061426; padding:7px 10px; border-radius:6px; border:1px solid #1e293b;">
+          <strong style="color:#38bdf8; width:100%; margin-bottom:2px;">🎨 Paleta Hipsométrica de Profundidade (TIN):</strong>
+          <span><b style="color:#dc2626;">■</b> &le; 2,5m (Crítico)</span>
+          <span><b style="color:#f97316;">■</b> 2,5–4,5m (Raso)</span>
+          <span><b style="color:#eab308;">■</b> 4,5–7,0m (Talude)</span>
+          <span><b style="color:#38bdf8;">■</b> 7,0–11m (Canal)</span>
+          <span><b style="color:#0284c7;">■</b> 11–16m (Profundo)</span>
+          <span><b style="color:#1e3a8a;">■</b> &gt; 16m (Talvegue)</span>
+        </div>
+      </div>
+
+      <div class="modal-buffer-footer">
+        <button class="btn-secundario" onclick="BatimetriaTINManager.fecharModal()">Cancelar</button>
+        <button class="btn-primario" onclick="BatimetriaTINManager.executarInterpolacaoTIN()"
+          style="background:#0284c7; color:#fff; border:1px solid #38bdf8;">
+          🌊 Gerar Interpolação TIN
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ============================================================
        M2 — PAINEL FLUTUANTE DE SELEÇÃO MÚLTIPLA
        ============================================================ -->
@@ -2056,6 +2205,7 @@
   <script defer src="js/core/webgis-about.js"></script>
   <script defer src="js/domain/buffer-tool.js"></script>
   <script defer src="js/domain/geo-tools.js"></script>
+  <script defer src="js/domain/batimetria-tin-manager.js"></script>
   <script defer src="js/app.js"></script>
 
   </body>
